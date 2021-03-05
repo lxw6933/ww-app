@@ -1,10 +1,10 @@
-package com.ww.mall.coupon;
+package com.ww.mall.gateway;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.SpringBootTest;
 
 @SpringBootTest
-class MallCouponApplicationTests {
+class MallApiGatewayApplicationTests {
 
     @Test
     void contextLoads() {

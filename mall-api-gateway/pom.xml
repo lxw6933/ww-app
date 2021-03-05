@@ -9,10 +9,10 @@
         <relativePath/> <!-- lookup parent from repository -->
     </parent>
     <groupId>com.ww.mall</groupId>
-    <artifactId>mall-coupon</artifactId>
+    <artifactId>mall-api-gateway</artifactId>
     <version>0.0.1-SNAPSHOT</version>
-    <name>mall-coupon</name>
-    <description>优惠券服务</description>
+    <name>mall-api-gateway</name>
+    <description>API网关</description>
 
     <properties>
         <java.version>1.8</java.version>
@@ -20,30 +20,23 @@
     </properties>
 
     <dependencies>
-        <!-- common通用服务依赖 -->
         <dependency>
             <groupId>com.ww.mall</groupId>
             <artifactId>mall-common</artifactId>
             <version>0.0.1-SNAPSHOT</version>
         </dependency>
-        <!-- web -->
-        <dependency>
-            <groupId>org.springframework.boot</groupId>
-            <artifactId>spring-boot-starter-web</artifactId>
-        </dependency>
-        <!-- openFeign -->
+
         <dependency>
             <groupId>org.springframework.cloud</groupId>
-            <artifactId>spring-cloud-starter-openfeign</artifactId>
+            <artifactId>spring-cloud-starter-gateway</artifactId>
         </dependency>
-        <!-- test -->
+
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-test</artifactId>
             <scope>test</scope>
         </dependency>
     </dependencies>
-
     <dependencyManagement>
         <dependencies>
             <dependency>
