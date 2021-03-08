@@ -2,7 +2,16 @@ server:
   port: 7000  #服务端口号
 
 spring:
+  datasource:
+    username: root
+    password: admin
+    url: jdbc:p6spy:mysql://localhost:3306/cloud?serverTimezone=Asia/Shanghai
+    driver-class-name: com.p6spy.engine.spy.P6SpyDriver
   cloud:
     nacos:
       discovery:
         server-addr: 127.0.0.1:8848   #服务注册地址
+
+logging:
+  level:
+    com.ww.mall.coupon.dao: debug

@@ -19,6 +19,7 @@ public class DemoController {
 
     @RequestMapping("/test")
     public String test(){
+        int i = 1 / 0;
         return "coupon test";
     }
 
