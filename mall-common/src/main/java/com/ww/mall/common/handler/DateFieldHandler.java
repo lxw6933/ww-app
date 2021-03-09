@@ -1,4 +1,4 @@
-package com.ww.mall.coupon.handler;
+package com.ww.mall.common.handler;
 
 import com.baomidou.mybatisplus.core.handlers.MetaObjectHandler;
 import lombok.extern.slf4j.Slf4j;

@@ -1,24 +1,21 @@
-package com.ww.mall.member;
+package com.ww.mall.generator;
 
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
+import org.springframework.boot.autoconfigure.jdbc.DataSourceAutoConfiguration;
 import org.springframework.cloud.client.discovery.EnableDiscoveryClient;
-import org.springframework.cloud.context.config.annotation.RefreshScope;
-import org.springframework.cloud.openfeign.EnableFeignClients;
 import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.ComponentScans;
 
-//@RefreshScope           // 动态刷新配置中心信息
-@EnableFeignClients(basePackages = "com.ww.mall.member.feign")
 @EnableDiscoveryClient
 @SpringBootApplication
 @ComponentScans({
         @ComponentScan("com.ww.mall.common")
 })
-public class MallMemberApplication {
+public class MallCodeGeneratorApplication {
 
     public static void main(String[] args) {
-        SpringApplication.run(MallMemberApplication.class, args);
+        SpringApplication.run(MallCodeGeneratorApplication.class, args);
     }
 
 }

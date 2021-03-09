@@ -1,4 +1,4 @@
-package com.ww.mall.coupon.config;
+package com.ww.mall.common.config;
 
 import com.baomidou.mybatisplus.annotation.DbType;
 import com.baomidou.mybatisplus.extension.plugins.MybatisPlusInterceptor;
