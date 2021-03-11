@@ -65,10 +65,12 @@ public class ${table.controllerName} {
         return R.ok("查询成功").put("data",${table.entityPath}List);
     }
 
-    @ApiOperation(value = "列表（分页）")
-    @GetMapping("/list/{pageNum}/{pageSize}")
-    public Object list(@PathVariable("pageNum")Long pageNum, @PathVariable("pageSize")Long pageSize){
-        IPage<${entity}> page = ${table.entityPath}Service.page(new Page<>(pageNum, pageSize), null);
+    @ApiOperation(value = "条件列表（分页）")
+    @PostMapping("/page/{pageNum}/{pageSize}")
+    public Object page(@PathVariable("pageNum")Long pageNum,
+                       @PathVariable("pageSize")Long pageSize,
+                       @RequestBody ${entity} ${table.entityPath}){
+        IPage<${entity}> page = ${table.entityPath}Service.page(new Page<>(pageNum, pageSize), new QueryWrapper<>(${table.entityPath}));
         return R.ok("查询成功").put("data",page.getRecords()).put("total",page.getTotal());
     }
 
@@ -80,9 +82,8 @@ public class ${table.controllerName} {
     }
 
     @ApiOperation(value = "根据id修改")
-    @PostMapping("/update/{id}")
-    public R update(@PathVariable("id") Long id, @RequestBody ${entity} ${table.entityPath}){
-        ${table.entityPath}.setId(id);
+    @PostMapping("/update")
+    public R update(@RequestBody ${entity} ${table.entityPath}){
         ${table.entityPath}Service.updateById(${table.entityPath});
         return R.ok("更新成功");
     }

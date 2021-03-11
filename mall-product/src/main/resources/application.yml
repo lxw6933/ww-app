@@ -1,9 +1,14 @@
 server:
-  port: 10000   #服务端口号
+  port: 15000   #服务端口号
+  servlet:
+    context-path: /product
 
 spring:
-  application:
-    name: mall-product  #服务名
+  datasource:
+    username: root
+    password: admin
+    url: jdbc:p6spy:mysql://localhost:3306/ww_mall_pms?useSSL=false&useUnicode=true&characterEncoding=utf-8&serverTimezone=GMT%2B8
+    driver-class-name: com.p6spy.engine.spy.P6SpyDriver
   cloud:
     nacos:
       discovery:

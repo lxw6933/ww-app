@@ -8,16 +8,30 @@ spring:
         server-addr: 127.0.0.1:8848   #服务注册地址
     gateway:
       routes:
-        - id: coupon_route
+        - id: coupon_route      # 优惠券服务路由
           uri: lb://mall-coupon
           predicates:
             - Path=/api/coupon/**
           filters:
             - RewritePath=/api(?<segment>/?.*), $\{segment}   # /api/foo  =>  /foo
 
-        - id: member_route
+        - id: member_route      # 会员服务路由
           uri: lb://mall-member
           predicates:
             - Path=/api/member/**
+          filters:
+            - RewritePath=/api(?<segment>/?.*), $\{segment}   # /api/foo  =>  /foo
+
+        - id: product_route      # 会员服务路由
+          uri: lb://mall-product
+          predicates:
+            - Path=/api/product/**
+          filters:
+            - RewritePath=/api(?<segment>/?.*), $\{segment}   # /api/foo  =>  /foo
+
+        - id: generator_route      # 代码生成服务路由
+          uri: lb://mall-code-generator
+          predicates:
+            - Path=/api/generator/**
           filters:
             - RewritePath=/api(?<segment>/?.*), $\{segment}   # /api/foo  =>  /foo

@@ -10,18 +10,48 @@ import com.baomidou.mybatisplus.generator.config.rules.DateType;
 import com.baomidou.mybatisplus.generator.config.rules.NamingStrategy;
 import com.baomidou.mybatisplus.generator.engine.FreemarkerTemplateEngine;
 import com.ww.mall.generator.config.GeneratorConfig;
+import com.ww.mall.generator.dao.TableMapper;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.autoconfigure.jdbc.DataSourceAutoConfiguration;
 import org.springframework.boot.test.context.SpringBootTest;
 
+import javax.sql.DataSource;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
 @SpringBootTest
 class MallCodeGeneratorApplicationTests {
 
     @Autowired
     GeneratorConfig config;
+    @Autowired
+    private TableMapper tableMapper;
+
+    @Test
+    public void getAllTables(){
+        List<Map> maps = tableMapper.listTable();
+        StringBuilder tableNames = new StringBuilder(0);
+        maps.forEach(res->{
+            System.out.println();
+            tableNames.append(res.get("TABLE_NAME")).append(",");
+        });
+        System.out.println(tableNames.deleteCharAt(tableNames.length()-1).toString());
+        String url = "jdbc:mysql://localhost:3306/ww_mall_pms?useSSL=false&useUnicode=true&characterEncoding=utf-8&serverTimezone=GMT%2B8";
+        String driveName = "com.mysql.cj.jdbc.Driver";
+        String username = "root";
+        String password = "admin";
+        String tablePrefix = "pms_";
+        config.generate(url,
+                driveName,
+                username,
+                password,
+                tablePrefix,
+                "com.ww.mall.product",
+                tableNames.toString());
+
+    }
 
     @Test
     public void generator(){
