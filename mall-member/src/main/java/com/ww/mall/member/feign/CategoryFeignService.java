@@ -1,25 +1,21 @@
 package com.ww.mall.member.feign;
 
-import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.ww.mall.common.constant.R;
 import com.ww.mall.member.to.CategoryTO;
-import io.swagger.annotations.ApiOperation;
 import org.springframework.cloud.openfeign.FeignClient;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
-
-import java.util.List;
 
 /**
  * Author:         ww
  * Datetime:       2021\3\4 0004
  * Description:    调用coupon服务
  */
-@FeignClient("mall-coupon")
-public interface CouponFeignService {
+@FeignClient("mall-product")
+public interface CategoryFeignService {
 
-    @RequestMapping("/coupon/demo")
-    String demo();
+    @PostMapping("/product/category/get")
+    R list(@RequestBody CategoryTO categoryTO);
 
 }

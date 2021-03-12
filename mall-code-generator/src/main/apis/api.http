@@ -14,8 +14,22 @@ GET {{URL}}/category/list/tree
 
 
 ###
+POST {{URL}}/product/brand/save
+Content-Type: application/json
+
+{
+    "name": ""
+}
+
+###
+POST {{URL}}/member/test
+Content-Type: application/json
+
+###
 GET localhost:88/api/generator/category/list/tree
 
+###
+POST localhost:88/api/member/member/get/category
 
 ###测试认证请求
 POST {{ URL }}/authentication
@@ -40,7 +54,6 @@ jwtHead: eyJhbGciOiJIUzUxMiJ9.eyJzdWIiOiJyb290IiwiZXhwIjoxNjA5NDIwMzcwfQ.IerK502
 GET {{ URL }}/getAllRole
 Content-Type: application/x-www-form-urlencoded
 ###jwtHead: eyJhbGciOiJIUzUxMiJ9.eyJzdWIiOiJyb290IiwiZXhwIjoxNjA5NDIwMzcwfQ.IerK502o3zEoWsn4xdupkmGB-IRE3oG3kEfNMFbtN0UeP8yJbQgyMjcaUcBYGwGmGZMtiP9R-Rv1vQWx44jheg
-
 
 ###
 POST {{ URL }}/addRole

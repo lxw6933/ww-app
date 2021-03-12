@@ -10,9 +10,12 @@ import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.*;
 import java.util.List;
 import org.springframework.web.bind.annotation.RestController;
+
+import javax.validation.Valid;
 
 /**
 * @author ww
@@ -29,7 +32,7 @@ public class BrandController {
 
     @ApiOperation(value = "新增")
     @PostMapping("/save")
-    public R save(@RequestBody Brand brand){
+    public R save(@Valid @RequestBody Brand brand){
         brandService.save(brand);
         return R.ok("保存成功");
     }

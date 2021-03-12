@@ -9,6 +9,11 @@ import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.experimental.Accessors;
 
+import javax.validation.constraints.Email;
+import javax.validation.constraints.NotBlank;
+import javax.validation.constraints.NotEmpty;
+import javax.validation.constraints.NotNull;
+
 /**
 * @author ww
 * @since 2021-03-10
@@ -30,6 +35,8 @@ public class Brand implements Serializable {
     /**
     * 品牌名
     */
+    @Email
+    @NotBlank(message = "品牌名不能为空")
     private String name;
 
     /**

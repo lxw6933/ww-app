@@ -1,5 +1,6 @@
 package com.ww.mall.product.controller;
 
+import cn.hutool.core.util.StrUtil;
 import com.ww.mall.product.service.AttrGroupService;
 import com.ww.mall.product.entity.AttrGroup;
 import com.ww.mall.common.constant.R;
@@ -41,10 +42,35 @@ public class AttrGroupController {
         return R.ok("删除成功");
     }
 
+//    @ApiOperation(value = "条件查询")
+//    @PostMapping("/get")
+//    public R list(@RequestBody AttrGroup attrGroup){
+//        List<AttrGroup> attrGroupList = attrGroupService.list(new QueryWrapper<>(attrGroup));
+//        return R.ok("查询成功").put("data",attrGroupList);
+//    }
+
     @ApiOperation(value = "条件查询")
-    @PostMapping("/get")
-    public R list(@RequestBody AttrGroup attrGroup){
-        List<AttrGroup> attrGroupList = attrGroupService.list(new QueryWrapper<>(attrGroup));
+    @GetMapping("/list/{catelogId}")
+    public R list(@PathVariable(value = "catelogId") Long catelogId,
+                  @RequestParam(value = "key",required = false) String key) {
+        List<AttrGroup> attrGroupList = null;
+        QueryWrapper<AttrGroup> wrapper = new QueryWrapper<>();
+        if(catelogId == 0){
+            if(StrUtil.isNotEmpty(key)){
+                wrapper.and((res) -> {
+                    res.like("attr_group_name",key);
+                });
+            }
+            attrGroupList = attrGroupService.list(wrapper);
+        }else{
+            wrapper.eq("catelog_id",catelogId);
+            if(StrUtil.isNotEmpty(key)){
+                wrapper.and((res) -> {
+                    res.like("attr_group_name",key);
+                });
+            }
+            attrGroupList = attrGroupService.list(wrapper);
+        }
         return R.ok("查询成功").put("data",attrGroupList);
     }
 

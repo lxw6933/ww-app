@@ -44,7 +44,7 @@ public class CategoryServiceImpl extends ServiceImpl<CategoryMapper, Category> i
      */
     private List<Category> getChildrens(Category curCategory, List<Category> all){
         List<Category> children = all.stream().filter(res -> {
-            return res.getParentCid() == curCategory.getCatId();
+            return res.getParentCid().equals(curCategory.getCatId());
         }).map(res -> {
             res.setChildrens(getChildrens(res, all));
             return res;
