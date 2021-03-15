@@ -42,6 +42,13 @@ public class AttrGroupController {
         return R.ok("删除成功");
     }
 
+    @ApiOperation(value = "根据id批量删除")
+    @PostMapping("/batchDelete")
+    public R batchDelete(@RequestBody List<Long> ids){
+        attrGroupService.removeByIds(ids);
+        return R.ok("批量删除成功");
+    }
+
 //    @ApiOperation(value = "条件查询")
 //    @PostMapping("/get")
 //    public R list(@RequestBody AttrGroup attrGroup){

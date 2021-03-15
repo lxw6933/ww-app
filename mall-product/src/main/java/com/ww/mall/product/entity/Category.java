@@ -72,7 +72,7 @@ public class Category implements Serializable {
     /**
      * 子类集合
      */
-//    @JsonInclude(JsonInclude.Include.NON_EMPTY)     // 当此属性不为Empty的时候在json里显示
+    @JsonInclude(JsonInclude.Include.NON_EMPTY)     // 当此属性不为Empty的时候在json里显示
     @TableField(exist = false)  // 不存在数据库字段属性
     private List<Category> childrens;
 
