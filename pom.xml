@@ -18,6 +18,7 @@
         <module>mall-common</module>
         <module>mall-api-gateway</module>
         <module>mall-search</module>
+        <module>mall-auth-server</module>
     </modules>
 
 </project>
