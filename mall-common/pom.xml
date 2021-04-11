@@ -103,11 +103,6 @@
             <artifactId>hibernate-validator</artifactId>
             <version>6.1.7.Final</version>
         </dependency>
-        <!-- redis -->
-<!--        <dependency>-->
-<!--            <groupId></groupId>-->
-<!--            <artifactId>data-re</artifactId>-->
-<!--        </dependency>-->
     </dependencies>
 
 </project>
