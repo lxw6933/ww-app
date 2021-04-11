@@ -1,18 +1,19 @@
 package com.ww.mall.generator.controller;
 
-import com.ww.mall.generator.service.UserService;
-import com.ww.mall.generator.entity.User;
-import com.ww.mall.common.constant.R;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
+import com.baomidou.mybatisplus.core.conditions.update.UpdateWrapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
+import com.ww.mall.common.constant.R;
+import com.ww.mall.generator.entity.User;
+import com.ww.mall.generator.service.UserService;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
+
 import java.util.List;
-import org.springframework.web.bind.annotation.RestController;
 
 /**
 * @author ww
@@ -69,4 +70,18 @@ public class UserController {
         userService.updateById(user);
         return R.ok("更新成功");
     }
+
+    @PostMapping("/testUpdate")
+    public R testUpdate() {
+        UpdateWrapper<User> wrapper = new UpdateWrapper<>();
+        wrapper.eq("id","")
+                .eq("","")
+                .set("", "")
+                .set("", "");
+        boolean update = userService.update(null, wrapper);
+        System.out.println("=====================");
+        boolean update1 = userService.update(wrapper);
+        return R.ok("ok");
+    }
+
 }

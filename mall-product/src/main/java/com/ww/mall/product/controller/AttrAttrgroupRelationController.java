@@ -1,18 +1,18 @@
 package com.ww.mall.product.controller;
 
-import com.ww.mall.product.service.AttrAttrgroupRelationService;
-import com.ww.mall.product.entity.AttrAttrgroupRelation;
-import com.ww.mall.common.constant.R;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
+import com.ww.mall.common.constant.R;
+import com.ww.mall.product.entity.AttrAttrgroupRelation;
+import com.ww.mall.product.service.AttrAttrgroupRelationService;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
+
 import java.util.List;
-import org.springframework.web.bind.annotation.RestController;
 
 /**
 * @author ww

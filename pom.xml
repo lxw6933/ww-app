@@ -16,8 +16,9 @@
         <module>mall-product</module>
         <module>mall-ware</module>
         <module>mall-common</module>
-        <module>mall-api-gateway</module>
         <module>mall-search</module>
+        <module>mall-api-gateway</module>
+        <module>mall-code-generator</module>
     </modules>
 
 </project>

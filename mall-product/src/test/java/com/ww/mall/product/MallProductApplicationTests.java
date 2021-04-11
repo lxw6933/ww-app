@@ -1,13 +1,25 @@
 package com.ww.mall.product;
 
+import com.baomidou.mybatisplus.core.conditions.update.UpdateWrapper;
+import com.ww.mall.product.entity.Category;
+import com.ww.mall.product.service.CategoryService;
 import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 
 @SpringBootTest
 class MallProductApplicationTests {
 
+    @Autowired
+    private CategoryService categoryService;
+
     @Test
     void contextLoads() {
+        UpdateWrapper<Category> wrapper = new UpdateWrapper<>();
+        wrapper.eq("cat_id", 2).eq("cat_level", "1")
+                .set("name", "大哥大").set("ico", "ico");
+        boolean update = categoryService.update(wrapper);
+        System.out.println("=======end==========");
     }
 
 }
