@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta http-equiv="X-UA-Compatible" content="IE=edge"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <title>Title</title>
+  <style>
+    @page {
+      /* 设置pdf页面类型 */
+      size: a4;
+    }
+    html, body {
+      /* 字体必须设置 */
+      font-family: "Microsoft YaHei";
+      padding: 0;
+      margin: 0;
+      font-size: 14px;
+    }
+    #main {
+      color: #8b8b8b;
+      width: 100%;
+      margin: auto;
+    }
+  </style>
+</head>
+<body>
+<div id="main">
+  <div style="border-bottom: 1px solid #9e9e9e;padding: 0 20px 20px;">
+    <table style="width: 100%;">
+      <tr>
+        <td style="width: 50%">
+          <div>
+            <div style="font-size: 12px;margin-bottom: 10px;">病历号：${caseNum}</div>
+            <div>
+              <span style="color: #333;font-size: 22px">${clinicName}</span>
+            </div>
+            <div style="font-size: 15px;color: #999;margin-top: 2px;">门诊病历</div>
+          </div>
+        </td>
+        <td style="text-align: right">
+          ${barCode}
+          ${QRCode}
+<!--          <img style="width:56px;height:56px;margin-right: 20px;" src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAASwAAAEsAQAAAABRBrPYAAABIElEQVR42u3aUQ6EIAwEUG7g/W/JDdys1HaoNfvb2QwxRvHxhWApjuHlOL2s21EWsf7sfrrqv1fzMteBrcSImJ0PA1F/7ECMl82x3gGx/2A2gOePrhdrzmKKhkerpp7JxZozCJby8RJxiTVnJxQf0SlajmEuxsOsf+dI49qMGBXzYbuwd3Q0FGNjGBJ7d8d69pJ2FmNhkJTAzFKSYlwMB3UsY2fVRIyBbV/Y9C2+s4hiXMyXq55uwrxTXIixsWfm0FPE/jKIsTCPgfHzavMzTtFiPCynJmDdutWI8bCUQoy1LWQRxchYtXW+7be+/w4h1palPH/5PoiRsuLnlueerBgh867fsohiVCztx2E8XM7kYt0ZeoijIip+/jsq1pp9AAh5ntVfkYiSAAAAAElFTkSuQmCC" alt="二维码"/>-->
+<!--          <img style="width:110px;height:56px;" src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAALQAAABGAQAAAABN7IONAAAAMElEQVR42mP4s31XuVKHx+30soyzxV0l74yOzl5osfwDw6j4qPio+Kj4qPioOB3FAc0MmAasO9b/AAAAAElFTkSuQmCC" alt="二维码"/>-->
+        </td>
+      </tr>
+    </table>
+    <div style="margin-top: 20px;line-height: 35px;">
+      <table style="width: 100%">
+        <tr>
+          <td>姓名：${name}</td>
+          <td>性别：${sex}</td>
+          <td>年龄：${age}</td>
+          <td>电话：${mobile}</td>
+          <td>医疗证/医保卡：${cardNo}</td>
+        </tr>
+      </table>
+      <div>药物过敏史：${allergyType}</div>
+      <div>家族史：${familyHistory}</div>
+      <div>住宅地址：${fullAddress}</div>
+    </div>
+  </div>
+  <div style="padding: 20px;">
+    <div style="line-height: 35px;">
+      <div>主述：${chief}</div>
+      <div>过往病史：${previousHistory}</div>
+      <div>现病史：${illnessHistory}</div>
+      <div>诊断：${diagnosis}</div>
+      <div>辅助检查：</div>
+      <div style="height: 200px;">${assist}</div>
+      <div>处理意见：</div>
+      <div style="height: 100px;">${idea}</div>
+    </div>
+    <div style="border-bottom: 1px solid #9e9e9e;margin-bottom: 10px;"></div>
+    <table style="line-height: 35px;width: 100%">
+        <tr>
+          <td>科室：${dept}</td>
+          <td>就诊时间：${orderTime}</td>
+        </tr>
+        <tr>
+          <td>医师：${doctorName}</td>
+          <td>医师签名（盖章）：</td>
+        </tr>
+    </table>
+  </div>
+</div>
+</body>
+</html>

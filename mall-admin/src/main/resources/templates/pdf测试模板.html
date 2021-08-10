@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta http-equiv="X-UA-Compatible" content="IE=edge"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <title>Title</title>
+  <style>
+    @page {
+      /* 设置pdf页面类型 */
+      size: a4;
+    }
+    html, body {
+      /* 字体必须设置 */
+      font-family: "Microsoft YaHei";
+      padding: 0;
+      margin: 0;
+      font-size: 14px;
+      font-weight: bold;
+    }
+    #main {
+      color: #8b8b8b;
+      width: 100%;
+      margin: auto;
+    }
+  </style>
+</head>
+<body>
+<div id="main">
+    <p>总数据：${vo?size}</p>
+    ===========================
+    二维码：${qrCode}
+    条形码：${barCode}
+    ===========================
+    <table style="width: 100%;line-height: 30px;border-collapse: collapse;text-align: center" border="1px 1px solid #999">
+        <tr>
+          <th>名字</th>
+          <th>日期</th>
+          <th>作者</th>
+        </tr>
+        <#list vo as pdf>
+        <tr>
+          <td>${pdf.name}</td>
+          <td>${pdf.time}</td>
+          <td>${pdf.author}</td>
+        </tr>
+        </#list>
+    </table>
+
+</div>
+</body>
+</html>

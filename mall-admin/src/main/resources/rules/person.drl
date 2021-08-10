@@ -1,0 +1,32 @@
+package rules;
+
+import com.ww.mall.mvc.entity.User;
+import java.util.List;
+global java.util.List listRules;
+
+rule "personCheck_10"
+    salience 65535
+    agenda-group "sign"
+    when
+        $person : User(sex != 1)
+    then
+        listRules.add("性别不对");
+end
+
+rule "personCheck_11"
+    salience 65534
+    agenda-group "sign"
+    when
+        $person : User(age < 22 || age > 25)
+    then
+        listRules.add("年龄不合适");
+end
+
+rule "personCheck_12"
+    salience 65533
+    agenda-group "sign"
+    when
+        $person : User(salary < 10000)
+    then
+        listRules.add("工资太低了");
+end

@@ -19,6 +19,8 @@
         <module>mall-search</module>
         <module>mall-api-gateway</module>
         <module>mall-code-generator</module>
+        <!-- 后台管理模块 -->
+        <module>mall-admin</module>
     </modules>
 
 </project>

@@ -19,10 +19,14 @@ public class MallCorsConfiguration {
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
         CorsConfiguration corsConfiguration = new CorsConfiguration();
         // 配置跨域
-        corsConfiguration.addAllowedHeader("*");    // 允许任何请求头
-        corsConfiguration.addAllowedOrigin("*");    // 允许任何来源
-        corsConfiguration.addAllowedMethod("*");    // 允许任何方式POST GET等
-        corsConfiguration.setAllowCredentials(true); // 允许携带cookie
+        // 允许任何请求头
+        corsConfiguration.addAllowedHeader("*");
+        // 允许任何来源
+        corsConfiguration.addAllowedOrigin("*");
+        // 允许任何方式POST GET等
+        corsConfiguration.addAllowedMethod("*");
+        // 允许携带cookie
+        corsConfiguration.setAllowCredentials(true);
 
         source.registerCorsConfiguration("/**",corsConfiguration);
         return new CorsWebFilter(source);

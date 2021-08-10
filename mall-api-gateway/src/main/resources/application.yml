@@ -2,36 +2,60 @@ server:
   port: 88
 
 spring:
+  profiles:
+    active: local
+  # cloud配置
   cloud:
     nacos:
       discovery:
-        server-addr: 127.0.0.1:8848   #服务注册地址
+        #服务注册地址
+        server-addr: 127.0.0.1:8848
     gateway:
+      discovery:
+        locator:
+          # 开启通过微服务名动态路由
+          enabled: true
       routes:
-        - id: coupon_route      # 优惠券服务路由
+        # 优惠券服务路由
+        - id: coupon_route
           uri: lb://mall-coupon
           predicates:
             - Path=/api/coupon/**
           filters:
-            - RewritePath=/api(?<segment>/?.*), $\{segment}   # /api/foo  =>  /foo
+            # /api/foo  =>  /foo
+            - RewritePath=/api(?<segment>/?.*), $\{segment}
 
-        - id: member_route      # 会员服务路由
+        # 会员服务路由
+        - id: member_route
           uri: lb://mall-member
           predicates:
             - Path=/api/member/**
           filters:
-            - RewritePath=/api(?<segment>/?.*), $\{segment}   # /api/foo  =>  /foo
+            # /api/foo  =>  /foo
+            - RewritePath=/api(?<segment>/?.*), $\{segment}
 
-        - id: product_route      # 会员服务路由
+        # 会员服务路由
+        - id: product_route
           uri: lb://mall-product
           predicates:
             - Path=/api/product/**
           filters:
-            - RewritePath=/api(?<segment>/?.*), $\{segment}   # /api/foo  =>  /foo
+            # /api/foo  =>  /foo
+            - RewritePath=/api(?<segment>/?.*), $\{segment}
 
-        - id: generator_route      # 代码生成服务路由
+        # 代码生成服务路由
+        - id: generator_route
           uri: lb://mall-code-generator
           predicates:
             - Path=/api/generator/**
           filters:
-            - RewritePath=/api(?<segment>/?.*), $\{segment}   # /api/foo  =>  /foo
+            # /api/foo  =>  /foo
+            - RewritePath=/api(?<segment>/?.*), $\{segment}
+
+        # 后台管理服务路由
+        - id: admin_route
+          uri: lb://mall-admin
+          predicates:
+            - Path=/ww/admin/**
+          filters:
+            - RewritePath=/ww/admin/?(?<segment>.*), /$\{segment}

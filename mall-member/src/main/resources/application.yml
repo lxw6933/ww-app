@@ -1,15 +1,10 @@
-server:
-  port: 8000   #服务端口号
-  servlet:
-    context-path: /member
-
 spring:
-  datasource:
-    username: root
-    password: admin
-    url: jdbc:p6spy:mysql://localhost:3306/cloud?useSSL=false&useUnicode=true&characterEncoding=utf-8&serverTimezone=GMT%2B8
-    driver-class-name: com.p6spy.engine.spy.P6SpyDriver
+  profiles:
+    active: local
   cloud:
     nacos:
       discovery:
-        server-addr: 127.0.0.1:8848   #服务注册地址
+        #服务注册地址
+        server-addr: 127.0.0.1:8848
+
+

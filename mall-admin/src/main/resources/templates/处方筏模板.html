@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta http-equiv="X-UA-Compatible" content="IE=edge"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <title>Title</title>
+  <style>
+    @page {
+      /* 设置pdf页面类型 */
+      size: a5;
+    }
+    html, body {
+      /* 字体必须设置 */
+      font-family: "Microsoft YaHei";
+      padding: 0;
+      margin: 0;
+      font-size: 12px;
+    }
+    #main {
+      color: #8b8b8b;
+      width: 100%;
+      margin: auto;
+    }
+  </style>
+</head>
+<body>
+<div id="main">
+  <#list chargeListCollections as chargeList>
+      <div style="page-break-inside: avoid;">
+        <!-- start header -->
+        <div style="display: flex;justify-content: space-between;">
+          <table style="width: 100%;">
+            <tr>
+              <td style="width: 50%">
+                <div>
+                  <div>
+                    <span style="color: #333;font-size: 22px">${clinicName}</span>
+                  </div>
+                  <div style="font-size: 15px;color: #999;margin-top: 2px;">成药 处方笺</div>
+                </div>
+              </td>
+              <td style="text-align: right">
+<!--                ${barCode}-->
+                <img style="width:110px;height:56px;" src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAALQAAABGAQAAAABN7IONAAAAMElEQVR42mP4s31XuVKHx+30soyzxV0l74yOzl5osfwDw6j4qPio+Kj4qPioOB3FAc0MmAasO9b/AAAAAElFTkSuQmCC" alt="二维码"/>
+              </td>
+            </tr>
+          </table>
+        </div>
+        <div style="margin-top: 10px;line-height: 15px;">
+          <table style="width: 100%">
+            <tr>
+              <td>姓名：</td>
+              <td>性别：</td>
+              <td>年龄：</td>
+              <td>电话：</td>
+            </tr>
+            <tr>
+              <td colspan="2">门诊/住院病历号：</td>
+              <td colspan="2">科室：</td>
+            </tr>
+            <tr>
+              <td colspan="2">临床诊断：</td>
+              <td colspan="2">开具日期：</td>
+            </tr>
+            <tr>
+              <td colspan="2">住宅地址：</td>
+              <td colspan="2"></td>
+            </tr>
+          </table>
+        </div>
+        <!-- end header -->
+        <div style="border-bottom: 1px solid #999;margin-bottom: 10px;margin-top: 10px"></div>
+        <!-- start 收费项目表单 -->
+        <div style="line-height: 20px;">
+          <div>收费项目</div>
+          <table border="1px solid red;" style="width: 100%;text-align: center;border-collapse: collapse;margin-bottom: 20px;">
+            <tr>
+              <th>项目名称</th>
+              <th>单价</th>
+              <th>总量</th>
+              <th>总价</th>
+            </tr>
+            <#list chargeList as charge>
+              <tr>
+                <td>${charge.projectName}</td>
+                <td>${charge.price}</td>
+                <td>${charge.quantity}</td>
+                <td>${charge.amount}</td>
+              </tr>
+            </#list>
+          <#if chargeList?size < 15>
+            <#list 1..15-chargeList?size as i>
+              <tr>
+                <td>&nbsp;</td>
+                <td>&nbsp;</td>
+                <td>&nbsp;</td>
+                <td>&nbsp;</td>
+              </tr>
+            </#list>
+          </#if>
+          </table>
+        </div>
+        <!-- end 收费项目表单 -->
+      </div>
+  </#list>
+  <div>
+    <!-- start footer -->
+    <table style="line-height: 20px;width: 100%">
+        <tr>
+          <td>医师：</td>
+          <td>药品金额：</td>
+          <td>核对、发药药师：</td>
+        </tr>
+        <tr>
+          <td>审核药师：</td>
+          <td>调配师/士：</td>
+          <td> </td>
+        </tr>
+    </table>
+    <!-- end footer -->
+  </div>
+</div>
+</body>
+</html>

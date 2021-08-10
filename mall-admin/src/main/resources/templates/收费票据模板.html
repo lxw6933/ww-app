@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta http-equiv="X-UA-Compatible" content="IE=edge"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <title>Title</title>
+  <style>
+    @page {
+      /* 设置pdf页面类型 */
+      size: a5;
+    }
+    html, body {
+      /* 字体必须设置 */
+      font-family: "Microsoft YaHei";
+      padding: 0;
+      margin: 0;
+      font-size: 12px;
+    }
+    #main {
+      color: #8b8b8b;
+      width: 100%;
+      margin: auto;
+    }
+  </style>
+</head>
+<body>
+<div id="main">
+  <#list chargeListCollections as chargeList>
+      <div style="page-break-inside: avoid;">
+        <!-- start header -->
+        <div style="display: flex;justify-content: space-between;">
+          <div>
+            <div style="margin-bottom: 5px;">No.</div>
+            <div>
+              <span style="color: #333;font-size: 18px">${clinicName}</span>
+            </div>
+            <div style="font-size: 14px;color: #999;margin-top: 2px;">收费票据</div>
+          </div>
+        </div>
+        <div style="margin-top: 10px;line-height: 15px;">
+          <table style="width: 100%">
+            <tr>
+              <td>流水号：${orderNo}</td>
+              <td>医院类型：${hospitalType}</td>
+              <td colspan="2">日期：${time}</td>
+            </tr>
+            <tr>
+              <td>姓名：${name}</td>
+              <td>性别：${sex}</td>
+              <td colspan="2">医保类型：</td>
+            </tr>
+            <tr>
+              <td>医保付费方式：</td>
+              <td colspan="2">社会保障号码：</td>
+            </tr>
+          </table>
+        </div>
+        <!-- end header -->
+        <div style="border-bottom: 1px solid #999;margin-bottom: 10px;margin-top: 10px"></div>
+        <!-- start 收费项目表单 -->
+        <div style="line-height: 20px;">
+          <div>收费项目</div>
+          <table border="1px solid red;" style="width: 100%;text-align: center;border-collapse: collapse;margin-bottom: 20px;">
+            <tr>
+              <th>项目名称</th>
+              <th>单价</th>
+              <th>总量</th>
+              <th>总价</th>
+            </tr>
+            <#list chargeList as charge>
+              <tr>
+                <td>${charge.projectName}</td>
+                <td>${charge.price}</td>
+                <td>${charge.quantity}</td>
+                <td>${charge.amount}</td>
+              </tr>
+            </#list>
+          <#if chargeList?size < 15>
+            <#list 1..15-chargeList?size as i>
+              <tr>
+                <td>&nbsp;</td>
+                <td>&nbsp;</td>
+                <td>&nbsp;</td>
+                <td>&nbsp;</td>
+              </tr>
+            </#list>
+          </#if>
+          </table>
+        </div>
+        <!-- end 收费项目表单 -->
+      </div>
+  </#list>
+  <div>
+    <!-- start footer -->
+    <table style="line-height: 20px;width: 100%">
+        <tr>
+          <td colspan="2">合计金额：${amt}</td>
+          <td>优惠金额：${discountAmt}</td>
+        </tr>
+        <tr>
+          <td colspan="2">（大写）：${realAmtUp}</td>
+          <td>实付金额（小写）：${realAmtLow}</td>
+        </tr>
+        <tr>
+          <td>医保统筹支付：</td>
+          <td>个人账户支付：</td>
+          <td>其他医保支付：</td>
+        </tr>
+        <tr>
+          <td>自费：${realAmtLow}</td>
+          <td colspan="2">其中，医保政策范围外自费：</td>
+        </tr>
+        <tr>
+          <td colspan="2">收款单位（章）：</td>
+          <td>收款人（章）：</td>
+        </tr>
+    </table>
+    <!-- end footer -->
+  </div>
+</div>
+</body>
+</html>

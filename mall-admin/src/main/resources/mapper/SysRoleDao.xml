@@ -1,0 +1,54 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.ww.mall.mvc.dao.SysRoleDao">
+
+	<!-- 可根据自己的需求，是否要使用 -->
+    <resultMap type="com.ww.mall.mvc.entity.SysRoleEntity" id="sysRoleMap">
+        <result property="id" column="id"/>
+        <result property="roleName" column="role_name"/>
+        <result property="roleNo" column="role_no"/>
+        <result property="roleDesc" column="role_desc"/>
+        <result property="roleSort" column="role_sort"/>
+        <result property="isDel" column="is_del"/>
+        <result property="version" column="version"/>
+        <result property="createTime" column="create_time"/>
+        <result property="createBy" column="create_by"/>
+        <result property="updateTime" column="update_time"/>
+        <result property="updateBy" column="update_by"/>
+    </resultMap>
+
+    <insert id="insertRoleAndPermission">
+        insert into sys_role_permission (role_id,permission_id)
+        values
+        <foreach collection="permissionIds" separator="," item="item">
+            (#{roleId},#{item})
+        </foreach>
+    </insert>
+
+    <delete id="removeRoleAndPermission">
+        delete from sys_role_permission where role_id = #{roleId}
+    </delete>
+
+    <select id="queryRoleOfPermission" resultType="com.ww.mall.mvc.view.vo.admin.SysPermissionVO">
+        SELECT  p.id,
+                p.name,
+                p.url,
+                p.perm_url,
+                p.code,
+                p.parent_id,
+                p.sort,
+                p.type,
+                p.icon,
+                p.create_time,
+                p.update_time
+        from sys_role role
+                 RIGHT JOIN sys_role_permission rp
+                            ON role.id = rp.role_id
+                 LEFT JOIN sys_permission p
+                           ON p.id = rp.permission_id
+        WHERE rp.role_id = #{roleId}
+    </select>
+
+
+</mapper>

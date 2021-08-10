@@ -1,6 +1,6 @@
 package com.ww.mall.product.exception;
 
-import com.ww.mall.common.constant.R;
+import com.ww.mall.common.common.R;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.MethodArgumentNotValidException;
