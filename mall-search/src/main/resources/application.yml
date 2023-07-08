@@ -1,8 +1,8 @@
 server:
   port: 11000  #服务端口号
 
-spring:
-  cloud:
-    nacos:
-      discovery:
-        server-addr: 127.0.0.1:8848   #服务注册地址
+#spring:
+#  cloud:
+#    nacos:
+#      discovery:
+#        server-addr: 127.0.0.1:8848   #服务注册地址
