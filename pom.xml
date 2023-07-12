@@ -21,6 +21,9 @@
         <module>mall-code-generator</module>
         <!-- 后台管理模块 -->
         <module>mall-admin</module>
+        <!-- 公共模块 -->
+        <module>mall-common-constant</module>
+        <module>mall-web</module>
     </modules>
 
 </project>
