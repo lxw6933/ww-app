@@ -1,13 +1,36 @@
 package com.ww.mall.gateway.filters;
 
+import cn.hutool.core.util.IdUtil;
+import io.netty.buffer.ByteBufAllocator;
 import lombok.extern.slf4j.Slf4j;
+import org.slf4j.MDC;
 import org.springframework.cloud.gateway.filter.GatewayFilterChain;
 import org.springframework.cloud.gateway.filter.GlobalFilter;
 import org.springframework.core.Ordered;
+import org.springframework.core.io.ByteArrayResource;
+import org.springframework.core.io.buffer.DataBuffer;
+import org.springframework.core.io.buffer.DataBufferUtils;
+import org.springframework.core.io.buffer.NettyDataBufferFactory;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpMethod;
+import org.springframework.http.MediaType;
+import org.springframework.http.codec.HttpMessageReader;
 import org.springframework.http.server.reactive.ServerHttpRequest;
+import org.springframework.http.server.reactive.ServerHttpRequestDecorator;
 import org.springframework.stereotype.Component;
+import org.springframework.util.MultiValueMap;
+import org.springframework.web.reactive.function.server.HandlerStrategies;
+import org.springframework.web.reactive.function.server.ServerRequest;
 import org.springframework.web.server.ServerWebExchange;
+import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
+
+import java.io.UnsupportedEncodingException;
+import java.net.URLEncoder;
+import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
+import java.util.List;
+import java.util.Map;
 
 /**
  * @description:
@@ -38,8 +61,6 @@ public class MyGlobalGatewayFilter implements GlobalFilter, Ordered {
         ServerHttpRequest request = exchange.getRequest().mutate().header("traceId", traceId).build();
         // 2.将traceId设置到slf4j中，日志打印模板配置打印traceId
         MDC.put(TRACE_ID, traceId);
-        return chain.filter(exchange.mutate().request(request).build());
-        ServerHttpRequest request = exchange.getRequest();
         log.info("网关全局过滤器执行:" + request);
         // 将request信息保存到GatewayContext中
         String path = request.getPath().pathWithinApplication().value();
@@ -62,7 +83,7 @@ public class MyGlobalGatewayFilter implements GlobalFilter, Ordered {
                 return readFormData(exchange, chain, gatewayContext);
             }
         }
-        return chain.filter(exchange);
+        return chain.filter(exchange.mutate().request(request).build());
     }
 
     private Mono<Void> readFormData(ServerWebExchange exchange, GatewayFilterChain chain, GatewayContext gatewayContext) {
