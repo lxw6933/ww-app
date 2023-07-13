@@ -3,24 +3,17 @@
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
 
-    <groupId>com.ww.mall</groupId>
+    <parent>
+        <groupId>com.ww.mall</groupId>
+        <artifactId>ww-mall</artifactId>
+        <version>0.0.1-SNAPSHOT</version>
+        <relativePath/> <!-- lookup parent from repository -->
+    </parent>
+
     <artifactId>mall-common</artifactId>
     <version>0.0.1-SNAPSHOT</version>
     <name>mall-common</name>
     <description>公共模块（依赖，bean，工具类等）</description>
-
-    <dependencyManagement>
-        <dependencies>
-            <!-- alibaba 依赖 -->
-            <dependency>
-                <groupId>com.alibaba.cloud</groupId>
-                <artifactId>spring-cloud-alibaba-dependencies</artifactId>
-                <version>2021.0.4.0</version>
-                <type>pom</type>
-                <scope>import</scope>
-            </dependency>
-        </dependencies>
-    </dependencyManagement>
 
     <dependencies>
         <!-- 公共依赖模块 -->
@@ -28,27 +21,6 @@
             <groupId>com.ww</groupId>
             <artifactId>mall-common-constant</artifactId>
             <version>0.0.1-SNAPSHOT</version>
-        </dependency>
-        <!-- 服务注册中心 -->
-        <dependency>
-            <groupId>com.alibaba.cloud</groupId>
-            <artifactId>spring-cloud-starter-alibaba-nacos-discovery</artifactId>
-        </dependency>
-        <!-- 服务配置中心 -->
-        <dependency>
-            <groupId>com.alibaba.cloud</groupId>
-            <artifactId>spring-cloud-starter-alibaba-nacos-config</artifactId>
-        </dependency>
-        <!-- sentinel 服务熔断限流 -->
-        <dependency>
-            <groupId>com.alibaba.cloud</groupId>
-            <artifactId>spring-cloud-starter-alibaba-sentinel</artifactId>
-        </dependency>
-        <!-- javax-validator -->
-        <dependency>
-            <groupId>org.hibernate.validator</groupId>
-            <artifactId>hibernate-validator</artifactId>
-            <version>6.1.7.Final</version>
         </dependency>
     </dependencies>
 </project>
