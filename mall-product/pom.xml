@@ -3,36 +3,29 @@
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
     <parent>
-        <groupId>org.springframework.boot</groupId>
-        <artifactId>spring-boot-starter-parent</artifactId>
-        <version>2.2.5.RELEASE</version>
+        <groupId>com.ww.mall</groupId>
+        <artifactId>ww-mall</artifactId>
+        <version>0.0.1-SNAPSHOT</version>
         <relativePath/> <!-- lookup parent from repository -->
     </parent>
-    <groupId>com.ww.mall</groupId>
+
     <artifactId>mall-product</artifactId>
     <version>0.0.1-SNAPSHOT</version>
     <name>mall-product</name>
     <description>商品服务</description>
 
     <properties>
-        <java.version>1.8</java.version>
-        <spring-cloud.version>Hoxton.SR10</spring-cloud.version>
         <mybatisplus.starter.version>3.4.2</mybatisplus.starter.version>
         <mybatis.starter.version>2.1.4</mybatis.starter.version>
         <redisson.version>3.15.0</redisson.version>
     </properties>
 
     <dependencies>
-        <!-- common通用服务依赖 -->
+        <!-- web通用服务依赖 -->
         <dependency>
-            <groupId>com.ww.mall</groupId>
-            <artifactId>mall-common</artifactId>
+            <groupId>com.ww</groupId>
+            <artifactId>mall-web</artifactId>
             <version>0.0.1-SNAPSHOT</version>
-        </dependency>
-        <!-- web -->
-        <dependency>
-            <groupId>org.springframework.boot</groupId>
-            <artifactId>spring-boot-starter-web</artifactId>
         </dependency>
         <!-- openFeign -->
         <dependency>

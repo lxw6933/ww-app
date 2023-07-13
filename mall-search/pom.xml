@@ -3,28 +3,26 @@
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
     <parent>
-        <groupId>org.springframework.boot</groupId>
-        <artifactId>spring-boot-starter-parent</artifactId>
-        <version>2.6.11</version>
+        <groupId>com.ww.mall</groupId>
+        <artifactId>ww-mall</artifactId>
+        <version>0.0.1-SNAPSHOT</version>
         <relativePath/> <!-- lookup parent from repository -->
     </parent>
-    <groupId>com.ww.mall</groupId>
+
     <artifactId>mall-search</artifactId>
     <version>0.0.1-SNAPSHOT</version>
     <name>mall-search</name>
     <description>Elasticsearch检索服务</description>
 
     <properties>
-        <java.version>1.8</java.version>
-        <spring-cloud.version>2021.0.4</spring-cloud.version>
         <elasticsearch.version>7.4.2</elasticsearch.version>
     </properties>
 
     <dependencies>
-        <!-- common -->
+        <!-- web通用服务依赖 -->
         <dependency>
-            <groupId>com.ww.mall</groupId>
-            <artifactId>mall-common</artifactId>
+            <groupId>com.ww</groupId>
+            <artifactId>mall-web</artifactId>
             <version>0.0.1-SNAPSHOT</version>
         </dependency>
         <!-- client -->
@@ -32,11 +30,6 @@
             <groupId>org.elasticsearch.client</groupId>
             <artifactId>elasticsearch-rest-high-level-client</artifactId>
             <version>7.4.2</version>
-        </dependency>
-
-        <dependency>
-            <groupId>org.springframework.boot</groupId>
-            <artifactId>spring-boot-starter-web</artifactId>
         </dependency>
 
         <dependency>
