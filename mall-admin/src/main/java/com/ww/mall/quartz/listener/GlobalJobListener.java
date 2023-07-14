@@ -1,6 +1,5 @@
 package com.ww.mall.quartz.listener;
 
-import com.ww.mall.common.utils.JsonUtils;
 import com.ww.mall.mvc.entity.SysJobDetailEntity;
 import com.ww.mall.mvc.entity.SysJobDetailLogEntity;
 import com.ww.mall.mvc.service.SysJobDetailLogService;

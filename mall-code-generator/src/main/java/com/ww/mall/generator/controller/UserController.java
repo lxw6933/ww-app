@@ -4,7 +4,6 @@ import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.update.UpdateWrapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
-import com.ww.mall.common.common.R;
 import com.ww.mall.generator.entity.User;
 import com.ww.mall.generator.service.UserService;
 import lombok.extern.slf4j.Slf4j;

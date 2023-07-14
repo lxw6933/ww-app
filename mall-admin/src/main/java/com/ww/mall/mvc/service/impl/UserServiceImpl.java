@@ -1,7 +1,6 @@
 package com.ww.mall.mvc.service.impl;
 
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
-import com.ww.mall.common.utils.BeanCopierUtils;
 import com.ww.mall.mvc.dao.UserDao;
 import com.ww.mall.mvc.entity.User;
 import com.ww.mall.mvc.manager.SpringContextManager;

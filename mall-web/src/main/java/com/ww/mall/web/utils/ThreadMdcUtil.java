@@ -3,7 +3,6 @@ package com.ww.mall.web.utils;
 import cn.hutool.core.util.IdUtil;
 import com.ww.mall.web.constant.Constants;
 import org.slf4j.MDC;
-
 import java.util.Map;
 import java.util.concurrent.Callable;
 

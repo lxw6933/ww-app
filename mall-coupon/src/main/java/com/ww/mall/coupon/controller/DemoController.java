@@ -1,5 +1,8 @@
 package com.ww.mall.coupon.controller;
 
+import com.ww.mall.coupon.config.CouponProperties;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -12,9 +15,12 @@ import org.springframework.web.bind.annotation.RestController;
 @RequestMapping("/coupon")
 public class DemoController {
 
+    @Autowired
+    private CouponProperties couponProperties;
+
     @RequestMapping("/demo")
     public String demo(){
-        return "coupon active is opening！！！";
+        return "coupon active is opening！！！" + couponProperties.getCouponId();
     }
 
     @RequestMapping("/test")
@@ -25,3 +31,4 @@ public class DemoController {
 
 
 }
+

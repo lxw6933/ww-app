@@ -1,6 +1,5 @@
 package com.ww.mall.config.security.handler;
 
-import com.ww.mall.common.common.R;
 import com.ww.mall.utils.HttpContextUtils;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.authentication.InsufficientAuthenticationException;

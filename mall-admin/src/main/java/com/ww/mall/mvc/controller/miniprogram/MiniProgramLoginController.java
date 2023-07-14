@@ -1,10 +1,8 @@
 package com.ww.mall.mvc.controller.miniprogram;
 
 import com.ww.mall.annotation.SysLog;
-import com.ww.mall.common.common.R;
 import com.ww.mall.common.constant.MiniProgramConstant;
 import com.ww.mall.common.exception.ValidatorException;
-import com.ww.mall.common.utils.JsonUtils;
 import com.ww.mall.common.utils.mini.MiniAesUtils;
 import com.ww.mall.enums.Action;
 import com.ww.mall.mvc.view.form.mini.AuthForm;

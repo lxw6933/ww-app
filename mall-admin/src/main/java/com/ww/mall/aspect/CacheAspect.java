@@ -1,7 +1,6 @@
 package com.ww.mall.aspect;
 
 import com.ww.mall.annotation.Cache;
-import com.ww.mall.common.utils.JsonUtils;
 import com.ww.mall.config.redis.RedisManager;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.codec.digest.DigestUtils;

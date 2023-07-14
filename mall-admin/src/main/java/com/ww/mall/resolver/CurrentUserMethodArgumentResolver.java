@@ -1,7 +1,6 @@
 package com.ww.mall.resolver;
 
 import com.ww.mall.annotation.LoginUser;
-import com.ww.mall.common.common.R;
 import com.ww.mall.common.constant.TokenKeyConstant;
 import com.ww.mall.mvc.entity.User;
 import org.springframework.core.MethodParameter;

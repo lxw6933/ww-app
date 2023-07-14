@@ -6,7 +6,7 @@
         <groupId>com.ww.mall</groupId>
         <artifactId>ww-mall</artifactId>
         <version>0.0.1-SNAPSHOT</version>
-        <relativePath/> <!-- lookup parent from repository -->
+        <relativePath>../pom.xml</relativePath>
     </parent>
     <artifactId>mall-api-gateway</artifactId>
     <name>mall-api-gateway</name>
@@ -28,11 +28,16 @@
             <groupId>com.alibaba.cloud</groupId>
             <artifactId>spring-cloud-starter-alibaba-nacos-config</artifactId>
         </dependency>
-        <!-- sentinel 服务熔断限流 -->
+        <!-- Spring Cloud 新版本默认将 Bootstrap 禁用 -->
         <dependency>
-            <groupId>com.alibaba.cloud</groupId>
-            <artifactId>spring-cloud-starter-alibaba-sentinel</artifactId>
+            <groupId>org.springframework.cloud</groupId>
+            <artifactId>spring-cloud-starter-bootstrap</artifactId>
         </dependency>
+        <!-- sentinel 服务熔断限流 -->
+<!--        <dependency>-->
+<!--            <groupId>com.alibaba.cloud</groupId>-->
+<!--            <artifactId>spring-cloud-starter-alibaba-sentinel</artifactId>-->
+<!--        </dependency>-->
         <!-- gateway -->
         <dependency>
             <groupId>org.springframework.cloud</groupId>

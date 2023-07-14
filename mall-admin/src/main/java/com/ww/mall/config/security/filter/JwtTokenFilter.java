@@ -1,6 +1,5 @@
 package com.ww.mall.config.security.filter;
 
-import com.ww.mall.common.common.R;
 import com.ww.mall.config.security.service.MyUserDetailsService;
 import com.ww.mall.utils.HttpContextUtils;
 import com.ww.mall.utils.JwtTokenUtils;

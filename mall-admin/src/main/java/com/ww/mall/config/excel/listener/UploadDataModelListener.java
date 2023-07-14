@@ -5,7 +5,6 @@ import com.alibaba.excel.event.AnalysisEventListener;
 import com.alibaba.fastjson.JSON;
 import com.baomidou.mybatisplus.extension.service.IService;
 import com.ww.mall.common.exception.ValidatorException;
-import com.ww.mall.common.utils.BeanCopierUtils;
 import com.ww.mall.mvc.base.BaseEntity;
 import lombok.extern.slf4j.Slf4j;
 import sun.reflect.generics.reflectiveObjects.ParameterizedTypeImpl;

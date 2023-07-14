@@ -1,7 +1,6 @@
 package com.ww.mall.mvc.controller.admin;
 
 import com.ww.mall.annotation.SysLog;
-import com.ww.mall.common.common.R;
 import com.ww.mall.config.security.service.JwtAuthService;
 import com.ww.mall.enums.Action;
 import com.ww.mall.mvc.service.SysUserService;

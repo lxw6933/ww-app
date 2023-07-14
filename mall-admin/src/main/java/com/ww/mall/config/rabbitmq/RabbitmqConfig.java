@@ -2,7 +2,6 @@ package com.ww.mall.config.rabbitmq;
 
 import com.baomidou.mybatisplus.core.conditions.update.UpdateWrapper;
 import com.ww.mall.common.constant.Constant;
-import com.ww.mall.common.utils.JsonUtils;
 import com.ww.mall.mvc.entity.MqMsgLogEntity;
 import com.ww.mall.mvc.service.MqMsgLogService;
 import lombok.extern.slf4j.Slf4j;

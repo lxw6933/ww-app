@@ -1,6 +1,5 @@
 package com.ww.mall.utils;
 
-import com.ww.mall.common.common.R;
 import org.springframework.http.MediaType;
 import org.springframework.web.context.request.RequestContextHolder;
 import org.springframework.web.context.request.ServletRequestAttributes;

@@ -1,6 +1,5 @@
 package com.ww.mall.config.security.handler;
 
-import com.ww.mall.common.common.R;
 import com.ww.mall.utils.HttpContextUtils;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.web.access.AccessDeniedHandler;

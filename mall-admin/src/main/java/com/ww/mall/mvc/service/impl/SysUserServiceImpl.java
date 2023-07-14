@@ -6,7 +6,6 @@ import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.github.pagehelper.PageInfo;
 import com.ww.mall.common.common.BatchProcessingResult;
 import com.ww.mall.common.exception.ValidatorException;
-import com.ww.mall.common.utils.BeanCopierUtils;
 import com.ww.mall.config.mybatisplus.page.MyPageHelper;
 import com.ww.mall.config.mybatisplus.page.MyPageInfo;
 import com.ww.mall.config.mybatisplus.page.Pagination;

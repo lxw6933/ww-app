@@ -5,8 +5,6 @@ import com.baomidou.mybatisplus.annotation.TableLogic;
 import com.baomidou.mybatisplus.annotation.TableName;
 import com.baomidou.mybatisplus.annotation.Version;
 import com.ww.mall.common.constant.Constant;
-import com.ww.mall.common.utils.DateUtils;
-import com.ww.mall.common.utils.JsonUtils;
 import com.ww.mall.mvc.base.BaseNoRecorderEntity;
 import lombok.Data;
 import lombok.EqualsAndHashCode;

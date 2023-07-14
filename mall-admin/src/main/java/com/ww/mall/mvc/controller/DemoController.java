@@ -5,8 +5,6 @@ import com.google.zxing.WriterException;
 import com.ww.mall.annotation.Limit;
 import com.ww.mall.annotation.Secret;
 import com.ww.mall.annotation.SysLog;
-import com.ww.mall.common.common.R;
-import com.ww.mall.common.utils.BeanCopierUtils;
 import com.ww.mall.common.utils.image.BarcodeUtils;
 import com.ww.mall.config.drools.entity.Calculation;
 import com.ww.mall.config.drools.service.RuleManager;

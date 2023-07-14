@@ -1,7 +1,6 @@
 package com.ww.mall.mvc.controller.admin;
 
 import com.ww.mall.annotation.SysLog;
-import com.ww.mall.common.common.R;
 import com.ww.mall.common.valid.group.AddGroup;
 import com.ww.mall.common.valid.group.BatchDeleteGroup;
 import com.ww.mall.common.valid.group.DeleteGroup;
