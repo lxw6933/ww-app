@@ -71,7 +71,7 @@ public class LogFilter implements GlobalFilter, Ordered {
         exchange.getAttributes().put(GatewayContext.CACHE_GATEWAY_CONTEXT, gatewayContext);
         HttpHeaders headers = request.getHeaders();
         MediaType contentType = headers.getContentType();
-        log.info("traceId:[{}] url:[{}] 请求: {}", traceId, request.getURI().getRawPath(), JSON.toJSONString(request));
+        log.info("url:[{}] 请求: {}", request.getURI().getRawPath(), JSON.toJSONString(request));
         if (request.getMethod() == HttpMethod.GET) {
             log.info("---------------------get----------------------------");
         } else if (request.getMethod() == HttpMethod.POST) {
