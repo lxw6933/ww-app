@@ -14,7 +14,7 @@ import javax.servlet.http.HttpServletResponse;
  * @author: ww
  * @create: 2023/7/8 10:51
  **/
-public class LogInterceptor implements HandlerInterceptor {
+public class RequestInterceptor implements HandlerInterceptor {
     @Override
     public boolean preHandle(HttpServletRequest request, HttpServletResponse response, Object handler) throws Exception {
         // 如果有上层调用就用上层的ID
