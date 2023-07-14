@@ -1,7 +1,7 @@
 package com.ww.mall.web.utils;
 
 import cn.hutool.core.util.IdUtil;
-import com.ww.mall.web.constant.Constants;
+import com.ww.mall.common.constant.Constant;
 import org.slf4j.MDC;
 import java.util.Map;
 import java.util.concurrent.Callable;
@@ -13,8 +13,8 @@ import java.util.concurrent.Callable;
  **/
 public class ThreadMdcUtil {
     public static void setTraceIdIfAbsent() {
-        if (MDC.get(Constants.TRACE_ID) == null) {
-            MDC.put(Constants.TRACE_ID, IdUtil.objectId());
+        if (MDC.get(Constant.TRACE_ID) == null) {
+            MDC.put(Constant.TRACE_ID, IdUtil.objectId());
         }
     }
 
