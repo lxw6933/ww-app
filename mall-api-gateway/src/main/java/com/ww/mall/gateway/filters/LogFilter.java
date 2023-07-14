@@ -49,8 +49,6 @@ import java.util.Map;
 @Component
 public class LogFilter implements GlobalFilter, Ordered {
 
-    private static final String TRACE_ID = "traceId";
-
     /**
      * default HttpMessageReader
      */
