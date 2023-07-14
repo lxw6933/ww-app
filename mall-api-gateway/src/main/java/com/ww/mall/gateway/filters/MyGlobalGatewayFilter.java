@@ -1,6 +1,7 @@
 package com.ww.mall.gateway.filters;
 
 import cn.hutool.core.util.IdUtil;
+import com.alibaba.fastjson.JSON;
 import io.netty.buffer.ByteBufAllocator;
 import lombok.extern.slf4j.Slf4j;
 import org.slf4j.MDC;
@@ -61,7 +62,6 @@ public class MyGlobalGatewayFilter implements GlobalFilter, Ordered {
         ServerHttpRequest request = exchange.getRequest().mutate().header("traceId", traceId).build();
         // 2.将traceId设置到slf4j中，日志打印模板配置打印traceId
         MDC.put(TRACE_ID, traceId);
-        log.info("网关全局过滤器执行:" + request);
         // 将request信息保存到GatewayContext中
         String path = request.getPath().pathWithinApplication().value();
         GatewayContext gatewayContext = new GatewayContext();
@@ -70,8 +70,7 @@ public class MyGlobalGatewayFilter implements GlobalFilter, Ordered {
         exchange.getAttributes().put(GatewayContext.CACHE_GATEWAY_CONTEXT, gatewayContext);
         HttpHeaders headers = request.getHeaders();
         MediaType contentType = headers.getContentType();
-        log.info("start-------------------------------------------------");
-        log.info("HttpMethod:{},Url:{}", request.getMethod(), request.getURI().getRawPath());
+        log.info("traceId:[{}] url:[{}] 请求: {}", traceId, request.getURI().getRawPath(), JSON.toJSONString(request));
         if (request.getMethod() == HttpMethod.GET) {
             log.info("---------------------get----------------------------");
         } else if (request.getMethod() == HttpMethod.POST) {
