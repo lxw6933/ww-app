@@ -1,5 +1,59 @@
 server:
   port: 88
+  servlet:
+    context-path: /api
+
+spring:
+  cloud:
+    gateway:
+      discovery:
+        locator:
+          # 开启通过微服务名动态路由
+          enabled: true
+      routes:
+        # 优惠券服务路由
+        - id: coupon_route
+          uri: lb://mall-coupon
+          predicates:
+            - Path=/api/mall-coupon/**
+          filters:
+            # /api/foo  =>  /foo
+            - RewritePath=/api(?<segment>/?.*), $\{segment}
+
+        # 会员服务路由
+        - id: member_route
+          uri: lb://mall-member
+          predicates:
+            - Path=/api/member/**
+          filters:
+            # /api/foo  =>  /foo
+            - RewritePath=/api(?<segment>/?.*), $\{segment}
+
+        # 会员服务路由
+        - id: product_route
+          uri: lb://mall-product
+          predicates:
+            - Path=/api/product/**
+          filters:
+            # /api/foo  =>  /foo
+            - RewritePath=/api(?<segment>/?.*), $\{segment}
+
+        # 代码生成服务路由
+        - id: generator_route
+          uri: lb://mall-code-generator
+          predicates:
+            - Path=/api/generator/**
+          filters:
+            # /api/foo  =>  /foo
+            - RewritePath=/api(?<segment>/?.*), $\{segment}
+
+        # 后台管理服务路由
+        - id: admin_route
+          uri: lb://mall-admin
+          predicates:
+            - Path=/ww/admin/**
+          filters:
+            - RewritePath=/ww/admin/?(?<segment>.*), /$\{segment}
 
 management:
   endpoints:

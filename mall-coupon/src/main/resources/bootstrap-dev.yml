@@ -1,7 +1,7 @@
 server:
   port: 7000  #服务端口号
   servlet:
-    context-path: /coupon
+    context-path: /mall-coupon
 spring:
   datasource:
     driver-class-name: com.mysql.cj.jdbc.Driver
