@@ -7,6 +7,8 @@ package com.ww.mall.common.constant;
  */
 public class Constant {
 
+    public final static String TRACE_ID = "traceId";
+
     /**
      * 参数加密key
      */

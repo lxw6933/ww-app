@@ -2,6 +2,7 @@ package com.ww.mall.gateway.filters;
 
 import cn.hutool.core.util.IdUtil;
 import com.alibaba.fastjson.JSON;
+import com.ww.mall.common.constant.Constant;
 import io.netty.buffer.ByteBufAllocator;
 import lombok.extern.slf4j.Slf4j;
 import org.slf4j.MDC;
@@ -48,7 +49,7 @@ import java.util.Map;
 @Component
 public class LogFilter implements GlobalFilter, Ordered {
 
-    private static final String TRACE_ID = "TRACE_ID";
+    private static final String TRACE_ID = "traceId";
 
     /**
      * default HttpMessageReader
@@ -61,7 +62,7 @@ public class LogFilter implements GlobalFilter, Ordered {
         // 1.将traceId传递给微服务
         ServerHttpRequest request = exchange.getRequest().mutate().header("traceId", traceId).build();
         // 2.将traceId设置到slf4j中，日志打印模板配置打印traceId
-        MDC.put(TRACE_ID, traceId);
+        MDC.put(Constant.TRACE_ID, traceId);
         // 将request信息保存到GatewayContext中
         String path = request.getPath().pathWithinApplication().value();
         GatewayContext gatewayContext = new GatewayContext();
