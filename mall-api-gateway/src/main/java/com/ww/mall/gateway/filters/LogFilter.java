@@ -46,7 +46,7 @@ import java.util.Map;
  **/
 @Slf4j
 @Component
-public class MyGlobalGatewayFilter implements GlobalFilter, Ordered {
+public class LogFilter implements GlobalFilter, Ordered {
 
     private static final String TRACE_ID = "TRACE_ID";
 
