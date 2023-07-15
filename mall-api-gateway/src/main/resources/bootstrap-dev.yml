@@ -13,7 +13,7 @@ spring:
         ds1:
           nacos:
             server-addr: localhost:8848
-            data-id: sentinel-rule-${spring.profiles.active}
+            data-id: sentinel-rules
             data-type: json
             rule-type: flow
     gateway:

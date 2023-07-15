@@ -1,6 +1,8 @@
 package com.ww.mall.coupon.controller;
 
+import com.ww.mall.common.utils.SecretUtils;
 import com.ww.mall.coupon.config.CouponProperties;
+import com.ww.mall.web.config.SecretProperties;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -18,9 +20,12 @@ public class DemoController {
     @Autowired
     private CouponProperties couponProperties;
 
+    @Autowired
+    private SecretProperties secretProperties;
+
     @RequestMapping("/demo")
     public String demo(){
-        return "coupon active is opening！！！" + couponProperties.getCouponId();
+        return "coupon active is opening！！！" + secretProperties;
     }
 
     @RequestMapping("/test")

@@ -9,6 +9,8 @@ public class Constant {
 
     public final static String TRACE_ID = "traceId";
 
+    public final static String ENCRYPT_HEADER = "mall-encrypt";
+
     /**
      * 参数加密key
      */
