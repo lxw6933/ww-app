@@ -10,9 +10,6 @@
     </parent>
 
     <artifactId>mall-search</artifactId>
-    <version>0.0.1-SNAPSHOT</version>
-    <name>mall-search</name>
-    <description>Elasticsearch检索服务</description>
 
     <properties>
         <elasticsearch.version>7.4.2</elasticsearch.version>
