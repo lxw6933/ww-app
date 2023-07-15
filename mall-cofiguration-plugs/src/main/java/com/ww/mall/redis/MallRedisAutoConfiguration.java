@@ -6,6 +6,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
+import org.springframework.cache.annotation.EnableCaching;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.data.redis.cache.RedisCacheConfiguration;
@@ -27,6 +28,7 @@ import java.util.Map;
  * @description:
  */
 @Slf4j
+@EnableCaching
 @Configuration
 @ConditionalOnClass({RedisTemplate.class})
 @EnableConfigurationProperties({MallRedisCacheProperties.class})
