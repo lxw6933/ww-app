@@ -4,6 +4,7 @@ import com.fasterxml.jackson.annotation.JsonAutoDetect;
 import com.fasterxml.jackson.annotation.PropertyAccessor;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.boot.autoconfigure.cache.CacheProperties;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.cache.annotation.EnableCaching;
@@ -30,7 +31,7 @@ import java.util.Map;
 @EnableCaching
 @Configuration
 @ConditionalOnClass({RedisTemplate.class})
-@EnableConfigurationProperties({MallRedisCacheProperties.class})
+@EnableConfigurationProperties({CacheProperties.class})
 public class MallRedisAutoConfiguration {
 
     @Bean
@@ -51,7 +52,8 @@ public class MallRedisAutoConfiguration {
     }
 
     @Bean
-    public RedisCacheManager cacheManager(RedisConnectionFactory redisConnectionFactory, MallRedisCacheProperties redisCacheProperties) {
+    public RedisCacheManager cacheManager(RedisConnectionFactory redisConnectionFactory, CacheProperties cacheProperties) {
+        CacheProperties.Redis redisCacheProperties = cacheProperties.getRedis();
         RedisCacheConfiguration config = RedisCacheConfiguration.defaultCacheConfig()
                 // 缓存key设置序列化类型
                 .serializeKeysWith(RedisSerializationContext.SerializationPair.fromSerializer(keySerializer()))
@@ -60,27 +62,23 @@ public class MallRedisAutoConfiguration {
                 // 缓存name设置前缀
                 .computePrefixWith(cacheName -> "cache:" + cacheName + ":");
         // 是否缓存空值
-        if (!redisCacheProperties.getCacheNullValues()) {
+        if (!redisCacheProperties.isCacheNullValues()) {
             config = config.disableCachingNullValues();
         }
+        // 是否使用前缀
+        if (!redisCacheProperties.isUseKeyPrefix()) {
+            config = config.disableKeyPrefix();
+        }
         // 默认缓存时间
-        if (redisCacheProperties.getDefaultExpiration() != null) {
-            config = config.entryTtl(redisCacheProperties.getDefaultExpiration());
+        if (redisCacheProperties.getTimeToLive() != null) {
+            config = config.entryTtl(redisCacheProperties.getTimeToLive());
         }
-        // 自定义不同cacheKey缓存时间
-        Map<String, RedisCacheConfiguration> cacheExpiresMap = new HashMap<>();
-        if (redisCacheProperties.getExpires() != null && redisCacheProperties.getExpires().size() > 0) {
-            for (Map.Entry<String, Duration> entry : redisCacheProperties.getExpires().entrySet()) {
-                cacheExpiresMap.put(entry.getKey(), config.entryTtl(entry.getValue()));
-            }
-        }
-        // 使用RedisCacheConfiguration创建RedisCacheManager
-        RedisCacheManager.RedisCacheManagerBuilder builder = RedisCacheManager.builder(redisConnectionFactory).cacheDefaults(config);
-        if (cacheExpiresMap.size() > 0) {
-            builder = builder.withInitialCacheConfigurations(cacheExpiresMap);
+        // 缓存前缀
+        if (redisCacheProperties.getKeyPrefix() != null) {
+            config = config.prefixCacheNameWith(redisCacheProperties.getKeyPrefix());
         }
         log.info("初始化RedisCacheManager成功...");
-        return builder.build();
+        return config;
     }
 
     private StringRedisSerializer keySerializer() {
