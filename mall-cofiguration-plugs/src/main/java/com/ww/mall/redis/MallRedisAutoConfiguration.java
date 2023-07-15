@@ -45,6 +45,7 @@ public class MallRedisAutoConfiguration {
         // hash的value序列化方式采用jackson
         template.setHashValueSerializer(valueSerializer());
         template.afterPropertiesSet();
+        log.info("初始化RedisTemplate成功...");
         return template;
     }
 
@@ -52,6 +53,7 @@ public class MallRedisAutoConfiguration {
     public StringRedisTemplate stringRedisTemplate(RedisConnectionFactory redisConnectionFactory) {
         StringRedisTemplate stringRedisTemplate = new StringRedisTemplate();
         stringRedisTemplate.setConnectionFactory(redisConnectionFactory);
+        log.info("初始化StringRedisTemplate成功...");
         return stringRedisTemplate;
     }
 
@@ -84,7 +86,13 @@ public class MallRedisAutoConfiguration {
         if (cacheExpiresMap.size() > 0) {
             builder = builder.withInitialCacheConfigurations(cacheExpiresMap);
         }
+        log.info("初始化RedisCacheManager成功...");
         return builder.build();
+    }
+
+    @Bean
+    public RedissonConfig redissonConfig() {
+        return new RedissonConfig();
     }
 
     private StringRedisSerializer keySerializer() {
