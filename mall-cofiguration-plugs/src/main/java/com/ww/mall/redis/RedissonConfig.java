@@ -5,7 +5,11 @@ import org.redisson.Redisson;
 import org.redisson.api.RedissonClient;
 import org.redisson.config.Config;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
+import org.springframework.boot.autoconfigure.data.redis.RedisProperties;
+import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
+import org.springframework.data.redis.core.RedisTemplate;
 
 /**
  * @author ww
@@ -13,6 +17,8 @@ import org.springframework.context.annotation.Bean;
  * @description:
  */
 @Slf4j
+@ConditionalOnClass({RedisTemplate.class})
+@EnableConfigurationProperties(RedisProperties.class)
 public class RedissonConfig {
 
     /**

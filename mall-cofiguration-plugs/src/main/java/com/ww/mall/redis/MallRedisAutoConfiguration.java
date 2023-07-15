@@ -90,11 +90,6 @@ public class MallRedisAutoConfiguration {
         return builder.build();
     }
 
-    @Bean
-    public RedissonConfig redissonConfig() {
-        return new RedissonConfig();
-    }
-
     private StringRedisSerializer keySerializer() {
         return new StringRedisSerializer();
     }
