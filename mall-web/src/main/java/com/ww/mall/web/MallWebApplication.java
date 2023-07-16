@@ -4,6 +4,7 @@ import com.ww.mall.web.handler.RequestBodyHandler;
 import com.ww.mall.web.handler.ResExceptionHandler;
 import com.ww.mall.web.handler.ResponseBodyHandler;
 import com.ww.mall.web.handler.ServerSentinelHandler;
+import com.ww.mall.web.interceptor.FeignRequestInterceptor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -16,6 +17,12 @@ import org.springframework.context.annotation.Configuration;
 @Slf4j
 @Configuration
 public class MallWebApplication {
+
+    @Bean
+    public FeignRequestInterceptor feignRequestInterceptor() {
+        log.info("初始化feign远程调用拦截器FeignRequestInterceptor成功...");
+        return new FeignRequestInterceptor();
+    }
 
     @Bean
     public ServerSentinelHandler serverSentinelConfiguration() {
