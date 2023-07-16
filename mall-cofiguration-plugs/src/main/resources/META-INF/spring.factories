@@ -1,5 +1,1 @@
-org.springframework.boot.autoconfigure.EnableAutoConfiguration=\
-com.ww.mall.redis.MallRedisAutoConfiguration, \
-com.ww.mall.redis.RedissonConfig, \
-com.ww.mall.mongodb.MallMongodbAutoConfiguration, \
-com.ww.mall.es.MallElasticsearchAutoConfiguration
+org.springframework.boot.autoconfigure.EnableAutoConfiguration=

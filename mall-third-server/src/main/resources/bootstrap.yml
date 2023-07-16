@@ -1,9 +1,8 @@
 spring:
   application:
-    name: mall-api-gateway
+    name: mall-third-server
   profiles:
     active: dev
-  # cloud配置
   cloud:
     sentinel:
       transport:
@@ -20,3 +19,6 @@ spring:
         username: ${spring.cloud.nacos.discovery.username}
         password: ${spring.cloud.nacos.discovery.password}
         file-extension: yml
+        shared-configs:
+          - data-Id: mall-common.yml
+            refresh: true

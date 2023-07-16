@@ -9,16 +9,34 @@
         <relativePath>../pom.xml</relativePath>
     </parent>
 
-    <artifactId>mall-coupon</artifactId>
-    <version>0.0.1-SNAPSHOT</version>
-    <name>mall-coupon</name>
-    <description>优惠券服务</description>
+    <artifactId>mall-third-server</artifactId>
+    <description>第三方服务</description>
 
     <dependencies>
-        <!-- web通用服务依赖 -->
+        <!-- web -->
         <dependency>
             <groupId>com.ww</groupId>
             <artifactId>mall-web</artifactId>
+            <version>0.0.1-SNAPSHOT</version>
+            <exclusions>
+                <exclusion>
+                    <groupId>com.baomidou</groupId>
+                    <artifactId>mybatis-plus-boot-starter</artifactId>
+                </exclusion>
+                <exclusion>
+                        <groupId>mysql</groupId>
+                        <artifactId>mysql-connector-java</artifactId>
+                </exclusion>
+                <exclusion>
+                        <groupId>com.alibaba</groupId>
+                        <artifactId>druid-spring-boot-starter</artifactId>
+                </exclusion>
+            </exclusions>
+        </dependency>
+        <!-- 插件服务 -->
+        <dependency>
+            <groupId>com.ww.mall</groupId>
+            <artifactId>mall-cofiguration-plugs</artifactId>
             <version>0.0.1-SNAPSHOT</version>
         </dependency>
         <!-- test -->

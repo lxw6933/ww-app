@@ -1,4 +1,4 @@
-package com.ww.mall.redis;
+package com.ww.mall.rabbitmq;
 
 import org.springframework.context.annotation.Import;
 
@@ -8,12 +8,12 @@ import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
 /**
- * @author ww
- * @create 2023-07-15- 15:18
  * @description:
- */
+ * @author: ww
+ * @create: 2023/7/15 22:11
+ **/
 @Target({ElementType.TYPE})
 @Retention(RetentionPolicy.RUNTIME)
-@Import({MallRedisAutoConfiguration.class})
-public @interface EnableRedis {
+@Import({MallRabbitmqAutoConfiguration.class})
+public @interface EnableMallRabbitmq {
 }

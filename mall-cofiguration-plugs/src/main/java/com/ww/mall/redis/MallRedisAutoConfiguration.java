@@ -9,7 +9,6 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.cache.annotation.EnableCaching;
 import org.springframework.context.annotation.Bean;
-import org.springframework.context.annotation.Configuration;
 import org.springframework.data.redis.cache.RedisCacheConfiguration;
 import org.springframework.data.redis.connection.RedisConnectionFactory;
 import org.springframework.data.redis.core.RedisTemplate;
@@ -24,7 +23,6 @@ import org.springframework.data.redis.serializer.StringRedisSerializer;
  */
 @Slf4j
 @EnableCaching
-@Configuration
 @ConditionalOnClass({RedisTemplate.class})
 @EnableConfigurationProperties({CacheProperties.class})
 public class MallRedisAutoConfiguration {
@@ -47,7 +45,7 @@ public class MallRedisAutoConfiguration {
     }
 
     @Bean
-    public RedisCacheConfiguration cacheManager(CacheProperties cacheProperties) {
+    public RedisCacheConfiguration redisCacheConfiguration(CacheProperties cacheProperties) {
         CacheProperties.Redis redisCacheProperties = cacheProperties.getRedis();
         RedisCacheConfiguration config = RedisCacheConfiguration.defaultCacheConfig()
                 // 缓存key设置序列化类型

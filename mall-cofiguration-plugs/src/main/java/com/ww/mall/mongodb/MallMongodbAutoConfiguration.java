@@ -5,7 +5,6 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
 import org.springframework.boot.autoconfigure.mongo.MongoProperties;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
-import org.springframework.context.annotation.Configuration;
 import org.springframework.data.mongodb.MongoDatabaseFactory;
 import org.springframework.data.mongodb.core.MongoTemplate;
 import org.springframework.data.mongodb.core.convert.DefaultDbRefResolver;
@@ -19,7 +18,6 @@ import org.springframework.data.mongodb.core.mapping.MongoMappingContext;
  * @description:
  */
 @Slf4j
-@Configuration
 @ConditionalOnClass({MongoTemplate.class})
 @EnableConfigurationProperties(MongoProperties.class)
 public class MallMongodbAutoConfiguration {

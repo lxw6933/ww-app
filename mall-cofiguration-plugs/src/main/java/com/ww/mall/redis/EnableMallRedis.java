@@ -1,4 +1,4 @@
-package com.ww.mall.es;
+package com.ww.mall.redis;
 
 import org.springframework.context.annotation.Import;
 
@@ -9,11 +9,11 @@ import java.lang.annotation.Target;
 
 /**
  * @author ww
- * @create 2023-07-15- 17:32
+ * @create 2023-07-15- 15:18
  * @description:
  */
 @Target({ElementType.TYPE})
 @Retention(RetentionPolicy.RUNTIME)
-@Import({MallElasticsearchAutoConfiguration.class})
-public @interface EnableElasticsearch {
+@Import({MallRedisAutoConfiguration.class})
+public @interface EnableMallRedis {
 }

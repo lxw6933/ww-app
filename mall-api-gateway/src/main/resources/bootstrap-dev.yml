@@ -5,17 +5,6 @@ server:
 
 spring:
   cloud:
-    sentinel:
-      transport:
-        dashboard: localhost:8080
-        port:
-      datasource:
-        ds1:
-          nacos:
-            server-addr: localhost:8848
-            data-id: sentinel-rules
-            data-type: json
-            rule-type: flow
     gateway:
       discovery:
         locator:
@@ -30,12 +19,11 @@ spring:
           filters:
             # /api/foo  =>  /foo
             - RewritePath=/api(?<segment>/?.*), $\{segment}
-
-        # 会员服务路由
-        - id: member_route
-          uri: lb://mall-member
+        # 认证服务路由
+        - id: auth_route
+          uri: lb://mall-auth
           predicates:
-            - Path=/api/member/**
+            - Path=/api/mall-auth/**
           filters:
             # /api/foo  =>  /foo
             - RewritePath=/api(?<segment>/?.*), $\{segment}

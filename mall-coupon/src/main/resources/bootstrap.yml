@@ -4,6 +4,9 @@ spring:
   profiles:
     active: dev
   cloud:
+    sentinel:
+      transport:
+        dashboard: localhost:8080
     nacos:
       discovery:
         server-addr: localhost:8848

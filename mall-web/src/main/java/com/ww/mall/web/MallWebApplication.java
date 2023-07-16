@@ -3,6 +3,7 @@ package com.ww.mall.web;
 import com.ww.mall.web.handler.RequestBodyHandler;
 import com.ww.mall.web.handler.ResExceptionHandler;
 import com.ww.mall.web.handler.ResponseBodyHandler;
+import com.ww.mall.web.handler.ServerSentinelHandler;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -15,6 +16,12 @@ import org.springframework.context.annotation.Configuration;
 @Slf4j
 @Configuration
 public class MallWebApplication {
+
+    @Bean
+    public ServerSentinelHandler serverSentinelConfiguration() {
+        log.info("初始化服务限流处理器ServerSentinelConfiguration成功...");
+        return new ServerSentinelHandler();
+    }
 
     @Bean
     public ResExceptionHandler resExceptionHandler() {

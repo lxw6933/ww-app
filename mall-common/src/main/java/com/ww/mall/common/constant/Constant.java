@@ -11,6 +11,8 @@ public class Constant {
 
     public final static String ENCRYPT_HEADER = "mall-encrypt";
 
+    public final static String SMS_CODE_CACHE_PREFIX = "sms:code:";
+
     /**
      * 参数加密key
      */
