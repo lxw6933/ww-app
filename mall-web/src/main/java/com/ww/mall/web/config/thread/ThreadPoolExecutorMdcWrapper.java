@@ -1,4 +1,4 @@
-package com.ww.mall.web.config;
+package com.ww.mall.web.config.thread;
 
 import com.ww.mall.web.utils.ThreadMdcUtil;
 import org.slf4j.MDC;
@@ -11,6 +11,7 @@ import java.util.concurrent.*;
  * @create: 2023/7/8 11:29
  **/
 public class ThreadPoolExecutorMdcWrapper extends ThreadPoolExecutor {
+
     public ThreadPoolExecutorMdcWrapper(int corePoolSize, int maximumPoolSize, long keepAliveTime, TimeUnit unit,
                                         BlockingQueue<Runnable> workQueue) {
         super(corePoolSize, maximumPoolSize, keepAliveTime, unit, workQueue);

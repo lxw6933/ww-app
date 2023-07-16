@@ -7,7 +7,7 @@ import java.util.Map;
 import java.util.concurrent.Callable;
 
 /**
- * @description:
+ * @description: 解决多线程丢失traceId问题
  * @author: ww
  * @create: 2023/7/8 11:30
  **/
