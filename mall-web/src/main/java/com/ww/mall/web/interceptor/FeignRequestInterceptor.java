@@ -40,5 +40,6 @@ public class FeignRequestInterceptor implements RequestInterceptor {
         // 讲当前服务traceId传递到远程调用的服务
         String traceId = MDC.get(Constant.TRACE_ID);
         requestTemplate.header(Constant.TRACE_ID, traceId);
+        requestTemplate.header(Constant.FEIGN_FLAG, "true");
     }
 }

@@ -14,6 +14,11 @@ public class Constant {
     public final static String SMS_CODE_CACHE_PREFIX = "sms:code:";
 
     /**
+     * 远程调用标识【相应结果不加密】
+     */
+    public final static String FEIGN_FLAG = "feign_flag";
+
+    /**
      * 参数加密key
      */
     public static final String SECRET_KEY = "ww6933@sina.com.";

@@ -8,6 +8,7 @@ import com.ww.mall.common.utils.SecretUtils;
 import com.ww.mall.web.config.SecretProperties;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.CollectionUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.MethodParameter;
 import org.springframework.http.MediaType;
@@ -77,6 +78,11 @@ public class ResponseBodyHandler implements ResponseBodyAdvice<Object> {
 
     private boolean isEncrypt(ServerHttpRequest request, List<String> encryptUriList, List<String> excludeUriList) {
         boolean encrypt = false;
+        // 远程调用接口不加密
+        String feignFlag = request.getHeaders().getFirst(Constant.FEIGN_FLAG);
+        if (StringUtils.isNotEmpty(feignFlag) && Boolean.TRUE.equals(Boolean.parseBoolean(feignFlag))) {
+            return false;
+        }
         // 需要加密的接口
         if (CollectionUtils.isNotEmpty(encryptUriList)) {
             for (String uri : encryptUriList) {
