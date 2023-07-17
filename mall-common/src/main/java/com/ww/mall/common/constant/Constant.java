@@ -7,6 +7,10 @@ package com.ww.mall.common.constant;
  */
 public class Constant {
 
+    public final static String USER_TOKEN = "token";
+    public final static String TEMP_USER_KEY = "temp-user-key";
+    public final static Integer TEMP_USER_COOKIE_TIMEOUT = 30 * 24 * 60 * 60;
+
     public final static String TRACE_ID = "traceId";
 
     public final static String ENCRYPT_HEADER = "mall-encrypt";
