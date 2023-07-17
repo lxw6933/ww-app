@@ -23,9 +23,9 @@ public class MallMybatisPlusMetaHandler implements MetaObjectHandler {
     @Override
     public void insertFill(MetaObject metaObject) {
         Class<?> createClassType = metaObject.getGetterType(CREATE_TIME);
-        if(createClassType == Date.class) {
+        if (createClassType == Date.class) {
             this.strictInsertFill(metaObject, CREATE_TIME, Date.class, new Date());
-        }else if(createClassType == LocalDateTime.class) {
+        } else if (createClassType == LocalDateTime.class) {
             this.strictInsertFill(metaObject, CREATE_TIME, LocalDateTime.class, LocalDateTime.now());
         }
         this.strictInsertFill(metaObject, CREATE_BY, Long.class, null);
@@ -34,9 +34,9 @@ public class MallMybatisPlusMetaHandler implements MetaObjectHandler {
     @Override
     public void updateFill(MetaObject metaObject) {
         Class<?> updateClassType = metaObject.getGetterType(UPDATE_TIME);
-        if(updateClassType == Date.class) {
+        if (updateClassType == Date.class) {
             this.strictUpdateFill(metaObject, UPDATE_TIME, Date.class, new Date());
-        }else if(updateClassType == LocalDateTime.class) {
+        } else if (updateClassType == LocalDateTime.class) {
             this.strictUpdateFill(metaObject, UPDATE_TIME, LocalDateTime.class, LocalDateTime.now());
         }
         this.strictUpdateFill(metaObject, UPDATE_BY, Long.class, null);
