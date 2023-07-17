@@ -2,8 +2,8 @@ package com.ww.mall.member.interceptor;
 
 import com.ww.mall.member.constant.CartConstant;
 import com.ww.mall.member.to.UserInfoTo;
-import org.apache.commons.lang.ArrayUtils;
-import org.apache.commons.lang.StringUtils;
+import org.apache.commons.lang3.ArrayUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.springframework.stereotype.Component;
 import org.springframework.web.servlet.HandlerInterceptor;
 import org.springframework.web.servlet.ModelAndView;

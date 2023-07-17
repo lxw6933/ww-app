@@ -9,7 +9,7 @@
         <version>0.0.1-SNAPSHOT</version>
     </parent>
 
-    <artifactId>mall-cofiguration-plugs</artifactId>
+    <artifactId>mall-configuration-plugs</artifactId>
 
     <dependencies>
         <dependency>

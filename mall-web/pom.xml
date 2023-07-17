@@ -22,7 +22,7 @@
         <!-- 插件配置 -->
         <dependency>
             <groupId>com.ww.mall</groupId>
-            <artifactId>mall-cofiguration-plugs</artifactId>
+            <artifactId>mall-configuration-plugs</artifactId>
             <version>0.0.1-SNAPSHOT</version>
         </dependency>
         <!-- 服务注册中心 -->

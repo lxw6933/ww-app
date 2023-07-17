@@ -14,6 +14,8 @@
     <modules>
         <module>mall-common</module>
         <module>mall-coupon</module>
+        <module>mall-auth</module>
+        <module>mall-third-server</module>
         <module>mall-member</module>
 <!--        <module>mall-order</module>-->
 <!--        <module>mall-product</module>-->
@@ -25,7 +27,7 @@
 <!--        <module>mall-admin</module>-->
         <!-- 公共模块 -->
         <module>mall-web</module>
-        <module>mall-cofiguration-plugs</module>
+        <module>mall-configuration-plugs</module>
     </modules>
 
     <properties>
