@@ -1,9 +1,8 @@
-package com.ww.mall.coupon.config.mybatisplus;
+package com.ww.mall.web.config.mybatis;
 
 import com.baomidou.mybatisplus.core.handlers.MetaObjectHandler;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.ibatis.reflection.MetaObject;
-import org.springframework.stereotype.Component;
 
 import java.time.LocalDateTime;
 import java.util.Date;
@@ -14,13 +13,12 @@ import java.util.Date;
  * @create: 2021-04-16 10:23
  */
 @Slf4j
-@Component
-public class MybatisPlusMetaHandler implements MetaObjectHandler {
+public class MallMybatisPlusMetaHandler implements MetaObjectHandler {
 
     private static final String CREATE_TIME = "createTime";
     private static final String UPDATE_TIME = "updateTime";
-    private static final String CREATE_BY = "createBy";
-    private static final String UPDATE_BY = "updateBy";
+    private static final String CREATE_BY = "creatorId";
+    private static final String UPDATE_BY = "updaterId";
 
     @Override
     public void insertFill(MetaObject metaObject) {

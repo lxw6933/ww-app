@@ -10,11 +10,13 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.redis.core.StringRedisTemplate;
+import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+import javax.validation.constraints.Pattern;
 import java.util.concurrent.TimeUnit;
 
 /**
@@ -23,6 +25,7 @@ import java.util.concurrent.TimeUnit;
  * @create: 2023/7/16 12:40
  **/
 @Slf4j
+@Validated
 @RestController
 @RequestMapping("/login")
 public class LoginController {
@@ -34,7 +37,7 @@ public class LoginController {
     private ThirdServerFeignService thirdServerFeignService;
 
     @GetMapping("/sendCode")
-    public void sendCode(@RequestParam("mobile") String mobile) {
+    public void sendCode(@Pattern(regexp = "^1[3456789]\\d{9}$", message = "请输入正确的手机号码") @RequestParam("mobile") String mobile) {
         String mobileCode = stringRedisTemplate.opsForValue().get(Constant.SMS_CODE_CACHE_PREFIX + mobile);
         if (StringUtils.isNotEmpty(mobileCode)) {
             // 判断是否超过验证码过期时间

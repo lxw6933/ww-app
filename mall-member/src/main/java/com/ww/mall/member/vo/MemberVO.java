@@ -1,21 +1,20 @@
-package com.ww.mall.member.entity;
+package com.ww.mall.member.vo;
 
-import com.baomidou.mybatisplus.annotation.TableName;
-import com.ww.mall.web.cmmon.BaseEntity;
 import lombok.Data;
-import lombok.EqualsAndHashCode;
 
 import java.util.Date;
 
 /**
  * @author ww
- * @create 2023-07-17- 10:48
+ * @create 2023-07-17- 15:31
  * @description:
  */
 @Data
-@TableName("t_member")
-@EqualsAndHashCode(callSuper = true)
-public class Member extends BaseEntity {
+public class MemberVO {
+
+    private Long id;
+
+    private Date createTime;
 
     /**
      * OpenId
@@ -26,11 +25,6 @@ public class Member extends BaseEntity {
      * 渠道ID
      */
     private Long channelId;
-
-    /**
-     * 密码
-     */
-    private String password;
 
     /**
      * 昵称
@@ -58,7 +52,7 @@ public class Member extends BaseEntity {
     private Integer availableIntegral;
 
     /**
-     * 性别(-1：未知 0：女 1：男)
+     * 性别
      */
     private Integer gender;
 

@@ -1,5 +1,5 @@
 server:
-  port: 10000  #服务端口号
+  port: 8000  #服务端口号
   servlet:
     context-path: /mall-third-server
 

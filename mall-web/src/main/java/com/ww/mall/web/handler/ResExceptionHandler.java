@@ -6,6 +6,8 @@ import com.ww.mall.common.exception.ApiException;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.converter.HttpMessageNotReadableException;
+import org.springframework.web.bind.MissingServletRequestParameterException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
@@ -18,6 +20,20 @@ import org.springframework.web.bind.annotation.RestControllerAdvice;
 @Slf4j
 @RestControllerAdvice
 public class ResExceptionHandler {
+
+    @ResponseStatus(HttpStatus.BAD_REQUEST)
+    @ExceptionHandler(MissingServletRequestParameterException.class)
+    public Result<Object> handleMissingServletRequestParameterException(MissingServletRequestParameterException e) {
+        log.error("缺少请求参数", e);
+        return new Result<>(CodeEnum.PARAM_ERROR.getCode(), "缺少请求参数");
+    }
+
+    @ResponseStatus(HttpStatus.BAD_REQUEST)
+    @ExceptionHandler(HttpMessageNotReadableException.class)
+    public Result<Object> handleHttpMessageNotReadableException(HttpMessageNotReadableException e) {
+        log.error("参数解析失败", e);
+        return new Result<>(CodeEnum.PARAM_ERROR.getCode(), "参数解析失败");
+    }
 
     @ResponseStatus(HttpStatus.OK)
     @ExceptionHandler(ApiException.class)

@@ -1,14 +1,23 @@
 package com.ww.mall.member.controller;
 
+import cn.hutool.core.util.RandomUtil;
+import com.baomidou.mybatisplus.core.metadata.IPage;
+import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.ww.mall.member.entity.Member;
 import com.ww.mall.member.service.MemberService;
+import com.ww.mall.member.vo.MemberVO;
+import com.ww.mall.web.cmmon.MallPage;
+import com.ww.mall.web.utils.IdUtil;
+import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-import javax.annotation.Resource;
+import java.util.ArrayList;
+import java.util.Date;
 import java.util.List;
+import java.util.stream.Collectors;
 
 
 /**
@@ -24,8 +33,31 @@ public class MemberController {
     private MemberService memberService;
 
     @GetMapping("/list")
-    public List<Member> memberList() {
-        return memberService.list();
+    public List<MemberVO> memberList(MallPage mallPage) {
+        Page<Member> page = new Page<>(mallPage.getPageNum(), mallPage.getPageSize());
+        memberService.page(page);
+        return page.getRecords().stream().map(res -> {
+            MemberVO memberVO = new MemberVO();
+            BeanUtils.copyProperties(res, memberVO);
+            return memberVO;
+        }).collect(Collectors.toList());
+    }
+
+    @GetMapping("/genericMemberRecord")
+    public boolean genericMemberRecord() {
+        List<Member> memberList = new ArrayList<>();
+        for (int i = 0; i < 20; i++) {
+            Member member = new Member();
+            member.setOpenId(IdUtil.generatorIdStr());
+            member.setChannelId(1L);
+            member.setPassword(RandomUtil.randomNumbers(6));
+            member.setNickName(RandomUtil.randomString(5));
+            member.setMobile("19" + RandomUtil.randomNumbers(9));
+            member.setBirthday(new Date());
+            memberList.add(member);
+        }
+        memberService.saveBatch(memberList);
+        return true;
     }
 
 

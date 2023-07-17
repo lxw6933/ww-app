@@ -36,7 +36,6 @@
                 </exclusion>
             </exclusions>
         </dependency>
-
         <!-- 服务配置中心 -->
         <dependency>
             <groupId>com.alibaba.cloud</groupId>
@@ -76,6 +75,11 @@
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-actuator</artifactId>
+        </dependency>
+        <!-- validation -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-validation</artifactId>
         </dependency>
         <!-- mybatis-plus -->
         <dependency>

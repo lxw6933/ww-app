@@ -50,6 +50,7 @@
         <mybatisplus.starter.version>3.4.2</mybatisplus.starter.version>
         <commons.lang3.version>3.12.0</commons.lang3.version>
         <commons.collections4.version>4.4</commons.collections4.version>
+        <pagehelper.version>6.4</pagehelper.version>
     </properties>
 
     <dependencyManagement>
