@@ -11,7 +11,7 @@ import org.springframework.web.bind.annotation.RequestParam;
  * @author: ww
  * @create: 2023/7/16 15:44
  **/
-@FeignClient(value = "mall-third-server", fallback = ThirdServerFeignServiceFallBack.class)
+@FeignClient(value = "mall-third-server", fallbackFactory = ThirdServerFeignServiceFallBack.class)
 public interface ThirdServerFeignService {
 
     /**

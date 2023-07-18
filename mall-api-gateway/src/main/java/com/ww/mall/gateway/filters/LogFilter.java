@@ -9,6 +9,7 @@ import org.slf4j.MDC;
 import org.springframework.cloud.gateway.filter.GatewayFilterChain;
 import org.springframework.cloud.gateway.filter.GlobalFilter;
 import org.springframework.core.Ordered;
+import org.springframework.core.annotation.Order;
 import org.springframework.core.io.ByteArrayResource;
 import org.springframework.core.io.buffer.DataBuffer;
 import org.springframework.core.io.buffer.DataBufferUtils;
@@ -46,8 +47,9 @@ import java.util.Map;
  * @create: 2021/7/4 下午2:00
  **/
 @Slf4j
+@Order(3)
 @Component
-public class LogFilter implements GlobalFilter, Ordered {
+public class LogFilter implements GlobalFilter {
 
     /**
      * default HttpMessageReader
@@ -181,8 +183,4 @@ public class LogFilter implements GlobalFilter, Ordered {
         });
     }
 
-    @Override
-    public int getOrder() {
-        return 0;
-    }
 }

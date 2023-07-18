@@ -12,7 +12,7 @@ import org.springframework.web.bind.annotation.RequestParam;
  * @create 2023-07-18- 10:31
  * @description:
  */
-@FeignClient(value = "mall-member", fallback = MemberFeignServiceFallBack.class)
+@FeignClient(value = "mall-member", fallbackFactory = MemberFeignServiceFallBack.class)
 public interface MemberFeignService {
 
     @GetMapping("/mall-member/member/getMemberByMobile")
