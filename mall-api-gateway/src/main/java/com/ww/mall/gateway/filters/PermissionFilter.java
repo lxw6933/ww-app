@@ -44,7 +44,7 @@ public class PermissionFilter implements GlobalFilter {
     public Mono<Void> filter(ServerWebExchange exchange, GatewayFilterChain chain) {
         ServerHttpRequest request = exchange.getRequest();
         String token = request.getHeaders().getFirst(Constant.USER_TOKEN);
-        MallJwtPayload tokenInfo = new MallJwtPayload();
+        MallJwtPayload tokenInfo = null;
         if (token != null) {
             try {
                 // 校验token
@@ -74,10 +74,14 @@ public class PermissionFilter implements GlobalFilter {
                 return WebFluxResultUtils.result(exchange, result);
             }
         }
-        ServerHttpRequest permissionRequest = exchange.getRequest()
-                .mutate()
-                .header("tokenInfo", JSON.toJSONString(tokenInfo))
-                .build();
-        return chain.filter(exchange.mutate().request(permissionRequest).build());
+        if (tokenInfo != null) {
+            ServerHttpRequest permissionRequest = exchange.getRequest()
+                    .mutate()
+                    .header("tokenInfo", JSON.toJSONString(tokenInfo))
+                    .build();
+            return chain.filter(exchange.mutate().request(permissionRequest).build());
+        } else {
+            return chain.filter(exchange);
+        }
     }
 }
