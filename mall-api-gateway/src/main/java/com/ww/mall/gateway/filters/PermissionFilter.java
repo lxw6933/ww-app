@@ -1,16 +1,13 @@
 package com.ww.mall.gateway.filters;
 
 import cn.hutool.core.date.DateUtil;
-import cn.hutool.json.JSONObject;
 import cn.hutool.jwt.JWT;
 import cn.hutool.jwt.JWTUtil;
-import cn.hutool.jwt.JWTValidator;
 import com.alibaba.fastjson.JSON;
 import com.alibaba.nacos.common.http.param.MediaType;
 import com.ww.mall.common.common.MallJwtPayload;
 import com.ww.mall.common.common.Result;
 import com.ww.mall.common.constant.Constant;
-import com.ww.mall.common.enums.CodeEnum;
 import com.ww.mall.gateway.enums.GatewayResultEnum;
 import com.ww.mall.gateway.utils.WebFluxResultUtils;
 import lombok.extern.slf4j.Slf4j;
@@ -32,7 +29,7 @@ import reactor.core.publisher.Mono;
  * @description:
  */
 @Slf4j
-@Order(4)
+@Order(2)
 @Component
 @RefreshScope
 public class PermissionFilter implements GlobalFilter {
