@@ -11,7 +11,20 @@ import javax.servlet.http.HttpServletRequest;
  * @description:
  */
 public interface LoginService {
+
+    /**
+     * 验证码登录
+     *
+     * @param memberLoginBO bo
+     * @param request request
+     * @return LoginVO
+     */
     LoginVO loginByVerityCode(MemberLoginBO memberLoginBO, HttpServletRequest request);
 
+    /**
+     * 发送验证码
+     *
+     * @param mobile 手机号
+     */
     void sendCode(String mobile);
 }

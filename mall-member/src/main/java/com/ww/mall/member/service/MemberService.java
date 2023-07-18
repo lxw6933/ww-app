@@ -10,5 +10,11 @@ import com.ww.mall.web.view.dto.MemberDTO;
  * @description:
  */
 public interface MemberService extends IService<Member> {
+    /**
+     * 获取用户
+     *
+     * @param mobile 手机号
+     * @return MemberDTO
+     */
     MemberDTO getMemberByMobile(String mobile);
 }
