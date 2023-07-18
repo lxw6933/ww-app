@@ -3,13 +3,6 @@ server:
   servlet:
     context-path: /mall-auth
 spring:
-  datasource:
-    driver-class-name: com.mysql.cj.jdbc.Driver
-#    url: jdbc:mysql://192.168.10.141:3306/mall_basic?characterEncoding=UTF-8&autoReconnect=true&useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=Asia/Shanghai
-    url: jdbc:mysql://localhost:3306/ww_mall?characterEncoding=UTF-8&autoReconnect=true&useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=Asia/Shanghai
-    username: root
-    password: admin
-#    password: adminlxw
   redis:
     host: localhost
     password: 123456

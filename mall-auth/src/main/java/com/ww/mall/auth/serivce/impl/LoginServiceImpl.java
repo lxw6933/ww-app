@@ -54,6 +54,7 @@ public class LoginServiceImpl implements LoginService {
         log.info("登录请求ip：【{}】 请求参数：【{}】", requestIp, memberLoginBO);
         String mobile = memberLoginBO.getMobile();
         String mobileCode = stringRedisTemplate.opsForValue().get(Constant.SMS_CODE_CACHE_PREFIX + mobile);
+        mobileCode = StringUtils.isNotEmpty(mobileCode) ? mobileCode.split("_")[0] : null;
         if (memberLoginBO.getVerifyCode().equals(mobileCode)) {
             // 获取登录用户信息
             Result<MemberDTO> memberResult = memberFeignService.getMemberByMobile(mobile);
@@ -71,9 +72,11 @@ public class LoginServiceImpl implements LoginService {
                 loginVO.setTokenExpTime(tokenExpTime.getTime());
                 return loginVO;
             } else {
+                log.error("远程调用mall-member服务失败：{}", memberResult);
                 throw new ApiException(CodeEnum.SYSTEM_ERROR.getCode(), CodeEnum.SYSTEM_ERROR.getMessage());
             }
         } else {
+            log.error("验证码错误");
             throw new ApiException(CodeEnum.CODE_ERROR.getCode(), CodeEnum.CODE_ERROR.getMessage());
         }
     }
