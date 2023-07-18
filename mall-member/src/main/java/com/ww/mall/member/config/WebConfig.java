@@ -1,6 +1,5 @@
 package com.ww.mall.member.config;
 
-import com.ww.mall.member.interceptor.CartInterceptor;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.web.servlet.config.annotation.InterceptorRegistry;
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
@@ -28,13 +27,5 @@ import javax.annotation.Resource;
  */
 @Configuration
 public class WebConfig implements WebMvcConfigurer {
-
-    @Resource
-    private CartInterceptor cartInterceptor;
-
-    @Override
-    public void addInterceptors(InterceptorRegistry registry) {
-        registry.addInterceptor(cartInterceptor).addPathPatterns("/api/**");
-    }
 
 }

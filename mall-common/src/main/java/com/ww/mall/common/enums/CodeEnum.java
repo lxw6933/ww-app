@@ -12,7 +12,8 @@ public enum CodeEnum {
     SYSTEM_ERROR("-99", "服务器繁忙，请联系客服人员"),
     LIMIT_ERROR("-2", "当前访问人数过多，请稍候再试"),
     SMS_CODE_EXCEPTION("10000", "验证码获取频率太高，请稍后再试"),
-    LOGIN_EXCEPTION("20000", "账号或密码错误"),
+    LOGIN_EXCEPTION("10001", "账号或密码错误"),
+    CODE_ERROR("10002", "验证码错误"),
     PARAM_ERROR("400", "参数错误"),
     ;
 

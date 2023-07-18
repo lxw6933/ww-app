@@ -1,5 +1,6 @@
 package com.ww.mall.member;
 
+import com.ww.mall.redis.EnableMallRedis;
 import org.mybatis.spring.annotation.MapperScan;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
@@ -11,6 +12,7 @@ import org.springframework.cloud.openfeign.EnableFeignClients;
  * @author ww
  */
 @RefreshScope
+@EnableMallRedis
 @EnableDiscoveryClient
 @SpringBootApplication
 @MapperScan("com.ww.mall.member.dao")
