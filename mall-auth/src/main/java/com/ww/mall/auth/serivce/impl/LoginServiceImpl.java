@@ -62,7 +62,7 @@ public class LoginServiceImpl implements LoginService {
                 MemberDTO member = memberResult.getValue();
                 // 生成jwt token
                 Date tokenEffectTime = new Date();
-                Date tokenExpTime = DateUtils.addMinutes(tokenEffectTime, jwtProperties.getExpire());
+                Date tokenExpTime = DateUtils.addHours(tokenEffectTime, jwtProperties.getExpire());
                 Map<String, Object> map = new HashMap<>();
                 map.put("memberId", member.getId());
                 map.put("mobile", member.getMobile());

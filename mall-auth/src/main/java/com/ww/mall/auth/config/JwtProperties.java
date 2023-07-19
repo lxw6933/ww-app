@@ -16,9 +16,9 @@ import org.springframework.context.annotation.Configuration;
 public class JwtProperties {
 
     /**
-     * 过期时间 单位：分钟
+     * 过期时间 单位：小时
      */
-    private Integer expire = 7 * 24 * 60;
+    private Integer expire = 7 * 24;
 
     /**
      * 发行人
