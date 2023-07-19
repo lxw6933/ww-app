@@ -16,7 +16,7 @@ import java.io.Serializable;
 @NoArgsConstructor
 public class MallPage implements Serializable {
 
-    private Integer pageNum;
+    private Integer pageNum = 1;
 
-    private Integer pageSize;
+    private Integer pageSize = 10;
 }
