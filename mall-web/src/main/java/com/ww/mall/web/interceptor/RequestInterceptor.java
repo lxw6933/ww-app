@@ -2,6 +2,7 @@ package com.ww.mall.web.interceptor;
 
 import cn.hutool.core.util.IdUtil;
 import com.ww.mall.common.constant.Constant;
+import com.ww.mall.web.utils.AuthorizationContext;
 import org.slf4j.MDC;
 import org.springframework.web.servlet.HandlerInterceptor;
 import org.springframework.web.servlet.ModelAndView;
@@ -36,5 +37,6 @@ public class RequestInterceptor implements HandlerInterceptor {
             throws Exception {
         // 调用结束后删除
         MDC.remove(Constant.TRACE_ID);
+        AuthorizationContext.remove();
     }
 }

@@ -40,7 +40,7 @@ public class AuthorizationContext {
         return JSON.parseObject(tokenInfo, MallClientUser.class);
     }
 
-    public void remove() {
+    public static void remove() {
         CLIENT_USER_THREAD_LOCAL.remove();
     }
 
