@@ -3,11 +3,15 @@ package com.ww.mall.member.controller;
 import cn.hutool.core.util.RandomUtil;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
+import com.ww.mall.common.common.MallClientUser;
+import com.ww.mall.common.enums.CodeEnum;
+import com.ww.mall.common.exception.ApiException;
 import com.ww.mall.member.entity.Member;
 import com.ww.mall.member.service.MemberService;
 import com.ww.mall.member.vo.MemberVO;
 import com.ww.mall.web.cmmon.MallPage;
 import com.ww.mall.web.cmmon.MallPageResult;
+import com.ww.mall.web.utils.AuthorizationContext;
 import com.ww.mall.web.utils.IdUtil;
 import com.ww.mall.web.view.dto.MemberDTO;
 import org.springframework.beans.BeanUtils;
@@ -41,6 +45,10 @@ public class MemberController {
 
     @GetMapping("/list")
     public MallPageResult<MemberVO> memberList(MallPage mallPage) {
+        MallClientUser clientUser = AuthorizationContext.getClientUser();
+        if (clientUser == null) {
+            throw new ApiException(CodeEnum.ILLEGAL_REQUEST.getCode(), CodeEnum.ILLEGAL_REQUEST.getMessage());
+        }
         IPage<Member> page = new Page<>(mallPage.getPageNum(), mallPage.getPageSize());
         memberService.page(page);
         return new MallPageResult<>(page, result -> {

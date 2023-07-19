@@ -15,6 +15,7 @@ public enum CodeEnum {
     LOGIN_EXCEPTION("10001", "账号或密码错误"),
     CODE_ERROR("10002", "验证码错误"),
     PARAM_ERROR("400", "参数错误"),
+    ILLEGAL_REQUEST("-999", "非法请求"),
     ;
 
     CodeEnum(String code, String message) {

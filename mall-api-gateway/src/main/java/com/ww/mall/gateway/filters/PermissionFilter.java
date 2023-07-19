@@ -76,7 +76,7 @@ public class PermissionFilter implements GlobalFilter {
         if (tokenInfo != null) {
             ServerHttpRequest permissionRequest = exchange.getRequest()
                     .mutate()
-                    .header("tokenInfo", JSON.toJSONString(tokenInfo))
+                    .header(Constant.USER_TOKEN_INFO, JSON.toJSONString(tokenInfo))
                     .build();
             return chain.filter(exchange.mutate().request(permissionRequest).build());
         } else {
