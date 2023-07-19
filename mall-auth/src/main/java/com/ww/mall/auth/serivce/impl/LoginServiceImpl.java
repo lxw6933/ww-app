@@ -6,6 +6,7 @@ import com.ww.mall.auth.config.JwtProperties;
 import com.ww.mall.auth.feign.MemberFeignService;
 import com.ww.mall.auth.feign.ThirdServerFeignService;
 import com.ww.mall.auth.serivce.LoginService;
+import com.ww.mall.auth.vo.LoginVO;
 import com.ww.mall.common.common.Result;
 import com.ww.mall.common.constant.Constant;
 import com.ww.mall.common.enums.CodeEnum;
@@ -13,7 +14,6 @@ import com.ww.mall.common.exception.ApiException;
 import com.ww.mall.web.utils.IpUtil;
 import com.ww.mall.web.view.bo.MemberLoginBO;
 import com.ww.mall.web.view.dto.MemberDTO;
-import com.ww.mall.auth.vo.LoginVO;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.time.DateUtils;
@@ -61,11 +61,14 @@ public class LoginServiceImpl implements LoginService {
             if (Boolean.TRUE.equals(memberResult.isSuccess()) && CodeEnum.SUCCESS.getCode().equals(memberResult.getCode())) {
                 MemberDTO member = memberResult.getValue();
                 // 生成jwt token
-                Date tokenExpTime = DateUtils.addMinutes(new Date(), jwtProperties.getExpire());
+                Date tokenEffectTime = new Date();
+                Date tokenExpTime = DateUtils.addMinutes(tokenEffectTime, jwtProperties.getExpire());
                 Map<String, Object> map = new HashMap<>();
                 map.put("memberId", member.getId());
                 map.put("mobile", member.getMobile());
                 map.put("exp", tokenExpTime);
+                map.put("nbf", tokenEffectTime);
+                map.put("iss", jwtProperties.getIss());
                 String token = JWTUtil.createToken(map, jwtProperties.getSecret().getBytes());
                 LoginVO loginVO = new LoginVO();
                 loginVO.setToken(token);

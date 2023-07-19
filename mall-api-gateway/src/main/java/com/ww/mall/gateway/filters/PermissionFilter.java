@@ -23,6 +23,8 @@ import org.springframework.stereotype.Component;
 import org.springframework.web.server.ServerWebExchange;
 import reactor.core.publisher.Mono;
 
+import java.util.Date;
+
 /**
  * @author ww
  * @create 2023-07-18- 13:40
@@ -56,7 +58,7 @@ public class PermissionFilter implements GlobalFilter {
                 // 解析token
                 JWT jwt = JWTUtil.parseToken(token);
                 tokenInfo = jwt.getPayload().getClaimsJson().toBean(MallJwtPayload.class);
-                if (DateUtil.date().getTime() > tokenInfo.getExp()) {
+                if (DateUtil.date().after(new Date(tokenInfo.getExp()))) {
                     // 已过期
                     Result<Object> result = new Result<>(GatewayResultEnum.SING_TIME_IS_TIMEOUT.getCode(), GatewayResultEnum.SING_TIME_IS_TIMEOUT.getMsg());
                     exchange.getResponse().setStatusCode(HttpStatus.UNAUTHORIZED);

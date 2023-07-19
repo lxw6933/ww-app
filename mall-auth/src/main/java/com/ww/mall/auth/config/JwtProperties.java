@@ -21,6 +21,11 @@ public class JwtProperties {
     private Integer expire = 7 * 24 * 60;
 
     /**
+     * 发行人
+     */
+    private String iss = "ww";
+
+    /**
      * jwt秘钥
      */
     private String secret = Constant.SECRET_KEY;
