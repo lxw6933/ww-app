@@ -38,6 +38,13 @@ public class MemberController {
     @Autowired
     private MemberService memberService;
 
+    @RequestMapping("/getId")
+    public String getId() {
+        String id = IdUtil.generatorIdStr();
+        System.out.println(id);
+        return id;
+    }
+
     @GetMapping("/getMemberByMobile")
     public MemberDTO getMemberByMobile(@RequestParam("mobile") String mobile) {
         return memberService.getMemberByMobile(mobile);
