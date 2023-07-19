@@ -5,7 +5,7 @@ import cn.hutool.jwt.JWT;
 import cn.hutool.jwt.JWTUtil;
 import com.alibaba.fastjson.JSON;
 import com.alibaba.nacos.common.http.param.MediaType;
-import com.ww.mall.common.common.MallJwtPayload;
+import com.ww.mall.common.common.MallClientUser;
 import com.ww.mall.common.common.Result;
 import com.ww.mall.common.constant.Constant;
 import com.ww.mall.gateway.enums.GatewayResultEnum;
@@ -43,7 +43,7 @@ public class PermissionFilter implements GlobalFilter {
     public Mono<Void> filter(ServerWebExchange exchange, GatewayFilterChain chain) {
         ServerHttpRequest request = exchange.getRequest();
         String token = request.getHeaders().getFirst(Constant.USER_TOKEN);
-        MallJwtPayload tokenInfo = null;
+        MallClientUser tokenInfo = null;
         if (token != null) {
             try {
                 // 校验token
@@ -57,7 +57,7 @@ public class PermissionFilter implements GlobalFilter {
                 }
                 // 解析token
                 JWT jwt = JWTUtil.parseToken(token);
-                tokenInfo = jwt.getPayload().getClaimsJson().toBean(MallJwtPayload.class);
+                tokenInfo = jwt.getPayload().getClaimsJson().toBean(MallClientUser.class);
                 if (DateUtil.date().after(new Date(tokenInfo.getExp()))) {
                     // 已过期
                     Result<Object> result = new Result<>(GatewayResultEnum.SING_TIME_IS_TIMEOUT.getCode(), GatewayResultEnum.SING_TIME_IS_TIMEOUT.getMsg());

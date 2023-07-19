@@ -8,7 +8,7 @@ import lombok.Data;
  * @description:
  */
 @Data
-public class MallJwtPayload {
+public class MallClientUser {
 
     /**
      * 发行人
