@@ -66,8 +66,8 @@ public class LoginServiceImpl implements LoginService {
                 Map<String, Object> map = new HashMap<>();
                 map.put("memberId", member.getId());
                 map.put("mobile", member.getMobile());
-                map.put("exp", tokenExpTime);
-                map.put("nbf", tokenEffectTime);
+                map.put("exp", tokenExpTime.getTime());
+                map.put("nbf", tokenEffectTime.getTime());
                 map.put("iss", jwtProperties.getIss());
                 String token = JWTUtil.createToken(map, jwtProperties.getSecret().getBytes());
                 LoginVO loginVO = new LoginVO();
