@@ -1,0 +1,15 @@
+server:
+  port: 9600  #服务端口号
+  servlet:
+    context-path: /mall-cart
+
+# 开启sentinel feign支持【调用方（调用服务方）的熔断保护、被调用方（服务提供方）的降级保护】
+feign:
+  sentinel:
+    enabled: true
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: "*"

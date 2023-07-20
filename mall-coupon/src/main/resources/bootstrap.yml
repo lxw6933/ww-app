@@ -22,3 +22,5 @@ spring:
         shared-configs:
           - data-Id: mall-common.yml
             refresh: true
+          - data-id: sentinel-rules.yml
+            refresh: true

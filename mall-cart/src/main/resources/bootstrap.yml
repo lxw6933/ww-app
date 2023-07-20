@@ -1,6 +1,7 @@
+
 spring:
   application:
-    name: mall-auth
+    name: mall-cart
   profiles:
     active: dev
   cloud:

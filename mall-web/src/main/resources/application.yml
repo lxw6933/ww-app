@@ -8,3 +8,63 @@ spring:
     # 表单接收date
     format:
       date: yyyy-MM-dd HH:mm:ss
+  # 流控规则持久化
+#  cloud:
+#    sentinel:
+#      datasource:
+#        flow-rules:
+#          nacos:
+#            server-addr: ${spring.cloud.nacos.discovery.server-addr}
+#            namespace: ${spring.cloud.nacos.config.namespace}
+#            data-id: ${spring.application.name}-${spring.profiles.active}-flow-rule.json
+#            group-id: SENTINEL_RULE
+#            data-type: json
+#            rule-type: flow
+#        degrade-rules:
+#          nacos:
+#            server-addr: ${spring.cloud.nacos.discovery.server-addr}
+#            namespace: ${spring.cloud.nacos.config.namespace}
+#            data-id: ${spring.application.name}-${spring.profiles.active}-degrade-rule.json
+#            group-id: SENTINEL_RULE
+#            data-type: json
+#            rule-type: degrade
+#        param-flow-rules:
+#          nacos:
+#            server-addr: ${spring.cloud.nacos.discovery.server-addr}
+#            namespace: ${spring.cloud.nacos.config.namespace}
+#            data-id: ${spring.application.name}-${spring.profiles.active}-param-flow-rule.json
+#            group-id: SENTINEL_RULE
+#            data-type: json
+#            rule-type: param-flow
+#        system-rules:
+#          nacos:
+#            server-addr: ${spring.cloud.nacos.discovery.server-addr}
+#            namespace: ${spring.cloud.nacos.config.namespace}
+#            data-id: ${spring.application.name}-${spring.profiles.active}-system-rule.json
+#            group-id: SENTINEL_RULE
+#            data-type: json
+#            rule-type: system
+#        authority-rules:
+#          nacos:
+#            server-addr: ${spring.cloud.nacos.discovery.server-addr}
+#            namespace: ${spring.cloud.nacos.config.namespace}
+#            data-id: ${spring.application.name}-${spring.profiles.active}-authority-rule.json
+#            group-id: SENTINEL_RULE
+#            data-type: json
+#            rule-type: authority
+#        gw-flow-rules:
+#          nacos:
+#            server-addr: ${spring.cloud.nacos.discovery.server-addr}
+#            namespace: ${spring.cloud.nacos.config.namespace}
+#            data-id: ${spring.application.name}-${spring.profiles.active}-gw-flow-rule.json
+#            group-id: SENTINEL_RULE
+#            data-type: json
+#            rule-type: gw-flow
+#        gw-api-group-rules:
+#          nacos:
+#            server-addr: ${spring.cloud.nacos.discovery.server-addr}
+#            namespace: ${spring.cloud.nacos.config.namespace}
+#            data-id: ${spring.application.name}-${spring.profiles.active}-gw-api-group-rule.json
+#            group-id: SENTINEL_RULE
+#            data-type: json
+#            rule-type: gw-api-group
