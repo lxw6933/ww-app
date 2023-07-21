@@ -17,7 +17,7 @@ import java.util.Map;
  */
 @Validated
 @RestController
-@RequestMapping("/sing")
+@RequestMapping("/sign")
 public class SignController {
 
     @Autowired

@@ -34,12 +34,12 @@ public class AuthorizationContext {
         ServletRequestAttributes attributes = (ServletRequestAttributes) RequestContextHolder
                 .getRequestAttributes();
         if (attributes == null) {
-            throw new ApiException(CodeEnum.UN_LOGIN.getCode(), CodeEnum.UN_LOGIN.getCode());
+            throw new ApiException(CodeEnum.UN_LOGIN.getCode(), CodeEnum.UN_LOGIN.getMessage());
         }
         HttpServletRequest request = attributes.getRequest();
         String tokenInfo = request.getHeader(Constant.USER_TOKEN_INFO);
         if (StringUtils.isEmpty(tokenInfo)) {
-            throw new ApiException(CodeEnum.UN_LOGIN.getCode(), CodeEnum.UN_LOGIN.getCode());
+            throw new ApiException(CodeEnum.UN_LOGIN.getCode(), CodeEnum.UN_LOGIN.getMessage());
         }
         return JSON.parseObject(tokenInfo, MallClientUser.class);
     }

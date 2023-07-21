@@ -37,9 +37,18 @@ public class SignServiceImpl implements SignService {
     @Override
     public int doSign(String dateStr) {
         MallClientUser clientUser = AuthorizationContext.getClientUser();
+        Date now = new Date();
         Date date = getDate(dateStr);
         // 获得指定日期是所在月份的第几天：2023-06-14，返回14，代表这个月份的第14天
         int dayOfMonth = DateUtil.dayOfMonth(date);
+        if (dateStr != null) {
+            if (DateUtil.month(date) != DateUtil.month(now) || DateUtil.year(date) != DateUtil.year(now)) {
+                throw new ApiException("只能补签当前月的日期");
+            }
+            if (date.after(now)) {
+                throw new ApiException("还未到签到时间");
+            }
+        }
         // 偏移量 offset 从 0 开始
         int offset = dayOfMonth - 1;
         // 构建 Key user:sign:5:yyyyMM
