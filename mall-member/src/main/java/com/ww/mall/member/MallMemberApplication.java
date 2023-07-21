@@ -1,5 +1,6 @@
 package com.ww.mall.member;
 
+import com.ww.mall.mongodb.EnableMallMongodb;
 import com.ww.mall.redis.EnableMallRedis;
 import org.mybatis.spring.annotation.MapperScan;
 import org.springframework.boot.SpringApplication;
@@ -13,6 +14,7 @@ import org.springframework.cloud.openfeign.EnableFeignClients;
  */
 @RefreshScope
 @EnableMallRedis
+@EnableMallMongodb
 @EnableDiscoveryClient
 @SpringBootApplication
 @MapperScan("com.ww.mall.member.dao")

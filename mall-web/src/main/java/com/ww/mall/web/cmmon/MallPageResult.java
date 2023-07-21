@@ -51,4 +51,11 @@ public class MallPageResult<T> extends MallPage {
         this.result = page.getRecords().stream().map(convert).collect(Collectors.toList());
     }
 
+    public MallPageResult(MallPage page, List<T> result, Integer totalCount) {
+        super(page.getPageNum(), page.getPageSize());
+        this.totalCount = totalCount;
+        this.result = result;
+        this.totalPage = totalCount % getPageSize() == 0 ? totalCount / getPageSize() : totalCount / getPageSize() + 1;
+    }
+
 }
