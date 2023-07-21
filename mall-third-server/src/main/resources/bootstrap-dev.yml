@@ -8,6 +8,13 @@ feign:
   sentinel:
     enabled: true
 
+edu:
+  appId: demo
+  security: c6agXWwt
+  eduDomain: https://test-edu.founderyt.com
+  reqUri: /apple/edu/onlineorder
+  uploadImgUri: /apple/edu/image/upload
+
 management:
   endpoints:
     web:
