@@ -1,6 +1,6 @@
-package com.ww.mall.third.service.impl;
+package com.ww.mall.third.service.sms.impl;
 
-import com.ww.mall.third.service.SmsService;
+import com.ww.mall.third.service.sms.SmsService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 

@@ -1,6 +1,6 @@
 package com.ww.mall.third.controller;
 
-import com.ww.mall.third.service.SmsService;
+import com.ww.mall.third.service.sms.SmsService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
