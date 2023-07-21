@@ -4,6 +4,10 @@ import com.alibaba.cloud.sentinel.SentinelProperties;
 import com.alibaba.cloud.sentinel.datasource.RuleType;
 import com.alibaba.cloud.sentinel.datasource.config.DataSourcePropertiesConfiguration;
 import com.alibaba.cloud.sentinel.datasource.config.NacosDataSourceProperties;
+import com.alibaba.csp.sentinel.adapter.gateway.common.api.ApiDefinition;
+import com.alibaba.csp.sentinel.adapter.gateway.common.command.UpdateGatewayApiDefinitionGroupCommandHandler;
+import com.alibaba.csp.sentinel.adapter.gateway.common.command.UpdateGatewayRuleCommandHandler;
+import com.alibaba.csp.sentinel.adapter.gateway.common.rule.GatewayFlowRule;
 import com.alibaba.csp.sentinel.command.handler.ModifyParamFlowRulesCommandHandler;
 import com.alibaba.csp.sentinel.datasource.WritableDataSource;
 import com.alibaba.csp.sentinel.slots.block.authority.AuthorityRule;
@@ -16,6 +20,7 @@ import com.alibaba.fastjson.JSON;
 import org.springframework.beans.factory.SmartInitializingSingleton;
 
 import java.util.List;
+import java.util.Set;
 
 /**
  * @author ww
@@ -62,6 +67,14 @@ public class SentinelNacosDataSourceHandler implements SmartInitializingSingleto
             case AUTHORITY:
                 WritableDataSource<List<AuthorityRule>> authRuleWriter = new NacosWritableDataSource<>(nacosDataSourceProperties, JSON::toJSONString);
                 WritableDataSourceRegistry.registerAuthorityDataSource(authRuleWriter);
+                break;
+            case GW_FLOW:
+                WritableDataSource<Set<GatewayFlowRule>> gwFlowRuleWriter = new NacosWritableDataSource<>(nacosDataSourceProperties, JSON::toJSONString);
+                UpdateGatewayRuleCommandHandler.setWritableDataSource(gwFlowRuleWriter);
+                break;
+            case GW_API_GROUP:
+                WritableDataSource<Set<ApiDefinition>> gwApiFlowRuleWriter = new NacosWritableDataSource<>(nacosDataSourceProperties, JSON::toJSONString);
+                UpdateGatewayApiDefinitionGroupCommandHandler.setWritableDataSource(gwApiFlowRuleWriter);
                 break;
             default:
                 break;
