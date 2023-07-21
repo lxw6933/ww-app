@@ -1,7 +1,9 @@
 package com.ww.mall.cart.interceptor;
 
 import com.ww.mall.cart.to.UserInfoTo;
+import com.ww.mall.common.common.MallClientUser;
 import com.ww.mall.common.constant.Constant;
+import com.ww.mall.web.utils.AuthorizationContext;
 import org.apache.commons.lang3.ArrayUtils;
 import org.apache.commons.lang3.RandomUtils;
 import org.apache.commons.lang3.StringUtils;
@@ -27,10 +29,9 @@ public class CartInterceptor implements HandlerInterceptor {
     @Override
     public boolean preHandle(HttpServletRequest request, HttpServletResponse response, Object handler) throws Exception {
         UserInfoTo userInfoTo = new UserInfoTo();
-        String userToken = request.getHeader(Constant.USER_TOKEN);
-        if (userToken != null) {
-            // TODO: 2023/7/17 解析用户token获取用户id
-            Long userId = RandomUtils.nextLong();
+        MallClientUser clientUser = AuthorizationContext.getClientUser();
+        if (clientUser != null) {
+            Long userId = clientUser.getMemberId();
             // 用户登录
             userInfoTo.setUserId(userId);
         } else {
