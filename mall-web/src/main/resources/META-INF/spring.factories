@@ -5,4 +5,5 @@ org.springframework.boot.autoconfigure.EnableAutoConfiguration=\
   com.ww.mall.web.config.thread.DefaultThreadPoolConfiguration, \
   com.ww.mall.web.config.mybatis.MallMybatisPlusConfig, \
   com.ww.mall.web.config.sentinel.SentinelNacosDataSourceAutoConfiguration, \
-  com.ww.mall.web.config.FeignFallBackConfiguration
+  com.ww.mall.web.config.FeignFallBackConfiguration, \
+  com.ww.mall.web.utils.SpringContextManager
