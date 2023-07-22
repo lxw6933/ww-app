@@ -3,9 +3,7 @@ package com.ww.mall.rabbitmq;
 import cn.hutool.core.date.DatePattern;
 import cn.hutool.core.date.DateUtil;
 import com.alibaba.fastjson.JSON;
-import com.mongodb.client.result.UpdateResult;
-import com.ww.mall.common.constant.Constant;
-import com.ww.mall.common.exception.ApiException;
+import com.ww.mall.enums.MqMsgStatus;
 import com.ww.mall.mongodb.EnableMallMongodb;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.amqp.AmqpException;
@@ -71,6 +69,7 @@ public class MallRabbitmqAutoConfiguration {
          * @param cause 失败的原因
          */
         rabbitTemplate.setConfirmCallback((correlationData, ack, cause) -> {
+            log.info("消息成功抵达broker：{}", correlationData);
             MallCorrelationData mallCorrelationData;
             MqMsgLogEntity mqLog = new MqMsgLogEntity();
             if (correlationData instanceof MallCorrelationData) {
@@ -79,15 +78,16 @@ public class MallRabbitmqAutoConfiguration {
                 mqLog.setExchange(mallCorrelationData.getExchange());
                 mqLog.setMessage(JSON.toJSONString(mallCorrelationData.getMessage()));
                 mqLog.setMsgId(mallCorrelationData.getId());
+                mqLog.setTryCount(0);
                 mqLog.setCreateTime(DateUtil.format(new Date(), DatePattern.NORM_DATETIME_PATTERN));
                 mqLog.setUpdateTime(DateUtil.format(new Date(), DatePattern.NORM_DATETIME_PATTERN));
             }
             if (ack) {
                 // 发送成功保存消息日志 状态
-                mqLog.setStatus(Constant.MsgLogStatus.DELIVERING);
+                mqLog.setStatus(MqMsgStatus.DELIVER_SUCCESS);
             } else {
                 log.error("消息发送到Exchange失败, {}, cause: {}", correlationData, cause);
-                mqLog.setStatus(Constant.MsgLogStatus.DELIVER_FAIL);
+                mqLog.setStatus(MqMsgStatus.DELIVER_FAIL);
             }
             mongoTemplate.save(mqLog);
         });
@@ -117,13 +117,9 @@ public class MallRabbitmqAutoConfiguration {
             Criteria criteria = Criteria.where("msgId")
                     .is(returned.getMessage().getMessageProperties().getCorrelationId());
             Update update = new Update();
-            update.set("status", Constant.MsgLogStatus.DELIVER_FAIL);
+            update.set("status", MqMsgStatus.DELIVER_FAIL);
             update.set("updateTime", DateUtil.format(new Date(), DatePattern.NORM_DATETIME_PATTERN));
-            UpdateResult updateResult = mongoTemplate.updateFirst(new Query().addCriteria(criteria), update, MqMsgLogEntity.class);
-            if (updateResult.getModifiedCount() == 0) {
-                log.error("队列日志异常:{}", JSON.toJSONString(returned));
-                throw new ApiException("队列日志异常");
-            }
+            mongoTemplate.updateFirst(new Query().addCriteria(criteria), update, MqMsgLogEntity.class);
         });
         return rabbitTemplate;
     }

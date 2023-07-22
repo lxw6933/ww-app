@@ -3,6 +3,7 @@ package com.ww.mall.member.service;
 import com.ww.mall.member.entity.mongo.MemberIntegralRecord;
 import com.ww.mall.web.cmmon.MallPage;
 import com.ww.mall.web.cmmon.MallPageResult;
+import com.ww.mall.web.view.bo.AddMemberIntegralBO;
 
 /**
  * @author ww
@@ -14,8 +15,9 @@ public interface MemberIntegralRecordService {
     /**
      * 保存积分记录
      * @param memberIntegralRecord record
+     * @return boolean
      */
-    void save(MemberIntegralRecord memberIntegralRecord);
+    Boolean save(MemberIntegralRecord memberIntegralRecord);
 
     /**
      * 获取用户积分记录
@@ -30,5 +32,13 @@ public interface MemberIntegralRecordService {
      * @return MemberIntegralRecord
      */
     MemberIntegralRecord memberIntegralRecordDetail(String integralRecordId);
+
+    /**
+     * 新用户赠送积分
+     *
+     * @param addMemberIntegralBO bo
+     * @return boolean
+     */
+    Boolean addNewMemberIntegral(AddMemberIntegralBO addMemberIntegralBO);
 
 }

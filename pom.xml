@@ -18,6 +18,7 @@
         <module>mall-third-server</module>
         <module>mall-member</module>
         <module>mall-cart</module>
+        <module>mall-consumer</module>
 <!--        <module>mall-order</module>-->
 <!--        <module>mall-product</module>-->
 <!--        <module>mall-search</module>-->

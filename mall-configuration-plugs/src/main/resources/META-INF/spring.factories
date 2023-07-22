@@ -1,1 +1,5 @@
-org.springframework.boot.autoconfigure.EnableAutoConfiguration=
+org.springframework.boot.autoconfigure.EnableAutoConfiguration= \
+  com.ww.mall.rabbitmq.MallRabbitmqAutoConfiguration, \
+  com.ww.mall.rabbitmq.exchange.ExchangeConfiguration, \
+  com.ww.mall.rabbitmq.queue.QueueConfiguration, \
+  com.ww.mall.rabbitmq.bind.MallMemberBindingConfiguration

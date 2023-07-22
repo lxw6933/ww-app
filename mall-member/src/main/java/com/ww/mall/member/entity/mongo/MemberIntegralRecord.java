@@ -1,11 +1,10 @@
 package com.ww.mall.member.entity.mongo;
 
+import com.ww.mall.member.enums.IntegralSource;
 import com.ww.mall.member.enums.IntegralType;
 import lombok.Data;
 import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.mapping.Document;
-
-import java.util.Date;
 
 /**
  * @author ww
@@ -25,9 +24,9 @@ public class MemberIntegralRecord {
     private Long memberId;
 
     /**
-     * 渠道id
+     * 积分来源
      */
-    private Long channelId;
+    private IntegralSource integralSource;
 
     /**
      * 积分类型【新增、减少】

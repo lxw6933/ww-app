@@ -8,7 +8,7 @@ import com.ww.mall.common.enums.CodeEnum;
 import com.ww.mall.common.exception.ApiException;
 import com.ww.mall.member.entity.Member;
 import com.ww.mall.member.service.MemberService;
-import com.ww.mall.member.vo.MemberVO;
+import com.ww.mall.member.view.vo.MemberVO;
 import com.ww.mall.web.cmmon.MallPage;
 import com.ww.mall.web.cmmon.MallPageResult;
 import com.ww.mall.web.utils.AuthorizationContext;

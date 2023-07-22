@@ -30,7 +30,7 @@ import java.util.List;
 @ControllerAdvice
 public class ResponseBodyHandler implements ResponseBodyAdvice<Object> {
 
-    private static final List<String> FILTER_PACKAGE = Arrays.asList("org.springframework", "springfox.documentation", ".inner.");
+    private static final List<String> FILTER_PACKAGE = Arrays.asList("org.springframework", "springfox.documentation");
     private static final List<String> FILTER_CLASS = Arrays.asList("springfox.documentation", "inner");
 
     @Autowired

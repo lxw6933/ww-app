@@ -1,7 +1,7 @@
 package com.ww.mall.rabbitmq;
 
 import com.alibaba.fastjson.JSON;
-import com.ww.mall.common.constant.Constant;
+import com.ww.mall.enums.MqMsgStatus;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import org.apache.commons.lang3.time.DateUtils;
@@ -44,9 +44,9 @@ public class MqMsgLogEntity {
     private String routingKey;
 
     /**
-     * 消息状态(0投递中 1投递成功 2投递失败 3已消费 4消费失败)
+     * 消息状态
      */
-    private Integer status;
+    private MqMsgStatus status;
 
     /**
      * 重试次数
@@ -73,7 +73,7 @@ public class MqMsgLogEntity {
         this.message = JSON.toJSONString(message);
         this.exchange = exchange;
         this.routingKey = routingKey;
-        this.status = Constant.MsgLogStatus.DELIVERING;
+        this.status = MqMsgStatus.DELIVER_SUCCESS;
         this.nextTryTime = (DateUtils.addMinutes(new Date(), 1));
     }
 

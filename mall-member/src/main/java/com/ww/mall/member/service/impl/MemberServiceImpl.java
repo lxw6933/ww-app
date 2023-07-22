@@ -2,6 +2,7 @@ package com.ww.mall.member.service.impl;
 
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
+import com.ww.mall.member.config.MemberPublisher;
 import com.ww.mall.member.dao.MemberMapper;
 import com.ww.mall.member.entity.Member;
 import com.ww.mall.member.service.MemberService;
@@ -9,7 +10,6 @@ import com.ww.mall.web.view.dto.MemberDTO;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Service;
 
 import java.util.UUID;
@@ -24,7 +24,7 @@ import java.util.UUID;
 public class MemberServiceImpl extends ServiceImpl<MemberMapper, Member> implements MemberService {
 
     @Autowired
-    private StringRedisTemplate stringRedisTemplate;
+    private MemberPublisher memberPublisher;
 
     @Override
     public MemberDTO getMemberByMobile(String mobile) {
@@ -36,6 +36,8 @@ public class MemberServiceImpl extends ServiceImpl<MemberMapper, Member> impleme
             member.setMobile(mobile);
             member.setNickName(UUID.randomUUID().toString());
             this.save(member);
+            // 发送用户注册消息
+            memberPublisher.publishMemberRegisterMsg(member.getId());
         }
         MemberDTO memberDTO = new MemberDTO();
         BeanUtils.copyProperties(member, memberDTO);

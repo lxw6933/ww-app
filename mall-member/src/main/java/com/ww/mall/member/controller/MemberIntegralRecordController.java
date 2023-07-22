@@ -2,14 +2,13 @@ package com.ww.mall.member.controller;
 
 import com.ww.mall.member.entity.mongo.MemberIntegralRecord;
 import com.ww.mall.member.service.MemberIntegralRecordService;
+import com.ww.mall.member.view.bo.MemberIntegralRecordBO;
 import com.ww.mall.web.cmmon.MallPage;
 import com.ww.mall.web.cmmon.MallPageResult;
+import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.validation.annotation.Validated;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 /**
  * @author ww
@@ -23,6 +22,13 @@ public class MemberIntegralRecordController {
 
     @Autowired
     private MemberIntegralRecordService memberIntegralRecordService;
+
+    @PostMapping("/add")
+    public boolean add(@RequestBody @Validated MemberIntegralRecordBO memberIntegralRecordBO) {
+        MemberIntegralRecord memberIntegralRecord = new MemberIntegralRecord();
+        BeanUtils.copyProperties(memberIntegralRecordBO, memberIntegralRecord);
+        return memberIntegralRecordService.save(memberIntegralRecord);
+    }
 
     @GetMapping("/page")
     public MallPageResult<MemberIntegralRecord> page(MallPage page) {

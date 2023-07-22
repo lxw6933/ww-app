@@ -8,18 +8,28 @@ spring:
 #    url: jdbc:mysql://192.168.10.141:3306/mall_basic?characterEncoding=UTF-8&autoReconnect=true&useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=Asia/Shanghai
     url: jdbc:mysql://localhost:3306/ww_mall?characterEncoding=UTF-8&autoReconnect=true&useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=Asia/Shanghai
     username: root
-    password: admin
-#    password: adminlxw
+#    password: admin
+    password: adminlxw
   redis:
     host: localhost
     password: 123456
   data:
     mongodb:
-      host: 192.168.10.141:10000
-      database: mall
-      username: pflm
-      password: vqWK7nRO7i$hP%kt
+      host: localhost:27017
+      database: ww_mall
+      username: admin
+      password: admin
       authentication-database: admin
+  rabbitmq:
+    addresses: localhost:5672
+    virtual-host: /
+    # 设置发送端到exchange确认回调
+    publisher-confirm-type: correlated
+    # 设置发送端到queue确认回调
+    publisher-returns: true
+    # 设置消息抵达queue，以异步方式回调 publisher-returns
+    template:
+      mandatory: true
 
 # 开启sentinel feign支持【调用方（调用服务方）的熔断保护、被调用方（服务提供方）的降级保护】
 feign:

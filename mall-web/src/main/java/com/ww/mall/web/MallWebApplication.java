@@ -14,6 +14,7 @@ import com.ww.mall.web.handler.ServerSentinelHandler;
 import com.ww.mall.web.interceptor.FeignRequestInterceptor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.autoconfigure.jackson.Jackson2ObjectMapperBuilderCustomizer;
+import org.springframework.cloud.openfeign.EnableFeignClients;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
@@ -28,6 +29,7 @@ import java.time.LocalTime;
  */
 @Slf4j
 @Configuration
+@EnableFeignClients(basePackages = "com.ww.mall.web.feign")
 public class MallWebApplication {
 
     @Bean
