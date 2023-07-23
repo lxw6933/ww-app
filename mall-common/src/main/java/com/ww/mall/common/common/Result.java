@@ -23,13 +23,6 @@ public class Result<T> implements Serializable {
         this.message = SUCCESS_MSG;
     }
 
-    public Result(Result result) {
-        this.code = SUCCESS_CODE;
-        this.message = SUCCESS_MSG;
-        this.setCode(result.getCode());
-        this.setMessage(result.getMessage());
-    }
-
     public Result(T value) {
         this.code = SUCCESS_CODE;
         this.message = SUCCESS_MSG;
