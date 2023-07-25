@@ -35,4 +35,11 @@ public interface CouponService extends IService<Coupon> {
      */
     boolean receiveCoupon(String activityCode);
 
+    /**
+     * 更新用户优惠券状态信息
+     *
+     * @param memberId 用户id
+     */
+    void updateMemberCouponStatus(Long memberId);
+
 }

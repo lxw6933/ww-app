@@ -76,4 +76,9 @@ public class MemberCoupon {
      */
     private String receiveTime;
 
+    /**
+     * 更新时间
+     */
+    private String updateTime;
+
 }

@@ -19,6 +19,7 @@ import com.ww.mall.coupon.service.CouponService;
 import com.ww.mall.web.utils.AuthorizationContext;
 import com.ww.mall.web.utils.IdUtil;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.collections4.CollectionUtils;
 import org.redisson.api.RLock;
 import org.redisson.api.RedissonClient;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -29,6 +30,7 @@ import org.springframework.stereotype.Service;
 
 import javax.annotation.Resource;
 import java.util.Date;
+import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.TimeUnit;
 
@@ -93,6 +95,34 @@ public class CouponServiceImpl extends ServiceImpl<CouponMapper, Coupon> impleme
             receiveCouponLock.unlock();
         }
         return true;
+    }
+
+    @Override
+    public void updateMemberCouponStatus(Long memberId) {
+        // 查询用户所有未失效的优惠券
+        Query query = new Query();
+        query.addCriteria(Criteria.where("memberId").is(memberId)
+                        .and("couponStatus").ne(CouponStatus.EXPIRED));
+        List<MemberCoupon> memberCouponList = mongoTemplate.find(query, MemberCoupon.class);
+        Date now = new Date();
+        if (CollectionUtils.isNotEmpty(memberCouponList)) {
+            memberCouponList.forEach(memberCoupon -> {
+                CouponStatus couponStatus;
+                if (now.before(DateUtil.parse(memberCoupon.getUseStartTime(), DatePattern.NORM_DATETIME_PATTERN))) {
+                    couponStatus = CouponStatus.TO_TAKE_EFFECT;
+                } else if (now.before(DateUtil.parse(memberCoupon.getUseEndTime(), DatePattern.NORM_DATETIME_PATTERN))) {
+                    couponStatus = CouponStatus.IN_EFFECT;
+                } else {
+                    couponStatus = CouponStatus.EXPIRED;
+                }
+                if (!memberCoupon.getCouponStatus().equals(couponStatus)) {
+                    memberCoupon.setCouponStatus(couponStatus);
+                    memberCoupon.setUpdateTime(DateUtil.format(now, DatePattern.NORM_DATETIME_PATTERN));
+                    mongoTemplate.save(memberCoupon);
+                    log.info("用户【{}】优惠券【{}】更新状态为【{}】", memberId, memberCoupon.getCouponTicketCode(), couponStatus);
+                }
+            });
+        }
     }
 
     private void validReceiveCoupon(MallClientUser clientUser, Coupon coupon) {
