@@ -35,4 +35,9 @@ public class MallClientUser {
      */
     private Long memberId;
 
+    /**
+     * 渠道id
+     */
+    private Long channelId;
+
 }

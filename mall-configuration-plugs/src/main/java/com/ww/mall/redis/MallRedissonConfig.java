@@ -19,7 +19,7 @@ import org.springframework.data.redis.core.RedisTemplate;
 @Slf4j
 @ConditionalOnClass({RedisTemplate.class})
 @EnableConfigurationProperties(RedisProperties.class)
-public class RedissonConfig {
+public class MallRedissonConfig {
 
     /**
      * "redis://"正常连接

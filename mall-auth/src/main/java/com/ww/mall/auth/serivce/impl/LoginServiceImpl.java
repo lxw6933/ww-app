@@ -65,6 +65,7 @@ public class LoginServiceImpl implements LoginService {
                 Date tokenExpTime = DateUtils.addHours(tokenEffectTime, jwtProperties.getExpire());
                 Map<String, Object> map = new HashMap<>();
                 map.put("memberId", member.getId());
+                map.put("channelId", member.getChannelId());
                 map.put("mobile", member.getMobile());
                 map.put("exp", tokenExpTime.getTime());
                 map.put("nbf", tokenEffectTime.getTime());
