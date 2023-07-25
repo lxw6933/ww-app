@@ -25,11 +25,11 @@ import java.util.Date;
 @Slf4j
 public abstract class MsgConsumerTemplate {
 
-    private final static Integer MSG_TRY_COUNT = 3;
+    private static final Integer MSG_TRY_COUNT = 3;
 
     private final MongoTemplate mongoTemplate = SpringContextManager.getBean(MongoTemplate.class);
 
-    final public void consumer(Message message, Object msg, Channel channel) throws IOException {
+    public final void consumer(Message message, Object msg, Channel channel) throws IOException {
         MessageProperties properties = message.getMessageProperties();
         long tag = properties.getDeliveryTag();
         // 获取消息的id
