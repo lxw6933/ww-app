@@ -13,7 +13,7 @@ import lombok.extern.slf4j.Slf4j;
  * @create: 2023/7/22 23:13
  **/
 @Slf4j
-public class MemberRegisterMsgConsumer extends MsgConsumer {
+public class MemberRegisterMsgConsumer extends MsgConsumerTemplate {
     private final MemberFeignService memberFeignService = SpringContextManager.getBean(MemberFeignService.class);
 
     @Override

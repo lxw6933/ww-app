@@ -23,7 +23,7 @@ import java.util.Date;
  * @create: 2023/7/22 22:32
  **/
 @Slf4j
-public abstract class MsgConsumer {
+public abstract class MsgConsumerTemplate {
 
     private final static Integer MSG_TRY_COUNT = 3;
 
