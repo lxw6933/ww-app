@@ -1,4 +1,4 @@
-CREATE TABLE `coupon`
+CREATE TABLE `t_coupon`
 (
     `id`                          bigint                                                  NOT NULL AUTO_INCREMENT COMMENT '物理主键',
     `activity_code`               varchar(255) CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL COMMENT '活动唯一编码',

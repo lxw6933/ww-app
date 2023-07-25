@@ -99,7 +99,7 @@ public class CouponServiceImpl extends ServiceImpl<CouponMapper, Coupon> impleme
             throw new ApiException("优惠券已下架");
         }
         // 校验用户渠道是否一致
-        if (clientUser.getChannelId().equals(coupon.getChannelId())) {
+        if (!clientUser.getChannelId().equals(coupon.getChannelId())) {
             throw new ApiException("用户所在渠道与优惠券不一致");
         }
         // 是否达到领取时间
@@ -127,8 +127,9 @@ public class CouponServiceImpl extends ServiceImpl<CouponMapper, Coupon> impleme
                 query.addCriteria(
                         Criteria.where("activityCode").is(coupon.getActivityCode())
                                 .and("memberId").is(clientUser.getMemberId())
-                                .and("receiveTime").gte(dayBeginDay)
-                                .and("receiveTime").lte(dayEndDay)
+                                .and("receiveTime")
+                                .gte(DateUtil.format(dayBeginDay, DatePattern.NORM_DATETIME_PATTERN))
+                                .lte(DateUtil.format(dayEndDay, DatePattern.NORM_DATETIME_PATTERN))
                 );
                 memberReceiveCount = mongoTemplate.count(query, MemberCoupon.class);
                 break;
@@ -138,8 +139,9 @@ public class CouponServiceImpl extends ServiceImpl<CouponMapper, Coupon> impleme
                 query.addCriteria(
                         Criteria.where("activityCode").is(coupon.getActivityCode())
                                 .and("memberId").is(clientUser.getMemberId())
-                                .and("receiveTime").gte(weekBeginDay)
-                                .and("receiveTime").lte(weekEndDay)
+                                .and("receiveTime")
+                                .gte(DateUtil.format(weekBeginDay, DatePattern.NORM_DATETIME_PATTERN))
+                                .lte(DateUtil.format(weekEndDay, DatePattern.NORM_DATETIME_PATTERN))
                 );
                 memberReceiveCount = mongoTemplate.count(query, MemberCoupon.class);
                 break;
@@ -149,8 +151,9 @@ public class CouponServiceImpl extends ServiceImpl<CouponMapper, Coupon> impleme
                 query.addCriteria(
                         Criteria.where("activityCode").is(coupon.getActivityCode())
                                 .and("memberId").is(clientUser.getMemberId())
-                                .and("receiveTime").gte(monthBeginDay)
-                                .and("receiveTime").lte(monthEndDay)
+                                .and("receiveTime")
+                                .gte(DateUtil.format(monthBeginDay, DatePattern.NORM_DATETIME_PATTERN))
+                                .lte(DateUtil.format(monthEndDay, DatePattern.NORM_DATETIME_PATTERN))
                 );
                 memberReceiveCount = mongoTemplate.count(query, MemberCoupon.class);
                 break;
@@ -181,10 +184,10 @@ public class CouponServiceImpl extends ServiceImpl<CouponMapper, Coupon> impleme
         memberCoupon.setDeductionAmount(coupon.getDeductionAmount());
         memberCoupon.setReceiveTime(DateUtil.format(new Date(), DatePattern.NORM_DATETIME_PATTERN));
         // 优惠券
-        if (Objects.requireNonNull(coupon.getUseTimeType()) == CouponUseTimeType.FIXED) {
+        if (Objects.requireNonNull(coupon.getCouponUseTimeType()) == CouponUseTimeType.FIXED) {
             memberCoupon.setUseStartTime(DateUtil.format(coupon.getUseStartTime(), DatePattern.NORM_DATETIME_PATTERN));
             memberCoupon.setUseEndTime(DateUtil.format(coupon.getUseEndTime(), DatePattern.NORM_DATETIME_PATTERN));
-        } else if (coupon.getUseTimeType() == CouponUseTimeType.AFTER_RECEIVING) {
+        } else if (coupon.getCouponUseTimeType() == CouponUseTimeType.AFTER_RECEIVING) {
             Integer receiveAfterDayEffect = coupon.getReceiveAfterDayEffect();
             Integer receiveAfterEffectDay = coupon.getReceiveAfterEffectDay();
             memberCoupon.setUseStartTime(DateUtil.format(DateUtil.offsetDay(now, receiveAfterDayEffect), DatePattern.NORM_DATETIME_PATTERN));

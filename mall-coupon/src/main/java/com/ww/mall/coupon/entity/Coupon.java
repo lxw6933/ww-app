@@ -72,7 +72,7 @@ public class Coupon extends BaseEntity {
     /**
      * 使用时间类型
      */
-    private CouponUseTimeType useTimeType;
+    private CouponUseTimeType couponUseTimeType;
 
     /**
      * 优惠券允许使用开始时间【CouponUseTimeType】
