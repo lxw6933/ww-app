@@ -18,6 +18,7 @@ import com.ww.mall.coupon.eunms.CouponUseTimeType;
 import com.ww.mall.coupon.service.CouponService;
 import com.ww.mall.web.utils.AuthorizationContext;
 import com.ww.mall.web.utils.IdUtil;
+import lombok.extern.slf4j.Slf4j;
 import org.redisson.api.RLock;
 import org.redisson.api.RedissonClient;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -36,6 +37,7 @@ import java.util.concurrent.TimeUnit;
  * @create 2023-07-25- 10:20
  * @description:
  */
+@Slf4j
 @Service
 public class CouponServiceImpl extends ServiceImpl<CouponMapper, Coupon> implements CouponService {
 
@@ -83,8 +85,9 @@ public class CouponServiceImpl extends ServiceImpl<CouponMapper, Coupon> impleme
             // 构建用户领取优惠券记录
             MemberCoupon memberCoupon = buildMemberCoupon(clientUser, coupon);
             mongoTemplate.save(memberCoupon);
+            log.info("用户【{}】领取优惠券【{}】", clientUser.getMemberId(), memberCoupon);
         } catch (Exception e) {
-            log.error("优惠券领取异常：{}", e);
+            log.error("优惠券领取异常：", e);
             return false;
         } finally {
             receiveCouponLock.unlock();
