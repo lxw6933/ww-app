@@ -8,7 +8,6 @@ import lombok.extern.slf4j.Slf4j;
 import org.slf4j.MDC;
 import org.springframework.cloud.gateway.filter.GatewayFilterChain;
 import org.springframework.cloud.gateway.filter.GlobalFilter;
-import org.springframework.core.Ordered;
 import org.springframework.core.annotation.Order;
 import org.springframework.core.io.ByteArrayResource;
 import org.springframework.core.io.buffer.DataBuffer;
@@ -73,7 +72,7 @@ public class LogFilter implements GlobalFilter {
         MediaType contentType = headers.getContentType();
         log.info("url:[{}] 请求: {}", request.getURI().getRawPath(), JSON.toJSONString(request));
         if (request.getMethod() == HttpMethod.GET) {
-            log.info("---------------------get----------------------------");
+            // do nothing
         } else if (request.getMethod() == HttpMethod.POST) {
             if (MediaType.APPLICATION_JSON.equals(contentType)) {
                 // 缓存body信息
