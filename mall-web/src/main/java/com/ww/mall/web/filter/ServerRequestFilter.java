@@ -16,7 +16,7 @@ import java.io.IOException;
 /**
  * @author ww
  * @create 2023-07-26- 11:04
- * @description:
+ * @description: 服务请求过滤器
  */
 @Slf4j
 public class ServerRequestFilter extends OncePerRequestFilter {
