@@ -1,6 +1,5 @@
 package com.ww.mall.web.interceptor;
 
-import cn.hutool.core.util.IdUtil;
 import com.ww.mall.common.constant.Constant;
 import com.ww.mall.web.utils.AuthorizationContext;
 import org.slf4j.MDC;
@@ -18,12 +17,12 @@ import javax.servlet.http.HttpServletResponse;
 public class RequestInterceptor implements HandlerInterceptor {
     @Override
     public boolean preHandle(HttpServletRequest request, HttpServletResponse response, Object handler) throws Exception {
-        // 如果有上层调用就用上层的ID
-        String traceId = request.getHeader(Constant.TRACE_ID);
-        if (traceId == null) {
-            traceId = IdUtil.objectId();
-        }
-        MDC.put(Constant.TRACE_ID, traceId);
+//        // 如果有上层调用就用上层的ID
+//        String traceId = request.getHeader(Constant.TRACE_ID);
+//        if (traceId == null) {
+//            traceId = IdUtil.objectId();
+//        }
+//        MDC.put(Constant.TRACE_ID, traceId);
         return true;
     }
 
