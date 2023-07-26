@@ -1,5 +1,6 @@
 package com.ww.mall.coupon.view.vo;
 
+import com.ww.mall.coupon.eunms.CouponActivityStatus;
 import com.ww.mall.coupon.eunms.CouponDiscountType;
 import com.ww.mall.coupon.eunms.CouponType;
 import lombok.Data;
@@ -69,6 +70,11 @@ public class CouponPageVO {
      * 结束领取时间
      */
     private Date receiveEndTime;
+
+    /**
+     * 活动状态
+     */
+    private CouponActivityStatus couponActivityStatus;
 
     /**
      * 上下架状态

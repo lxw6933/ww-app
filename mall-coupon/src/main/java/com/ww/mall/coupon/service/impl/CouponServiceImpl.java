@@ -1,6 +1,7 @@
 package com.ww.mall.coupon.service.impl;
 
 import cn.hutool.core.date.DatePattern;
+import cn.hutool.core.date.DateUnit;
 import cn.hutool.core.date.DateUtil;
 import cn.hutool.core.util.RandomUtil;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
@@ -13,10 +14,7 @@ import com.ww.mall.coupon.constant.LockConstant;
 import com.ww.mall.coupon.dao.CouponMapper;
 import com.ww.mall.coupon.entity.Coupon;
 import com.ww.mall.coupon.entity.mongo.MemberCoupon;
-import com.ww.mall.coupon.eunms.CouponDistributeType;
-import com.ww.mall.coupon.eunms.CouponStatus;
-import com.ww.mall.coupon.eunms.CouponType;
-import com.ww.mall.coupon.eunms.CouponUseTimeType;
+import com.ww.mall.coupon.eunms.*;
 import com.ww.mall.coupon.service.CouponService;
 import com.ww.mall.coupon.view.bo.CouponPageBO;
 import com.ww.mall.coupon.view.vo.CouponPageVO;
@@ -75,16 +73,29 @@ public class CouponServiceImpl extends ServiceImpl<CouponMapper, Coupon> impleme
             CouponPageVO couponPageVO = new CouponPageVO();
             BeanUtils.copyProperties(coupon, couponPageVO);
             Query query = new Query();
+            // 已领取数量
             Criteria criteria = Criteria.where("activityCode").is(coupon.getActivityCode());
             query.addCriteria(criteria);
             long receiveCouponCount = mongoTemplate.count(query, MemberCoupon.class);
-            // 已领取数量
             couponPageVO.setReceiveCouponNumber((int) receiveCouponCount);
             // 已使用数量
             criteria = criteria.and("couponStatus").is(CouponStatus.USED);
             query.addCriteria(criteria);
             long usedCouponCount = mongoTemplate.count(query, MemberCoupon.class);
             couponPageVO.setUsedCouponNumber((int) usedCouponCount);
+            // 活动状态
+            Date now = new Date();
+            if (now.before(coupon.getReceiveStartTime())) {
+                couponPageVO.setCouponActivityStatus(CouponActivityStatus.TO_TAKE_EFFECT);
+            } else if (now.before(coupon.getReceiveEndTime())) {
+                if (DateUtil.between(now, coupon.getReceiveEndTime(), DateUnit.HOUR) < 24) {
+                    couponPageVO.setCouponActivityStatus(CouponActivityStatus.DUE_SOON);
+                } else {
+                    couponPageVO.setCouponActivityStatus(CouponActivityStatus.IN_EFFECT);
+                }
+            } else {
+                couponPageVO.setCouponActivityStatus(CouponActivityStatus.EXPIRED);
+            }
             return couponPageVO;
         });
     }
