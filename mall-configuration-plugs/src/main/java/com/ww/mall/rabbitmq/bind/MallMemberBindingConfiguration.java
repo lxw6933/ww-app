@@ -25,13 +25,27 @@ public class MallMemberBindingConfiguration {
     private TopicExchange mallMemberExchange;
 
     @Resource
+    private TopicExchange mallCanalExchange;
+
+    @Resource
     private Queue mallMemberRegisterQueue;
+
+
+    @Resource
+    private Queue mallCanalQueue;
 
     @Bean
     public Binding mallMemberRegisterBinding() {
         return BindingBuilder.bind(mallMemberRegisterQueue)
                 .to(mallMemberExchange)
                 .with(RouteKeyConstant.MALL_MEMBER_REGISTER_KEY);
+    }
+
+    @Bean
+    public Binding mallCanalBinding() {
+        return BindingBuilder.bind(mallCanalQueue)
+                .to(mallCanalExchange)
+                .with(RouteKeyConstant.MALL_CANAL_KEY);
     }
 
 }

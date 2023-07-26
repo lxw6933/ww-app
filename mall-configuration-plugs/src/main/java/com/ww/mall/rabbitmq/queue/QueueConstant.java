@@ -12,4 +12,9 @@ public class QueueConstant {
      */
     public static final String MALL_MEMBER_REGISTER_QUEUE_NAME = "mall.member.register.queue";
 
+    /**
+     * canal队列
+     */
+    public static final String MALL_CANAL_QUEUE_NAME = "mall.canal.queue";
+
 }

@@ -20,4 +20,9 @@ public class ExchangeConfiguration {
         return new TopicExchange(ExchangeConstant.MALL_MEMBER_EXCHANGE_NAME);
     }
 
+    @Bean
+    public TopicExchange mallCanalExchange() {
+        return new TopicExchange(ExchangeConstant.MALL_CANAL_EXCHANGE_NAME);
+    }
+
 }

@@ -12,4 +12,9 @@ public class RouteKeyConstant {
      */
     public final static String MALL_MEMBER_REGISTER_KEY = "mall.member.register.key";
 
+    /**
+     * canal route key
+     */
+    public final static String MALL_CANAL_KEY = "mall.canal.key";
+
 }

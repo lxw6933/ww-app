@@ -12,4 +12,9 @@ public class ExchangeConstant {
      */
     public static final String MALL_MEMBER_EXCHANGE_NAME = "mall.member.exchange";
 
+    /**
+     * canal exchange
+     */
+    public static final String MALL_CANAL_EXCHANGE_NAME = "mall.canal.exchange";
+
 }

@@ -20,4 +20,9 @@ public class QueueConfiguration {
         return new Queue(QueueConstant.MALL_MEMBER_REGISTER_QUEUE_NAME);
     }
 
+    @Bean
+    public Queue mallCanalQueue() {
+        return new Queue(QueueConstant.MALL_CANAL_QUEUE_NAME);
+    }
+
 }
