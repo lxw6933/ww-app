@@ -29,7 +29,7 @@ public class CartInterceptor implements HandlerInterceptor {
     @Override
     public boolean preHandle(HttpServletRequest request, HttpServletResponse response, Object handler) throws Exception {
         UserInfoTo userInfoTo = new UserInfoTo();
-        MallClientUser clientUser = AuthorizationContext.getClientUser();
+        MallClientUser clientUser = AuthorizationContext.getClientUser(false);
         if (clientUser != null) {
             Long userId = clientUser.getMemberId();
             // 用户登录

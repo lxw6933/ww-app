@@ -25,6 +25,10 @@ public class AuthorizationContext {
     private static final ThreadLocal<MallClientUser> CLIENT_USER_THREAD_LOCAL = new ThreadLocal<>();
 
     public static MallClientUser getClientUser() {
+        return getClientUser(true);
+    }
+
+    public static MallClientUser getClientUser(boolean ex) {
         MallClientUser mallClientUser = CLIENT_USER_THREAD_LOCAL.get();
         // 获取当前线程是否有用户信息
         if (mallClientUser != null) {
@@ -34,12 +38,20 @@ public class AuthorizationContext {
         ServletRequestAttributes attributes = (ServletRequestAttributes) RequestContextHolder
                 .getRequestAttributes();
         if (attributes == null) {
-            throw new ApiException(CodeEnum.UN_LOGIN.getCode(), CodeEnum.UN_LOGIN.getMessage());
+            if (ex) {
+                throw new ApiException(CodeEnum.UN_LOGIN.getCode(), CodeEnum.UN_LOGIN.getMessage());
+            } else {
+                return null;
+            }
         }
         HttpServletRequest request = attributes.getRequest();
         String tokenInfo = request.getHeader(Constant.USER_TOKEN_INFO);
         if (StringUtils.isEmpty(tokenInfo)) {
-            throw new ApiException(CodeEnum.UN_LOGIN.getCode(), CodeEnum.UN_LOGIN.getMessage());
+            if (ex) {
+                throw new ApiException(CodeEnum.UN_LOGIN.getCode(), CodeEnum.UN_LOGIN.getMessage());
+            } else {
+                return null;
+            }
         }
         return JSON.parseObject(tokenInfo, MallClientUser.class);
     }
