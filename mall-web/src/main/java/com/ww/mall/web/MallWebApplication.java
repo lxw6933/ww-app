@@ -7,6 +7,7 @@ import com.fasterxml.jackson.datatype.jsr310.deser.LocalTimeDeserializer;
 import com.fasterxml.jackson.datatype.jsr310.ser.LocalDateSerializer;
 import com.fasterxml.jackson.datatype.jsr310.ser.LocalDateTimeSerializer;
 import com.fasterxml.jackson.datatype.jsr310.ser.LocalTimeSerializer;
+import com.ww.mall.web.excel.ExcelManager;
 import com.ww.mall.web.handler.RequestBodyHandler;
 import com.ww.mall.web.handler.ResExceptionHandler;
 import com.ww.mall.web.handler.ResponseBodyHandler;
@@ -31,6 +32,12 @@ import java.time.LocalTime;
 @Configuration
 @EnableFeignClients(basePackages = "com.ww.mall.web.feign")
 public class MallWebApplication {
+
+    @Bean
+    public ExcelManager excelManager() {
+        log.info("初始化excelManager功能成功...");
+        return new ExcelManager();
+    }
 
     @Bean
     public Jackson2ObjectMapperBuilderCustomizer jacksonCustomizer() {
