@@ -7,6 +7,7 @@ import com.fasterxml.jackson.datatype.jsr310.deser.LocalTimeDeserializer;
 import com.fasterxml.jackson.datatype.jsr310.ser.LocalDateSerializer;
 import com.fasterxml.jackson.datatype.jsr310.ser.LocalDateTimeSerializer;
 import com.fasterxml.jackson.datatype.jsr310.ser.LocalTimeSerializer;
+import com.ww.mall.web.config.mybatis.MallMybatisPlusConfig;
 import com.ww.mall.web.excel.ExcelManager;
 import com.ww.mall.web.filter.ServerRequestFilter;
 import com.ww.mall.web.handler.RequestBodyHandler;
@@ -15,6 +16,7 @@ import com.ww.mall.web.handler.ResponseBodyHandler;
 import com.ww.mall.web.handler.ServerSentinelHandler;
 import com.ww.mall.web.interceptor.FeignRequestInterceptor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnBean;
 import org.springframework.boot.autoconfigure.jackson.Jackson2ObjectMapperBuilderCustomizer;
 import org.springframework.cloud.context.config.annotation.RefreshScope;
 import org.springframework.cloud.openfeign.EnableFeignClients;
@@ -43,6 +45,7 @@ public class MallWebApplication {
     }
 
     @Bean
+    @ConditionalOnBean(MallMybatisPlusConfig.class)
     public ExcelManager excelManager() {
         log.info("初始化excelManager功能成功...");
         return new ExcelManager();
