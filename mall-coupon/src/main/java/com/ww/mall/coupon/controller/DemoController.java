@@ -31,11 +31,11 @@ public class DemoController {
 
     @RequestMapping("/demo")
     public String demo(){
-        CompletableFuture.runAsync(() -> {
-            log.info("子线程打印");
-        }, defaultThreadPoolExecutor);
+//        CompletableFuture.runAsync(() -> {
+//            log.info("子线程打印");
+//        }, defaultThreadPoolExecutor);
         log.info("main线程执行");
-        return "coupon active is opening！！！" + defaultThreadPoolProperties;
+        return "coupon active is opening！！！" + secretProperties;
     }
 
     @RequestMapping("/test")

@@ -13,7 +13,6 @@ import org.springframework.cloud.context.config.annotation.RefreshScope;
 /**
  * @author ww
  */
-@RefreshScope
 @EnableMallRedis
 @EnableMallRabbitmq
 @EnableDiscoveryClient
