@@ -17,12 +17,6 @@ import javax.servlet.http.HttpServletResponse;
 public class RequestInterceptor implements HandlerInterceptor {
     @Override
     public boolean preHandle(HttpServletRequest request, HttpServletResponse response, Object handler) throws Exception {
-//        // 如果有上层调用就用上层的ID
-//        String traceId = request.getHeader(Constant.TRACE_ID);
-//        if (traceId == null) {
-//            traceId = IdUtil.objectId();
-//        }
-//        MDC.put(Constant.TRACE_ID, traceId);
         return true;
     }
 
@@ -34,8 +28,6 @@ public class RequestInterceptor implements HandlerInterceptor {
     @Override
     public void afterCompletion(HttpServletRequest request, HttpServletResponse response, Object handler, Exception ex)
             throws Exception {
-        // 调用结束后删除
-        MDC.remove(Constant.TRACE_ID);
-        AuthorizationContext.remove();
+
     }
 }
