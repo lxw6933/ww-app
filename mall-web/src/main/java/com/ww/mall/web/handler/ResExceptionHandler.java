@@ -7,10 +7,13 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.converter.HttpMessageNotReadableException;
+import org.springframework.web.HttpMediaTypeNotSupportedException;
+import org.springframework.web.HttpRequestMethodNotSupportedException;
 import org.springframework.web.bind.MissingServletRequestParameterException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+import org.springframework.web.servlet.NoHandlerFoundException;
 
 /**
  * @author ww
@@ -26,6 +29,27 @@ public class ResExceptionHandler {
     public Result<Object> handleMissingServletRequestParameterException(MissingServletRequestParameterException e) {
         log.error("缺少请求参数", e);
         return new Result<>(CodeEnum.PARAM_ERROR.getCode(), "缺少请求参数");
+    }
+
+    @ResponseStatus(HttpStatus.UNSUPPORTED_MEDIA_TYPE)
+    @ExceptionHandler(HttpMediaTypeNotSupportedException.class)
+    public Result<Object> handleHttpMediaTypeNotSupportedException(HttpMediaTypeNotSupportedException e) {
+        log.error("不支持当前媒体类型", e);
+        return new Result<>(CodeEnum.NOT_SUPPORTED_MEDIA.getCode(), CodeEnum.NOT_SUPPORTED_MEDIA.getMessage());
+    }
+
+    @ResponseStatus(HttpStatus.METHOD_NOT_ALLOWED)
+    @ExceptionHandler(HttpRequestMethodNotSupportedException.class)
+    public Result<Object> handleHttpRequestMethodNotSupportedException(HttpRequestMethodNotSupportedException e) {
+        log.error("不支持当前请求方法", e);
+        return new Result<>(CodeEnum.NOT_SUPPORTED_METHOD.getCode(), CodeEnum.NOT_SUPPORTED_METHOD.getMessage());
+    }
+
+    @ResponseStatus(HttpStatus.NOT_FOUND)
+    @ExceptionHandler(NoHandlerFoundException.class)
+    public Result<Object> noHandlerFoundException(NoHandlerFoundException e) {
+        log.error("请求url不存在", e);
+        return new Result<>(CodeEnum.NOT_HANDLER_FOUND.getCode(), CodeEnum.NOT_HANDLER_FOUND.getMessage());
     }
 
     @ResponseStatus(HttpStatus.BAD_REQUEST)

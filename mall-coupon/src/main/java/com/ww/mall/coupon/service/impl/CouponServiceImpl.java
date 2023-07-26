@@ -4,6 +4,8 @@ import cn.hutool.core.date.DatePattern;
 import cn.hutool.core.date.DateUtil;
 import cn.hutool.core.util.RandomUtil;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
+import com.baomidou.mybatisplus.core.metadata.IPage;
+import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.ww.mall.common.common.MallClientUser;
 import com.ww.mall.common.exception.ApiException;
@@ -16,12 +18,17 @@ import com.ww.mall.coupon.eunms.CouponStatus;
 import com.ww.mall.coupon.eunms.CouponType;
 import com.ww.mall.coupon.eunms.CouponUseTimeType;
 import com.ww.mall.coupon.service.CouponService;
+import com.ww.mall.coupon.view.bo.CouponPageBO;
+import com.ww.mall.coupon.view.vo.CouponPageVO;
+import com.ww.mall.web.cmmon.MallPageResult;
 import com.ww.mall.web.utils.AuthorizationContext;
 import com.ww.mall.web.utils.IdUtil;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.CollectionUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.redisson.api.RLock;
 import org.redisson.api.RedissonClient;
+import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.mongodb.core.MongoTemplate;
 import org.springframework.data.mongodb.core.query.Criteria;
@@ -48,6 +55,39 @@ public class CouponServiceImpl extends ServiceImpl<CouponMapper, Coupon> impleme
 
     @Resource
     private RedissonClient redissonClient;
+
+    @Override
+    public MallPageResult<CouponPageVO> pageList(CouponPageBO couponPageBO) {
+        log.info("couponPage");
+        QueryWrapper<Coupon> couponQueryWrapper = new QueryWrapper<>();
+        if (StringUtils.isNotEmpty(couponPageBO.getTitle())) {
+            couponQueryWrapper.like("title", couponPageBO.getTitle());
+        }
+        if (couponPageBO.getCouponType() != null) {
+            couponQueryWrapper.eq("coupon_type", couponPageBO.getCouponType());
+        }
+        if (couponPageBO.getCouponDiscountType() != null) {
+            couponQueryWrapper.eq("coupon_discount_type", couponPageBO.getCouponDiscountType());
+        }
+        IPage<Coupon> page = new Page<>(couponPageBO.getPageNum(), couponPageBO.getPageSize());
+        this.page(page, couponQueryWrapper);
+        return new MallPageResult<>(page, coupon -> {
+            CouponPageVO couponPageVO = new CouponPageVO();
+            BeanUtils.copyProperties(coupon, couponPageVO);
+            Query query = new Query();
+            Criteria criteria = Criteria.where("activityCode").is(coupon.getActivityCode());
+            query.addCriteria(criteria);
+            long receiveCouponCount = mongoTemplate.count(query, MemberCoupon.class);
+            // 已领取数量
+            couponPageVO.setReceiveCouponNumber((int) receiveCouponCount);
+            // 已使用数量
+            criteria = criteria.and("couponStatus").is(CouponStatus.USED);
+            query.addCriteria(criteria);
+            long usedCouponCount = mongoTemplate.count(query, MemberCoupon.class);
+            couponPageVO.setUsedCouponNumber((int) usedCouponCount);
+            return couponPageVO;
+        });
+    }
 
     @Override
     public boolean add(Coupon coupon) {

@@ -2,6 +2,10 @@ package com.ww.mall.coupon.controller;
 
 import com.ww.mall.coupon.entity.Coupon;
 import com.ww.mall.coupon.service.CouponService;
+import com.ww.mall.coupon.view.bo.CouponPageBO;
+import com.ww.mall.coupon.view.vo.CouponPageVO;
+import com.ww.mall.web.cmmon.MallPage;
+import com.ww.mall.web.cmmon.MallPageResult;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
@@ -16,6 +20,11 @@ public class CouponController {
 
     @Autowired
     private CouponService couponService;
+
+    @GetMapping("/activity")
+    public MallPageResult<CouponPageVO> pageList(CouponPageBO couponPageBO) {
+        return couponService.pageList(couponPageBO);
+    }
 
     @PutMapping("/activity")
     public boolean add(@RequestBody Coupon coupon) {

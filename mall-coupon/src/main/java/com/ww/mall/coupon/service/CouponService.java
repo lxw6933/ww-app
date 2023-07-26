@@ -2,6 +2,10 @@ package com.ww.mall.coupon.service;
 
 import com.baomidou.mybatisplus.extension.service.IService;
 import com.ww.mall.coupon.entity.Coupon;
+import com.ww.mall.coupon.view.bo.CouponPageBO;
+import com.ww.mall.coupon.view.vo.CouponPageVO;
+import com.ww.mall.web.cmmon.MallPage;
+import com.ww.mall.web.cmmon.MallPageResult;
 
 /**
  * @author ww
@@ -9,6 +13,14 @@ import com.ww.mall.coupon.entity.Coupon;
  * @description:
  */
 public interface CouponService extends IService<Coupon> {
+
+    /**
+     * 优惠券分页列表
+     *
+     * @param couponPageBO pageBO
+     * @return MallPageResult
+     */
+    MallPageResult<CouponPageVO> pageList(CouponPageBO couponPageBO);
 
     /**
      * 新增优惠券活动

@@ -51,7 +51,7 @@ public class MemberController {
     }
 
     @GetMapping("/list")
-    public MallPageResult<MemberVO> memberList(MallPage mallPage) {
+    public MallPageResult<MemberVO> pageList(MallPage mallPage) {
         MallClientUser clientUser = AuthorizationContext.getClientUser();
         if (clientUser == null) {
             throw new ApiException(CodeEnum.ILLEGAL_REQUEST.getCode(), CodeEnum.ILLEGAL_REQUEST.getMessage());
