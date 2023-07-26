@@ -1,5 +1,6 @@
 package com.ww.mall.coupon.controller;
 
+import com.ww.mall.coupon.config.CouponProperties;
 import com.ww.mall.web.config.SecretProperties;
 import com.ww.mall.web.config.thread.DefaultThreadPoolProperties;
 import lombok.extern.slf4j.Slf4j;
@@ -27,7 +28,7 @@ public class DemoController {
     private SecretProperties secretProperties;
 
     @Autowired
-    private ThreadPoolExecutor defaultThreadPoolExecutor;
+    private CouponProperties couponProperties;
 
     @RequestMapping("/demo")
     public String demo(){
@@ -35,7 +36,7 @@ public class DemoController {
 //            log.info("子线程打印");
 //        }, defaultThreadPoolExecutor);
         log.info("main线程执行");
-        return "coupon active is opening！！！" + secretProperties;
+        return "coupon active is opening！！！" + couponProperties;
     }
 
     @RequestMapping("/test")
