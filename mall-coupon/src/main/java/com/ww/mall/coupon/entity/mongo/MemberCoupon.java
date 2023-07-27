@@ -12,10 +12,10 @@ import java.math.BigDecimal;
 /**
  * @author ww
  * @create 2023-07-25- 09:54
- * @description:
+ * @description: 用户领取优惠券记录
  */
 @Data
-@Document(collection = "t_member_integral_record")
+@Document(collection = "t_member_coupon_record")
 public class MemberCoupon {
 
     @Id

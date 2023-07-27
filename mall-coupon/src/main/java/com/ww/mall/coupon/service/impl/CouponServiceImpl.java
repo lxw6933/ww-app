@@ -110,6 +110,7 @@ public class CouponServiceImpl extends ServiceImpl<CouponMapper, Coupon> impleme
         coupon.setState(false);
         coupon.setInitSuccess(false);
         coupon.setActivityCode(activityCode);
+        // TODO: 2023/7/27 保存优惠券关联能使用的商品信息
         return this.save(coupon);
     }
 
@@ -123,6 +124,7 @@ public class CouponServiceImpl extends ServiceImpl<CouponMapper, Coupon> impleme
         coupon.setCouponDiscountType(oldCoupon.getCouponDiscountType());
         coupon.setInitSuccess(oldCoupon.getInitSuccess());
         coupon.setActivityCode(oldCoupon.getActivityCode());
+        // TODO: 2023/7/27 修改优惠券关联能使用的商品信息
         return this.updateById(coupon);
     }
 

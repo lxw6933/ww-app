@@ -11,9 +11,8 @@ import java.util.Date;
 /**
  * @author ww
  * @create 2023-07-25- 09:03
- * @description:
+ * @description: 优惠券活动
  */
-
 @Data
 @TableName("t_coupon")
 @EqualsAndHashCode(callSuper = true)

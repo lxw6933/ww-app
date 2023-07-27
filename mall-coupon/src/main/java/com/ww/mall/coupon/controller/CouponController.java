@@ -1,6 +1,7 @@
 package com.ww.mall.coupon.controller;
 
 import com.ww.mall.coupon.entity.Coupon;
+import com.ww.mall.coupon.entity.mongo.CouponRelationProduct;
 import com.ww.mall.coupon.service.CouponService;
 import com.ww.mall.coupon.view.bo.CouponPageBO;
 import com.ww.mall.coupon.view.vo.CouponPageVO;
@@ -32,7 +33,7 @@ public class CouponController {
     }
 
     @PutMapping("/activity/{activityCode}")
-    public boolean add(@PathVariable("activityCode") String activityCode, @RequestBody Coupon coupon) {
+    public boolean modify(@PathVariable("activityCode") String activityCode, @RequestBody Coupon coupon) {
         return couponService.modify(activityCode, coupon);
     }
 
