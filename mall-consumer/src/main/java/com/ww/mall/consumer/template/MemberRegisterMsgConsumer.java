@@ -6,6 +6,7 @@ import com.ww.mall.web.feign.MemberFeignService;
 import com.ww.mall.web.utils.SpringContextManager;
 import com.ww.mall.web.view.bo.AddMemberIntegralBO;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.poi.ss.formula.functions.T;
 
 /**
  * @description:
@@ -13,13 +14,13 @@ import lombok.extern.slf4j.Slf4j;
  * @create: 2023/7/22 23:13
  **/
 @Slf4j
-public class MemberRegisterMsgConsumer extends MsgConsumerTemplate {
+public class MemberRegisterMsgConsumer extends MsgConsumerTemplate<Long> {
     private final MemberFeignService memberFeignService = SpringContextManager.getBean(MemberFeignService.class);
 
     @Override
-    boolean serverHandler(Object msg) {
+    boolean serverHandler(Long msg) {
         AddMemberIntegralBO addMemberIntegralBO = new AddMemberIntegralBO();
-        addMemberIntegralBO.setMemberId((Long) msg);
+        addMemberIntegralBO.setMemberId(msg);
         addMemberIntegralBO.setIntegralType(true);
         addMemberIntegralBO.setIntegralNum(100);
         Result<Boolean> booleanResult = memberFeignService.addMemberIntegral(addMemberIntegralBO);

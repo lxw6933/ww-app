@@ -23,13 +23,13 @@ import java.util.Date;
  * @create: 2023/7/22 22:32
  **/
 @Slf4j
-public abstract class MsgConsumerTemplate {
+public abstract class MsgConsumerTemplate<T> {
 
     private static final Integer MSG_TRY_COUNT = 3;
 
     private final MongoTemplate mongoTemplate = SpringContextManager.getBean(MongoTemplate.class);
 
-    public final void consumer(Message message, Object msg, Channel channel) throws IOException {
+    public final void consumer(Message message, T msg, Channel channel) throws IOException {
         MessageProperties properties = message.getMessageProperties();
         long tag = properties.getDeliveryTag();
         // 获取消息的id
@@ -82,7 +82,7 @@ public abstract class MsgConsumerTemplate {
      * @param msg 消息
      * @return 业务是否成功
      */
-    abstract boolean serverHandler(Object msg);
+    abstract boolean serverHandler(T msg);
 
     void exceptionMsgHandler(String correlationId, long tag, Channel channel, Exception e) throws IOException {
         log.error("执行消费业务异常", e);
