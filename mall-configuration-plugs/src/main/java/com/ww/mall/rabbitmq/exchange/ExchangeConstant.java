@@ -16,6 +16,8 @@ public class ExchangeConstant {
      * 插件地址：https://www.rabbitmq.com/community-plugins.html
      * 插件名称：rabbitmq_delayed_message_exchange
      * 插件下载地址：rabbitmq/rabbitmq-delayed-message-exchange
+     * 将插件放入rabbitmq-server里的plugins包里
+     * 执行 rabbitmq-plugins enable rabbitmq_delayed_message_exchange 重启
      */
     public static final String MALL_COMMON_DELAY_EXCHANGE = "mall.common.delay.exchange";
 

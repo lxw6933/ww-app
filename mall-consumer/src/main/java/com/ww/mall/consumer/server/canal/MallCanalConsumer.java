@@ -4,10 +4,12 @@ import cn.hutool.json.JSONUtil;
 import com.rabbitmq.client.Channel;
 import com.ww.mall.consumer.template.CanalMsgConsumer;
 import com.ww.mall.consumer.template.MsgConsumerTemplate;
+import com.ww.mall.rabbitmq.queue.MallQueueConfiguration;
 import com.ww.mall.rabbitmq.queue.QueueConstant;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.amqp.core.Message;
 import org.springframework.amqp.rabbit.annotation.RabbitListener;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnBean;
 import org.springframework.stereotype.Component;
 
 import java.io.IOException;
@@ -20,6 +22,7 @@ import java.nio.charset.StandardCharsets;
  **/
 @Slf4j
 @Component
+@ConditionalOnBean(MallQueueConfiguration.class)
 public class MallCanalConsumer {
 
     @RabbitListener(queues = {QueueConstant.MALL_CANAL_QUEUE})

@@ -1,13 +1,10 @@
 package com.ww.mall.rabbitmq.bind;
 
-import com.ww.mall.rabbitmq.MallRabbitmqAutoConfiguration;
 import com.ww.mall.rabbitmq.exchange.ExchangeConstant;
 import com.ww.mall.rabbitmq.queue.QueueConstant;
 import com.ww.mall.rabbitmq.routekey.RouteKeyConstant;
 import org.springframework.amqp.core.*;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnBean;
 import org.springframework.context.annotation.Bean;
-import org.springframework.context.annotation.Configuration;
 
 import javax.annotation.Resource;
 
@@ -16,9 +13,7 @@ import javax.annotation.Resource;
  * @author: ww
  * @create: 2023/7/21 23:04
  **/
-@Configuration
-@ConditionalOnBean(MallRabbitmqAutoConfiguration.class)
-public class MallMemberBindingConfiguration {
+public class MallBindingConfiguration {
 
     /**
      * 通用定制延时队列

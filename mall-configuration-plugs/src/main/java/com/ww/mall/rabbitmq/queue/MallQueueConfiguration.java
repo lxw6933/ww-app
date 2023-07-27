@@ -1,12 +1,9 @@
 package com.ww.mall.rabbitmq.queue;
 
-import com.ww.mall.rabbitmq.MallRabbitmqAutoConfiguration;
 import com.ww.mall.rabbitmq.exchange.ExchangeConstant;
 import com.ww.mall.rabbitmq.routekey.RouteKeyConstant;
 import org.springframework.amqp.core.Queue;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnBean;
 import org.springframework.context.annotation.Bean;
-import org.springframework.context.annotation.Configuration;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -16,9 +13,7 @@ import java.util.Map;
  * @author: ww
  * @create: 2023/7/21 22:54
  **/
-@Configuration
-@ConditionalOnBean(MallRabbitmqAutoConfiguration.class)
-public class QueueConfiguration {
+public class MallQueueConfiguration {
 
     private static final String X_DEAD_LETTER_EXCHANGE = "x-dead-letter-exchange";
     private static final String X_DEAD_LETTER_ROUTING_KEY = "x-dead-letter-routing-key";

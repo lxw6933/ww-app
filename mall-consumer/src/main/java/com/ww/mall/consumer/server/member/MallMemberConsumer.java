@@ -3,10 +3,12 @@ package com.ww.mall.consumer.server.member;
 import com.rabbitmq.client.Channel;
 import com.ww.mall.consumer.template.MemberRegisterMsgConsumer;
 import com.ww.mall.consumer.template.MsgConsumerTemplate;
+import com.ww.mall.rabbitmq.queue.MallQueueConfiguration;
 import com.ww.mall.rabbitmq.queue.QueueConstant;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.amqp.core.Message;
 import org.springframework.amqp.rabbit.annotation.RabbitListener;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnBean;
 import org.springframework.stereotype.Component;
 
 import java.io.IOException;
@@ -18,6 +20,7 @@ import java.io.IOException;
  **/
 @Slf4j
 @Component
+@ConditionalOnBean(MallQueueConfiguration.class)
 public class MallMemberConsumer {
 
     @RabbitListener(queues = {QueueConstant.MALL_MEMBER_REGISTER_QUEUE})
