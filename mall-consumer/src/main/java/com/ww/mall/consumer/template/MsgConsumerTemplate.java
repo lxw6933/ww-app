@@ -59,7 +59,7 @@ public abstract class MsgConsumerTemplate<T> {
         update.set("status", MqMsgStatus.DELIVER_SUCCESS);
         // 消费确认
         channel.basicAck(tag, false);
-        log.info("消费【{}】消息完毕", correlationId);
+        log.info("【tag：{}】【消息：{}】消费完成", tag, correlationId);
         mongoTemplate.updateFirst(new Query().addCriteria(criteria), update, MqMsgLogEntity.class);
     }
 
@@ -85,7 +85,7 @@ public abstract class MsgConsumerTemplate<T> {
     abstract boolean serverHandler(T msg);
 
     void exceptionMsgHandler(String correlationId, long tag, Channel channel, Exception e) throws IOException {
-        log.error("执行消费业务异常", e);
+        log.error("【tag：{}】【消息：{}】消费异常", tag, correlationId, e);
 
         Criteria criteria = Criteria.where("msgId").is(correlationId);
         Update update = new Update();
