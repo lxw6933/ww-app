@@ -15,14 +15,17 @@ import org.springframework.context.annotation.Configuration;
 @ConditionalOnBean(MallRabbitmqAutoConfiguration.class)
 public class ExchangeConfiguration {
 
-    @Bean
+    @Bean(name = ExchangeConstant.MALL_MEMBER_EXCHANGE)
     public TopicExchange mallMemberExchange() {
-        return new TopicExchange(ExchangeConstant.MALL_MEMBER_EXCHANGE_NAME);
+        return new TopicExchange(ExchangeConstant.MALL_MEMBER_EXCHANGE);
     }
 
-    @Bean
+    @Bean(name = ExchangeConstant.MALL_CANAL_EXCHANGE)
     public TopicExchange mallCanalExchange() {
-        return new TopicExchange(ExchangeConstant.MALL_CANAL_EXCHANGE_NAME);
+        return new TopicExchange(ExchangeConstant.MALL_CANAL_EXCHANGE);
     }
+
+    @Bean(name = ExchangeConstant.MALL_OMS_EXCHANGE)
+    public TopicExchange mallOmsExchange() {return new TopicExchange(ExchangeConstant.MALL_OMS_EXCHANGE);}
 
 }

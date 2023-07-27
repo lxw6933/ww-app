@@ -22,7 +22,7 @@ import java.nio.charset.StandardCharsets;
 @Component
 public class MallCanalConsumer {
 
-    @RabbitListener(queues = {QueueConstant.MALL_CANAL_QUEUE_NAME})
+    @RabbitListener(queues = {QueueConstant.MALL_CANAL_QUEUE})
     public void memberRegisterMessage(Message message, Channel channel) throws IOException {
         // 注意此处MQ传来的是Byte[]
         byte[] bodyByte = message.getBody();

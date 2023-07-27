@@ -32,14 +32,14 @@ public class MemberPublisher {
     public void publishMemberRegisterMsg(Long memberId) {
         // 自定义消息id
         MallCorrelationData msgData = new MallCorrelationData();
-        msgData.setExchange(ExchangeConstant.MALL_MEMBER_EXCHANGE_NAME);
+        msgData.setExchange(ExchangeConstant.MALL_MEMBER_EXCHANGE);
         msgData.setMessage(memberId);
         msgData.setRetryCount(0);
         msgData.setRoutingKey(RouteKeyConstant.MALL_MEMBER_REGISTER_KEY);
         msgData.setId(UUID.randomUUID().toString());
         // 发送用户对象信息到broker
         rabbitTemplate.convertAndSend(
-                ExchangeConstant.MALL_MEMBER_EXCHANGE_NAME,
+                ExchangeConstant.MALL_MEMBER_EXCHANGE,
                 RouteKeyConstant.MALL_MEMBER_REGISTER_KEY,
                 memberId,
                 correlationIdProcessor,

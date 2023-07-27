@@ -20,7 +20,7 @@ import java.io.IOException;
 @Component
 public class MallMemberConsumer {
 
-    @RabbitListener(queues = {QueueConstant.MALL_MEMBER_REGISTER_QUEUE_NAME})
+    @RabbitListener(queues = {QueueConstant.MALL_MEMBER_REGISTER_QUEUE})
     public void memberRegisterMessage(Message message, Long memberId, Channel channel) throws IOException {
         log.info("收到mall_member服务发送新用户注册的消息：{}", memberId);
         MsgConsumerTemplate<Long> memberRegisterMsgConsumer = new MemberRegisterMsgConsumer();
