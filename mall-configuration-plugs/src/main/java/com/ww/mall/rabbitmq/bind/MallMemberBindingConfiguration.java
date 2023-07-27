@@ -4,10 +4,7 @@ import com.ww.mall.rabbitmq.MallRabbitmqAutoConfiguration;
 import com.ww.mall.rabbitmq.exchange.ExchangeConstant;
 import com.ww.mall.rabbitmq.queue.QueueConstant;
 import com.ww.mall.rabbitmq.routekey.RouteKeyConstant;
-import org.springframework.amqp.core.Binding;
-import org.springframework.amqp.core.BindingBuilder;
-import org.springframework.amqp.core.Queue;
-import org.springframework.amqp.core.TopicExchange;
+import org.springframework.amqp.core.*;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnBean;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -22,6 +19,12 @@ import javax.annotation.Resource;
 @Configuration
 @ConditionalOnBean(MallRabbitmqAutoConfiguration.class)
 public class MallMemberBindingConfiguration {
+
+    /**
+     * 通用定制延时队列
+     */
+    @Resource(name = ExchangeConstant.MALL_COMMON_DELAY_EXCHANGE)
+    private CustomExchange mallCommonDelayExchange;
 
     /**
      * member exchange
@@ -65,6 +68,12 @@ public class MallMemberBindingConfiguration {
     @Resource(name = QueueConstant.MALL_OMS_DELAY_FIFTEEN_QUEUE)
     private Queue omsDelayFiftyQueue;
 
+    /**
+     * 商品定时上架队列
+     */
+    @Resource(name = QueueConstant.MALL_PRODUCT_TIMER_UP_QUEUE)
+    private Queue productTimerUpQueue;
+
     @Bean
     public Binding mallMemberRegisterBinding() {
         return BindingBuilder.bind(mallMemberRegisterQueue).to(mallMemberExchange).with(RouteKeyConstant.MALL_MEMBER_REGISTER_KEY);
@@ -83,6 +92,11 @@ public class MallMemberBindingConfiguration {
     @Bean
     public Binding omsDelayFiftyBinding() {
         return BindingBuilder.bind(omsDelayFiftyQueue).to(mallOmsExchange).with(RouteKeyConstant.MALL_OMS_DELAY_FIFTEEN_KEY);
+    }
+
+    @Bean
+    public Binding productTimerUpBinding() {
+        return BindingBuilder.bind(productTimerUpQueue).to(mallCommonDelayExchange).with(RouteKeyConstant.MALL_PRODUCT_TIMER_UP_KEY).noargs();
     }
 
 }

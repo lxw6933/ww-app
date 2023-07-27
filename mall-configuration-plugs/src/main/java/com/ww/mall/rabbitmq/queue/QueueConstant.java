@@ -23,4 +23,6 @@ public class QueueConstant {
 
     public static final String MALL_OMS_DELAY_FIFTEEN_QUEUE = "mall.oms.delay_15_queue";
 
+    public static final String MALL_PRODUCT_TIMER_UP_QUEUE = "mall.product.timer.up.queue";
+
 }

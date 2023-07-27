@@ -1,10 +1,14 @@
 package com.ww.mall.rabbitmq.exchange;
 
 import com.ww.mall.rabbitmq.MallRabbitmqAutoConfiguration;
+import org.springframework.amqp.core.CustomExchange;
 import org.springframework.amqp.core.TopicExchange;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnBean;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+
+import java.util.HashMap;
+import java.util.Map;
 
 /**
  * @description:
@@ -14,6 +18,13 @@ import org.springframework.context.annotation.Configuration;
 @Configuration
 @ConditionalOnBean(MallRabbitmqAutoConfiguration.class)
 public class ExchangeConfiguration {
+
+    @Bean(name = ExchangeConstant.MALL_COMMON_DELAY_EXCHANGE)
+    public CustomExchange mallCommonDelayExchange() {
+        Map<String, Object> args = new HashMap<>();
+        args.put("x-delayed-type", "topic");
+        return new CustomExchange(ExchangeConstant.MALL_COMMON_DELAY_EXCHANGE, "x-delayed-message",true, false, args);
+    }
 
     @Bean(name = ExchangeConstant.MALL_MEMBER_EXCHANGE)
     public TopicExchange mallMemberExchange() {

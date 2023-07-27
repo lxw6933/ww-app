@@ -29,4 +29,9 @@ public class RouteKeyConstant {
      */
     public static final String MALL_OMS_DELAY_FIFTEEN_KEY = "mall.oms.delay.15.key";
 
+    /**
+     * 商品定时上架key
+     */
+    public static final String MALL_PRODUCT_TIMER_UP_KEY = "mall.product.timer.up.key";
+
 }

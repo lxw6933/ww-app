@@ -46,4 +46,7 @@ public class QueueConfiguration {
         return new Queue(QueueConstant.MALL_OMS_DELAY_FIFTEEN_QUEUE, true, false, false, args);
     }
 
+    @Bean(name = QueueConstant.MALL_PRODUCT_TIMER_UP_QUEUE)
+    public Queue productTimerUpQueue() {return new Queue(QueueConstant.MALL_PRODUCT_TIMER_UP_QUEUE);}
+
 }
