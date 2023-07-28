@@ -82,7 +82,7 @@ public abstract class MsgConsumerTemplate<T> {
      * @param msg 消息
      * @return 业务是否成功
      */
-    abstract boolean serverHandler(T msg);
+    public abstract boolean serverHandler(T msg);
 
     void exceptionMsgHandler(String correlationId, long tag, Channel channel, Exception e) throws IOException {
         log.error("【tag：{}】【消息：{}】消费异常", tag, correlationId, e);

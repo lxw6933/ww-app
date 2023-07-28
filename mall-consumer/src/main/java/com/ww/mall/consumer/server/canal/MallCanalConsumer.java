@@ -2,7 +2,6 @@ package com.ww.mall.consumer.server.canal;
 
 import cn.hutool.json.JSONUtil;
 import com.rabbitmq.client.Channel;
-import com.ww.mall.consumer.template.CanalMsgConsumer;
 import com.ww.mall.consumer.template.MsgConsumerTemplate;
 import com.ww.mall.rabbitmq.queue.MallQueueConfiguration;
 import com.ww.mall.rabbitmq.queue.QueueConstant;
@@ -33,7 +32,7 @@ public class MallCanalConsumer {
         String bodyJsonStr = JSONUtil.toJsonStr(bodyStr);
         CanalMessage<?> canalMessage = JSONUtil.toBean(bodyJsonStr, CanalMessage.class);
         log.info("收到canal的消息：{}", canalMessage);
-        MsgConsumerTemplate<CanalMessage<?>> canalMsgConsumer = new CanalMsgConsumer();
+        MsgConsumerTemplate<CanalMessage<?>> canalMsgConsumer = new CanalMsgConsumerTemplate();
         canalMsgConsumer.consumer(message, canalMessage, channel);
     }
 

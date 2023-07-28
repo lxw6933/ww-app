@@ -1,4 +1,4 @@
-package com.ww.mall.consumer.server.member;
+package com.ww.mall.consumer.server.product;
 
 import com.rabbitmq.client.Channel;
 import com.ww.mall.consumer.template.MsgConsumerTemplate;
@@ -13,20 +13,20 @@ import org.springframework.stereotype.Component;
 import java.io.IOException;
 
 /**
+ * @author ww
+ * @create 2023-07-28- 09:06
  * @description:
- * @author: ww
- * @create: 2023/7/22 11:07
- **/
+ */
 @Slf4j
 @Component
 @ConditionalOnBean(MallQueueConfiguration.class)
-public class MallMemberConsumer {
+public class MallProductConsumer {
 
-    @RabbitListener(queues = {QueueConstant.MALL_MEMBER_REGISTER_QUEUE})
-    public void memberRegisterMessage(Message message, Long memberId, Channel channel) throws IOException {
-        log.info("收到mall_member服务发送新用户注册的消息：{}", memberId);
-        MsgConsumerTemplate<Long> memberRegisterMsgConsumer = new MemberRegisterMsgConsumerTemplate();
-        memberRegisterMsgConsumer.consumer(message, memberId, channel);
+    @RabbitListener(queues = {QueueConstant.MALL_PRODUCT_TIMER_UP_QUEUE})
+    public void memberRegisterMessage(Message message, Long productId, Channel channel) throws IOException {
+        log.info("收到mall_product服务发送商品定时上架的消息：{}", productId);
+        MsgConsumerTemplate<Long> productTimerUpMsgConsumer = new ProductTimerUpMsgConsumerTemplate();
+        productTimerUpMsgConsumer.consumer(message, productId, channel);
     }
 
 }

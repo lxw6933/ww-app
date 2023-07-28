@@ -1,12 +1,12 @@
-package com.ww.mall.consumer.template;
+package com.ww.mall.consumer.server.member;
 
 import com.ww.mall.common.common.Result;
 import com.ww.mall.common.exception.ApiException;
+import com.ww.mall.consumer.template.MsgConsumerTemplate;
 import com.ww.mall.web.feign.MemberFeignService;
 import com.ww.mall.web.utils.SpringContextManager;
 import com.ww.mall.web.view.bo.AddMemberIntegralBO;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.poi.ss.formula.functions.T;
 
 /**
  * @description:
@@ -14,11 +14,11 @@ import org.apache.poi.ss.formula.functions.T;
  * @create: 2023/7/22 23:13
  **/
 @Slf4j
-public class MemberRegisterMsgConsumer extends MsgConsumerTemplate<Long> {
+public class MemberRegisterMsgConsumerTemplate extends MsgConsumerTemplate<Long> {
     private final MemberFeignService memberFeignService = SpringContextManager.getBean(MemberFeignService.class);
 
     @Override
-    boolean serverHandler(Long msg) {
+    public boolean serverHandler(Long msg) {
         AddMemberIntegralBO addMemberIntegralBO = new AddMemberIntegralBO();
         addMemberIntegralBO.setMemberId(msg);
         addMemberIntegralBO.setIntegralType(true);
