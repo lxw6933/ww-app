@@ -67,4 +67,9 @@ public class Spu extends BaseEntity {
      */
     private Boolean valid;
 
+    /**
+     * 分发渠道【json id 集合】
+     */
+    private String channelIds;
+
 }
