@@ -1,21 +1,9 @@
 package com.ww.mall.product.entity;
 
 import com.baomidou.mybatisplus.annotation.TableName;
-import com.baomidou.mybatisplus.annotation.IdType;
-import com.baomidou.mybatisplus.annotation.TableId;
-
-import java.io.Serializable;
-
-import com.baomidou.mybatisplus.annotation.TableName;
 import com.ww.mall.web.cmmon.BaseEntity;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
-import lombok.experimental.Accessors;
-
-import javax.validation.constraints.Email;
-import javax.validation.constraints.NotBlank;
-import javax.validation.constraints.NotEmpty;
-import javax.validation.constraints.NotNull;
 
 /**
  * @author ww
@@ -30,7 +18,7 @@ public class Brand extends BaseEntity {
     /**
      * 品牌名
      */
-    private String name;
+    private String brandName;
 
     /**
      * 品牌logo地址
@@ -45,12 +33,11 @@ public class Brand extends BaseEntity {
     /**
      * 显示状态[0-不显示；1-显示]
      */
-    private Boolean status;
+    private Boolean state;
 
     /**
      * 排序
      */
     private Integer sort;
-
 
 }

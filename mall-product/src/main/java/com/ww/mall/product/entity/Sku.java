@@ -20,12 +20,6 @@ import java.math.BigDecimal;
 public class Sku extends BaseEntity {
 
     /**
-     * skuId
-     */
-    @TableId(value = "id", type = IdType.AUTO)
-    private Long id;
-
-    /**
      * spuId
      */
     private Long spuId;
@@ -53,7 +47,7 @@ public class Sku extends BaseEntity {
     /**
      * 是否启用
      */
-    private Boolean status;
+    private Boolean state;
 
     /**
      * 是否有效

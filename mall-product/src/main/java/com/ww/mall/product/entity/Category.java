@@ -23,7 +23,7 @@ public class Category extends BaseEntity {
     /**
      * 分类名称
      */
-    private String name;
+    private String categoryName;
 
     /**
      * 父分类id
@@ -38,7 +38,7 @@ public class Category extends BaseEntity {
     /**
      * 是否显示[0-不显示，1显示]
      */
-    private Boolean status;
+    private Boolean state;
 
     /**
      * 排序

@@ -20,12 +20,6 @@ import lombok.EqualsAndHashCode;
 public class Spu extends BaseEntity {
 
     /**
-     * 商品id
-     */
-    @TableId(value = "id", type = IdType.AUTO)
-    private Long id;
-
-    /**
      * 商家id
      */
     private Long merchantId;

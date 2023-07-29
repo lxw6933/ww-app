@@ -46,7 +46,7 @@ public class Attr implements Serializable {
     /**
      * 启用状态[0 - 禁用，1 - 启用]
      */
-    private Boolean status;
+    private Boolean state;
 
     /**
      * 所属分类
