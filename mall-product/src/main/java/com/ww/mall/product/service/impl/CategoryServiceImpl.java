@@ -1,9 +1,13 @@
 package com.ww.mall.product.service.impl;
 
+import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.ww.mall.product.dao.CategoryMapper;
 import com.ww.mall.product.entity.Category;
+import com.ww.mall.product.enums.CategoryLevel;
 import com.ww.mall.product.service.CategoryService;
+import com.ww.mall.product.view.bo.CategoryBO;
+import org.apache.commons.lang3.StringUtils;
 import org.springframework.stereotype.Service;
 
 import java.util.Comparator;
@@ -28,6 +32,16 @@ public class CategoryServiceImpl extends ServiceImpl<CategoryMapper, Category> i
                 .peek(res -> res.setChildrens(getChildrenList(res, allCategory)))
                 .sorted(Comparator.comparingInt(res -> (res.getSort() == null ? 0 : res.getSort())))
                 .collect(Collectors.toList());
+    }
+
+    @Override
+    public boolean add(Category category) {
+        return false;
+    }
+
+    @Override
+    public boolean modify(Long id, Category category) {
+        return false;
     }
 
     /**
