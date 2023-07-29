@@ -1,80 +1,72 @@
 package com.ww.mall.product.entity;
 
-import com.baomidou.mybatisplus.annotation.*;
+import com.baomidou.mybatisplus.annotation.IdType;
+import com.baomidou.mybatisplus.annotation.TableField;
+import com.baomidou.mybatisplus.annotation.TableId;
+import com.baomidou.mybatisplus.annotation.TableName;
+import com.fasterxml.jackson.annotation.JsonInclude;
+import com.ww.mall.product.enums.CategoryLevel;
+import com.ww.mall.web.cmmon.BaseEntity;
+import lombok.Data;
+import lombok.EqualsAndHashCode;
 
 import java.io.Serializable;
 import java.util.List;
 
-import com.baomidou.mybatisplus.annotation.TableName;
-import com.fasterxml.jackson.annotation.JsonInclude;
-import lombok.Data;
-import lombok.EqualsAndHashCode;
-import lombok.experimental.Accessors;
-
 /**
-* @author ww
-* @since 2021-03-10
-*/
+ * @author ww
+ * @since 2021-03-10
+ */
 @Data
-@EqualsAndHashCode(callSuper = false)
-@Accessors(chain = true)
-@TableName("pms_category")
-public class Category implements Serializable {
-
-    private static final long serialVersionUID = 1L;
+@TableName("t_category")
+@EqualsAndHashCode(callSuper = true)
+public class Category extends BaseEntity {
 
     /**
-    * 分类id
-    */
-    @TableId(value = "cat_id", type = IdType.AUTO)
-    private Long catId;
-
-    /**
-    * 分类名称
-    */
+     * 分类名称
+     */
     private String name;
 
     /**
-    * 父分类id
-    */
-    private Long parentCid;
+     * 父分类id
+     */
+    private Long pid;
 
     /**
-    * 层级
-    */
-    private Integer catLevel;
+     * 层级
+     */
+    private CategoryLevel categoryLevel;
 
     /**
-    * 是否显示[0-不显示，1显示]
-    */
-    private Integer showStatus;
+     * 是否显示[0-不显示，1显示]
+     */
+    private Boolean status;
 
     /**
-    * 排序
-    */
+     * 排序
+     */
     private Integer sort;
 
     /**
-    * 图标地址
-    */
+     * 图标地址
+     */
     private String icon;
 
     /**
-    * 计量单位
-    */
+     * 计量单位
+     */
     private String productUnit;
 
     /**
-    * 商品数量
-    */
+     * 商品数量
+     */
     private Integer productCount;
 
     /**
      * 子类集合
      */
-    @JsonInclude(JsonInclude.Include.NON_EMPTY)     // 当此属性不为Empty的时候在json里显示
-    @TableField(exist = false)  // 不存在数据库字段属性
+    @TableField(exist = false)
+    @JsonInclude(JsonInclude.Include.NON_EMPTY)
     private List<Category> childrens;
-
 
 }

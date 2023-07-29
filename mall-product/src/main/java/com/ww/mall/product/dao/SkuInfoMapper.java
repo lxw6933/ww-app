@@ -1,6 +1,6 @@
 package com.ww.mall.product.dao;
 
-import com.ww.mall.product.entity.SkuInfo;
+import com.ww.mall.product.entity.Sku;
 import com.baomidou.mybatisplus.core.mapper.BaseMapper;
 import org.apache.ibatis.annotations.Mapper;
 
@@ -9,6 +9,6 @@ import org.apache.ibatis.annotations.Mapper;
 * @since 2021-03-10
 */
 @Mapper
-public interface SkuInfoMapper extends BaseMapper<SkuInfo> {
+public interface SkuInfoMapper extends BaseMapper<Sku> {
 
 }

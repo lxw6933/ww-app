@@ -1,0 +1,61 @@
+server:
+  port: 9800  #服务端口号
+  servlet:
+    context-path: /mall-product
+spring:
+  datasource:
+    driver-class-name: com.mysql.cj.jdbc.Driver
+#    url: jdbc:mysql://192.168.10.141:3306/mall_basic?characterEncoding=UTF-8&autoReconnect=true&useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=Asia/Shanghai
+    url: jdbc:mysql://localhost:3306/ww_mall?characterEncoding=UTF-8&autoReconnect=true&useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=Asia/Shanghai
+    username: root
+    password: admin
+#    password: adminlxw
+  redis:
+    host: localhost
+    password: 123456
+  data:
+    mongodb:
+      host: localhost:27017
+      database: ww_mall
+      username: admin
+      password: admin
+      authentication-database: admin
+  rabbitmq:
+    addresses: localhost:5672
+    virtual-host: /
+    # 设置发送端到exchange确认回调
+    publisher-confirm-type: correlated
+    # 设置发送端到queue确认回调
+    publisher-returns: true
+    # 设置消息抵达queue，以异步方式回调 publisher-returns
+    template:
+      mandatory: true
+
+# 开启sentinel feign支持【调用方（调用服务方）的熔断保护、被调用方（服务提供方）的降级保护】
+feign:
+  sentinel:
+    enabled: true
+
+# mybatis-plus配置
+mybatis-plus:
+  #  configuration:
+  #配置字段驼峰
+  #    map-underscore-to-camel-case: true
+  mapper-locations: classpath*:/mapper/*.xml
+  #实体扫描，多个package用逗号或者分号分隔
+  type-aliases-package: com.ww.mall.product.entity
+  global-config:
+    db-config:
+      #主键类型  AUTO:"数据库ID自增", INPUT:"用户输入ID", ID_WORKER:"全局唯一ID (数字类型唯一ID)", UUID:"全局唯一ID UUID";
+      id-type: auto
+      #字段策略 IGNORED:"忽略判断",NOT_NULL:"非 NULL 判断"),NOT_EMPTY:"非空判断"
+      logic-delete-field: NOT_NULL
+      logic-delete-value: 1
+      logic-not-delete-value: 0
+    banner: false
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: "*"

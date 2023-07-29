@@ -20,7 +20,7 @@
         <module>mall-cart</module>
         <module>mall-consumer</module>
 <!--        <module>mall-order</module>-->
-<!--        <module>mall-product</module>-->
+        <module>mall-product</module>
 <!--        <module>mall-search</module>-->
         <module>mall-api-gateway</module>
 <!--        <module>mall-code-generator</module>-->

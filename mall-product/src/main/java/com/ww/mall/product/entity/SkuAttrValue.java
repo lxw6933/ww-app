@@ -12,8 +12,8 @@ import java.io.Serializable;
  * @since 2021-03-10
  */
 @Data
-@TableName("t_spu_img")
-public class SpuImages implements Serializable {
+@TableName("t_sku_attr_value")
+public class SkuAttrValue implements Serializable {
 
     /**
      * id
@@ -22,28 +22,43 @@ public class SpuImages implements Serializable {
     private Long id;
 
     /**
+     * sku_id
+     */
+    private Long skuId;
+
+    /**
      * spu_id
      */
     private Long spuId;
 
     /**
-     * 图片名
+     * attr_id
      */
-    private String imgName;
+    private Long attrId;
 
     /**
-     * 图片地址
+     * 销售属性名
      */
-    private String imgUrl;
+    private String attrName;
+
+    /**
+     * 销售属性值
+     */
+    private String attrValue;
 
     /**
      * 顺序
      */
-    private Integer imgSort;
+    private Integer sort;
 
     /**
-     * 是否默认图
+     * 是否有效
      */
-    private Boolean defaultImg;
+    private Boolean valid;
+
+    /**
+     * 是否删除
+     */
+    private Boolean deleted;
 
 }

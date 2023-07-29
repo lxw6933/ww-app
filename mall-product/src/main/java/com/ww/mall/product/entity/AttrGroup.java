@@ -1,56 +1,49 @@
 package com.ww.mall.product.entity;
 
-import com.baomidou.mybatisplus.annotation.TableName;
 import com.baomidou.mybatisplus.annotation.IdType;
 import com.baomidou.mybatisplus.annotation.TableId;
-import java.io.Serializable;
 import com.baomidou.mybatisplus.annotation.TableName;
 import lombok.Data;
-import lombok.EqualsAndHashCode;
-import lombok.experimental.Accessors;
+
+import java.io.Serializable;
 
 /**
-* @author ww
-* @since 2021-03-10
-*/
+ * @author ww
+ * @since 2021-03-10
+ */
 @Data
-@EqualsAndHashCode(callSuper = false)
-@Accessors(chain = true)
-@TableName("pms_attr_group")
+@TableName("t_attr_group")
 public class AttrGroup implements Serializable {
 
-    private static final long serialVersionUID = 1L;
+    /**
+     * 分组id
+     */
+    @TableId(value = "id", type = IdType.AUTO)
+    private Long id;
 
     /**
-    * 分组id
-    */
-    @TableId(value = "attr_group_id", type = IdType.AUTO)
-    private Long attrGroupId;
-
-    /**
-    * 组名
-    */
+     * 组名
+     */
     private String attrGroupName;
 
     /**
-    * 排序
-    */
+     * 排序
+     */
     private Integer sort;
 
     /**
-    * 描述
-    */
-    private String descript;
+     * 描述
+     */
+    private String desc;
 
     /**
-    * 组图标
-    */
+     * 组图标
+     */
     private String icon;
 
     /**
-    * 所属分类id
-    */
-    private Long catelogId;
-
+     * 所属分类id
+     */
+    private Long categoryId;
 
 }

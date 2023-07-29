@@ -6,29 +6,34 @@ import com.baomidou.mybatisplus.annotation.TableId;
 
 import java.io.Serializable;
 
-import com.baomidou.mybatisplus.annotation.TableName;
 import lombok.Data;
-import lombok.EqualsAndHashCode;
-import lombok.experimental.Accessors;
 
 /**
  * @author ww
  * @since 2021-03-10
  */
 @Data
-@TableName("t_category_brand_relation")
-public class CategoryBrandRelation implements Serializable {
+@TableName("t_attr_group_relation")
+public class AttrGroupRelation implements Serializable {
 
+    /**
+     * id
+     */
     @TableId(value = "id", type = IdType.AUTO)
     private Long id;
 
     /**
-     * 品牌id
+     * 属性id
      */
-    private Long brandId;
+    private Long attrId;
 
     /**
-     * 分类id
+     * 属性分组id
      */
-    private Long categoryId;
+    private Long attrGroupId;
+
+    /**
+     * 属性组内排序
+     */
+    private Integer attrSort;
 }

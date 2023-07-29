@@ -1,6 +1,6 @@
 package com.ww.mall.product.dao;
 
-import com.ww.mall.product.entity.SpuInfo;
+import com.ww.mall.product.entity.Spu;
 import com.baomidou.mybatisplus.core.mapper.BaseMapper;
 import org.apache.ibatis.annotations.Mapper;
 
@@ -9,6 +9,6 @@ import org.apache.ibatis.annotations.Mapper;
 * @since 2021-03-10
 */
 @Mapper
-public interface SpuInfoMapper extends BaseMapper<SpuInfo> {
+public interface SpuInfoMapper extends BaseMapper<Spu> {
 
 }
