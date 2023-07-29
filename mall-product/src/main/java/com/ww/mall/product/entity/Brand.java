@@ -28,7 +28,7 @@ public class Brand extends BaseEntity {
     /**
      * 介绍
      */
-    private String desc;
+    private String descInfo;
 
     /**
      * 显示状态[0-不显示；1-显示]

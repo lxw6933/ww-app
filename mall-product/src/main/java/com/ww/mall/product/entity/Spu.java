@@ -1,7 +1,5 @@
 package com.ww.mall.product.entity;
 
-import com.baomidou.mybatisplus.annotation.IdType;
-import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.TableName;
 import com.ww.mall.product.enums.SpuStatus;
 import com.ww.mall.product.enums.SpuType;

@@ -16,16 +16,17 @@ import java.io.Serializable;
 @TableName("t_spu_desc")
 public class SpuInfoDesc implements Serializable {
 
+    @TableId(value = "id", type = IdType.AUTO)
+    private Long id;
+
     /**
      * 商品id
      */
-    @TableId(value = "spu_id", type = IdType.AUTO)
     private Long spuId;
 
     /**
      * 商品html介绍
      */
     private String descInfo;
-
 
 }
