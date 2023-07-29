@@ -11,7 +11,8 @@ import lombok.EqualsAndHashCode;
 
 /**
  * @author ww
- * @since 2021-03-10
+ * @create 2023-07-29- 10:48
+ * @description:
  */
 @Data
 @TableName("t_spu")

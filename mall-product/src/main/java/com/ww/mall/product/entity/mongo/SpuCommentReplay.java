@@ -8,7 +8,8 @@ import java.io.Serializable;
 
 /**
  * @author ww
- * @since 2021-03-10
+ * @create 2023-07-29- 10:48
+ * @description:
  */
 @Data
 @Document("t_spu_comment_replay")

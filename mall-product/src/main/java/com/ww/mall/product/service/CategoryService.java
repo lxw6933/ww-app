@@ -6,11 +6,17 @@ import com.baomidou.mybatisplus.extension.service.IService;
 import java.util.List;
 
 /**
-* @author ww
-* @since 2021-03-10
-*/
+ * @author ww
+ * @create 2023-07-29- 10:48
+ * @description:
+ */
 public interface CategoryService extends IService<Category> {
 
+    /**
+     * category tree
+     *
+     * @return List
+     */
     List<Category> listCategoryTree();
 
 }

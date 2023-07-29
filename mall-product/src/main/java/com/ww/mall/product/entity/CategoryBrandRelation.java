@@ -1,19 +1,16 @@
 package com.ww.mall.product.entity;
 
-import com.baomidou.mybatisplus.annotation.TableName;
 import com.baomidou.mybatisplus.annotation.IdType;
 import com.baomidou.mybatisplus.annotation.TableId;
+import com.baomidou.mybatisplus.annotation.TableName;
+import lombok.Data;
 
 import java.io.Serializable;
 
-import com.baomidou.mybatisplus.annotation.TableName;
-import lombok.Data;
-import lombok.EqualsAndHashCode;
-import lombok.experimental.Accessors;
-
 /**
  * @author ww
- * @since 2021-03-10
+ * @create 2023-07-29- 10:48
+ * @description:
  */
 @Data
 @TableName("t_category_brand_relation")

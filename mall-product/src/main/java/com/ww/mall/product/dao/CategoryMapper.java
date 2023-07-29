@@ -5,9 +5,10 @@ import com.baomidou.mybatisplus.core.mapper.BaseMapper;
 import org.apache.ibatis.annotations.Mapper;
 
 /**
-* @author ww
-* @since 2021-03-10
-*/
+ * @author ww
+ * @create 2023-07-29- 10:48
+ * @description:
+ */
 @Mapper
 public interface CategoryMapper extends BaseMapper<Category> {
 
