@@ -7,6 +7,7 @@ package com.ww.mall.common.constant;
  */
 public class Constant {
 
+    public static final String GRAY_TAG = "gray-tag";
     public static final String USER_TOKEN = "token";
     public static final String USER_TOKEN_INFO = "tokenInfo";
     public static final String TEMP_USER_KEY = "temp-user-key";
