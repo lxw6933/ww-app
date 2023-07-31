@@ -21,8 +21,13 @@ public class CategoryController {
     private CategoryService categoryService;
 
     @GetMapping
-    public List<Category> list(CategoryBO categoryBO) {
+    public List<Category> list() {
         return categoryService.listCategoryTree();
+    }
+
+    @GetMapping
+    public List<Category> list2(CategoryBO categoryBO) {
+        return categoryService.listCategoryTree(categoryBO);
     }
 
     @PutMapping

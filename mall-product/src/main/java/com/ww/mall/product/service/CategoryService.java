@@ -20,6 +20,8 @@ public interface CategoryService extends IService<Category> {
      */
     List<Category> listCategoryTree();
 
+    List<Category> listCategoryTree(CategoryBO categoryBO);
+
     /**
      * 新增
      *

@@ -35,6 +35,35 @@ public class CategoryServiceImpl extends ServiceImpl<CategoryMapper, Category> i
     }
 
     @Override
+    public List<Category> listCategoryTree(CategoryBO categoryBO) {
+        String searchCategoryName = categoryBO.getCategoryName();
+        List<Category> categoryList = this.listCategoryTree();
+        String highLightStr = "<span class='category-hilight'>" + searchCategoryName + "</span>";
+        return categoryList.stream().filter(res -> {
+            boolean one = res.getCategoryName().contains(searchCategoryName);
+            if (one) {
+                res.getCategoryName().replace(searchCategoryName, highLightStr);
+            }
+            boolean flag = false;
+            for (Category twoChildren : res.getChildrens()) {
+                boolean two = twoChildren.getCategoryName().contains(searchCategoryName);
+                if (two) {
+                    flag = true;
+                    twoChildren.getCategoryName().replace(searchCategoryName, highLightStr);
+                }
+                for (Category threeChildren : twoChildren.getChildrens()) {
+                    boolean three = threeChildren.getCategoryName().contains(searchCategoryName);
+                    if (three) {
+                        flag = true;
+                        threeChildren.getCategoryName().replace(searchCategoryName, highLightStr);
+                    }
+                }
+            }
+            return one || flag;
+        }).collect(Collectors.toList());
+    }
+
+    @Override
     public boolean add(Category category) {
         return false;
     }

@@ -56,7 +56,6 @@ public class CouponServiceImpl extends ServiceImpl<CouponMapper, Coupon> impleme
 
     @Override
     public MallPageResult<CouponPageVO> pageList(CouponPageBO couponPageBO) {
-        log.info("couponPage");
         QueryWrapper<Coupon> couponQueryWrapper = new QueryWrapper<>();
         if (StringUtils.isNotEmpty(couponPageBO.getTitle())) {
             couponQueryWrapper.like("title", couponPageBO.getTitle());
