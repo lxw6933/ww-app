@@ -20,9 +20,7 @@ import org.springframework.cloud.loadbalancer.core.ServiceInstanceListSupplier;
 import org.springframework.http.HttpHeaders;
 import reactor.core.publisher.Mono;
 
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.List;
+import java.util.*;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
@@ -70,14 +68,18 @@ public class GrayLoadBalancer implements ReactorServiceInstanceLoadBalancer {
         Boolean enableGray = serverGrayProperty.getEnable();
         // 获取配置的灰度版本
         String version = serverGrayProperty.getGrayVersion();
+        // 获取配置的灰度ip白名单
+        List<String> grayIps = serverGrayProperty.getGrayIps();
+        String userRealIp = StringUtils.defaultIfBlank(headers.getFirst(Constant.USER_REAL_IP), "error-ip");
+        boolean grayIpFlag = CollectionUtils.isNotEmpty(grayIps) && grayIps.contains(userRealIp);
         // 获取配置的灰度用户列表
 //        List<String> grayUsers = serverGrayProperty.getGrayUsers();
         // 请求是否包含灰度标记
-        String requestGrayTag = CollectionUtils.isEmpty(headers.get(Constant.GRAY_TAG)) ? null : headers.get(Constant.GRAY_TAG).get(0);
+        String requestGrayTag = headers.getFirst(Constant.GRAY_TAG);
         // 是否灰度【配置了灰度版本、请求携带gray tag】
-        boolean grayFlag = Boolean.TRUE.equals(enableGray) && StringUtils.isNotEmpty(version) && StringUtils.isNotEmpty(requestGrayTag);
+        boolean grayFlag = Boolean.TRUE.equals(enableGray) && StringUtils.isNotEmpty(version) && Constant.GRAY_TAG_VALUE.equals(requestGrayTag);
         List<ServiceInstance> chooseInstances;
-        if (!grayFlag) {
+        if (!grayFlag && !grayIpFlag) {
             // 如果没配置灰度版本，且没配置灰度用户列表【正常返回所有实例】
             chooseInstances = instances;
         } else {

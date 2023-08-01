@@ -8,6 +8,7 @@ package com.ww.mall.common.constant;
 public class Constant {
 
     public static final String GRAY_TAG = "gray-tag";
+    public static final String GRAY_TAG_VALUE = "true";
     public static final String USER_TOKEN = "token";
     public static final String USER_REAL_IP = "user-real-ip";
     public static final String USER_TOKEN_INFO = "tokenInfo";
