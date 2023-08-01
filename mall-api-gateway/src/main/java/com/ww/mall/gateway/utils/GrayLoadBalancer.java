@@ -43,7 +43,7 @@ public class GrayLoadBalancer implements ReactorServiceInstanceLoadBalancer {
     /**
      * 灰度自定义属性
      */
-    private ServerGrayProperty serverGrayProperty;
+    private final ServerGrayProperty serverGrayProperty;
 
     /**
      * 服务id下所有的实例
@@ -66,6 +66,8 @@ public class GrayLoadBalancer implements ReactorServiceInstanceLoadBalancer {
             log.warn("No servers available for service: {}", this.serviceId);
             return new EmptyResponse();
         }
+        // 是否开启灰度
+        Boolean enableGray = serverGrayProperty.getEnable();
         // 获取配置的灰度版本
         String version = serverGrayProperty.getGrayVersion();
         // 获取配置的灰度用户列表
@@ -73,7 +75,7 @@ public class GrayLoadBalancer implements ReactorServiceInstanceLoadBalancer {
         // 请求是否包含灰度标记
         String requestGrayTag = CollectionUtils.isEmpty(headers.get(Constant.GRAY_TAG)) ? null : headers.get(Constant.GRAY_TAG).get(0);
         // 是否灰度【配置了灰度版本、请求携带gray tag】
-        boolean grayFlag = StringUtils.isNotEmpty(version) && StringUtils.isNotEmpty(requestGrayTag);
+        boolean grayFlag = Boolean.TRUE.equals(enableGray) && StringUtils.isNotEmpty(version) && StringUtils.isNotEmpty(requestGrayTag);
         List<ServiceInstance> chooseInstances;
         if (!grayFlag) {
             // 如果没配置灰度版本，且没配置灰度用户列表【正常返回所有实例】
@@ -87,8 +89,6 @@ public class GrayLoadBalancer implements ReactorServiceInstanceLoadBalancer {
                 chooseInstances = instances;
             }
         }
-        // 基于 tag 过滤实例列表
-//        chooseInstances = filterTagServiceInstances(chooseInstances, headers);
         // 随机 + 权重获取实例列表
         return new DefaultResponse(NacosBalancer.getHostByRandomWeight3(chooseInstances));
     }
@@ -98,32 +98,6 @@ public class GrayLoadBalancer implements ReactorServiceInstanceLoadBalancer {
             return new ArrayList<>();
         }
         return from.stream().filter(predicate).collect(Collectors.toList());
-    }
-
-    /**
-     * 基于 tag 请求头，过滤匹配 tag 的服务实例列表
-     *
-//     * @param instances 服务实例列表
-//     * @param headers   请求头
-     * @return 服务实例列表
-     */
-//    private List<ServiceInstance> filterTagServiceInstances(List<ServiceInstance> instances, HttpHeaders headers) {
-//        // 情况一，没有 tag 时，直接返回
-//        String tag = EnvUtils.getTag(headers);
-//        if (StringUtils.isEmpty(tag)) {
-//            return instances;
-//        }
-//        // 有 tag 时，使用 tag 匹配服务实例
-//        List<ServiceInstance> chooseInstances = filterList(instances, instance -> tag.equals(EnvUtils.getTag(instance)));
-//        if (CollectionUtils.isEmpty(chooseInstances)) {
-//            log.warn("[serviceId({}) 没有满足 tag({}) 的服务实例列表]", serviceId, tag);
-//            chooseInstances = instances;
-//        }
-//        return chooseInstances;
-//    }
-
-    public void setServerGrayProperty(ServerGrayProperty serverGrayProperty) {
-        this.serverGrayProperty = serverGrayProperty;
     }
 
 }

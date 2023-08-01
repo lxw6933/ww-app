@@ -9,6 +9,7 @@ public class Constant {
 
     public static final String GRAY_TAG = "gray-tag";
     public static final String USER_TOKEN = "token";
+    public static final String USER_REAL_IP = "user-real-ip";
     public static final String USER_TOKEN_INFO = "tokenInfo";
     public static final String TEMP_USER_KEY = "temp-user-key";
     public static final Integer TEMP_USER_COOKIE_TIMEOUT = 30 * 24 * 60 * 60;

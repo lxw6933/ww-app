@@ -15,6 +15,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.cloud.context.config.annotation.RefreshScope;
 import org.springframework.cloud.gateway.filter.GatewayFilterChain;
 import org.springframework.cloud.gateway.filter.GlobalFilter;
+import org.springframework.core.Ordered;
 import org.springframework.core.annotation.Order;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
@@ -34,7 +35,7 @@ import java.util.Date;
 @Order(2)
 @Component
 @RefreshScope
-public class PermissionFilter implements GlobalFilter {
+public class PermissionFilter implements GlobalFilter, Ordered {
 
     @Value("${jwt.secret}")
     public String jwtSecret = Constant.SECRET_KEY;
@@ -82,5 +83,10 @@ public class PermissionFilter implements GlobalFilter {
         } else {
             return chain.filter(exchange);
         }
+    }
+
+    @Override
+    public int getOrder() {
+        return 2;
     }
 }

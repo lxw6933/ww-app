@@ -24,6 +24,7 @@ public class CouponController {
 
     @GetMapping("/activity")
     public MallPageResult<CouponPageVO> pageList(CouponPageBO couponPageBO) {
+        System.out.println("灰度。。。。");
         return couponService.pageList(couponPageBO);
     }
 

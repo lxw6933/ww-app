@@ -1,5 +1,11 @@
 # 全局日期格式处理
 spring:
+  cloud:
+    nacos:
+      discovery:
+        metadata:
+          version: 1.0
+          nacos.weight: 1
   jackson:
     # 全局json时间格式化
     date-format: yyyy-MM-dd HH:mm:ss

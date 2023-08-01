@@ -30,6 +30,11 @@ public class ServerGrayProperty {
     private List<String> grayUsers;
 
     /**
+     * 灰度ip列表
+     */
+    private List<String> grayIps;
+
+    /**
      * 灰度的版本
      */
     private String grayVersion;
