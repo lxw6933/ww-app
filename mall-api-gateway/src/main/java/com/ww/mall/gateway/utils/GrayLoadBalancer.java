@@ -76,10 +76,12 @@ public class GrayLoadBalancer implements ReactorServiceInstanceLoadBalancer {
 //        List<String> grayUsers = serverGrayProperty.getGrayUsers();
         // 请求是否包含灰度标记
         String requestGrayTag = headers.getFirst(Constant.GRAY_TAG);
-        // 是否灰度【配置了灰度版本、请求携带gray tag】
-        boolean grayFlag = Boolean.TRUE.equals(enableGray) && StringUtils.isNotEmpty(version) && Constant.GRAY_TAG_VALUE.equals(requestGrayTag);
+        // 是否灰度【配置了灰度版本、请求携带gray tag 或 gray ip】
+        boolean grayFlag = Boolean.TRUE.equals(enableGray) &&
+                StringUtils.isNotEmpty(version) &&
+                (Constant.GRAY_TAG_VALUE.equals(requestGrayTag) || grayIpFlag);
         List<ServiceInstance> chooseInstances;
-        if (!grayFlag && !grayIpFlag) {
+        if (!grayFlag) {
             // 如果没配置灰度版本，且没配置灰度用户列表【正常返回所有实例】
             chooseInstances = instances;
         } else {
