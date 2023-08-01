@@ -2,6 +2,7 @@ package com.ww.mall.gateway.utils;
 
 import cn.hutool.core.collection.CollUtil;
 import com.alibaba.cloud.nacos.balancer.NacosBalancer;
+import com.ww.mall.common.constant.Constant;
 import com.ww.mall.gateway.config.ServerGrayProperty;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -22,7 +23,6 @@ import reactor.core.publisher.Mono;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
-import java.util.Objects;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
@@ -35,11 +35,20 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 public class GrayLoadBalancer implements ReactorServiceInstanceLoadBalancer {
 
-    private final ObjectProvider<ServiceInstanceListSupplier> serviceInstanceListSupplierProvider;
-
+    /**
+     * 服务id
+     */
     private final String serviceId;
 
+    /**
+     * 灰度自定义属性
+     */
     private ServerGrayProperty serverGrayProperty;
+
+    /**
+     * 服务id下所有的实例
+     */
+    private final ObjectProvider<ServiceInstanceListSupplier> serviceInstanceListSupplierProvider;
 
     @Override
     public Mono<Response<ServiceInstance>> choose(Request request) {
@@ -60,19 +69,18 @@ public class GrayLoadBalancer implements ReactorServiceInstanceLoadBalancer {
         // 获取配置的灰度版本
         String version = serverGrayProperty.getGrayVersion();
         // 获取配置的灰度用户列表
-        List<String> grayUsers = serverGrayProperty.getGrayUsers();
-        // todo 这里获取可以根据等候的信息获取
-        String userId = Objects.requireNonNull(headers.get("userId")).stream().findFirst().orElse("");
-
+//        List<String> grayUsers = serverGrayProperty.getGrayUsers();
+        // 请求是否包含灰度标记
+        String requestGrayTag = CollectionUtils.isEmpty(headers.get(Constant.GRAY_TAG)) ? null : headers.get(Constant.GRAY_TAG).get(0);
+        // 是否灰度【配置了灰度版本、请求携带gray tag】
+        boolean grayFlag = StringUtils.isNotEmpty(version) && StringUtils.isNotEmpty(requestGrayTag);
         List<ServiceInstance> chooseInstances;
-        if (StringUtils.isEmpty(version) && !grayUsers.contains(userId)) {
+        if (!grayFlag) {
             // 如果没配置灰度版本，且没配置灰度用户列表【正常返回所有实例】
             chooseInstances = instances;
         } else {
             // 获取灰度版本实例【实例meta里获取版本号、灰度用户列表对比】
-            chooseInstances = filterList(instances, instance ->
-                    version.equals(instance.getMetadata().get("version")) && grayUsers.contains(userId)
-            );
+            chooseInstances = filterList(instances, instance -> version.equals(instance.getMetadata().get("version")));
             // 没有灰度实例，正常访问
             if (CollUtil.isEmpty(chooseInstances)) {
                 log.warn("[serviceId({}) 没有满足版本({})的灰度服务实例列表]", serviceId, version);

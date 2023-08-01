@@ -76,9 +76,11 @@ public class GrayLoadBalancerClientFilter implements GlobalFilter {
         DefaultRequest<RequestDataContext> lbRequest =
                 new DefaultRequest<>(new RequestDataContext(new RequestData(exchange.getRequest()), getHint(serviceId)));
 
-        return this.choose(lbRequest, serviceId, supportedLifecycleProcessors).doOnNext(response -> {
+        return this.choose(serviceId, lbRequest, supportedLifecycleProcessors).doOnNext(response -> {
                     if (!response.hasServer()) {
-                        supportedLifecycleProcessors.forEach(lifecycle -> lifecycle.onComplete(new CompletionContext<>(CompletionContext.Status.DISCARD, lbRequest, response)));
+                        supportedLifecycleProcessors.forEach(lifecycle ->
+                                lifecycle.onComplete(new CompletionContext<>(CompletionContext.Status.DISCARD, lbRequest, response))
+                        );
                         throw NotFoundException.create(properties.isUse404(), "Unable to find instance for " + url.getHost());
                     }
 
@@ -94,7 +96,7 @@ public class GrayLoadBalancerClientFilter implements GlobalFilter {
                     DelegatingServiceInstance serviceInstance = new DelegatingServiceInstance(retrievedInstance,
                             overrideScheme);
 
-                    URI requestUrl = reconstructURI(serviceInstance, uri);
+                    URI requestUrl = LoadBalancerUriTools.reconstructURI(serviceInstance, uri);
 
                     if (log.isTraceEnabled()) {
                         log.trace("LoadBalancerClientFilter url chosen: " + requestUrl);
@@ -103,37 +105,32 @@ public class GrayLoadBalancerClientFilter implements GlobalFilter {
                     exchange.getAttributes().put(ServerWebExchangeUtils.GATEWAY_LOADBALANCER_RESPONSE_ATTR, response);
                     supportedLifecycleProcessors.forEach(lifecycle -> lifecycle.onStartRequest(lbRequest, response));
                 }).then(chain.filter(exchange))
-                .doOnError(throwable -> supportedLifecycleProcessors.forEach(lifecycle -> lifecycle
-                        .onComplete(new CompletionContext<ResponseData, ServiceInstance, RequestDataContext>(
+                .doOnError(throwable -> supportedLifecycleProcessors.forEach(lifecycle ->
+                        lifecycle.onComplete(new CompletionContext<ResponseData, ServiceInstance, RequestDataContext>(
                                 CompletionContext.Status.FAILED, throwable, lbRequest,
-                                exchange.getAttribute(ServerWebExchangeUtils.GATEWAY_LOADBALANCER_RESPONSE_ATTR)))))
-                .doOnSuccess(aVoid -> supportedLifecycleProcessors.forEach(lifecycle -> lifecycle
-                        .onComplete(new CompletionContext<ResponseData, ServiceInstance, RequestDataContext>(
+                                exchange.getAttribute(ServerWebExchangeUtils.GATEWAY_LOADBALANCER_RESPONSE_ATTR))
+                        )
+                    )
+                ).doOnSuccess(aVoid -> supportedLifecycleProcessors.forEach(lifecycle ->
+                        lifecycle.onComplete(new CompletionContext<ResponseData, ServiceInstance, RequestDataContext>(
                                 CompletionContext.Status.SUCCESS, lbRequest,
                                 exchange.getAttribute(ServerWebExchangeUtils.GATEWAY_LOADBALANCER_RESPONSE_ATTR),
-                                new ResponseData(exchange.getResponse(), new RequestData(exchange.getRequest()))))));
+                                new ResponseData(exchange.getResponse(), new RequestData(exchange.getRequest())))
+                        )
+                    )
+                );
     }
 
-    protected URI reconstructURI(ServiceInstance serviceInstance, URI original) {
-        return LoadBalancerUriTools.reconstructURI(serviceInstance, original);
-    }
-
-    private Mono<Response<ServiceInstance>> choose(Request<RequestDataContext> lbRequest, String serviceId,
+    private Mono<Response<ServiceInstance>> choose(String serviceId,
+                                                   Request<RequestDataContext> lbRequest,
                                                    Set<LoadBalancerLifecycle> supportedLifecycleProcessors) {
+        // new 灰度负载均衡器
+        GrayLoadBalancer loadBalancer = new GrayLoadBalancer(serviceId, clientFactory.getLazyProvider(serviceId, ServiceInstanceListSupplier.class));
         if (serverGrayProperty.getEnable()) {
-            // 直接创建 GrayEnvLoadBalancer 对象
-            GrayLoadBalancer loadBalancer = new GrayLoadBalancer(
-                    clientFactory.getLazyProvider(serviceId, ServiceInstanceListSupplier.class), serviceId);
             loadBalancer.setServerGrayProperty(serverGrayProperty);
-            supportedLifecycleProcessors.forEach(lifecycle -> lifecycle.onStart(lbRequest));
-            return loadBalancer.choose(lbRequest);
-        } else {
-            // 直接创建 GrayLoadBalancer 对象
-            GrayLoadBalancer loadBalancer = new GrayLoadBalancer(
-                    clientFactory.getLazyProvider(serviceId, ServiceInstanceListSupplier.class), serviceId);
-            supportedLifecycleProcessors.forEach(lifecycle -> lifecycle.onStart(lbRequest));
-            return loadBalancer.choose(lbRequest);
         }
+        supportedLifecycleProcessors.forEach(lifecycle -> lifecycle.onStart(lbRequest));
+        return loadBalancer.choose(lbRequest);
     }
 
     private String getHint(String serviceId) {
