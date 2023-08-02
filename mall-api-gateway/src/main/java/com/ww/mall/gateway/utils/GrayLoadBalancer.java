@@ -6,7 +6,6 @@ import com.ww.mall.common.constant.Constant;
 import com.ww.mall.gateway.config.ServerGrayProperty;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.cloud.client.ServiceInstance;
@@ -20,7 +19,9 @@ import org.springframework.cloud.loadbalancer.core.ServiceInstanceListSupplier;
 import org.springframework.http.HttpHeaders;
 import reactor.core.publisher.Mono;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.List;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
@@ -64,27 +65,19 @@ public class GrayLoadBalancer implements ReactorServiceInstanceLoadBalancer {
             log.warn("No servers available for service: {}", this.serviceId);
             return new EmptyResponse();
         }
-        // 是否开启灰度
-        Boolean enableGray = serverGrayProperty.getEnable();
-        // 获取配置的灰度版本
-        String grayVersion = serverGrayProperty.getGrayVersion();
-        String prodVersion = serverGrayProperty.getProVersion();
-        // 获取配置的灰度ip白名单
-        List<String> grayIps = serverGrayProperty.getGrayIps();
-        String userRealIp = StringUtils.defaultIfBlank(headers.getFirst(Constant.USER_REAL_IP), "error-ip");
-        boolean grayIpFlag = CollectionUtils.isNotEmpty(grayIps) && grayIps.contains(userRealIp);
-        // 获取配置的灰度用户列表
-//        List<String> grayUsers = serverGrayProperty.getGrayUsers();
         // 请求是否包含灰度标记
-        String requestGrayTag = headers.getFirst(Constant.GRAY_TAG);
-        // 是否灰度【配置了灰度版本、请求携带gray tag 或 gray ip】
-        boolean grayFlag = Boolean.TRUE.equals(enableGray) &&
-                StringUtils.isNotEmpty(grayVersion) &&
-                (Constant.GRAY_TAG_VALUE.equals(requestGrayTag) || grayIpFlag);
+        String requestGrayTag = StringUtils.defaultIfBlank(headers.getFirst(Constant.GRAY_TAG), "error");
+        // 获取配置的灰度版本
+        String grayVersion = StringUtils.defaultIfBlank(headers.getFirst(Constant.GRAY_VERSION), "error");
+        // 获取配置的灰度用户列表
+        List<String> grayUsers = serverGrayProperty.getGrayUsers();
+        // 是否灰度请求
+        boolean grayFlag = Constant.GRAY_TAG_VALUE.equals(requestGrayTag);
+
         List<ServiceInstance> chooseInstances;
         if (!grayFlag) {
             // 正常返回生产版本实例
-            chooseInstances = filterList(instances, instance -> prodVersion.equals(instance.getMetadata().get("version")));
+            chooseInstances = filterList(instances, instance -> !grayVersion.equals(instance.getMetadata().get("version")));
         } else {
             // 获取灰度版本实例【实例meta里获取版本号、灰度用户列表对比】
             chooseInstances = filterList(instances, instance -> grayVersion.equals(instance.getMetadata().get("version")));
