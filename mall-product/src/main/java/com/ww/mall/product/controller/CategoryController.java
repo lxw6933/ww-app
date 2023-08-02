@@ -25,7 +25,7 @@ public class CategoryController {
         return categoryService.listCategoryTree();
     }
 
-    @GetMapping
+    @GetMapping("/2")
     public List<Category> list2(CategoryBO categoryBO) {
         return categoryService.listCategoryTree(categoryBO);
     }

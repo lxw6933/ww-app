@@ -1,6 +1,8 @@
 package com.ww.mall.product.entity;
 
+import com.baomidou.mybatisplus.annotation.IdType;
 import com.baomidou.mybatisplus.annotation.TableField;
+import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.TableName;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.ww.mall.product.enums.CategoryLevel;
@@ -17,8 +19,10 @@ import java.util.List;
  */
 @Data
 @TableName("t_category")
-@EqualsAndHashCode(callSuper = true)
-public class Category extends BaseEntity {
+public class Category {
+
+    @TableId(value = "id", type = IdType.AUTO)
+    private Long id;
 
     /**
      * 分类名称

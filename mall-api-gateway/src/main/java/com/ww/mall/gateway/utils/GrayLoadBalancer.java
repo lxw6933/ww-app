@@ -67,7 +67,8 @@ public class GrayLoadBalancer implements ReactorServiceInstanceLoadBalancer {
         // 是否开启灰度
         Boolean enableGray = serverGrayProperty.getEnable();
         // 获取配置的灰度版本
-        String version = serverGrayProperty.getGrayVersion();
+        String grayVersion = serverGrayProperty.getGrayVersion();
+        String prodVersion = serverGrayProperty.getProVersion();
         // 获取配置的灰度ip白名单
         List<String> grayIps = serverGrayProperty.getGrayIps();
         String userRealIp = StringUtils.defaultIfBlank(headers.getFirst(Constant.USER_REAL_IP), "error-ip");
@@ -78,18 +79,18 @@ public class GrayLoadBalancer implements ReactorServiceInstanceLoadBalancer {
         String requestGrayTag = headers.getFirst(Constant.GRAY_TAG);
         // 是否灰度【配置了灰度版本、请求携带gray tag 或 gray ip】
         boolean grayFlag = Boolean.TRUE.equals(enableGray) &&
-                StringUtils.isNotEmpty(version) &&
+                StringUtils.isNotEmpty(grayVersion) &&
                 (Constant.GRAY_TAG_VALUE.equals(requestGrayTag) || grayIpFlag);
         List<ServiceInstance> chooseInstances;
         if (!grayFlag) {
-            // 如果没配置灰度版本，且没配置灰度用户列表【正常返回所有实例】
-            chooseInstances = instances;
+            // 正常返回生产版本实例
+            chooseInstances = filterList(instances, instance -> prodVersion.equals(instance.getMetadata().get("version")));
         } else {
             // 获取灰度版本实例【实例meta里获取版本号、灰度用户列表对比】
-            chooseInstances = filterList(instances, instance -> version.equals(instance.getMetadata().get("version")));
+            chooseInstances = filterList(instances, instance -> grayVersion.equals(instance.getMetadata().get("version")));
             // 没有灰度实例，正常访问
             if (CollUtil.isEmpty(chooseInstances)) {
-                log.warn("[serviceId({}) 没有满足版本({})的灰度服务实例列表]", serviceId, version);
+                log.warn("[serviceId({}) 没有满足版本({})的灰度服务实例列表]", serviceId, grayVersion);
                 chooseInstances = instances;
             }
         }
