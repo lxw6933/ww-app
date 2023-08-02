@@ -8,6 +8,8 @@ import com.ww.mall.product.enums.CategoryLevel;
 import com.ww.mall.product.service.CategoryService;
 import com.ww.mall.product.view.bo.CategoryBO;
 import org.apache.commons.lang3.StringUtils;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 
 import java.util.Comparator;
@@ -23,6 +25,7 @@ import java.util.stream.Collectors;
 public class CategoryServiceImpl extends ServiceImpl<CategoryMapper, Category> implements CategoryService {
 
     @Override
+    @Cacheable(value = "categoryTree", key="'all'", unless = "#result==null or #result?.size() == 0")
     public List<Category> listCategoryTree() {
         // 获取所有Category
         List<Category> allCategory = this.list();
@@ -64,13 +67,15 @@ public class CategoryServiceImpl extends ServiceImpl<CategoryMapper, Category> i
     }
 
     @Override
+    @CacheEvict(value = "categoryTree", key="'all'")
     public boolean add(Category category) {
-        return false;
+        return true;
     }
 
     @Override
+    @CacheEvict(value = "categoryTree", key="'all'")
     public boolean modify(Long id, Category category) {
-        return false;
+        return true;
     }
 
     /**
