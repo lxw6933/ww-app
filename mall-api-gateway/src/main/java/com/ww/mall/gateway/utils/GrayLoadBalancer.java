@@ -68,6 +68,7 @@ public class GrayLoadBalancer implements ReactorServiceInstanceLoadBalancer {
         Boolean enableGray = serverGrayProperty.getEnable();
         // 获取配置的灰度版本
         String grayVersion = serverGrayProperty.getGrayVersion();
+        String prodVersion = serverGrayProperty.getProVersion();
         // 获取配置的灰度ip白名单
         List<String> grayIps = serverGrayProperty.getGrayIps();
         String userRealIp = StringUtils.defaultIfBlank(headers.getFirst(Constant.USER_REAL_IP), "error-ip");
@@ -82,8 +83,8 @@ public class GrayLoadBalancer implements ReactorServiceInstanceLoadBalancer {
                 (Constant.GRAY_TAG_VALUE.equals(requestGrayTag) || grayIpFlag);
         List<ServiceInstance> chooseInstances;
         if (!grayFlag) {
-            // 正常返回非灰度版本实例
-            chooseInstances = filterList(instances, instance -> !grayVersion.equals(instance.getMetadata().get("version")));
+            // 正常返回生产版本实例
+            chooseInstances = filterList(instances, instance -> prodVersion.equals(instance.getMetadata().get("version")));
         } else {
             // 获取灰度版本实例【实例meta里获取版本号、灰度用户列表对比】
             chooseInstances = filterList(instances, instance -> grayVersion.equals(instance.getMetadata().get("version")));
