@@ -35,6 +35,23 @@ spring:
           filters:
             # /api/foo  =>  /foo
             - RewritePath=/api(?<segment>/?.*), $\{segment}
+        # 商品服务路由
+        - id: product_route
+          uri: lb://mall-product
+          predicates:
+            - Path=/api/mall-product/**
+          filters:
+            # /api/foo  =>  /foo
+            - RewritePath=/api(?<segment>/?.*), $\{segment}
+        # 购物车服务路由
+        - id: cart_route
+          uri: lb://mall-cart
+          predicates:
+            - Path=/api/mall-cart/**
+          filters:
+            # /api/foo  =>  /foo
+            - RewritePath=/api(?<segment>/?.*), $\{segment}
+
 
         # 代码生成服务路由
         - id: generator_route
