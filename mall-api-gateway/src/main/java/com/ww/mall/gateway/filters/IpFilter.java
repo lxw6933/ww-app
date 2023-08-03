@@ -49,12 +49,15 @@ public class IpFilter implements GlobalFilter, Ordered {
             ipRequest = exchange.getRequest()
                     .mutate()
                     .header(Constant.GRAY_VERSION, grayVersion)
+                    .header(Constant.PROD_VERSION, prodVersion)
                     .header(Constant.GRAY_TAG, Constant.GRAY_TAG_VALUE)
                     .header(Constant.USER_REAL_IP, userRealIp)
                     .build();
         } else {
             ipRequest = exchange.getRequest()
                     .mutate()
+                    .header(Constant.GRAY_VERSION, grayVersion)
+                    .header(Constant.PROD_VERSION, prodVersion)
                     .header(Constant.USER_REAL_IP, userRealIp)
                     .build();
         }
