@@ -1,4 +1,4 @@
-package com.ww.mall.gateway.config;
+package com.ww.mall.gateway.properties;
 
 import com.ww.mall.gateway.utils.GrayLoadBalancer;
 import lombok.Data;

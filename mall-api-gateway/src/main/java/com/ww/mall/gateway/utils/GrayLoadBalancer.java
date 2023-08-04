@@ -3,7 +3,7 @@ package com.ww.mall.gateway.utils;
 import cn.hutool.core.collection.CollUtil;
 import com.alibaba.cloud.nacos.balancer.NacosBalancer;
 import com.ww.mall.common.constant.Constant;
-import com.ww.mall.gateway.config.ServerGrayProperty;
+import com.ww.mall.gateway.properties.ServerGrayProperty;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;

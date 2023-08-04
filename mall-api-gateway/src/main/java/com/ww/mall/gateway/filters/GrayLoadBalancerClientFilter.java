@@ -1,7 +1,7 @@
 package com.ww.mall.gateway.filters;
 
 import com.ww.mall.common.exception.ApiException;
-import com.ww.mall.gateway.config.ServerGrayProperty;
+import com.ww.mall.gateway.properties.ServerGrayProperty;
 import com.ww.mall.gateway.utils.GrayLoadBalancer;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
