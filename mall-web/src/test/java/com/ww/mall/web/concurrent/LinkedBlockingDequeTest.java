@@ -19,6 +19,9 @@ import java.util.concurrent.atomic.AtomicInteger;
 class LinkedBlockingDequeTest {
 
     AtomicInteger finishTaskCount = new AtomicInteger();
+    AtomicInteger num = new AtomicInteger();
+
+    private final Object lock = new Object();
 
     ExecutorService executor = new ThreadPoolExecutor(20, 20,
             60L, TimeUnit.SECONDS,
@@ -26,15 +29,20 @@ class LinkedBlockingDequeTest {
         @Override
         protected void afterExecute(Runnable r, Throwable t) {
             super.afterExecute(r, t);
-            int count = finishTaskCount.incrementAndGet();
-            Integer taskCount = taskCountQueue.peekFirst();
-            log.info("current compare taskCount: {}", taskCount);
-            if (taskCount == null) taskCount = 0;
-            if (count >= taskCount) {
-                log.info("完成了一批任务");
-                Integer i = taskCountQueue.pollFirst();
-                if (i != null) {
-                    log.info("移除已达成小目标:{}", i);
+            synchronized (lock) {
+                // 执行完的总任务数
+                int finishTaskTotalCount = finishTaskCount.incrementAndGet();
+                // 获取任务数队列数量【get from header】
+                Integer taskCount = taskCountQueue.peekFirst();
+                if (taskCount == null) taskCount = 0;
+                log.info("threadName:[{}] current compare taskCount: {}", Thread.currentThread().getId(), taskCount);
+                if (finishTaskTotalCount >= taskCount) {
+                    log.info("threadName:[{}] 完成了一批任务，当前批次任务总数：{}", Thread.currentThread().getId(), taskCount);
+                    // 移除已完成的任务批次任务
+                    Integer i = taskCountQueue.pollFirst();
+                    if (i != null) {
+                        log.info("threadName:[{}] 已移除已达成小目标:{}", Thread.currentThread().getId(), i);
+                    }
                 }
             }
         }
@@ -47,19 +55,22 @@ class LinkedBlockingDequeTest {
     @Test
     void test1() {
         Thread producer = new Thread(() -> {
-            int taskBatchCount = random.nextInt(20);
+            // 生产任务批次数量
+            int taskBatchCount = random.nextInt(100);
             log.info("task batch count: {}", taskBatchCount);
             for (int i = 0; i < taskBatchCount; i++) {
+                // 每批任务批次总任务数量
                 int taskCount = random.nextInt(20);
                 log.info("第{}批次任务数: {}", (i + 1), taskCount);
                 Integer count = taskCountQueue.peekLast();
-                log.info("获取目前最新任务数:{}", count);
                 if (count == null) count = 0;
+                log.info("获取目前最新任务数:{}", count);
                 int taskCounter = count + taskCount;
                 log.info("计算新的任务总数: {}", taskCounter);
                 taskCountQueue.addLast(taskCounter);
                 for (int j = 0; j < taskCount; j++) {
                     executor.submit(() -> {
+                        num.incrementAndGet();
                         // try {
                         //     int sleep = random.nextInt(10);
                         //     TimeUnit.SECONDS.sleep(sleep);
@@ -73,6 +84,7 @@ class LinkedBlockingDequeTest {
         });
         producer.start();
         waitFinish(executor);
+        log.info("执行次数：{}, 执行总任务数：{}", num, finishTaskCount);
         Assertions.assertTrue(true);
     }
 
