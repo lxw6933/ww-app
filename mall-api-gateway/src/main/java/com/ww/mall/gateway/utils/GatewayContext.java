@@ -1,4 +1,4 @@
-package com.ww.mall.gateway.filters;
+package com.ww.mall.gateway.utils;
 
 import lombok.Data;
 import org.springframework.util.MultiValueMap;
