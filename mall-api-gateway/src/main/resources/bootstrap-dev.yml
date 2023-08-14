@@ -51,6 +51,22 @@ spring:
           filters:
             # /api/foo  =>  /foo
             - RewritePath=/api(?<segment>/?.*), $\{segment}
+        # 搜索服务路由
+        - id: search_route
+          uri: lb://mall-search
+          predicates:
+            - Path=/api/mall-search/**
+          filters:
+            # /api/foo  =>  /foo
+            - RewritePath=/api(?<segment>/?.*), $\{segment}
+        # 订单服务路由
+        - id: order_route
+          uri: lb://mall-order
+          predicates:
+            - Path=/api/mall-order/**
+          filters:
+            # /api/foo  =>  /foo
+            - RewritePath=/api(?<segment>/?.*), $\{segment}
 
 
         # 代码生成服务路由
@@ -61,7 +77,6 @@ spring:
           filters:
             # /api/foo  =>  /foo
             - RewritePath=/api(?<segment>/?.*), $\{segment}
-
         # 后台管理服务路由
         - id: admin_route
           uri: lb://mall-admin
