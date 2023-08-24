@@ -10,6 +10,7 @@ import org.springframework.http.converter.HttpMessageConverter;
 import org.springframework.http.converter.StringHttpMessageConverter;
 import org.springframework.http.converter.json.MappingJackson2HttpMessageConverter;
 import org.springframework.web.servlet.config.annotation.InterceptorRegistry;
+import org.springframework.web.servlet.config.annotation.PathMatchConfigurer;
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 
 import java.io.IOException;
@@ -24,6 +25,13 @@ import java.util.List;
  */
 @Configuration
 public class WebMvcConfiguration implements WebMvcConfigurer {
+
+    @Override
+    public void configurePathMatch(PathMatchConfigurer configurer) {
+        WebMvcConfigurer.super.configurePathMatch(configurer);
+        // 设置uri最后的/不匹配
+        configurer.setUseTrailingSlashMatch(false);
+    }
 
     @Override
     public void addInterceptors(InterceptorRegistry registry) {
