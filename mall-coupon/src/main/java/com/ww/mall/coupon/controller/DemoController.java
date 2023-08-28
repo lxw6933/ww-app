@@ -5,11 +5,11 @@ import com.ww.mall.web.config.SecretProperties;
 import com.ww.mall.web.config.thread.DefaultThreadPoolProperties;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.redis.core.StringRedisTemplate;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
-
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ThreadPoolExecutor;
 
 /**
  * Author:         ww
@@ -28,7 +28,20 @@ public class DemoController {
     private SecretProperties secretProperties;
 
     @Autowired
+    private StringRedisTemplate stringRedisTemplate;
+
+    @Autowired
     private CouponProperties couponProperties;
+
+    @GetMapping("/demo/add/{id}")
+    public void add(@PathVariable("id") String id) {
+        stringRedisTemplate.opsForHyperLogLog().add("ww", id);
+    }
+
+    @GetMapping("/demo/size")
+    public int add() {
+        return stringRedisTemplate.opsForHyperLogLog().size("ww").intValue();
+    }
 
     @RequestMapping("/demo")
     public String demo(){
