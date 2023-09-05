@@ -3,6 +3,8 @@ package com.ww.mall.redis;
 import com.fasterxml.jackson.annotation.JsonAutoDetect;
 import com.fasterxml.jackson.annotation.PropertyAccessor;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.ww.mall.redis.aspect.MallRateLimitAspect;
+import com.ww.mall.redis.aspect.MallResubmissionAspect;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.autoconfigure.cache.CacheProperties;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
@@ -84,6 +86,16 @@ public class MallRedisAutoConfiguration {
         Jackson2JsonRedisSerializer<Object> jackson2JsonRedisSerializer = new Jackson2JsonRedisSerializer<>(Object.class);
         jackson2JsonRedisSerializer.setObjectMapper(objectMapper);
         return jackson2JsonRedisSerializer;
+    }
+
+    @Bean
+    public MallResubmissionAspect mallResubmissionAspect() {
+        return new MallResubmissionAspect();
+    }
+
+    @Bean
+    public MallRateLimitAspect mallRateLimitAspect() {
+        return new MallRateLimitAspect();
     }
 
 }

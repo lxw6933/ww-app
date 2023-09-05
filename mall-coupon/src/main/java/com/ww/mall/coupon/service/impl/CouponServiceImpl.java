@@ -18,6 +18,7 @@ import com.ww.mall.coupon.eunms.*;
 import com.ww.mall.coupon.service.CouponService;
 import com.ww.mall.coupon.view.bo.CouponPageBO;
 import com.ww.mall.coupon.view.vo.CouponPageVO;
+import com.ww.mall.redis.annotation.MallResubmission;
 import com.ww.mall.web.cmmon.MallPageResult;
 import com.ww.mall.web.utils.AuthorizationContext;
 import com.ww.mall.web.utils.IdUtil;
@@ -55,6 +56,7 @@ public class CouponServiceImpl extends ServiceImpl<CouponMapper, Coupon> impleme
     private RedissonClient redissonClient;
 
     @Override
+    @MallResubmission(timeUnit = TimeUnit.MINUTES)
     public MallPageResult<CouponPageVO> pageList(CouponPageBO couponPageBO) {
         QueryWrapper<Coupon> couponQueryWrapper = new QueryWrapper<>();
         if (StringUtils.isNotEmpty(couponPageBO.getTitle())) {

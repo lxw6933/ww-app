@@ -1,0 +1,28 @@
+package com.ww.mall.redis.aspect;
+
+import org.aspectj.lang.ProceedingJoinPoint;
+import org.aspectj.lang.annotation.Around;
+import org.aspectj.lang.annotation.Aspect;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.redis.core.StringRedisTemplate;
+import org.springframework.stereotype.Component;
+
+/**
+ * @author ww
+ * @create 2023-09-05- 10:40
+ * @description:
+ */
+@Aspect
+@Component
+public class MallRateLimitAspect {
+
+    @Autowired
+    private StringRedisTemplate stringRedisTemplate;
+
+    @Around("@annotation(com.ww.mall.redis.annotation.MallRateLimit)")
+    public Object mallRateLimitAdvice(ProceedingJoinPoint joinPoint) throws Throwable {
+
+        return joinPoint.proceed();
+    }
+
+}
