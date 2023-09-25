@@ -24,6 +24,7 @@ import org.springframework.cloud.loadbalancer.annotation.LoadBalancerClients;
 import org.springframework.cloud.openfeign.EnableFeignClients;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.retry.annotation.EnableRetry;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -35,6 +36,7 @@ import java.time.LocalTime;
  * @description:
  */
 @Slf4j
+@EnableRetry
 @RefreshScope
 @Configuration
 @EnableFeignClients(basePackages = "com.ww.mall.web.feign")
