@@ -1,5 +1,6 @@
 package com.ww.mall.web.config;
 
+import com.alibaba.csp.sentinel.adapter.spring.webmvc.SentinelWebInterceptor;
 import com.fasterxml.jackson.core.JsonGenerator;
 import com.fasterxml.jackson.databind.JsonSerializer;
 import com.fasterxml.jackson.databind.SerializerProvider;
@@ -35,6 +36,7 @@ public class WebMvcConfiguration implements WebMvcConfigurer {
 
     @Override
     public void addInterceptors(InterceptorRegistry registry) {
+        registry.addInterceptor(new SentinelWebInterceptor());
         registry.addInterceptor(new RequestInterceptor()).addPathPatterns("/**");
     }
 
