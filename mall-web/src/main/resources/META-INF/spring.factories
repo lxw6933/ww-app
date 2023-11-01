@@ -8,4 +8,4 @@ org.springframework.boot.autoconfigure.EnableAutoConfiguration=\
   com.ww.mall.web.config.FeignFallBackConfiguration, \
   com.ww.mall.web.utils.SpringContextManager, \
   com.ww.mall.web.config.LoadBalancerConfiguration, \
-  com.ww.mall.web.config.Ip2RegionConfiguration
+  com.ww.mall.web.config.ip.Ip2RegionConfiguration
