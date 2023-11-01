@@ -57,11 +57,8 @@ public class LogFilter implements GlobalFilter, Ordered {
 
     @Override
     public Mono<Void> filter(ServerWebExchange exchange, GatewayFilterChain chain) {
-        String traceId = IdUtil.objectId();
         // 1.将traceId传递给微服务
-        ServerHttpRequest request = exchange.getRequest().mutate().header("traceId", traceId).build();
-        // 2.将traceId设置到slf4j中，日志打印模板配置打印traceId
-        MDC.put(Constant.TRACE_ID, traceId);
+        ServerHttpRequest request = exchange.getRequest().mutate().build();
         // 将request信息保存到GatewayContext中
         String path = request.getPath().pathWithinApplication().value();
         GatewayContext gatewayContext = new GatewayContext();

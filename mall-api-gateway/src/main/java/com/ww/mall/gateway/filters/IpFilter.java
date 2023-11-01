@@ -1,11 +1,13 @@
 package com.ww.mall.gateway.filters;
 
+import cn.hutool.core.util.IdUtil;
 import com.ww.mall.common.constant.Constant;
 import com.ww.mall.gateway.properties.ServerGrayProperty;
 import com.ww.mall.gateway.utils.GatewayIpUtil;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.CollectionUtils;
+import org.slf4j.MDC;
 import org.springframework.cloud.gateway.filter.GatewayFilterChain;
 import org.springframework.cloud.gateway.filter.GlobalFilter;
 import org.springframework.core.Ordered;
@@ -33,6 +35,9 @@ public class IpFilter implements GlobalFilter, Ordered {
 
     @Override
     public Mono<Void> filter(ServerWebExchange exchange, GatewayFilterChain chain) {
+        String traceId = IdUtil.objectId();
+        // 2.将traceId设置到slf4j中，日志打印模板配置打印traceId
+        MDC.put(Constant.TRACE_ID, traceId);
         String userRealIp = GatewayIpUtil.getIpAddress(exchange.getRequest());
         // 是否开启灰度
         Boolean enableGray = serverGrayProperty.getEnable();
@@ -48,6 +53,7 @@ public class IpFilter implements GlobalFilter, Ordered {
         if (Boolean.TRUE.equals(enableGray) && grayIpFlag) {
             ipRequest = exchange.getRequest()
                     .mutate()
+                    .header("traceId", traceId)
                     .header(Constant.GRAY_VERSION, grayVersion)
                     .header(Constant.PROD_VERSION, prodVersion)
                     .header(Constant.GRAY_TAG, Constant.GRAY_TAG_VALUE)
@@ -56,6 +62,7 @@ public class IpFilter implements GlobalFilter, Ordered {
         } else {
             ipRequest = exchange.getRequest()
                     .mutate()
+                    .header("traceId", traceId)
                     .header(Constant.GRAY_VERSION, grayVersion)
                     .header(Constant.PROD_VERSION, prodVersion)
                     .header(Constant.USER_REAL_IP, userRealIp)
