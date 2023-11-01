@@ -56,7 +56,6 @@ public class CouponServiceImpl extends ServiceImpl<CouponMapper, Coupon> impleme
     private RedissonClient redissonClient;
 
     @Override
-    @MallResubmission
     public MallPageResult<CouponPageVO> pageList(CouponPageBO couponPageBO) {
         QueryWrapper<Coupon> couponQueryWrapper = new QueryWrapper<>();
         if (StringUtils.isNotEmpty(couponPageBO.getTitle())) {

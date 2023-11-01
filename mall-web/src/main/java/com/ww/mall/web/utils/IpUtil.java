@@ -25,13 +25,21 @@ public class IpUtil {
 
     public static String getIp(HttpServletRequest request) {
         String ip = request.getHeader("x-forwarded-for");
-        if (ip == null || ip.length() == 0 || UNKNOWN.equalsIgnoreCase(ip)) {
+        if (ip == null || ip.isEmpty() || UNKNOWN.equalsIgnoreCase(ip)) {
             ip = request.getHeader("Proxy-Client-IP");
         }
-        if (ip == null || ip.length() == 0 || UNKNOWN.equalsIgnoreCase(ip)) {
+        if (ip == null || ip.isEmpty() || UNKNOWN.equalsIgnoreCase(ip)) {
             ip = request.getHeader("WL-Proxy-Client-IP");
         }
-        if (ip == null || ip.length() == 0 || UNKNOWN.equalsIgnoreCase(ip)) {
+        if (ip == null || ip.isEmpty() || UNKNOWN.equalsIgnoreCase(ip)) {
+            // HTTP_CLIENT_IP：有些代理服务器
+            ip = request.getHeader("HTTP_CLIENT_IP");
+        }
+        if (ip == null || ip.isEmpty() || UNKNOWN.equalsIgnoreCase(ip)) {
+            // X-Real-IP：nginx服务代理
+            ip = request.getHeader("X-Real-IP");
+        }
+        if (ip == null || ip.isEmpty() || UNKNOWN.equalsIgnoreCase(ip)) {
             ip = request.getRemoteAddr();
         }
         if (LOCAL_HOST_IP.equals(ip)) {
@@ -40,28 +48,19 @@ public class IpUtil {
             try {
                 inetAddress = InetAddress.getLocalHost();
             } catch (UnknownHostException e) {
-                e.printStackTrace();
+                log.error("本地ip解析异常UnknownHostException", e);
             }
             ip = inetAddress == null ? LOCAL_HOST_IP_DEFAULT : inetAddress.getHostAddress();
         }
         return ip;
     }
 
-    public static String getLastIp(HttpServletRequest request) {
+    public static String getRealIp(HttpServletRequest request) {
         String ipStr = getIp(request);
-        log.info("第三方请求ipStr：{}", ipStr);
+        log.info("请求ipStr：{}", ipStr);
         String[] ipArr = ipStr.split(",");
         String realIp = ipArr[ipArr.length - 1].trim();
-        log.info("第三方请求ip：{}", realIp);
-        return realIp;
-    }
-
-    public static String getFirstIp(HttpServletRequest request) {
-        String ipStr = getIp(request);
-        log.info("第三方请求ipStr：{}", ipStr);
-        String[] ipArr = ipStr.split(",");
-        String realIp = ipArr[0].trim();
-        log.info("第三方请求ip：{}", realIp);
+        log.info("真实请求ip：{}", realIp);
         return realIp;
     }
 

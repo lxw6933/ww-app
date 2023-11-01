@@ -50,7 +50,7 @@ public class LoginServiceImpl implements LoginService {
 
     @Override
     public LoginVO loginByVerityCode(MemberLoginBO memberLoginBO, HttpServletRequest request) {
-        String requestIp = IpUtil.getLastIp(request);
+        String requestIp = IpUtil.getRealIp(request);
         log.info("登录请求ip：【{}】 请求参数：【{}】", requestIp, memberLoginBO);
         String mobile = memberLoginBO.getMobile();
         String mobileCode = stringRedisTemplate.opsForValue().get(Constant.SMS_CODE_CACHE_PREFIX + mobile);
