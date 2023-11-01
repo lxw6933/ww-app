@@ -2,6 +2,7 @@ package com.ww.mall.web.config.ip;
 
 import lombok.Data;
 import org.springframework.boot.context.properties.ConfigurationProperties;
+import org.springframework.context.annotation.Configuration;
 
 /**
  * @author ww
@@ -17,7 +18,7 @@ public class Ip2RegionProperties {
     /**
      * 是否开启自动配置
      */
-    private boolean enabled = true;
+    private boolean enabled = false;
 
     /**
      * db数据文件位置

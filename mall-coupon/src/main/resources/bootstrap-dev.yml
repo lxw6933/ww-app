@@ -32,3 +32,6 @@ management:
     web:
       exposure:
         include: "*"
+
+ip2region:
+  enabled: true
