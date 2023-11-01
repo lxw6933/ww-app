@@ -33,6 +33,10 @@ public class GatewayIpUtil {
             ipAddress = headers.getFirst("WL-Proxy-Client-IP");
         }
         if (ipAddress == null || ipAddress.isEmpty() || IP_UNKNOWN.equalsIgnoreCase(ipAddress)) {
+            // HTTP_CLIENT_IP：有些代理服务器
+            ipAddress = headers.getFirst("HTTP_CLIENT_IP");
+        }
+        if (ipAddress == null || ipAddress.isEmpty() || IP_UNKNOWN.equalsIgnoreCase(ipAddress)) {
             ipAddress = headers.getFirst("X-Real-Ip");
         }
         if (ipAddress == null || ipAddress.isEmpty() || IP_UNKNOWN.equalsIgnoreCase(ipAddress)) {
