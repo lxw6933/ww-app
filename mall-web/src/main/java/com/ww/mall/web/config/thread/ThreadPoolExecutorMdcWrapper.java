@@ -2,6 +2,7 @@ package com.ww.mall.web.config.thread;
 
 import com.ww.mall.web.utils.ThreadMdcUtil;
 import org.slf4j.MDC;
+import org.springframework.lang.NonNull;
 
 import java.util.concurrent.*;
 
@@ -34,22 +35,25 @@ public class ThreadPoolExecutorMdcWrapper extends ThreadPoolExecutor {
     }
 
     @Override
-    public void execute(Runnable task) {
+    public void execute(@NonNull Runnable task) {
         super.execute(ThreadMdcUtil.wrap(task, MDC.getCopyOfContextMap()));
     }
 
+    @NonNull
     @Override
-    public <T> Future<T> submit(Runnable task, T result) {
+    public <T> Future<T> submit(@NonNull Runnable task, T result) {
         return super.submit(ThreadMdcUtil.wrap(task, MDC.getCopyOfContextMap()), result);
     }
 
+    @NonNull
     @Override
-    public <T> Future<T> submit(Callable<T> task) {
+    public <T> Future<T> submit(@NonNull Callable<T> task) {
         return super.submit(ThreadMdcUtil.wrap(task, MDC.getCopyOfContextMap()));
     }
 
+    @NonNull
     @Override
-    public Future<?> submit(Runnable task) {
+    public Future<?> submit(@NonNull Runnable task) {
         return super.submit(ThreadMdcUtil.wrap(task, MDC.getCopyOfContextMap()));
     }
 }
