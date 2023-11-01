@@ -7,4 +7,5 @@ org.springframework.boot.autoconfigure.EnableAutoConfiguration=\
   com.ww.mall.web.config.sentinel.SentinelNacosDataSourceAutoConfiguration, \
   com.ww.mall.web.config.FeignFallBackConfiguration, \
   com.ww.mall.web.utils.SpringContextManager, \
-  com.ww.mall.web.config.LoadBalancerConfiguration
+  com.ww.mall.web.config.LoadBalancerConfiguration, \
+  com.ww.mall.web.config.Ip2RegionConfiguration
