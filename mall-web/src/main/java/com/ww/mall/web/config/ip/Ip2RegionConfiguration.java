@@ -1,15 +1,9 @@
 package com.ww.mall.web.config.ip;
 
-/**
- * @author ww
- * @create 2023-11-01- 10:34
- * @description:
- */
 import cn.hutool.core.io.IoUtil;
 import cn.hutool.core.util.ClassLoaderUtil;
 import lombok.extern.slf4j.Slf4j;
 import org.lionsoul.ip2region.xdb.Searcher;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
@@ -18,6 +12,11 @@ import org.springframework.context.annotation.Configuration;
 import java.io.IOException;
 import java.io.InputStream;
 
+/**
+ * @author ww
+ * @create 2023-11-01- 10:34
+ * @description:
+ */
 @Slf4j
 @Configuration
 @EnableConfigurationProperties(Ip2RegionProperties.class)
