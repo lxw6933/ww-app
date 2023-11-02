@@ -43,11 +43,11 @@ import java.time.LocalTime;
 @LoadBalancerClients(defaultConfiguration = {LoadBalancerConfiguration.class})
 public class MallWebApplication {
 
-    @Bean
-    public ServerRequestFilter serverRequestFilter() {
-        log.info("初始化ServerRequestFilter成功...");
-        return new ServerRequestFilter();
-    }
+//    @Bean
+//    public ServerRequestFilter serverRequestFilter() {
+//        log.info("初始化ServerRequestFilter成功...");
+//        return new ServerRequestFilter();
+//    }
 
     @Bean
     @ConditionalOnBean(MallMybatisPlusConfig.class)

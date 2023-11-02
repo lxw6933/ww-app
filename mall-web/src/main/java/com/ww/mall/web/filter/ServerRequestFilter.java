@@ -5,6 +5,7 @@ import com.ww.mall.common.constant.Constant;
 import com.ww.mall.web.utils.AuthorizationContext;
 import lombok.extern.slf4j.Slf4j;
 import org.slf4j.MDC;
+import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
 
 import javax.servlet.FilterChain;
@@ -19,6 +20,7 @@ import java.io.IOException;
  * @description: 服务请求过滤器
  */
 @Slf4j
+@Component
 public class ServerRequestFilter extends OncePerRequestFilter {
     @Override
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain) throws ServletException, IOException {
