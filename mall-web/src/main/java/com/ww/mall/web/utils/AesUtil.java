@@ -3,6 +3,8 @@ package com.ww.mall.web.utils;
 import cn.hutool.core.util.CharsetUtil;
 import cn.hutool.crypto.symmetric.SymmetricAlgorithm;
 import cn.hutool.crypto.symmetric.SymmetricCrypto;
+import com.ww.mall.common.exception.ApiException;
+import lombok.extern.slf4j.Slf4j;
 
 import java.nio.charset.StandardCharsets;
 
@@ -11,7 +13,18 @@ import java.nio.charset.StandardCharsets;
  * @create 2023-11-05- 14:37
  * @description:
  */
+@Slf4j
 public class AesUtil {
+
+    private static final String KEY = "ww1025";
+
+    public static String encrypt(String encryptContent) {
+        return encrypt(KEY, encryptContent);
+    }
+
+    public static String decrypt(String decryptContent) {
+        return decrypt(KEY, decryptContent);
+    }
 
     public static String encrypt(String key, String encryptContent) {
         // 生成密钥
@@ -46,8 +59,7 @@ public class AesUtil {
     }
 
     public static void main(String[] args) {
-        System.out.println(encrypt("ww2023", "AA10Ab25Cd"));
-        System.out.println(decrypt("ww2023", "eb91e344b6d801fb82136034b121fd07"));
+
     }
 
 }
