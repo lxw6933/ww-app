@@ -2,7 +2,7 @@ package com.ww.mall.coupon.controller;
 
 import com.ww.mall.coupon.config.CouponProperties;
 import com.ww.mall.web.config.SecretProperties;
-import com.ww.mall.web.config.ip.Ip2regionSearcher;
+import com.ww.mall.web.config.ip2region.Ip2regionSearcher;
 import com.ww.mall.web.config.thread.DefaultThreadPoolProperties;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;

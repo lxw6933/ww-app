@@ -1,4 +1,4 @@
-package com.ww.mall.web.config.ip;
+package com.ww.mall.web.config.ip2region;
 
 import lombok.SneakyThrows;
 import org.lionsoul.ip2region.xdb.Searcher;
