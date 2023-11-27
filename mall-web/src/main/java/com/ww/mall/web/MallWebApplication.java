@@ -24,8 +24,11 @@ import org.springframework.cloud.loadbalancer.annotation.LoadBalancerClients;
 import org.springframework.cloud.openfeign.EnableFeignClients;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.Primary;
+import org.springframework.jdbc.datasource.DataSourceTransactionManager;
 import org.springframework.retry.annotation.EnableRetry;
 
+import javax.sql.DataSource;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
@@ -48,6 +51,14 @@ public class MallWebApplication {
 //        log.info("初始化ServerRequestFilter成功...");
 //        return new ServerRequestFilter();
 //    }
+
+    @Bean
+    @Primary
+    public DataSourceTransactionManager dataSourceTransactionManager(DataSource dataSource) {
+        // 如果引入mongodb事务管理器，这个bean必须存在，否则可以不需要
+        log.info("初始化mysql的默认事务管理器...");
+        return new DataSourceTransactionManager(dataSource);
+    }
 
     @Bean
     @ConditionalOnBean(MallMybatisPlusConfig.class)

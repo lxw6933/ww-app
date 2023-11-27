@@ -6,6 +6,7 @@ import org.springframework.boot.autoconfigure.mongo.MongoProperties;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.data.mongodb.MongoDatabaseFactory;
+import org.springframework.data.mongodb.MongoTransactionManager;
 import org.springframework.data.mongodb.core.MongoTemplate;
 import org.springframework.data.mongodb.core.convert.DefaultDbRefResolver;
 import org.springframework.data.mongodb.core.convert.DefaultMongoTypeMapper;
@@ -21,6 +22,13 @@ import org.springframework.data.mongodb.core.mapping.MongoMappingContext;
 @ConditionalOnClass({MongoTemplate.class})
 @EnableConfigurationProperties(MongoProperties.class)
 public class MallMongodbAutoConfiguration {
+
+    @Bean("mongoTransactionManager")
+    public MongoTransactionManager transactionManager(MongoDatabaseFactory factory) {
+        // 单机MongoDB无法执行涉及到事务的操作。为了使用事务，你需要设置一个 MongoDB 副本集
+        log.info("初始化mongodb事务管理器...");
+        return new MongoTransactionManager(factory);
+    }
 
     @Bean
     public MappingMongoConverter mappingMongoConverter(MongoDatabaseFactory mongoDatabaseFactory, MongoMappingContext mongoMappingContext) {
