@@ -11,7 +11,10 @@ public class RedisKeyConstant {
 
     private RedisKeyConstant() {}
 
+    public static final String SIGN_LOCK_PREFIX = "sign_lock:";
+
     public static final String KEY_PREFIX  = "";
+    public static final String SPLIT  = ":";
 
     /**
      * 缓存key的前缀

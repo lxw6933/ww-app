@@ -1,6 +1,7 @@
 package com.ww.mall.member.controller;
 
 import com.ww.mall.member.service.SignService;
+import com.ww.mall.web.utils.AuthorizationContext;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -25,27 +26,27 @@ public class SignController {
 
     @GetMapping("/in")
     public int doSign() {
-        return signService.doSign(null);
+        return signService.doSign(null, AuthorizationContext.getClientUser());
     }
 
     @GetMapping("/back")
     public int doSign(@RequestParam("date") String date) {
-        return signService.doSign(date);
+        return signService.doSign(date, AuthorizationContext.getClientUser());
     }
 
     @GetMapping("/count")
     public int signCount(@RequestParam("date") String date) {
-        return signService.getSignCount(date);
+        return signService.getSignCount(date, AuthorizationContext.getClientUser());
     }
 
     @GetMapping("/continuousSignCount")
     public int continuousSignCount(@RequestParam("date") String date) {
-        return signService.getContinuousSignCount(date);
+        return signService.getContinuousSignCount(date, AuthorizationContext.getClientUser());
     }
 
     @GetMapping("/detail")
     public Map<String, Boolean> signInfo(@RequestParam("date") String date) {
-        return signService.getSignInfo(date);
+        return signService.getSignInfo(date, AuthorizationContext.getClientUser());
     }
 
 }

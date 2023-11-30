@@ -14,7 +14,7 @@ import com.ww.mall.web.cmmon.MallPageResult;
  */
 public interface CouponService extends IService<Coupon> {
 
-    Object demo();
+    Object demo(CouponPageBO couponPageBO);
 
     /**
      * 优惠券分页列表

@@ -19,7 +19,9 @@ import com.ww.mall.coupon.eunms.*;
 import com.ww.mall.coupon.service.CouponService;
 import com.ww.mall.coupon.view.bo.CouponPageBO;
 import com.ww.mall.coupon.view.vo.CouponPageVO;
+import com.ww.mall.redis.annotation.MallDistributedLock;
 import com.ww.mall.redis.annotation.MallResubmission;
+import com.ww.mall.redis.aspect.MallDistributedLockAspect;
 import com.ww.mall.web.cmmon.MallPageResult;
 import com.ww.mall.web.utils.AuthorizationContext;
 import com.ww.mall.web.utils.IdUtil;
@@ -59,54 +61,60 @@ public class CouponServiceImpl extends ServiceImpl<CouponMapper, Coupon> impleme
     private RedissonClient redissonClient;
 
     @Override
-    @Transactional(transactionManager = "mongoTransactionManager", rollbackFor = Exception.class)
+//    @Transactional(transactionManager = "mongoTransactionManager", rollbackFor = Exception.class)
 //    @Transactional(rollbackFor = Exception.class)
-    public Object demo() {
-        RLock wwLock = redissonClient.getLock("wwLock");
+    @MallDistributedLock(prefixKey = "#couponPageBO.title")
+    public Object demo(CouponPageBO couponPageBO) {
         try {
-            boolean lock = wwLock.tryLock(3, TimeUnit.SECONDS);
-            if (!lock) {
-                throw new ApiException("请稍后再试");
-            }
-            log.info("线程【{}】获取到锁处理业务", Thread.currentThread().getName());
-//            Coupon coupon = this.list().get(0);
-//            coupon.setTitle("success");
-//            this.save(coupon);
-            CouponRelationProduct couponRelationProduct = new CouponRelationProduct();
-            couponRelationProduct.setActivityCode("success");
-            couponRelationProduct.setSpuId(0L);
-            couponRelationProduct.setSkuId(0L);
-            couponRelationProduct.setChannelId(0L);
-            couponRelationProduct.setBrandId(0L);
-            couponRelationProduct.setCategoryId(0L);
-            couponRelationProduct.setGroupId(0L);
-            mongoTemplate.save(couponRelationProduct);
-            int i = 1 / 0;
-//            coupon.setTitle("fail");
-//            this.save(coupon);
-            CouponRelationProduct couponRelationProduct2 = new CouponRelationProduct();
-            couponRelationProduct2.setId("error");
-            couponRelationProduct2.setActivityCode("error");
-            couponRelationProduct2.setSpuId(10L);
-            couponRelationProduct2.setSkuId(10L);
-            couponRelationProduct2.setChannelId(10L);
-            couponRelationProduct2.setBrandId(10L);
-            couponRelationProduct2.setCategoryId(10L);
-            couponRelationProduct2.setGroupId(10L);
-            mongoTemplate.save(couponRelationProduct2);
-            return "success";
+            Thread.sleep(8000);
         } catch (InterruptedException e) {
-            log.error("获取锁异常", e);
-//            throw new ApiException("异常");
-        } catch (Exception e) {
-            log.error("业务异常", e);
-//            throw new ApiException(e.getMessage());
-        } finally {
-            if (wwLock.isHeldByCurrentThread()) {
-                log.info("线程【{}】释放到锁", Thread.currentThread().getName());
-                wwLock.unlock();
-            }
+            throw new RuntimeException(e);
         }
+//        RLock wwLock = redissonClient.getLock("wwLock");
+//        try {
+//            boolean lock = wwLock.tryLock(3, TimeUnit.SECONDS);
+//            if (!lock) {
+//                throw new ApiException("请稍后再试");
+//            }
+//            log.info("线程【{}】获取到锁处理业务", Thread.currentThread().getName());
+////            Coupon coupon = this.list().get(0);
+////            coupon.setTitle("success");
+////            this.save(coupon);
+//            CouponRelationProduct couponRelationProduct = new CouponRelationProduct();
+//            couponRelationProduct.setActivityCode("success");
+//            couponRelationProduct.setSpuId(0L);
+//            couponRelationProduct.setSkuId(0L);
+//            couponRelationProduct.setChannelId(0L);
+//            couponRelationProduct.setBrandId(0L);
+//            couponRelationProduct.setCategoryId(0L);
+//            couponRelationProduct.setGroupId(0L);
+//            mongoTemplate.save(couponRelationProduct);
+////            int i = 1 / 0;
+////            coupon.setTitle("fail");
+////            this.save(coupon);
+//            CouponRelationProduct couponRelationProduct2 = new CouponRelationProduct();
+//            couponRelationProduct2.setId("error");
+//            couponRelationProduct2.setActivityCode("error");
+//            couponRelationProduct2.setSpuId(10L);
+//            couponRelationProduct2.setSkuId(10L);
+//            couponRelationProduct2.setChannelId(10L);
+//            couponRelationProduct2.setBrandId(10L);
+//            couponRelationProduct2.setCategoryId(10L);
+//            couponRelationProduct2.setGroupId(10L);
+//            mongoTemplate.save(couponRelationProduct2);
+//            return "success";
+//        } catch (InterruptedException e) {
+//            log.error("获取锁异常", e);
+////            throw new ApiException("异常");
+//        } catch (Exception e) {
+//            log.error("业务异常", e);
+////            throw new ApiException(e.getMessage());
+//        } finally {
+//            if (wwLock.isHeldByCurrentThread()) {
+//                log.info("线程【{}】释放到锁", Thread.currentThread().getName());
+//                wwLock.unlock();
+//            }
+//        }
         return "fail";
     }
 

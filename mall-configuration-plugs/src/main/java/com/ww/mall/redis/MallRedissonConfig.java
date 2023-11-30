@@ -1,5 +1,6 @@
 package com.ww.mall.redis;
 
+import com.ww.mall.redis.aspect.MallDistributedLockAspect;
 import lombok.extern.slf4j.Slf4j;
 import org.redisson.Redisson;
 import org.redisson.api.RedissonClient;
@@ -74,6 +75,11 @@ public class MallRedissonConfig {
 //            log.error("RedissonClient init redis url:[{}], Exception:", nodes, e);
             return null;
         }
+    }
+
+    @Bean
+    public MallDistributedLockAspect mallDistributedLockAspect() {
+        return new MallDistributedLockAspect();
     }
 
 }

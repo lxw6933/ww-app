@@ -4,6 +4,7 @@ import com.ww.mall.common.exception.ApiException;
 import com.ww.mall.coupon.config.CouponProperties;
 import com.ww.mall.coupon.entity.mongo.CouponRelationProduct;
 import com.ww.mall.coupon.service.CouponService;
+import com.ww.mall.coupon.view.bo.CouponPageBO;
 import com.ww.mall.web.config.SecretProperties;
 import com.ww.mall.web.config.ip2region.Ip2regionSearcher;
 import com.ww.mall.web.config.thread.DefaultThreadPoolProperties;
@@ -58,8 +59,8 @@ public class DemoController {
     private CouponService couponService;
 
     @GetMapping("/lock")
-    public void getLock() {
-        couponService.demo();
+    public void getLock(CouponPageBO couponPageBO) {
+        couponService.demo(couponPageBO);
     }
 
     @GetMapping("/demo/add/{id}")
