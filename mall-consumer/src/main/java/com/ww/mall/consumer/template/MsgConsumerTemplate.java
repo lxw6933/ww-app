@@ -95,7 +95,7 @@ public abstract class MsgConsumerTemplate<T> {
         if (mqMsgLog.getTryCount() > MSG_TRY_COUNT) {
             // 重试三次，如果还未消费成功，则改变状态
             channel.basicNack(tag, false, false);
-            update.set("status", MqMsgStatus.DELIVER_FAIL);
+            update.set("status", MqMsgStatus.CONSUMED_FAIL);
         } else {
             channel.basicNack(tag, false, true);
             update.set("tryCount", mqMsgLog.getTryCount() + 1);
