@@ -16,11 +16,14 @@ spring:
     port: 6379
   data:
     mongodb:
-      host: localhost:27017
-      database: ww_mall
-      username: admin
-      password: admin
-      authentication-database: admin
+      # 副本集群配置
+      uri: mongodb://ww1:admin@172.28.174.84:27001,172.28.174.84:27002,172.28.174.84:27003/ww_mall?replicaSet=rs&readPreference=secondaryPreferred&connectTimeoutMS=300000
+      # 单机配置
+#      host: localhost:27017
+#      database: ww_mall
+#      username: admin
+#      password: admin
+#      authentication-database: admin
 
 # 开启sentinel feign支持【调用方（调用服务方）的熔断保护、被调用方（服务提供方）的降级保护】
 feign:
