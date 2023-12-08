@@ -1,6 +1,7 @@
 package com.ww.mall.web.utils;
 
 import lombok.Data;
+import org.apache.commons.lang3.StringUtils;
 
 import java.security.SecureRandom;
 
@@ -13,12 +14,18 @@ import java.security.SecureRandom;
 public class VerificationCodeUtil {
 
     private static final String CHARACTERS = "0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ";
-    private static final int CODE_LENGTH = 6;
+    private static final int CODE_LENGTH = 4;
 
     public static String generateVerificationCode() {
         return generateVerificationCode(CODE_LENGTH);
     }
 
+    /**
+     * 生产验证码
+     *
+     * @param codeLength code位数
+     * @return code
+     */
     public static String generateVerificationCode(int codeLength) {
         SecureRandom random = new SecureRandom();
         StringBuilder code = new StringBuilder();
@@ -27,6 +34,31 @@ public class VerificationCodeUtil {
             code.append(CHARACTERS.charAt(randomIndex));
         }
         return code.toString();
+    }
+
+    public static boolean validateCaptcha(String userInputCode, String targetCode) {
+        return validCode(userInputCode, targetCode, false);
+    }
+
+    /**
+     * 校验验证码
+     *
+     * @param userInputCode 用户输入code
+     * @param targetCode 目标code
+     * @param flag 是否不区分大小写
+     * @return boolean
+     */
+    public static boolean validCode(String userInputCode, String targetCode, boolean flag) {
+        if (StringUtils.isEmpty(userInputCode) || StringUtils.isEmpty(targetCode)) {
+            return false;
+        }
+        if (flag) {
+            String userInputCodeLower = userInputCode.toLowerCase();
+            String targetCodeLower = targetCode.toLowerCase();
+            return userInputCodeLower.equals(targetCodeLower);
+        } else {
+            return userInputCode.equals(targetCode);
+        }
     }
 
     public static void main(String[] args) {
