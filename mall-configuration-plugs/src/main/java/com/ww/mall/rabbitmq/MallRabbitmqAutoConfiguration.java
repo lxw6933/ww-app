@@ -3,9 +3,11 @@ package com.ww.mall.rabbitmq;
 import cn.hutool.core.date.DatePattern;
 import cn.hutool.core.date.DateUtil;
 import com.alibaba.fastjson.JSON;
+import com.ww.mall.common.constant.Constant;
 import com.ww.mall.enums.MqMsgStatus;
 import com.ww.mall.mongodb.EnableMallMongodb;
 import lombok.extern.slf4j.Slf4j;
+import org.slf4j.MDC;
 import org.springframework.amqp.AmqpException;
 import org.springframework.amqp.core.Correlation;
 import org.springframework.amqp.core.Message;
@@ -74,6 +76,7 @@ public class MallRabbitmqAutoConfiguration {
             MqMsgLogEntity mqLog = new MqMsgLogEntity();
             if (correlationData instanceof MallCorrelationData) {
                 mallCorrelationData = (MallCorrelationData) correlationData;
+                MDC.put(Constant.TRACE_ID, mallCorrelationData.getTraceId());
                 mqLog.setRoutingKey(mallCorrelationData.getRoutingKey());
                 mqLog.setExchange(mallCorrelationData.getExchange());
                 mqLog.setMessage(JSON.toJSONString(mallCorrelationData.getMessage()));
@@ -137,6 +140,10 @@ public class MallRabbitmqAutoConfiguration {
                 if (correlation instanceof CorrelationData) {
                     String correlationId = ((CorrelationData) correlation).getId();
                     messageProperties.setCorrelationId(correlationId);
+                }
+                if (correlation instanceof  MallCorrelationData) {
+                    String traceId = ((MallCorrelationData) correlation).getTraceId();
+                    messageProperties.setHeader(Constant.TRACE_ID, traceId);
                 }
                 return message;
             }

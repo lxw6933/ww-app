@@ -1,9 +1,11 @@
 package com.ww.mall.rabbitmq;
 
+import com.ww.mall.common.constant.Constant;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
+import org.slf4j.MDC;
 import org.springframework.amqp.rabbit.connection.CorrelationData;
 
 /**
@@ -13,7 +15,6 @@ import org.springframework.amqp.rabbit.connection.CorrelationData;
  **/
 @Data
 @AllArgsConstructor
-@NoArgsConstructor
 @EqualsAndHashCode(callSuper = true)
 public class MallCorrelationData extends CorrelationData {
 
@@ -33,5 +34,13 @@ public class MallCorrelationData extends CorrelationData {
      * 重试次数
      */
     private Integer retryCount;
+    /**
+     * tracId
+     */
+    private String traceId;
+
+    public MallCorrelationData() {
+        this.traceId = MDC.get(Constant.TRACE_ID);
+    }
 
 }

@@ -3,10 +3,12 @@ package com.ww.mall.consumer.template;
 import cn.hutool.core.date.DatePattern;
 import cn.hutool.core.date.DateUtil;
 import com.rabbitmq.client.Channel;
+import com.ww.mall.common.constant.Constant;
 import com.ww.mall.enums.MqMsgStatus;
 import com.ww.mall.rabbitmq.MqMsgLogEntity;
 import com.ww.mall.web.utils.SpringContextManager;
 import lombok.extern.slf4j.Slf4j;
+import org.slf4j.MDC;
 import org.springframework.amqp.core.Message;
 import org.springframework.amqp.core.MessageProperties;
 import org.springframework.data.mongodb.core.MongoTemplate;
@@ -31,6 +33,9 @@ public abstract class MsgConsumerTemplate<T> {
 
     public final void consumer(Message message, T msg, Channel channel) throws IOException {
         MessageProperties properties = message.getMessageProperties();
+        String traceId = properties.getHeader(Constant.TRACE_ID);
+        MDC.put(Constant.TRACE_ID, traceId);
+        log.info("消费消息【{}】", msg);
         long tag = properties.getDeliveryTag();
         // 获取消息的id
         String correlationId = properties.getCorrelationId();
