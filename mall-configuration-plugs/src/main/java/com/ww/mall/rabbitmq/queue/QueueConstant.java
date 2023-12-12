@@ -9,6 +9,8 @@ public class QueueConstant {
 
     private QueueConstant() {}
 
+    public static final String MALL_COUPON_TEST_QUEUE = "mall.coupon.test.queue";
+
     /**
      * 用户注册队列
      */

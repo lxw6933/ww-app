@@ -10,6 +10,11 @@ public class RouteKeyConstant {
     private RouteKeyConstant() {}
 
     /**
+     * test key
+     */
+    public static final String MALL_COUPON_TEST_KEY = "mall.coupon.test.key";
+
+    /**
      * 用户注册key
      */
     public static final String MALL_MEMBER_REGISTER_KEY = "mall.member.register.key";

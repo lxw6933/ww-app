@@ -22,6 +22,12 @@ public class MallBindingConfiguration {
     private CustomExchange mallCommonDelayExchange;
 
     /**
+     * coupon exchange
+     */
+    @Resource(name = ExchangeConstant.MALL_COUPON_EXCHANGE)
+    private TopicExchange mallCouponExchange;
+
+    /**
      * member exchange
      */
     @Resource(name = ExchangeConstant.MALL_MEMBER_EXCHANGE)
@@ -38,6 +44,9 @@ public class MallBindingConfiguration {
      */
     @Resource(name = ExchangeConstant.MALL_OMS_EXCHANGE)
     private TopicExchange mallOmsExchange;
+
+    @Resource(name = QueueConstant.MALL_COUPON_TEST_QUEUE)
+    private Queue mallCouponTestQueue;
 
     /**
      * 会员注册队列
@@ -68,6 +77,11 @@ public class MallBindingConfiguration {
      */
     @Resource(name = QueueConstant.MALL_PRODUCT_TIMER_UP_QUEUE)
     private Queue productTimerUpQueue;
+
+    @Bean
+    public Binding mallCouponTestBinding() {
+        return BindingBuilder.bind(mallCouponTestQueue).to(mallCouponExchange).with(RouteKeyConstant.MALL_COUPON_TEST_KEY);
+    }
 
     @Bean
     public Binding mallMemberRegisterBinding() {

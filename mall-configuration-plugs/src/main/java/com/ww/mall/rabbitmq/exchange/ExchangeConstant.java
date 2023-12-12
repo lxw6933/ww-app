@@ -22,6 +22,11 @@ public class ExchangeConstant {
     public static final String MALL_COMMON_DELAY_EXCHANGE = "mall.common.delay.exchange";
 
     /**
+     * 优惠券服务交换机
+     */
+    public static final String MALL_COUPON_EXCHANGE = "mall.coupon.exchange";
+
+    /**
      * 会员服务交换机
      */
     public static final String MALL_MEMBER_EXCHANGE = "mall.member.exchange";

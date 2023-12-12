@@ -21,6 +21,11 @@ public class MallExchangeConfiguration {
         return new CustomExchange(ExchangeConstant.MALL_COMMON_DELAY_EXCHANGE, "x-delayed-message",true, false, args);
     }
 
+    @Bean(name = ExchangeConstant.MALL_COUPON_EXCHANGE)
+    public TopicExchange mallCouponExchange() {
+        return new TopicExchange(ExchangeConstant.MALL_COUPON_EXCHANGE);
+    }
+
     @Bean(name = ExchangeConstant.MALL_MEMBER_EXCHANGE)
     public TopicExchange mallMemberExchange() {
         return new TopicExchange(ExchangeConstant.MALL_MEMBER_EXCHANGE);
