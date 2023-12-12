@@ -2,6 +2,7 @@ package com.ww.mall.coupon.controller;
 
 import com.ww.mall.common.exception.ApiException;
 import com.ww.mall.coupon.config.CouponProperties;
+import com.ww.mall.coupon.config.CouponPublisher;
 import com.ww.mall.coupon.entity.mongo.CouponRelationProduct;
 import com.ww.mall.coupon.service.CouponService;
 import com.ww.mall.coupon.view.bo.CouponPageBO;
@@ -57,6 +58,14 @@ public class DemoController {
 
     @Autowired
     private CouponService couponService;
+
+    @Autowired
+    private CouponPublisher couponPublisher;
+
+    @GetMapping("/testMsg")
+    public void testMsg(String msg) {
+        couponPublisher.publishTestMsg(msg);
+    }
 
     @GetMapping("/lock")
     public void getLock(CouponPageBO couponPageBO) {
