@@ -1,29 +1,25 @@
 package com.ww.mall.coupon.controller;
 
-import com.ww.mall.common.exception.ApiException;
 import com.ww.mall.coupon.config.CouponProperties;
-import com.ww.mall.coupon.config.CouponPublisher;
-import com.ww.mall.coupon.entity.mongo.CouponRelationProduct;
 import com.ww.mall.coupon.service.CouponService;
 import com.ww.mall.coupon.view.bo.CouponPageBO;
+import com.ww.mall.rabbitmq.MallPublisher;
+import com.ww.mall.rabbitmq.exchange.ExchangeConstant;
+import com.ww.mall.rabbitmq.routekey.RouteKeyConstant;
 import com.ww.mall.web.config.SecretProperties;
 import com.ww.mall.web.config.ip2region.Ip2regionSearcher;
 import com.ww.mall.web.config.thread.DefaultThreadPoolProperties;
 import lombok.extern.slf4j.Slf4j;
-import org.redisson.api.RLock;
 import org.redisson.api.RedissonClient;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.mongodb.core.MongoTemplate;
 import org.springframework.data.redis.core.StringRedisTemplate;
-import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
-import sun.applet.AppletIOException;
 
 import javax.servlet.http.HttpServletRequest;
-import java.util.concurrent.TimeUnit;
 
 /**
  * Author:         ww
@@ -60,11 +56,11 @@ public class DemoController {
     private CouponService couponService;
 
     @Autowired
-    private CouponPublisher couponPublisher;
+    private MallPublisher mallPublisher;
 
     @GetMapping("/testMsg")
     public void testMsg(String msg) {
-        couponPublisher.publishTestMsg(msg);
+        mallPublisher.publishMsg(ExchangeConstant.MALL_COUPON_EXCHANGE, RouteKeyConstant.MALL_COUPON_TEST_KEY, msg);
     }
 
     @GetMapping("/lock")
