@@ -13,22 +13,18 @@ import com.ww.mall.common.exception.ApiException;
 import com.ww.mall.coupon.constant.LockConstant;
 import com.ww.mall.coupon.dao.CouponMapper;
 import com.ww.mall.coupon.entity.Coupon;
-import com.ww.mall.coupon.entity.mongo.CouponRelationProduct;
 import com.ww.mall.coupon.entity.mongo.MemberCoupon;
 import com.ww.mall.coupon.eunms.*;
 import com.ww.mall.coupon.service.CouponService;
 import com.ww.mall.coupon.view.bo.CouponPageBO;
 import com.ww.mall.coupon.view.vo.CouponPageVO;
 import com.ww.mall.redis.annotation.MallDistributedLock;
-import com.ww.mall.redis.annotation.MallResubmission;
-import com.ww.mall.redis.aspect.MallDistributedLockAspect;
 import com.ww.mall.web.cmmon.MallPageResult;
 import com.ww.mall.web.utils.AuthorizationContext;
 import com.ww.mall.web.utils.IdUtil;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
-import org.redisson.api.RLock;
 import org.redisson.api.RedissonClient;
 import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -36,14 +32,11 @@ import org.springframework.data.mongodb.core.MongoTemplate;
 import org.springframework.data.mongodb.core.query.Criteria;
 import org.springframework.data.mongodb.core.query.Query;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.EnableTransactionManagement;
-import org.springframework.transaction.annotation.Transactional;
 
 import javax.annotation.Resource;
 import java.util.Date;
 import java.util.List;
 import java.util.Objects;
-import java.util.concurrent.TimeUnit;
 
 /**
  * @author ww
@@ -192,24 +185,16 @@ public class CouponServiceImpl extends ServiceImpl<CouponMapper, Coupon> impleme
     }
 
     @Override
+    @MallDistributedLock(prefixKey = LockConstant.RECEIVE_COUPON_LOCK, operationKey = "#activityCode")
     public boolean receiveCoupon(String activityCode) {
-        RLock receiveCouponLock = redissonClient.getLock(LockConstant.RECEIVE_COUPON_LOCK + activityCode);
-        try {
-            receiveCouponLock.lock(10, TimeUnit.SECONDS);
-            MallClientUser clientUser = AuthorizationContext.getClientUser();
-            Coupon coupon = getCouponByCode(activityCode);
-            // 优惠券校验
-            validReceiveCoupon(clientUser, coupon);
-            // 构建用户领取优惠券记录
-            MemberCoupon memberCoupon = buildMemberCoupon(clientUser, coupon);
-            mongoTemplate.save(memberCoupon);
-            log.info("用户【{}】领取优惠券【{}】", clientUser.getMemberId(), memberCoupon);
-        } catch (Exception e) {
-            log.error("优惠券领取异常：", e);
-            return false;
-        } finally {
-            receiveCouponLock.unlock();
-        }
+        MallClientUser clientUser = AuthorizationContext.getClientUser();
+        Coupon coupon = getCouponByCode(activityCode);
+        // 优惠券校验
+        validReceiveCoupon(clientUser, coupon);
+        // 构建用户领取优惠券记录
+        MemberCoupon memberCoupon = buildMemberCoupon(clientUser, coupon);
+        mongoTemplate.save(memberCoupon);
+        log.info("用户【{}】领取优惠券【{}】", clientUser.getMemberId(), memberCoupon);
         return true;
     }
 
