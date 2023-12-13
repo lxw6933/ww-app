@@ -158,4 +158,9 @@ public class MallRabbitmqAutoConfiguration {
         };
     }
 
+    @Bean
+    public MallPublisher mallPublisher() {
+        return new MallPublisher();
+    }
+
 }

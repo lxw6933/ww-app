@@ -16,12 +16,12 @@ import org.springframework.amqp.rabbit.connection.CorrelationData;
 @Data
 @AllArgsConstructor
 @EqualsAndHashCode(callSuper = true)
-public class MallCorrelationData extends CorrelationData {
+public class MallCorrelationData<T> extends CorrelationData {
 
     /**
      * 消息体
      */
-    private volatile Object message;
+    private volatile T message;
     /**
      * 交换机
      */
