@@ -1,7 +1,5 @@
 package com.ww.mall.rabbitmq;
 
-import com.ww.mall.rabbitmq.exchange.ExchangeConstant;
-import com.ww.mall.rabbitmq.routekey.RouteKeyConstant;
 import org.springframework.amqp.core.MessagePostProcessor;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.stereotype.Component;
