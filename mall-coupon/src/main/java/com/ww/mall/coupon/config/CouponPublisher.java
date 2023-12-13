@@ -47,6 +47,14 @@ public class CouponPublisher {
                 msg,
                 correlationIdProcessor,
                 msgData);
+        // 发送用户对象信息到broker
+        rabbitTemplate.convertAndSend(
+                ExchangeConstant.MALL_MEMBER_EXCHANGE,
+                RouteKeyConstant.MALL_MEMBER_REGISTER_KEY,
+                1000L,
+                correlationIdProcessor,
+                new MallCorrelationData());
+
     }
 
 }

@@ -19,7 +19,6 @@ import java.io.IOException;
  */
 @Slf4j
 @Component
-@ConditionalOnBean(MallQueueConfiguration.class)
 public class MallOmsConsumer {
 
     @RabbitListener(queues = {QueueConstant.MALL_OMS_CLOSE_QUEUE})
