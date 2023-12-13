@@ -12,6 +12,7 @@ import org.springframework.cloud.context.config.annotation.RefreshScope;
 
 @EnableMallRedis
 @EnableMallMongodb
+@EnableMallRabbitmq
 @EnableMallRedisson
 @EnableDiscoveryClient
 @SpringBootApplication
