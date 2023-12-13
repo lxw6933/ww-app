@@ -71,6 +71,9 @@ public class MallRabbitmqAutoConfiguration {
          * @param cause 失败的原因
          */
         rabbitTemplate.setConfirmCallback((correlationData, ack, cause) -> {
+            if (correlationData instanceof MallCorrelationData) {
+                MDC.put(Constant.TRACE_ID, ((MallCorrelationData) correlationData).getTraceId());
+            }
             log.info("消息成功抵达broker：{}", correlationData);
             MallCorrelationData mallCorrelationData;
             MqMsgLogEntity mqLog = new MqMsgLogEntity();
