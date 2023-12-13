@@ -22,7 +22,7 @@ import java.io.IOException;
 @ConditionalOnBean(MallQueueConfiguration.class)
 public class CouponConsumer {
 
-    @RabbitListener(queues = {QueueConstant.MALL_MEMBER_REGISTER_QUEUE})
+    @RabbitListener(queues = {QueueConstant.MALL_COUPON_TEST_QUEUE})
     public void memberRegisterMessage(Message message, String msg, Channel channel) throws IOException {
         log.info("收到mall_coupon服务发送traceId测试的消息：{}", msg);
         MsgConsumerTemplate<String> couponTraceIdTestMsgConsumer = new CouponTraceIdTestMsgConsumerTemplate();
