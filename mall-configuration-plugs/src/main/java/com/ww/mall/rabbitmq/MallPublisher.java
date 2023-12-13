@@ -26,10 +26,10 @@ public class MallPublisher {
     public <T> void publishMsg(String exchange, String routeKey, T msg) {
         // 自定义消息id
         MallCorrelationData<T> msgData = new MallCorrelationData<>();
-        msgData.setExchange(ExchangeConstant.MALL_MEMBER_EXCHANGE);
+        msgData.setExchange(exchange);
         msgData.setMessage(msg);
         msgData.setRetryCount(0);
-        msgData.setRoutingKey(RouteKeyConstant.MALL_MEMBER_REGISTER_KEY);
+        msgData.setRoutingKey(routeKey);
         msgData.setId(UUID.randomUUID().toString());
         // 发送用户对象信息到broker
         rabbitTemplate.convertAndSend(exchange, routeKey, msg, correlationIdProcessor, msgData);
