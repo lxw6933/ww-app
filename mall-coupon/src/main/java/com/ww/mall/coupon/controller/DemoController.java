@@ -9,6 +9,7 @@ import com.ww.mall.rabbitmq.routekey.RouteKeyConstant;
 import com.ww.mall.web.config.SecretProperties;
 import com.ww.mall.web.config.ip2region.Ip2regionSearcher;
 import com.ww.mall.web.config.thread.DefaultThreadPoolProperties;
+import com.ww.mall.web.utils.VerificationCodeUtil;
 import lombok.extern.slf4j.Slf4j;
 import org.redisson.api.RedissonClient;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -20,6 +21,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import javax.servlet.http.HttpServletRequest;
+import java.util.concurrent.TimeUnit;
 
 /**
  * Author:         ww
@@ -89,8 +91,10 @@ public class DemoController {
 
     @RequestMapping("/test")
     public String test(){
-        int i = 1 / 0;
-        return "coupon test";
+        String code = VerificationCodeUtil.generateVerificationCode(4);
+        String key = "test_redis_rate:" + code;
+        stringRedisTemplate.opsForValue().set(key, code, 3, TimeUnit.MINUTES);
+        return "success";
     }
 
 
