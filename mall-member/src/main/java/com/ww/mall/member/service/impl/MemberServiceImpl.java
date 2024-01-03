@@ -8,6 +8,7 @@ import com.ww.mall.member.service.MemberService;
 import com.ww.mall.rabbitmq.MallPublisher;
 import com.ww.mall.rabbitmq.exchange.ExchangeConstant;
 import com.ww.mall.rabbitmq.routekey.RouteKeyConstant;
+import com.ww.mall.redis.annotation.MallResubmission;
 import com.ww.mall.web.view.dto.MemberDTO;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.BeanUtils;
@@ -29,6 +30,7 @@ public class MemberServiceImpl extends ServiceImpl<MemberMapper, Member> impleme
     private MallPublisher mallPublisher;
 
     @Override
+    @MallResubmission
     public MemberDTO getMemberByMobile(String mobile) {
         // 查询当前手机号用户
         Member member = this.getOne(new QueryWrapper<Member>().eq("mobile", mobile));
