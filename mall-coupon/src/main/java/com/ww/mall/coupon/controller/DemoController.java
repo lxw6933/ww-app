@@ -1,6 +1,7 @@
 package com.ww.mall.coupon.controller;
 
 import com.ww.mall.coupon.config.CouponProperties;
+import com.ww.mall.coupon.dao.CouponMapper;
 import com.ww.mall.coupon.service.CouponService;
 import com.ww.mall.coupon.view.bo.CouponPageBO;
 import com.ww.mall.rabbitmq.MallPublisher;
@@ -60,9 +61,17 @@ public class DemoController {
     @Autowired
     private MallPublisher mallPublisher;
 
+    @Autowired
+    private CouponMapper couponMapper;
+
     @GetMapping("/testMsg")
     public void testMsg(String msg) {
         mallPublisher.publishMsg(ExchangeConstant.MALL_COUPON_EXCHANGE, RouteKeyConstant.MALL_COUPON_TEST_KEY, msg);
+    }
+
+    @GetMapping("/lineLock")
+    public void lineLock(String activityCode) {
+        couponMapper.lineLockTest(activityCode, 1);
     }
 
     @GetMapping("/lock")
