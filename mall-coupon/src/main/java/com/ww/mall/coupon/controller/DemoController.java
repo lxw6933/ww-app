@@ -1,5 +1,6 @@
 package com.ww.mall.coupon.controller;
 
+import com.ww.mall.common.exception.ApiException;
 import com.ww.mall.coupon.config.CouponProperties;
 import com.ww.mall.coupon.dao.CouponMapper;
 import com.ww.mall.coupon.service.CouponService;
@@ -7,11 +8,14 @@ import com.ww.mall.coupon.view.bo.CouponPageBO;
 import com.ww.mall.rabbitmq.MallPublisher;
 import com.ww.mall.rabbitmq.exchange.ExchangeConstant;
 import com.ww.mall.rabbitmq.routekey.RouteKeyConstant;
+import com.ww.mall.redis.annotation.MallDistributedLock;
 import com.ww.mall.web.config.SecretProperties;
 import com.ww.mall.web.config.ip2region.Ip2regionSearcher;
 import com.ww.mall.web.config.thread.DefaultThreadPoolProperties;
 import com.ww.mall.web.utils.VerificationCodeUtil;
 import lombok.extern.slf4j.Slf4j;
+import net.bytebuddy.implementation.bytecode.Throw;
+import org.redisson.api.RLock;
 import org.redisson.api.RedissonClient;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.mongodb.core.MongoTemplate;
@@ -23,6 +27,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 import javax.servlet.http.HttpServletRequest;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  * Author:         ww
@@ -69,9 +74,25 @@ public class DemoController {
         mallPublisher.publishMsg(ExchangeConstant.MALL_COUPON_EXCHANGE, RouteKeyConstant.MALL_COUPON_TEST_KEY, msg);
     }
 
+    private AtomicInteger num = new AtomicInteger(0);
+
     @GetMapping("/lineLock")
     public void lineLock(String activityCode) {
-        couponMapper.lineLockTest(activityCode, 1);
+        int total = num.getAndIncrement();
+        if (total > 500000) {
+            throw new ApiException("库存不足");
+        }
+//        RLock lock = redissonClient.getLock(activityCode);
+//        try {
+//            lock.lock(10, TimeUnit.SECONDS);
+//
+//        } catch (Exception e) {
+//            throw new ApiException("服务异常");
+//        } finally {
+//            lock.unlock();
+//        }
+
+
     }
 
     @GetMapping("/lock")

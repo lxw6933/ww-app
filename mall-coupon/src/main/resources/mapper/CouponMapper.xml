@@ -3,7 +3,7 @@
 <mapper namespace="com.ww.mall.coupon.dao.CouponMapper">
 
     <update id="lineLockTest">
-        update t_coupon set initTotalCouponNumber = initTotalCouponNumber - #{buyNumber} where activityCode = #{activityCode} and initTotalCouponNumber - #{buyNumber} >= 0
+        update t_coupon set init_total_coupon_number = init_total_coupon_number - #{buyNumber} where activity_code = #{activityCode} and init_total_coupon_number - #{buyNumber} >= 0
     </update>
 
 </mapper>
