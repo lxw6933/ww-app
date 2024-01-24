@@ -13,12 +13,6 @@
     <artifactId>mall-web</artifactId>
 
     <dependencies>
-        <!-- monitor -->
-        <dependency>
-            <groupId>de.codecentric</groupId>
-            <artifactId>spring-boot-admin-starter-client</artifactId>
-            <version>${spring-boot.version}</version>
-        </dependency>
         <!-- common -->
         <dependency>
             <groupId>com.ww.mall</groupId>
@@ -30,6 +24,12 @@
             <groupId>com.ww.mall</groupId>
             <artifactId>mall-configuration-plugs</artifactId>
             <version>0.0.1-SNAPSHOT</version>
+        </dependency>
+        <!-- monitor -->
+        <dependency>
+            <groupId>de.codecentric</groupId>
+            <artifactId>spring-boot-admin-starter-client</artifactId>
+            <version>${spring-boot.version}</version>
         </dependency>
         <!-- 服务注册中心 -->
         <dependency>
