@@ -40,11 +40,5 @@ feign:
   sentinel:
     enabled: true
 
-management:
-  endpoints:
-    web:
-      exposure:
-        include: "*"
-
 ip2region:
   enabled: true

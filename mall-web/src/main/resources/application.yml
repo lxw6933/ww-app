@@ -1,5 +1,9 @@
 # 全局日期格式处理
 spring:
+  boot:
+    admin:
+      client:
+        url: http://localhost:9999
   cloud:
     nacos:
       discovery:
@@ -14,6 +18,13 @@ spring:
     # 表单接收date
     format:
       date: yyyy-MM-dd HH:mm:ss
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: "*"
+
   # 流控规则持久化
 #  cloud:
 #    sentinel:
