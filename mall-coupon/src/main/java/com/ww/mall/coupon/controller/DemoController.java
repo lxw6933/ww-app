@@ -90,10 +90,8 @@ public class DemoController {
 
     @GetMapping("/redisStock")
     public void redisStock() {
-        if (mallRedisUtil.decrementStock("wwStock", 1) > 0) {
-            System.out.println("stock");
-        } else {
-            System.out.println("saleOut");
+        if (mallRedisUtil.decrementStock("wwStock", 1) >= 0) {
+            log.info("stock");
         }
     }
 
