@@ -8,6 +8,7 @@ import com.ww.mall.coupon.view.bo.CouponPageBO;
 import com.ww.mall.rabbitmq.MallPublisher;
 import com.ww.mall.rabbitmq.exchange.ExchangeConstant;
 import com.ww.mall.rabbitmq.routekey.RouteKeyConstant;
+import com.ww.mall.redis.MallRedisUtil;
 import com.ww.mall.redis.annotation.MallDistributedLock;
 import com.ww.mall.web.config.SecretProperties;
 import com.ww.mall.web.config.ip2region.Ip2regionSearcher;
@@ -19,12 +20,11 @@ import org.redisson.api.RLock;
 import org.redisson.api.RedissonClient;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.mongodb.core.MongoTemplate;
+import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.data.redis.core.StringRedisTemplate;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
+import javax.annotation.PostConstruct;
 import javax.servlet.http.HttpServletRequest;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -76,8 +76,29 @@ public class DemoController {
 
     private AtomicInteger num = new AtomicInteger(0);
 
+    @Autowired
+    private MallRedisUtil mallRedisUtil;
+
+    @Autowired
+    private RedisTemplate<String, String> redisTemplate;
+
+    @PostConstruct
+    public void init() {
+        redisTemplate.opsForValue().set("wwStock", "10");
+        System.out.println("初始化库存10");
+    }
+
+    @GetMapping("/redisStock")
+    public void redisStock() {
+        if (mallRedisUtil.decrementStock("wwStock", 1) > 0) {
+            System.out.println("stock");
+        } else {
+            System.out.println("saleOut");
+        }
+    }
+
     @GetMapping("/lineLock")
-    public void lineLock(String activityCode) {
+    public void lineLock(@RequestParam("activityCode") String activityCode) {
         int total = num.getAndIncrement();
         if (total > 500000) {
             throw new ApiException("库存不足");
