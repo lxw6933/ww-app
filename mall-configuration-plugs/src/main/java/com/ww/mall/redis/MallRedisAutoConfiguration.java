@@ -98,4 +98,9 @@ public class MallRedisAutoConfiguration {
         return new MallRateLimitAspect();
     }
 
+    @Bean
+    public MallRedisUtil mallRedisUtil() {
+        return new MallRedisUtil();
+    }
+
 }
