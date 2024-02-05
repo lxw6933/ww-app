@@ -13,7 +13,7 @@ import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.redis.connection.BitFieldSubCommands;
 import org.springframework.data.redis.core.RedisCallback;
-import org.springframework.data.redis.core.StringRedisTemplate;
+import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
@@ -32,7 +32,7 @@ import java.util.TreeMap;
 public class SignServiceImpl implements SignService {
 
     @Autowired
-    private StringRedisTemplate redisTemplate;
+    private RedisTemplate<String, String> redisTemplate;
 
     @Override
     @MallDistributedLock(userId = "#clientUser.MemberId", operationKey = "'sign'", waitTime = 3, leaseTime = 3)

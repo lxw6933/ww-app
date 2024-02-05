@@ -11,7 +11,7 @@ import org.aspectj.lang.reflect.MethodSignature;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.redis.connection.RedisStringCommands;
 import org.springframework.data.redis.core.RedisCallback;
-import org.springframework.data.redis.core.StringRedisTemplate;
+import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.data.redis.core.types.Expiration;
 import org.springframework.stereotype.Component;
 import org.springframework.util.StringUtils;
@@ -28,7 +28,7 @@ import java.lang.reflect.Method;
 public class MallResubmissionAspect {
 
     @Autowired
-    private StringRedisTemplate stringRedisTemplate;
+    private RedisTemplate<String, String> redisTemplate;
 
     @Around("@annotation(com.ww.mall.redis.annotation.MallResubmission)")
     public Object mallResubmissionAdvice(ProceedingJoinPoint joinPoint) throws Throwable {
@@ -37,7 +37,7 @@ public class MallResubmissionAspect {
         Object[] args = joinPoint.getArgs();
         MallResubmission mallResubmission = method.getAnnotation(MallResubmission.class);
         String parameterKey = generateParameterKey(method.getName(), args, mallResubmission);
-        final Boolean success = stringRedisTemplate.execute(
+        final Boolean success = redisTemplate.execute(
                 (RedisCallback<Boolean>) connection -> connection.set(parameterKey.getBytes(), new byte[0], Expiration.from(mallResubmission.expire(), mallResubmission.timeUnit())
                         , RedisStringCommands.SetOption.SET_IF_ABSENT));
         if (!Boolean.TRUE.equals(success)) {

@@ -10,7 +10,7 @@ import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.redis.core.BoundHashOperations;
-import org.springframework.data.redis.core.StringRedisTemplate;
+import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
@@ -27,8 +27,11 @@ import java.util.stream.Collectors;
 @Service
 public class CartServiceImpl implements CartService {
 
+//    @Autowired
+//    private StringRedisTemplate stringRedisTemplate;
+
     @Autowired
-    private StringRedisTemplate stringRedisTemplate;
+    private RedisTemplate<String, String> stringRedisTemplate;
 
     @Autowired
     private ThreadPoolExecutor defaultThreadPoolExecutor;

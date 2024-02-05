@@ -18,7 +18,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.time.DateUtils;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.data.redis.core.StringRedisTemplate;
+import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
 
 import javax.servlet.http.HttpServletRequest;
@@ -40,7 +40,7 @@ public class LoginServiceImpl implements LoginService {
     private JwtProperties jwtProperties;
 
     @Autowired
-    private StringRedisTemplate stringRedisTemplate;
+    private RedisTemplate<String, String> redisTemplate;
 
     @Autowired
     private ThirdServerFeignService thirdServerFeignService;
@@ -53,7 +53,7 @@ public class LoginServiceImpl implements LoginService {
         String requestIp = IpUtil.getRealIp(request);
         log.info("登录请求ip：【{}】 请求参数：【{}】", requestIp, memberLoginBO);
         String mobile = memberLoginBO.getMobile();
-        String mobileCode = stringRedisTemplate.opsForValue().get(Constant.SMS_CODE_CACHE_PREFIX + mobile);
+        String mobileCode = redisTemplate.opsForValue().get(Constant.SMS_CODE_CACHE_PREFIX + mobile);
         mobileCode = StringUtils.isNotEmpty(mobileCode) ? mobileCode.split("_")[0] : null;
         if (memberLoginBO.getVerifyCode().equals(mobileCode)) {
             // 获取登录用户信息
@@ -87,7 +87,7 @@ public class LoginServiceImpl implements LoginService {
 
     @Override
     public void sendCode(String mobile) {
-        String mobileCode = stringRedisTemplate.opsForValue().get(Constant.SMS_CODE_CACHE_PREFIX + mobile);
+        String mobileCode = redisTemplate.opsForValue().get(Constant.SMS_CODE_CACHE_PREFIX + mobile);
         if (StringUtils.isNotEmpty(mobileCode)) {
             // 判断是否超过验证码过期时间
             long mobileCodeTime = Long.parseLong(mobileCode.split("_")[1]);
@@ -101,7 +101,7 @@ public class LoginServiceImpl implements LoginService {
         // 记录验证码生成的时间
         String newCodeTime =  newCode + "_" + System.currentTimeMillis();
         // 验证码三分钟内有效
-        stringRedisTemplate.opsForValue()
+        redisTemplate.opsForValue()
                 .set(Constant.SMS_CODE_CACHE_PREFIX + mobile, newCodeTime, 3, TimeUnit.MINUTES);
         // 发送验证码短信
         Result<Boolean> sendSmsResult = thirdServerFeignService.sendSms(mobile, newCode);

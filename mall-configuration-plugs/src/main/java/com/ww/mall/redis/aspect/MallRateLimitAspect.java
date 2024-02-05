@@ -4,6 +4,7 @@ import org.aspectj.lang.ProceedingJoinPoint;
 import org.aspectj.lang.annotation.Around;
 import org.aspectj.lang.annotation.Aspect;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Component;
 
@@ -17,7 +18,7 @@ import org.springframework.stereotype.Component;
 public class MallRateLimitAspect {
 
     @Autowired
-    private StringRedisTemplate stringRedisTemplate;
+    private RedisTemplate<String, String> redisTemplate;
 
     @Around("@annotation(com.ww.mall.redis.annotation.MallRateLimit)")
     public Object mallRateLimitAdvice(ProceedingJoinPoint joinPoint) throws Throwable {
