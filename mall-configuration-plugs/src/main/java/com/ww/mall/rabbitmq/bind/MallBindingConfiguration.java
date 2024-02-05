@@ -48,6 +48,9 @@ public class MallBindingConfiguration {
     @Resource(name = QueueConstant.MALL_COUPON_TEST_QUEUE)
     private Queue mallCouponTestQueue;
 
+    @Resource(name = QueueConstant.MALL_CREATE_ORDER_QUEUE)
+    private Queue mallCreateOrderQueue;
+
     /**
      * 会员注册队列
      */
@@ -77,6 +80,11 @@ public class MallBindingConfiguration {
      */
     @Resource(name = QueueConstant.MALL_PRODUCT_TIMER_UP_QUEUE)
     private Queue productTimerUpQueue;
+
+    @Bean
+    public Binding createOrderBinding() {
+        return BindingBuilder.bind(mallCreateOrderQueue).to(mallOmsExchange).with(RouteKeyConstant.MALL_CREATE_ORDER_KEY);
+    }
 
     @Bean
     public Binding mallCouponTestBinding() {

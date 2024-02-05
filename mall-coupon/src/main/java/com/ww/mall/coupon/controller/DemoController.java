@@ -74,7 +74,7 @@ public class DemoController {
         mallPublisher.publishMsg(ExchangeConstant.MALL_COUPON_EXCHANGE, RouteKeyConstant.MALL_COUPON_TEST_KEY, msg);
     }
 
-    private AtomicInteger num = new AtomicInteger(0);
+    private final AtomicInteger num = new AtomicInteger(0);
 
     @Autowired
     private MallRedisUtil mallRedisUtil;
@@ -92,6 +92,8 @@ public class DemoController {
     public void redisStock() {
         if (mallRedisUtil.decrementStock("wwStock", 1) >= 0) {
             log.info("stock");
+            int count = num.getAndIncrement();
+            mallPublisher.publishMsg(ExchangeConstant.MALL_OMS_EXCHANGE, RouteKeyConstant.MALL_CREATE_ORDER_KEY, count);
         }
     }
 

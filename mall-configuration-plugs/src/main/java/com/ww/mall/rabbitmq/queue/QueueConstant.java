@@ -27,4 +27,6 @@ public class QueueConstant {
 
     public static final String MALL_PRODUCT_TIMER_UP_QUEUE = "mall.product.timer.up.queue";
 
+    public static final String MALL_CREATE_ORDER_QUEUE = "mall.create.order.queue";
+
 }
