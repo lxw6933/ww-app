@@ -71,14 +71,9 @@ public class MallRabbitmqAutoConfiguration {
          * @param cause 失败的原因
          */
         rabbitTemplate.setConfirmCallback((correlationData, ack, cause) -> {
-            if (correlationData instanceof MallCorrelationData) {
-                MDC.put(Constant.TRACE_ID, ((MallCorrelationData) correlationData).getTraceId());
-            }
-            log.info("消息成功抵达broker：{}", correlationData);
-            MallCorrelationData mallCorrelationData;
             MqMsgLogEntity mqLog = new MqMsgLogEntity();
             if (correlationData instanceof MallCorrelationData) {
-                mallCorrelationData = (MallCorrelationData) correlationData;
+                MallCorrelationData<?> mallCorrelationData = (MallCorrelationData<?>) correlationData;
                 MDC.put(Constant.TRACE_ID, mallCorrelationData.getTraceId());
                 mqLog.setRoutingKey(mallCorrelationData.getRoutingKey());
                 mqLog.setExchange(mallCorrelationData.getExchange());
@@ -88,6 +83,7 @@ public class MallRabbitmqAutoConfiguration {
                 mqLog.setCreateTime(DateUtil.format(new Date(), DatePattern.NORM_DATETIME_PATTERN));
                 mqLog.setUpdateTime(DateUtil.format(new Date(), DatePattern.NORM_DATETIME_PATTERN));
             }
+            log.info("消息成功抵达broker：{}", correlationData);
             if (ack) {
                 // 发送成功保存消息日志 状态
                 mqLog.setStatus(MqMsgStatus.DELIVER_SUCCESS);
@@ -145,7 +141,7 @@ public class MallRabbitmqAutoConfiguration {
                     messageProperties.setCorrelationId(correlationId);
                 }
                 if (correlation instanceof  MallCorrelationData) {
-                    String traceId = ((MallCorrelationData) correlation).getTraceId();
+                    String traceId = ((MallCorrelationData<?>) correlation).getTraceId();
                     messageProperties.setHeader(Constant.TRACE_ID, traceId);
                 }
                 return message;
