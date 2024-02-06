@@ -76,27 +76,6 @@ public class DemoController {
 
     private final AtomicInteger num = new AtomicInteger(0);
 
-    @Autowired
-    private MallRedisUtil mallRedisUtil;
-
-    @Autowired
-    private RedisTemplate<String, String> redisTemplate;
-
-    @PostConstruct
-    public void init() {
-        redisTemplate.opsForValue().set("wwStock", "10");
-        System.out.println("初始化库存10");
-    }
-
-    @GetMapping("/redisStock")
-    public void redisStock() {
-        if (mallRedisUtil.decrementStock("wwStock", 1) >= 0) {
-            log.info("stock");
-            int count = num.getAndIncrement();
-            mallPublisher.publishMsg(ExchangeConstant.MALL_OMS_EXCHANGE, RouteKeyConstant.MALL_CREATE_ORDER_KEY, count);
-        }
-    }
-
     @GetMapping("/lineLock")
     public void lineLock(@RequestParam("activityCode") String activityCode) {
         int total = num.getAndIncrement();

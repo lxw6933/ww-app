@@ -31,6 +31,8 @@
         <module>mall-configuration-plugs</module>
         <!-- 服务监控 -->
         <module>mall-monitor</module>
+        <!-- 秒杀服务 -->
+        <module>mall-seckill</module>
     </modules>
 
     <properties>
