@@ -44,6 +44,12 @@ public class SeckillServiceImpl implements SeckillService {
 
     @Override
     public boolean seckillOrder() {
+        // 校验用户是否存在秒杀资格
+//        MallClientUser clientUser = AuthorizationContext.getClientUser();
+        // 本地缓存存储活动信息，校验活动信息
+        // 本地缓存商品信息，校验商品信息
+        redisTemplate.opsForValue().get("skuStock");
+
         if (mallRedisUtil.decrementStock("skuStock", 1) >= 0) {
             String orderDate = DateUtil.format(new Date(), DatePattern.NORM_DATETIME_PATTERN);
             String orderNo = IdUtil.generatorIdStr();
