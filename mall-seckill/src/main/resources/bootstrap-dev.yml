@@ -1,5 +1,7 @@
 server:
-  port: 6666  #服务端口号
+  port: 9999  #服务端口号
+  servlet:
+    context-path: /mall-seckill
 spring:
   redis:
     host: localhost
