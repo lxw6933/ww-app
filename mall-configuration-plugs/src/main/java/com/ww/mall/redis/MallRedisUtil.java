@@ -10,6 +10,7 @@ import org.springframework.data.redis.serializer.RedisSerializer;
 import org.springframework.stereotype.Component;
 
 import java.util.HashSet;
+import java.util.Map;
 import java.util.Set;
 
 @Component
@@ -52,6 +53,20 @@ public class MallRedisUtil {
             return binaryKeys;
         }, true);
         return keys;
+    }
+
+    public void batchRemoveKeys(Set<String> keys) {
+        redisTemplate.executePipelined((RedisCallback<Object>) connection -> {
+            keys.forEach(key -> connection.del(key.getBytes()));
+            return null;
+        });
+    }
+
+    public void batchInitializeData(Map<String, String> dataMap) {
+        redisTemplate.executePipelined((RedisCallback<Object>) connection -> {
+            dataMap.forEach((key, value) -> connection.set(key.getBytes(), value.getBytes()));
+            return null;
+        });
     }
 
 }
