@@ -67,6 +67,14 @@ spring:
           filters:
             # /api/foo  =>  /foo
             - RewritePath=/api(?<segment>/?.*), $\{segment}
+        # 秒杀服务路由
+        - id: seckill_route
+          uri: lb://mall-seckill
+          predicates:
+            - Path=/api/mall-seckill/**
+          filters:
+            # /api/foo  =>  /foo
+            - RewritePath=/api(?<segment>/?.*), $\{segment}
 
 
         # 代码生成服务路由
