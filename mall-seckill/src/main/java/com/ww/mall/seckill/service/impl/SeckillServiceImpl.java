@@ -7,6 +7,7 @@ import com.ww.mall.rabbitmq.exchange.ExchangeConstant;
 import com.ww.mall.rabbitmq.routekey.RouteKeyConstant;
 import com.ww.mall.redis.MallRedisUtil;
 import com.ww.mall.seckill.service.SeckillService;
+import com.ww.mall.web.feign.ThirdServerFeignService;
 import com.ww.mall.web.utils.IdUtil;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -15,6 +16,7 @@ import org.springframework.stereotype.Service;
 
 import javax.annotation.PostConstruct;
 import java.util.Date;
+import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.atomic.AtomicInteger;
 
 /**
@@ -25,6 +27,12 @@ import java.util.concurrent.atomic.AtomicInteger;
 @Slf4j
 @Service
 public class SeckillServiceImpl implements SeckillService {
+
+    @Autowired
+    private ThirdServerFeignService thirdServerFeignService;
+
+    @Autowired
+    private ThreadPoolExecutor defaultThreadPoolExecutor;
 
     @Autowired
     private MallRedisUtil mallRedisUtil;
@@ -57,4 +65,20 @@ public class SeckillServiceImpl implements SeckillService {
         }
         return true;
     }
+
+    @Override
+    public void traceId() {
+        // interface 日志
+        log.info("interface start log");
+        // thread pool日志
+        for (int i = 0; i < 3; i++) {
+            defaultThreadPoolExecutor.submit(() -> log.info("thread pool log"));
+        }
+        // mq日志
+        mallPublisher.publishMsg(ExchangeConstant.MALL_OMS_EXCHANGE, RouteKeyConstant.MALL_CREATE_ORDER_KEY, "9527");
+        // feign日志
+        thirdServerFeignService.sendSms("15970191157", "9527");
+        log.info("interface end log");
+    }
+
 }

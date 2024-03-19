@@ -9,4 +9,6 @@ public interface SeckillService {
 
     boolean seckillOrder();
 
+    void traceId();
+
 }

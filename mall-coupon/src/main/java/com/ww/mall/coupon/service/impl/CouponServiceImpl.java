@@ -10,6 +10,7 @@ import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.ww.mall.common.common.MallClientUser;
 import com.ww.mall.common.exception.ApiException;
+import com.ww.mall.coupon.config.CouponProperties;
 import com.ww.mall.coupon.constant.LockConstant;
 import com.ww.mall.coupon.dao.CouponMapper;
 import com.ww.mall.coupon.entity.Coupon;
@@ -53,11 +54,15 @@ public class CouponServiceImpl extends ServiceImpl<CouponMapper, Coupon> impleme
     @Resource
     private RedissonClient redissonClient;
 
+    @Autowired
+    private CouponProperties couponProperties;
+
     @Override
 //    @Transactional(transactionManager = "mongoTransactionManager", rollbackFor = Exception.class)
 //    @Transactional(rollbackFor = Exception.class)
-    @MallDistributedLock(prefixKey = "#couponPageBO.title")
+//    @MallDistributedLock(prefixKey = "#couponPageBO.title")
     public Object demo(CouponPageBO couponPageBO) {
+        System.out.println("test:" + couponProperties.getCouponId());
         try {
             Thread.sleep(8000);
         } catch (InterruptedException e) {

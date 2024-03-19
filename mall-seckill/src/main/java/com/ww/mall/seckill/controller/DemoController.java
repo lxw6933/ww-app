@@ -27,4 +27,9 @@ public class DemoController {
         return seckillService.seckillOrder();
     }
 
+    @GetMapping("/traceId")
+    public void traceId() {
+        seckillService.traceId();
+    }
+
 }
