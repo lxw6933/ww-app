@@ -78,7 +78,7 @@ public class MemberIntegralRecordServiceImpl implements MemberIntegralRecordServ
     }
 
     @Override
-    @Transactional(rollbackFor = Exception.class)
+//    @Transactional(rollbackFor = Exception.class)
     public Boolean addNewMemberIntegral(AddMemberIntegralBO addMemberIntegralBO) {
         // 先查询新用户是否已经新增过积分
         Query query = new Query();
