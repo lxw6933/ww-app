@@ -25,7 +25,13 @@ public class MemberRegisterMsgConsumerTemplate extends MsgConsumerTemplate<Long>
         addMemberIntegralBO.setIntegralNum(100);
         Result<Boolean> booleanResult = memberFeignService.addMemberIntegral(addMemberIntegralBO);
         if (Boolean.TRUE.equals(booleanResult.isSuccess())) {
-            return true;
+            if (Boolean.TRUE.equals(booleanResult.getValue())) {
+                log.info("【新用户注册】添加积分成功");
+                return true;
+            } else {
+                log.warn("【新用户注册】添加积分失败");
+                return false;
+            }
         } else {
             // 远程调用失败
             log.error("【新用户注册】消费者远程调用失败：{}", booleanResult.getMessage());
