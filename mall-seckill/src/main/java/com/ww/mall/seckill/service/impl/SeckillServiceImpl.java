@@ -75,7 +75,7 @@ public class SeckillServiceImpl implements SeckillService {
             defaultThreadPoolExecutor.submit(() -> log.info("thread pool log"));
         }
         // mq日志
-        mallPublisher.publishMsg(ExchangeConstant.MALL_OMS_EXCHANGE, RouteKeyConstant.MALL_CREATE_ORDER_KEY, "9527");
+        mallPublisher.publishMsg(ExchangeConstant.MALL_MEMBER_EXCHANGE, RouteKeyConstant.MALL_MEMBER_REGISTER_KEY, 1);
         // feign日志
         thirdServerFeignService.sendSms("15970191157", "9527");
         log.info("interface end log");
