@@ -18,7 +18,7 @@ public class MemberFeignServiceFallBack implements FallbackFactory<MemberFeignSe
 
     @Override
     public MemberFeignService create(Throwable cause) {
-        log.error("第三方服务【MemberFeignService】调用异常", cause);
+        log.error("第三方服务【MemberFeignService】调用异常：{}", cause.getMessage());
         return new MemberFeignService() {
             @Override
             public Result<MemberDTO> getMemberByMobile(String mobile) {

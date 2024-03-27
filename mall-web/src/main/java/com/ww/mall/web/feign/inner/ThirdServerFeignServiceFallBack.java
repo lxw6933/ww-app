@@ -17,7 +17,7 @@ public class ThirdServerFeignServiceFallBack implements FallbackFactory<ThirdSer
 
     @Override
     public ThirdServerFeignService create(Throwable cause) {
-        log.error("第三方服务【ThirdServerFeignService】调用异常", cause);
+        log.error("第三方服务【ThirdServerFeignService】调用异常：{}", cause.getMessage());
         return new ThirdServerFeignService() {
             @Override
             public Result<Boolean> sendSms(String mobile, String code) {
