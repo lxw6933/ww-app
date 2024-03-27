@@ -15,7 +15,7 @@ public class SmsServiceImpl implements SmsService {
     @Override
     public boolean sendSms(String mobile, String code) {
         try {
-            Thread.sleep(100);
+            Thread.sleep(6000);
         } catch (InterruptedException e) {
             throw new RuntimeException(e);
         }
