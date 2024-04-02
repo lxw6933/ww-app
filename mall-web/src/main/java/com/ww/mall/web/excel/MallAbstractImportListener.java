@@ -91,8 +91,8 @@ public abstract class MallAbstractImportListener<T> extends AnalysisEventListene
             importTaskList.add(task);
         } else {
             handleData();
-            dataList.clear();
         }
+        dataList.clear();
     }
 
     /**
