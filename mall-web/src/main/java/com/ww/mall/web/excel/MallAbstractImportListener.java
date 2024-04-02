@@ -20,9 +20,11 @@ import java.util.concurrent.ThreadPoolExecutor;
 @Slf4j
 public abstract class MallAbstractImportListener<T> extends AnalysisEventListener<T> {
 
+    // 是否异步处理导入数据
     protected boolean asyncStatus;
 
-    protected static final int MAX_COUNT = 10000;
+    // 最大一批数据量
+    protected int MAX_COUNT = 3000;
 
     protected ExcelImportResultVO excelImportResultVO = new ExcelImportResultVO();
 
