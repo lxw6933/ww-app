@@ -3,10 +3,15 @@ package com.ww.mall.web.excel;
 import com.alibaba.excel.context.AnalysisContext;
 import com.alibaba.excel.event.AnalysisEventListener;
 import com.alibaba.fastjson.JSON;
+import com.ww.mall.common.exception.ApiException;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.collections4.CollectionUtils;
 
 import java.util.ArrayList;
+import java.util.Iterator;
 import java.util.List;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ThreadPoolExecutor;
 
 /**
  * @author ww
@@ -16,12 +21,25 @@ import java.util.List;
 @Slf4j
 public abstract class MallAbstractImportListener<T> extends AnalysisEventListener<T> {
 
+    protected boolean asyncStatus;
+
     protected static final int MAX_COUNT = 10000;
 
     protected ExcelImportResultVO excelImportResultVO;
 
     protected final List<T> dataList = new ArrayList<>();
     protected final List<T> errorDataList = new ArrayList<>();
+
+    protected ThreadPoolExecutor excelThreadPoolExecutor = null;
+
+    protected final List<CompletableFuture<Void>> importTaskList = new ArrayList<>();
+
+    public MallAbstractImportListener() {}
+
+    public MallAbstractImportListener(ThreadPoolExecutor excelThreadPoolExecutor) {
+        this.excelThreadPoolExecutor = excelThreadPoolExecutor;
+        this.asyncStatus = true;
+    }
 
     @Override
     public void invoke(T data, AnalysisContext analysisContext) {
@@ -32,8 +50,7 @@ public abstract class MallAbstractImportListener<T> extends AnalysisEventListene
             errorDataList.add(data);
         }
         if (dataList.size() > MAX_COUNT) {
-            handleData();
-            dataList.clear();
+            this.abstractHandleData();
         }
         if (errorDataList.size() > MAX_COUNT) {
             handleErrorData();
@@ -43,8 +60,32 @@ public abstract class MallAbstractImportListener<T> extends AnalysisEventListene
 
     @Override
     public void doAfterAllAnalysed(AnalysisContext analysisContext) {
-        handleData();
+        this.abstractHandleData();
+        if (CollectionUtils.isNotEmpty(importTaskList)) {
+            try {
+                CompletableFuture.allOf(importTaskList.toArray(new CompletableFuture[]{}));
+            } catch (Exception e) {
+                throw new ApiException("导入异常");
+            }
+            importTaskList.clear();
+        }
         log.info("数据处理完成");
+    }
+
+    private void abstractHandleData() {
+        if (asyncStatus) {
+            // 异步处理
+            CompletableFuture<Void> task;
+            if (excelThreadPoolExecutor == null) {
+                task = CompletableFuture.runAsync(this::handleData);
+            } else {
+                task = CompletableFuture.runAsync(this::handleData, excelThreadPoolExecutor);
+            }
+            importTaskList.add(task);
+        } else {
+            handleData();
+            dataList.clear();
+        }
     }
 
     /**
