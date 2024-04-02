@@ -81,12 +81,12 @@ public abstract class MallAbstractImportListener<T> extends AnalysisEventListene
                 task = CompletableFuture.runAsync(this::handleData).exceptionally((e) -> {
                     log.error("导入异常：{}", e.getMessage());
                     return null;
-                });;
+                });
             } else {
                 task = CompletableFuture.runAsync(this::handleData, excelThreadPoolExecutor).exceptionally((e) -> {
                     log.error("导入异常：{}", e.getMessage());
                     return null;
-                });;
+                });
             }
             importTaskList.add(task);
         } else {
