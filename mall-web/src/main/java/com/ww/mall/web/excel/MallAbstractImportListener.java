@@ -8,7 +8,6 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.CollectionUtils;
 
 import java.util.ArrayList;
-import java.util.Iterator;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ThreadPoolExecutor;
@@ -25,7 +24,7 @@ public abstract class MallAbstractImportListener<T> extends AnalysisEventListene
 
     protected static final int MAX_COUNT = 10000;
 
-    protected ExcelImportResultVO excelImportResultVO;
+    protected ExcelImportResultVO excelImportResultVO = new ExcelImportResultVO();
 
     protected final List<T> dataList = new ArrayList<>();
     protected final List<T> errorDataList = new ArrayList<>();
