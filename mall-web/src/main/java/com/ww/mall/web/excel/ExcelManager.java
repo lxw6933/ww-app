@@ -4,8 +4,6 @@ import com.alibaba.excel.EasyExcelFactory;
 import com.alibaba.excel.ExcelWriter;
 import com.alibaba.excel.write.metadata.WriteSheet;
 import com.alibaba.fastjson.JSON;
-import com.baomidou.mybatisplus.extension.service.IService;
-import com.ww.mall.web.cmmon.BaseEntity;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.CollectionUtils;
 import org.springframework.web.multipart.MultipartFile;
@@ -108,13 +106,12 @@ public class ExcelManager {
      *
      * @param file       file
      * @param modelClass 封装数据model类型
-     * @param service    处理entity与database操作的service
      */
-    public void readExcel(MultipartFile file, Class<?> modelClass, IService<? extends BaseEntity> service) throws IOException {
+    public <T> void readExcel(MultipartFile file, Class<?> modelClass, MallAbstractImportListener<T> listener) throws IOException {
         EasyExcelFactory.read(
                 file.getInputStream(),
                 modelClass,
-                new UploadDataModelListener(service)
+                listener
         ).sheet().doRead();
     }
 
