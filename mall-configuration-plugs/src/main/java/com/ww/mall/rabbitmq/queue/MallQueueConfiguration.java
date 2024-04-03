@@ -54,4 +54,7 @@ public class MallQueueConfiguration {
     @Bean(name = QueueConstant.MALL_PRODUCT_TIMER_UP_QUEUE)
     public Queue productTimerUpQueue() {return new Queue(QueueConstant.MALL_PRODUCT_TIMER_UP_QUEUE);}
 
+    @Bean(name = QueueConstant.MALL_TEST_QUEUE)
+    public Queue testQueue() {return new Queue(QueueConstant.MALL_TEST_QUEUE);}
+
 }

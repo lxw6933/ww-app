@@ -4,12 +4,14 @@ import cn.hutool.core.date.DatePattern;
 import cn.hutool.core.date.DateUtil;
 import com.ww.mall.rabbitmq.MallPublisher;
 import com.ww.mall.rabbitmq.exchange.ExchangeConstant;
+import com.ww.mall.rabbitmq.queue.QueueConstant;
 import com.ww.mall.rabbitmq.routekey.RouteKeyConstant;
 import com.ww.mall.redis.MallRedisUtil;
 import com.ww.mall.seckill.service.SeckillService;
 import com.ww.mall.web.feign.ThirdServerFeignService;
 import com.ww.mall.web.utils.IdUtil;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
@@ -79,6 +81,14 @@ public class SeckillServiceImpl implements SeckillService {
         // feign日志
         thirdServerFeignService.sendSms("15970191157", "9527");
         log.info("interface end log");
+    }
+
+    @Autowired
+    private RabbitTemplate rabbitTemplate;
+
+    @Override
+    public void msg() {
+        rabbitTemplate.convertAndSend(QueueConstant.MALL_TEST_QUEUE, "1");
     }
 
 }

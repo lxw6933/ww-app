@@ -32,4 +32,9 @@ public class DemoController {
         seckillService.traceId();
     }
 
+    @GetMapping("/msg")
+    public void msg() {
+        seckillService.msg();
+    }
+
 }
