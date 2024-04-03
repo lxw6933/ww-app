@@ -34,7 +34,7 @@ public class ExcelManager {
      * @param fileName  导出excel文件名称
      * @param sheetName sheet名称
      */
-    public <T, E> void exportExcelOfOneSheet(HttpServletResponse response, List<T> data, Class<E> pojoClass, String fileName, String sheetName) throws IOException {
+    public <T> void exportExcelOfOneSheet(HttpServletResponse response, List<T> data, Class<T> pojoClass, String fileName, String sheetName) throws IOException {
         exportExcelOfOneSheet(response, data, pojoClass, fileName, sheetName, null, null);
     }
 
@@ -49,7 +49,7 @@ public class ExcelManager {
      * @param excludeColumnFiledNames 不需要显示的字段名称集合
      * @param includeColumnFiledNames 需要显示的字段名称集合
      */
-    public <T, E> void exportExcelOfOneSheet(HttpServletResponse response, List<T> data, Class<E> pojoClass, String fileName, String sheetName, Set<String> excludeColumnFiledNames, Set<String> includeColumnFiledNames) throws IOException {
+    public <T> void exportExcelOfOneSheet(HttpServletResponse response, List<T> data, Class<T> pojoClass, String fileName, String sheetName, Set<String> excludeColumnFiledNames, Set<String> includeColumnFiledNames) throws IOException {
         try {
             setResponse(response, fileName);
             if (CollectionUtils.isNotEmpty(includeColumnFiledNames)) {
