@@ -64,7 +64,7 @@ public abstract class MallAbstractImportListener<T> extends AnalysisEventListene
         this.abstractHandleData();
         if (CollectionUtils.isNotEmpty(importTaskList)) {
             try {
-                CompletableFuture.allOf(importTaskList.toArray(new CompletableFuture[]{}));
+                CompletableFuture.allOf(importTaskList.toArray(new CompletableFuture[]{})).get();
             } catch (Exception e) {
                 throw new ApiException("导入异常");
             }
