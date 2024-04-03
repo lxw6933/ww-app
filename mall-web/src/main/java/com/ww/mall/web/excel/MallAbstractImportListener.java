@@ -100,7 +100,9 @@ public abstract class MallAbstractImportListener<T> extends AnalysisEventListene
      *
      * @return 正常：true
      */
-    protected abstract boolean validData(T data);
+    public boolean validData(T data) {
+        return true;
+    }
 
     /**
      * 数据处理
@@ -110,6 +112,6 @@ public abstract class MallAbstractImportListener<T> extends AnalysisEventListene
     /**
      * 异常数据处理
      */
-    protected abstract void handleErrorData();
+    public void handleErrorData() {}
 
 }

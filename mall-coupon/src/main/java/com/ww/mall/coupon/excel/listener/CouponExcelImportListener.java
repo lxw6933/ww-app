@@ -22,17 +22,8 @@ public class CouponExcelImportListener extends MallAbstractImportListener<Conver
     }
 
     @Override
-    protected boolean validData(ConvertCodeExcelModel data) {
-        return true;
-    }
-
-    @Override
     protected void handleData() {
         mongoTemplate.insertAll(dataList);
     }
 
-    @Override
-    protected void handleErrorData() {
-
-    }
 }
