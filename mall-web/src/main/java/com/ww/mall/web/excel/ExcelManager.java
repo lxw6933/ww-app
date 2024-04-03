@@ -34,7 +34,7 @@ public class ExcelManager {
      * @param fileName  导出excel文件名称
      * @param sheetName sheet名称
      */
-    public void exportExcelOfOneSheet(HttpServletResponse response, List<?> data, Class<?> pojoClass, String fileName, String sheetName) throws IOException {
+    public <T, E> void exportExcelOfOneSheet(HttpServletResponse response, List<T> data, Class<E> pojoClass, String fileName, String sheetName) throws IOException {
         exportExcelOfOneSheet(response, data, pojoClass, fileName, sheetName, null, null);
     }
 
@@ -49,7 +49,7 @@ public class ExcelManager {
      * @param excludeColumnFiledNames 不需要显示的字段名称集合
      * @param includeColumnFiledNames 需要显示的字段名称集合
      */
-    public void exportExcelOfOneSheet(HttpServletResponse response, List<?> data, Class<?> pojoClass, String fileName, String sheetName, Set<String> excludeColumnFiledNames, Set<String> includeColumnFiledNames) throws IOException {
+    public <T, E> void exportExcelOfOneSheet(HttpServletResponse response, List<T> data, Class<E> pojoClass, String fileName, String sheetName, Set<String> excludeColumnFiledNames, Set<String> includeColumnFiledNames) throws IOException {
         try {
             setResponse(response, fileName);
             if (CollectionUtils.isNotEmpty(includeColumnFiledNames)) {
@@ -79,14 +79,14 @@ public class ExcelManager {
      * @param data     导出数据集合 string: sheet名称   data：对应的数据集合
      * @param fileName 导出excel文件名称
      */
-    public void exportExcelOfManySheet(HttpServletResponse response, Map<String, List<?>> data, String fileName) throws IOException {
+    public <T> void exportExcelOfManySheet(HttpServletResponse response, Map<String, List<T>> data, String fileName) throws IOException {
         ExcelWriter excelWriter = null;
         try {
             setResponse(response, fileName);
             // 指定excel文件
             excelWriter = EasyExcelFactory.write(response.getOutputStream()).build();
             int i = 0;
-            for (Map.Entry<String, List<?>> entry : data.entrySet()) {
+            for (Map.Entry<String, List<T>> entry : data.entrySet()) {
                 // 每次都要创建 writeSheet 这里注意必须指定sheetNo 而且sheetName必须不一样。
                 WriteSheet writeSheet = EasyExcelFactory.writerSheet(i, entry.getKey()).head(entry.getValue().get(0).getClass()).build();
                 excelWriter.write(entry.getValue(), writeSheet);
@@ -107,7 +107,7 @@ public class ExcelManager {
      * @param file       file
      * @param modelClass 封装数据model类型
      */
-    public <T> void readExcel(MultipartFile file, Class<?> modelClass, MallAbstractImportListener<T> listener) throws IOException {
+    public <T> void readExcel(MultipartFile file, Class<T> modelClass, MallAbstractImportListener<T> listener) throws IOException {
         EasyExcelFactory.read(
                 file.getInputStream(),
                 modelClass,
