@@ -2,6 +2,8 @@ package com.ww.mall.seckill.service.impl;
 
 import cn.hutool.core.date.DatePattern;
 import cn.hutool.core.date.DateUtil;
+import com.github.benmanes.caffeine.cache.Cache;
+import com.github.benmanes.caffeine.cache.Caffeine;
 import com.ww.mall.rabbitmq.MallPublisher;
 import com.ww.mall.rabbitmq.exchange.ExchangeConstant;
 import com.ww.mall.rabbitmq.queue.QueueConstant;
@@ -13,6 +15,7 @@ import com.ww.mall.web.utils.IdUtil;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.Bean;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
 
@@ -50,7 +53,14 @@ public class SeckillServiceImpl implements SeckillService {
     @PostConstruct
     public void init() {
         redisTemplate.opsForValue().set("skuStock", "1000");
+        // 初始化活动数据信息
+        activityCache.get("activityRedisCacheKey", key -> redisTemplate.opsForValue().get(key));
     }
+
+    private static final Cache<String, String> activityCache = Caffeine.newBuilder()
+            .initialCapacity(100)
+            .maximumSize(10000)
+            .build();
 
     @Override
     public boolean seckillOrder() {
