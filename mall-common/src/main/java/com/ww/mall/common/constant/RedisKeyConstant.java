@@ -11,6 +11,8 @@ public class RedisKeyConstant {
 
     private RedisKeyConstant() {}
 
+    public static final String GEO_KEY = "geo:";
+
     public static final String SIGN_LOCK_PREFIX = "sign_lock:";
 
     public static final String KEY_PREFIX  = "";
