@@ -16,10 +16,13 @@ spring:
   rabbitmq:
     addresses: localhost:5672
     virtual-host: /
-    # 设置消费消息ack机制
-    listener:
-      simple:
-        acknowledge-mode: manual
+    # 设置发送端到exchange确认回调
+    publisher-confirm-type: correlated
+    # 设置发送端到queue确认回调
+    publisher-returns: true
+    # 设置消息抵达queue，以异步方式回调 publisher-returns
+    template:
+      mandatory: true
 
 # 开启sentinel feign支持【调用方（调用服务方）的熔断保护、被调用方（服务提供方）的降级保护】
 feign:
