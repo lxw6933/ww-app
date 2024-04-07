@@ -83,6 +83,8 @@ public class MallRedisUtil {
     public void batchRemoveKeys(Set<String> keys) {
         redisTemplate.executePipelined((RedisCallback<Object>) connection -> {
             keys.forEach(key -> connection.del(key.getBytes()));
+            // 异步删除，防止bigKey阻塞
+//            keys.forEach(key -> connection.unlink(key.getBytes()));
             return null;
         });
     }
