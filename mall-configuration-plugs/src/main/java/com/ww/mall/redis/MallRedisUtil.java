@@ -23,6 +23,11 @@ import java.util.stream.Collectors;
 @Component
 public class MallRedisUtil {
 
+    /**
+     * 默认批处理命令数量
+     */
+    private static final Integer DEFAULT_BATCH_NUM = 1000;
+
     @Autowired
     private RedisTemplate<String, String> redisTemplate;
 
@@ -80,13 +85,29 @@ public class MallRedisUtil {
      *
      * @param keys 需要删除key的集合
      */
-    public void batchRemoveKeys(Set<String> keys) {
-        redisTemplate.executePipelined((RedisCallback<Object>) connection -> {
-            keys.forEach(key -> connection.del(key.getBytes()));
-            // 异步删除，防止bigKey阻塞
-//            keys.forEach(key -> connection.unlink(key.getBytes()));
-            return null;
-        });
+    public void batchRemoveKeys(List<String> keys) {
+        List<String> batchKeyList = new ArrayList<>();
+        for (int i = 0; i < keys.size(); i++) {
+            batchKeyList.add(keys.get(i));
+            if (i % DEFAULT_BATCH_NUM == 0) {
+                redisTemplate.executePipelined((RedisCallback<Object>) connection -> {
+                    batchKeyList.forEach(key -> connection.del(key.getBytes()));
+                    // 异步删除，防止bigKey阻塞
+//                    batchKeyList.forEach(key -> connection.unlink(key.getBytes()));
+                    return null;
+                });
+                batchKeyList.clear();
+            }
+        }
+        // 处理剩余的命令
+        if (!batchKeyList.isEmpty()) {
+            redisTemplate.executePipelined((RedisCallback<Object>) connection -> {
+                batchKeyList.forEach(key -> connection.del(key.getBytes()));
+                // 异步删除，防止bigKey阻塞
+//                batchKeyList.forEach(key -> connection.unlink(key.getBytes()));
+                return null;
+            });
+        }
     }
 
     /**
