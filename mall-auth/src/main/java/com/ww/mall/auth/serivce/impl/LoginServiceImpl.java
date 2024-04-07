@@ -7,6 +7,7 @@ import com.ww.mall.auth.serivce.LoginService;
 import com.ww.mall.auth.vo.LoginVO;
 import com.ww.mall.common.common.Result;
 import com.ww.mall.common.constant.Constant;
+import com.ww.mall.common.constant.RedisKeyConstant;
 import com.ww.mall.common.enums.CodeEnum;
 import com.ww.mall.common.exception.ApiException;
 import com.ww.mall.web.feign.MemberFeignService;
@@ -53,7 +54,7 @@ public class LoginServiceImpl implements LoginService {
         String requestIp = IpUtil.getRealIp(request);
         log.info("登录请求ip：【{}】 请求参数：【{}】", requestIp, memberLoginBO);
         String mobile = memberLoginBO.getMobile();
-        String mobileCode = redisTemplate.opsForValue().get(Constant.SMS_CODE_CACHE_PREFIX + mobile);
+        String mobileCode = redisTemplate.opsForValue().get(RedisKeyConstant.SMS_CODE_CACHE_PREFIX + mobile);
         mobileCode = StringUtils.isNotEmpty(mobileCode) ? mobileCode.split("_")[0] : null;
         if (memberLoginBO.getVerifyCode().equals(mobileCode)) {
             // 获取登录用户信息
@@ -87,7 +88,7 @@ public class LoginServiceImpl implements LoginService {
 
     @Override
     public void sendCode(String mobile) {
-        String mobileCode = redisTemplate.opsForValue().get(Constant.SMS_CODE_CACHE_PREFIX + mobile);
+        String mobileCode = redisTemplate.opsForValue().get(RedisKeyConstant.SMS_CODE_CACHE_PREFIX + mobile);
         if (StringUtils.isNotEmpty(mobileCode)) {
             // 判断是否超过验证码过期时间
             long mobileCodeTime = Long.parseLong(mobileCode.split("_")[1]);
@@ -102,7 +103,7 @@ public class LoginServiceImpl implements LoginService {
         String newCodeTime =  newCode + "_" + System.currentTimeMillis();
         // 验证码三分钟内有效
         redisTemplate.opsForValue()
-                .set(Constant.SMS_CODE_CACHE_PREFIX + mobile, newCodeTime, 3, TimeUnit.MINUTES);
+                .set(RedisKeyConstant.SMS_CODE_CACHE_PREFIX + mobile, newCodeTime, 3, TimeUnit.MINUTES);
         // 发送验证码短信
         Result<Boolean> sendSmsResult = thirdServerFeignService.sendSms(mobile, newCode);
         if (Boolean.TRUE.equals(sendSmsResult.isSuccess())) {

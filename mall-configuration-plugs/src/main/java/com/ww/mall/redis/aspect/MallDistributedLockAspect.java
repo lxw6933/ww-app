@@ -1,5 +1,6 @@
 package com.ww.mall.redis.aspect;
 
+import com.ww.mall.common.constant.Constant;
 import com.ww.mall.common.constant.RedisKeyConstant;
 import com.ww.mall.common.enums.CodeEnum;
 import com.ww.mall.common.exception.ApiException;
@@ -49,13 +50,13 @@ public class MallDistributedLockAspect {
         MyStandardEvaluationContext spelContext = new MyStandardEvaluationContext(parameterNames, parameterValues);
         MallDistributedLock mallDistributedLock = method.getAnnotation(MallDistributedLock.class);
         StringBuilder sb = new StringBuilder(128);
-        sb.append(LOCK_PREFIX).append(RedisKeyConstant.SPLIT)
+        sb.append(LOCK_PREFIX).append(Constant.SPLIT)
                 .append(StringUtils.isNotEmpty(mallDistributedLock.prefixKey()) ? parser.parseExpression(mallDistributedLock.prefixKey()).getValue(spelContext) : method.getName());
         if (StringUtils.isNotEmpty(mallDistributedLock.userId())) {
-            sb.append(RedisKeyConstant.SPLIT).append(parser.parseExpression(mallDistributedLock.userId()).getValue(spelContext));
+            sb.append(Constant.SPLIT).append(parser.parseExpression(mallDistributedLock.userId()).getValue(spelContext));
         }
         if (StringUtils.isNotEmpty(mallDistributedLock.operationKey())) {
-            sb.append(RedisKeyConstant.SPLIT).append(parser.parseExpression(mallDistributedLock.operationKey()).getValue(spelContext));
+            sb.append(Constant.SPLIT).append(parser.parseExpression(mallDistributedLock.operationKey()).getValue(spelContext));
         }
         String lockKey = sb.toString();
         RLock lock = redissonClient.getLock(lockKey);
