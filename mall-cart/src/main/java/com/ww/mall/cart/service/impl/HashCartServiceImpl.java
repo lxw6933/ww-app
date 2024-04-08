@@ -62,12 +62,8 @@ public class HashCartServiceImpl implements HashCartService {
                 // 清空临时用户购物车数据
                 redissonClient.getMap(tempUserCartKey).clear();
             }
-            // 获取用户购物车商品数据
-            cart.setCartItems(getUserCartItemList());
-        } else {
-            // 临时购物车商品数据
-            cart.setCartItems(getUserCartItemList());
         }
+        cart.setCartItems(getUserCartItemList());
         return cart;
     }
 
