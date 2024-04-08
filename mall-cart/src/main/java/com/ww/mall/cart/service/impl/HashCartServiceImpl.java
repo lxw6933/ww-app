@@ -35,7 +35,7 @@ public class HashCartServiceImpl implements HashCartService {
     public CartItem addToCart(Long skuId, Integer num) {
         RMap<String, CartItem> userCart = getUserCart();
         // 是否达到购物车最大容量
-        Assert.isTrue(userCart.size() > MAX_CART_NUMBER, () -> {throw new ApiException("超出购物车最大容量");});
+        Assert.isTrue(userCart.size() > MAX_CART_NUMBER, () -> new ApiException("超出购物车最大容量"));
         // 判断购物车是否存在当前商品
         CartItem cartItem = userCart.get(skuId.toString());
         if (cartItem == null) {
