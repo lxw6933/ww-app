@@ -2,7 +2,7 @@ package com.ww.mall.cart.controller;
 
 import com.ww.mall.cart.entity.Cart;
 import com.ww.mall.cart.entity.CartItem;
-import com.ww.mall.cart.service.CartService;
+import com.ww.mall.cart.service.HashCartService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -21,7 +21,7 @@ import org.springframework.web.bind.annotation.RestController;
 public class CartController {
 
     @Autowired
-    private CartService cartService;
+    private HashCartService cartService;
 
     @GetMapping("/userCart")
     public Cart userCart() {

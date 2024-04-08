@@ -19,6 +19,8 @@ import java.util.List;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.stream.Collectors;
 
+import static com.ww.mall.cart.constant.CartConstant.CART_PREFIX;
+
 /**
  * @description:
  * @author: ww
@@ -35,8 +37,6 @@ public class CartServiceImpl implements CartService {
 
     @Autowired
     private ThreadPoolExecutor defaultThreadPoolExecutor;
-
-    public final static String CART_PREFIX = "mall:cart:";
 
     @Override
     public CartItem addToCart(Long skuId, Integer num) {
@@ -161,4 +161,5 @@ public class CartServiceImpl implements CartService {
         }
         return stringRedisTemplate.boundHashOps(userCartKey);
     }
+
 }
