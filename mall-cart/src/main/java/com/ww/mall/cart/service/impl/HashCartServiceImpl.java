@@ -144,8 +144,4 @@ public class HashCartServiceImpl implements HashCartService {
         return userCartList;
     }
 
-    private CartItem getUserCartItem(Long skuId) {
-        RMap<String, CartItem> userCart = getUserCart();
-        return userCart.get(skuId.toString());
-    }
 }
