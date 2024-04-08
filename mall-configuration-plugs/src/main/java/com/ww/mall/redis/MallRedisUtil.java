@@ -80,20 +80,27 @@ public class MallRedisUtil {
         return keys;
     }
 
+    public void batchRemoveKeys(List<String> keys) {
+        this.batchRemoveKeys(keys, false);
+    }
+
     /**
      * 批量删除key
      *
      * @param keys 需要删除key的集合
      */
-    public void batchRemoveKeys(List<String> keys) {
+    public void batchRemoveKeys(List<String> keys, boolean async) {
         List<String> batchKeyList = new ArrayList<>();
         for (int i = 0; i < keys.size(); i++) {
             batchKeyList.add(keys.get(i));
             if (i % DEFAULT_BATCH_NUM == 0) {
                 redisTemplate.executePipelined((RedisCallback<Object>) connection -> {
-                    batchKeyList.forEach(key -> connection.del(key.getBytes()));
-                    // 异步删除，防止bigKey阻塞
-//                    batchKeyList.forEach(key -> connection.unlink(key.getBytes()));
+                    if (async) {
+                        // 异步删除，防止bigKey阻塞
+                        batchKeyList.forEach(key -> connection.unlink(key.getBytes()));
+                    } else {
+                        batchKeyList.forEach(key -> connection.del(key.getBytes()));
+                    }
                     return null;
                 });
                 batchKeyList.clear();
@@ -102,9 +109,12 @@ public class MallRedisUtil {
         // 处理剩余的命令
         if (!batchKeyList.isEmpty()) {
             redisTemplate.executePipelined((RedisCallback<Object>) connection -> {
-                batchKeyList.forEach(key -> connection.del(key.getBytes()));
-                // 异步删除，防止bigKey阻塞
-//                batchKeyList.forEach(key -> connection.unlink(key.getBytes()));
+                if (async) {
+                    // 异步删除，防止bigKey阻塞
+                    batchKeyList.forEach(key -> connection.unlink(key.getBytes()));
+                } else {
+                    batchKeyList.forEach(key -> connection.del(key.getBytes()));
+                }
                 return null;
             });
         }
@@ -115,11 +125,24 @@ public class MallRedisUtil {
      *
      * @param dataMap data
      */
-    public void batchInitializeData(Map<String, String> dataMap) {
-        redisTemplate.executePipelined((RedisCallback<Object>) connection -> {
-            dataMap.forEach((key, value) -> connection.set(key.getBytes(), value.getBytes()));
-            return null;
-        });
+    public void batchInitializeStrData(Map<String, String> dataMap) {
+        Map<String, String> batchDataMap = new HashMap<>();
+        for (Map.Entry<String, String> entry : dataMap.entrySet()) {
+            batchDataMap.put(entry.getKey(), entry.getValue());
+            if (batchDataMap.size() == DEFAULT_BATCH_NUM) {
+                redisTemplate.executePipelined((RedisCallback<Object>) connection -> {
+                    batchDataMap.forEach((key, value) -> connection.set(key.getBytes(), value.getBytes()));
+                    return null;
+                });
+                batchDataMap.clear();
+            }
+        }
+        if (!batchDataMap.isEmpty()) {
+            redisTemplate.executePipelined((RedisCallback<Object>) connection -> {
+                batchDataMap.forEach((key, value) -> connection.set(key.getBytes(), value.getBytes()));
+                return null;
+            });
+        }
     }
 
     /**
@@ -132,9 +155,7 @@ public class MallRedisUtil {
         locationMap.forEach((typeId, typeIdLocations) -> {
             String geoKey = RedisKeyConstant.GEO_KEY + typeId;
             List<RedisGeoCommands.GeoLocation<String>> locationGEOList = new ArrayList<>();
-            typeIdLocations.forEach(res -> {
-                locationGEOList.add(new RedisGeoCommands.GeoLocation<>(res.getTypeId().toString(), new Point(res.getX(), res.getY())));
-            });
+            typeIdLocations.forEach(res -> locationGEOList.add(new RedisGeoCommands.GeoLocation<>(res.getTypeId().toString(), new Point(res.getX(), res.getY()))));
             redisTemplate.opsForGeo().add(geoKey, locationGEOList);
         });
     }
