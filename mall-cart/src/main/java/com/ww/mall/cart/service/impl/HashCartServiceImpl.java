@@ -6,6 +6,7 @@ import com.ww.mall.cart.entity.CartItem;
 import com.ww.mall.cart.interceptor.CartInterceptor;
 import com.ww.mall.cart.service.HashCartService;
 import com.ww.mall.cart.to.UserInfoTo;
+import com.ww.mall.common.exception.ApiException;
 import org.apache.commons.collections4.CollectionUtils;
 import org.redisson.api.RMap;
 import org.redisson.api.RedissonClient;
@@ -17,6 +18,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import static com.ww.mall.cart.constant.CartConstant.CART_PREFIX;
+import static com.ww.mall.cart.constant.CartConstant.MAX_CART_NUMBER;
 
 /**
  * @author ww
@@ -32,6 +34,8 @@ public class HashCartServiceImpl implements HashCartService {
     @Override
     public CartItem addToCart(Long skuId, Integer num) {
         RMap<String, CartItem> userCart = getUserCart();
+        // 是否达到购物车最大容量
+        Assert.isTrue(userCart.size() > MAX_CART_NUMBER, () -> {throw new ApiException("超出购物车最大容量");});
         // 判断购物车是否存在当前商品
         CartItem cartItem = userCart.get(skuId.toString());
         if (cartItem == null) {

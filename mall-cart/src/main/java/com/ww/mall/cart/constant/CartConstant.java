@@ -8,5 +8,6 @@ package com.ww.mall.cart.constant;
 public class CartConstant {
 
     public final static String CART_PREFIX = "mall:cart:";
+    public final static Integer MAX_CART_NUMBER = 500;
 
 }

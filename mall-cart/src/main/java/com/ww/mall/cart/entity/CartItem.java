@@ -14,21 +14,60 @@ import java.util.List;
 @Data
 public class CartItem implements Serializable {
 
+    /**
+     * 商家id
+     */
+    private Long merchantId;
+
+    /**
+     * spuId
+     */
+    private Long spuId;
+
+    /**
+     * skuId
+     */
     private Long skuId;
 
+    /**
+     * 是否选中
+     */
     private Boolean checked;
 
+    /**
+     * sku名称
+     */
     private String title;
 
+    /**
+     * sku图片
+     */
     private String image;
 
+    /**
+     * sku属性
+     */
     private List<String> skuAttr;
 
+    /**
+     * sku销售价【加入时】
+     */
     private BigDecimal price;
 
+    /**
+     * 加入购书车数量
+     */
     private Integer count;
 
+    /**
+     * 总价
+     */
     private BigDecimal totalPrice;
+
+    /**
+     * 是否失效【1：有效 0：已失效】
+     */
+    private Boolean invalid;
 
     public BigDecimal getTotalPrice() {
         return this.price.multiply(BigDecimal.valueOf(this.count));
