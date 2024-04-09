@@ -4,6 +4,7 @@ import com.ww.mall.cart.to.UserInfoTo;
 import com.ww.mall.common.common.MallClientUser;
 import com.ww.mall.common.constant.Constant;
 import com.ww.mall.web.utils.AuthorizationContext;
+import lombok.NonNull;
 import org.apache.commons.lang3.ArrayUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.stereotype.Component;
@@ -26,7 +27,7 @@ public class CartInterceptor implements HandlerInterceptor {
     public static ThreadLocal<UserInfoTo> cartThreadLocal = new ThreadLocal<>();
 
     @Override
-    public boolean preHandle(HttpServletRequest request, HttpServletResponse response, Object handler) throws Exception {
+    public boolean preHandle(@NonNull HttpServletRequest request, @NonNull HttpServletResponse response, @NonNull Object handler) {
         UserInfoTo userInfoTo = new UserInfoTo();
         MallClientUser clientUser = AuthorizationContext.getClientUser(false);
         if (clientUser != null) {
@@ -52,7 +53,7 @@ public class CartInterceptor implements HandlerInterceptor {
     }
 
     @Override
-    public void postHandle(HttpServletRequest request, HttpServletResponse response, Object handler, ModelAndView modelAndView) throws Exception {
+    public void postHandle(@NonNull HttpServletRequest request, @NonNull HttpServletResponse response, @NonNull Object handler, ModelAndView modelAndView) {
         UserInfoTo userInfoTo = cartThreadLocal.get();
         if (userInfoTo.getUserId() != null) {
             // 用户登录不刷新cookie有效期时长
@@ -64,7 +65,7 @@ public class CartInterceptor implements HandlerInterceptor {
     }
 
     @Override
-    public void afterCompletion(HttpServletRequest request, HttpServletResponse response, Object handler, Exception ex) throws Exception {
+    public void afterCompletion(@NonNull HttpServletRequest request, @NonNull HttpServletResponse response, @NonNull Object handler, Exception ex) {
         cartThreadLocal.remove();
     }
 }
