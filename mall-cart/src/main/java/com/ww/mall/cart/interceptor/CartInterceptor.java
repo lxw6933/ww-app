@@ -5,7 +5,6 @@ import com.ww.mall.common.common.MallClientUser;
 import com.ww.mall.common.constant.Constant;
 import com.ww.mall.web.utils.AuthorizationContext;
 import org.apache.commons.lang3.ArrayUtils;
-import org.apache.commons.lang3.RandomUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.stereotype.Component;
 import org.springframework.web.servlet.HandlerInterceptor;
@@ -62,5 +61,10 @@ public class CartInterceptor implements HandlerInterceptor {
         Cookie cookie = new Cookie(Constant.TEMP_USER_KEY, userInfoTo.getTempUserKey());
         cookie.setMaxAge(Constant.TEMP_USER_COOKIE_TIMEOUT);
         response.addCookie(cookie);
+    }
+
+    @Override
+    public void afterCompletion(HttpServletRequest request, HttpServletResponse response, Object handler, Exception ex) throws Exception {
+        cartThreadLocal.remove();
     }
 }
