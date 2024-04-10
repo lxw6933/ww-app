@@ -98,6 +98,7 @@ public class SeckillServiceImpl implements SeckillService {
 
     @Override
     public void msg() {
+        log.info("seckill msg");
         rabbitTemplate.convertAndSend(QueueConstant.MALL_TEST_QUEUE, "1");
     }
 
