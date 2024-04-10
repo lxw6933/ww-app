@@ -190,7 +190,7 @@ public class CouponServiceImpl extends ServiceImpl<CouponMapper, Coupon> impleme
     }
 
     @Override
-    @MallDistributedLock(prefixKey = LockConstant.RECEIVE_COUPON_LOCK, operationKey = "#activityCode")
+    @MallDistributedLock(value = LockConstant.RECEIVE_COUPON_LOCK, operationKey = "#activityCode")
     public boolean receiveCoupon(String activityCode) {
         MallClientUser clientUser = AuthorizationContext.getClientUser();
         Coupon coupon = getCouponByCode(activityCode);

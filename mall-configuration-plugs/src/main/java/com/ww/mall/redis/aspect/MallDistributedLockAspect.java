@@ -1,7 +1,6 @@
 package com.ww.mall.redis.aspect;
 
 import com.ww.mall.common.constant.Constant;
-import com.ww.mall.common.constant.RedisKeyConstant;
 import com.ww.mall.common.enums.CodeEnum;
 import com.ww.mall.common.exception.ApiException;
 import com.ww.mall.redis.annotation.MallDistributedLock;
@@ -41,22 +40,25 @@ public class MallDistributedLockAspect {
     @Around("@annotation(com.ww.mall.redis.annotation.MallDistributedLock)")
     public Object mallDistributedLockAdvise(ProceedingJoinPoint joinPoint) throws Throwable {
         MethodSignature signature = (MethodSignature) joinPoint.getSignature();
+        String classDeclaringTypeName = signature.getDeclaringTypeName();
         Method method = signature.getMethod();
         // 获取方法参数名
         String[] parameterNames = new LocalVariableTableParameterNameDiscoverer().getParameterNames(method);
         // 获取方法参数
         Object[] parameterValues = joinPoint.getArgs();
         // 构建SpEL上下文，并设置变量值
-        MyStandardEvaluationContext spelContext = new MyStandardEvaluationContext(parameterNames, parameterValues);
+        MyStandardEvaluationContext elContext = new MyStandardEvaluationContext(parameterNames, parameterValues);
         MallDistributedLock mallDistributedLock = method.getAnnotation(MallDistributedLock.class);
         StringBuilder sb = new StringBuilder(128);
-        sb.append(LOCK_PREFIX).append(Constant.SPLIT)
-                .append(StringUtils.isNotEmpty(mallDistributedLock.prefixKey()) ? parser.parseExpression(mallDistributedLock.prefixKey()).getValue(spelContext) : method.getName());
+        sb.append(LOCK_PREFIX).append(Constant.SPLIT).append(
+                StringUtils.isNotEmpty(mallDistributedLock.value()) ?
+                parser.parseExpression(mallDistributedLock.value()).getValue(elContext) : classDeclaringTypeName + Constant.SPLIT + method.getName()
+        );
         if (StringUtils.isNotEmpty(mallDistributedLock.userId())) {
-            sb.append(Constant.SPLIT).append(parser.parseExpression(mallDistributedLock.userId()).getValue(spelContext));
+            sb.append(Constant.SPLIT).append(parser.parseExpression(mallDistributedLock.userId()).getValue(elContext));
         }
         if (StringUtils.isNotEmpty(mallDistributedLock.operationKey())) {
-            sb.append(Constant.SPLIT).append(parser.parseExpression(mallDistributedLock.operationKey()).getValue(spelContext));
+            sb.append(Constant.SPLIT).append(parser.parseExpression(mallDistributedLock.operationKey()).getValue(elContext));
         }
         String lockKey = sb.toString();
         RLock lock = redissonClient.getLock(lockKey);

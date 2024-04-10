@@ -10,6 +10,6 @@ import lombok.Data;
 @Data
 public class LockConstant {
 
-    public static final String RECEIVE_COUPON_LOCK = "mall:lock:receive_coupon_";
+    public static final String RECEIVE_COUPON_LOCK = "receive_coupon";
 
 }

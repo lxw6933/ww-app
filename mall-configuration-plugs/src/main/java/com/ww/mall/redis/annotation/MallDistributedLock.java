@@ -17,9 +17,9 @@ import java.util.concurrent.TimeUnit;
 public @interface MallDistributedLock {
 
     /**
-     * 锁前缀 默认方法名
+     * 锁名 默认方法全限定名 + 方法名
      */
-    String prefixKey() default "";
+    String value() default "";
 
     /**
      * 用户id key锁
