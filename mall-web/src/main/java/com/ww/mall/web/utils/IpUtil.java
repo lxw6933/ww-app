@@ -1,5 +1,6 @@
 package com.ww.mall.web.utils;
 
+import cn.hutool.core.net.NetUtil;
 import com.alibaba.fastjson.JSONObject;
 import com.ww.mall.common.exception.ApiException;
 import lombok.extern.slf4j.Slf4j;
@@ -80,12 +81,30 @@ public class IpUtil {
 
     public static void validIp(List<String> whiteIpList, HttpServletRequest request) {
         // 校验ip
+        validIp(whiteIpList, request, false);
+    }
+
+    public static void validIp(List<String> whiteIpList, HttpServletRequest request, boolean ipRange) {
+        // 校验ip
         if (CollectionUtils.isEmpty(whiteIpList)) {
             log.error("ip白名单未配置");
             throw new ApiException("ip白名单校验失败");
         }
         String ip = getRealIp(request);
-        if (!whiteIpList.contains(ip)) {
+        boolean flag = false;
+        if (ipRange) {
+            for (String ipRangeWhite : whiteIpList) {
+                if (NetUtil.isInRange(ip, ipRangeWhite)) {
+                    flag = true;
+                    break;
+                }
+            }
+        } else {
+            if (whiteIpList.contains(ip)) {
+                flag = true;
+            }
+        }
+        if (!flag) {
             log.error("ip白名单校验失败");
             throw new ApiException("非法ip请求");
         }
