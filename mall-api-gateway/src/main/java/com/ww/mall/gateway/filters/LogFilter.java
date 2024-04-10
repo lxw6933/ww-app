@@ -88,7 +88,6 @@ public class LogFilter implements GlobalFilter, Ordered {
         return exchange.getFormData().doOnNext(multiValueMap -> {
                 gatewayContext.setFormData(multiValueMap);
                 log.info("Post x-www-form-urlencoded:{}", multiValueMap);
-                log.info("end-------------------------------------------------");
                 }).then(Mono.defer(() -> {
                     Charset charset = headers.getContentType().getCharset() == null ? StandardCharsets.UTF_8 : headers.getContentType().getCharset();
                     String charsetName = charset.name();
@@ -173,7 +172,6 @@ public class LogFilter implements GlobalFilter, Ordered {
             // read body string with default messageReaders
             return ServerRequest.create(mutatedExchange, messageReaders).bodyToMono(String.class).doOnNext(objectValue -> {
                         log.info("PostBody:{}", objectValue);
-                        log.info("end-------------------------------------------------");
                         gatewayContext.setCacheBody(objectValue);
             }).then(chain.filter(mutatedExchange));
         });
