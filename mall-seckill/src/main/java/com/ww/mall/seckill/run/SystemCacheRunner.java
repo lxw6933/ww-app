@@ -1,6 +1,6 @@
 package com.ww.mall.seckill.run;
 
-import com.ww.mall.seckill.manager.CacheManager;
+import com.ww.mall.seckill.manager.MallCacheManager;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.ApplicationArguments;
 import org.springframework.boot.ApplicationRunner;
@@ -19,7 +19,7 @@ public class SystemCacheRunner implements ApplicationRunner {
     public void run(ApplicationArguments args) throws Exception {
         log.info("开始加载系统缓存...");
         for (int i = 0; i < 10; i++) {
-            CacheManager.spuCache.put("spu" + i, "data" + i);
+            MallCacheManager.spuCache.put("spu" + i, "data" + i);
         }
         log.info("结束加载系统缓存...");
     }

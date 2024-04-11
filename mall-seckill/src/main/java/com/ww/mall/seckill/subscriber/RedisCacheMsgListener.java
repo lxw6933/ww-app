@@ -2,7 +2,7 @@ package com.ww.mall.seckill.subscriber;
 
 import com.ww.mall.common.constant.RedisChannelConstant;
 import com.ww.mall.redis.MallRedisListener;
-import com.ww.mall.seckill.manager.CacheManager;
+import com.ww.mall.seckill.manager.MallCacheManager;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.redis.connection.Message;
 import org.springframework.stereotype.Component;
@@ -21,10 +21,10 @@ public class RedisCacheMsgListener extends MallRedisListener {
         String channel = new String(message.getChannel());
         String content = new String(message.getChannel());
         log.info("接收到redis渠道【{}】: 发布的内容【{}】", channel, content);
-        CacheManager.spuCache.asMap().forEach((key, value) -> log.info("key：【{}】value：【{}】", key, value));
+        MallCacheManager.spuCache.asMap().forEach((key, value) -> log.info("key：【{}】value：【{}】", key, value));
         System.out.println("========================");
-        CacheManager.spuCache.invalidate("spu" + message);
-        CacheManager.spuCache.asMap().forEach((key, value) -> log.info("key：【{}】value：【{}】", key, value));
+        MallCacheManager.spuCache.invalidate("spu" + message);
+        MallCacheManager.spuCache.asMap().forEach((key, value) -> log.info("key：【{}】value：【{}】", key, value));
     }
 
     @Override

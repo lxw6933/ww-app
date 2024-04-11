@@ -10,7 +10,7 @@ import java.time.Duration;
  * @create 2024-04-11- 11:13
  * @description:
  */
-public class CacheManager {
+public class MallCacheManager {
 
     public static final Cache<String, String> spuCache = Caffeine.newBuilder()
             .initialCapacity(100)
