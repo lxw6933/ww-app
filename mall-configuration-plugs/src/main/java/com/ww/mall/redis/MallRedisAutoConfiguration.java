@@ -7,7 +7,6 @@ import com.ww.mall.redis.aspect.MallRateLimitAspect;
 import com.ww.mall.redis.aspect.MallResubmissionAspect;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.BeansException;
-import org.springframework.beans.factory.InitializingBean;
 import org.springframework.boot.autoconfigure.cache.CacheProperties;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
