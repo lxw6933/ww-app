@@ -62,7 +62,7 @@ public class ResExceptionHandler {
     @ResponseStatus(HttpStatus.OK)
     @ExceptionHandler(ApiException.class)
     public Result<Object> handleApiException(ApiException e) {
-        log.error("服务器异常", e);
+        log.error("业务接口异常: {}", e.getMessage());
         if (StringUtils.isNotEmpty(e.getCode())) {
             return new Result<>(e.getCode(), e.getMessage());
         }
