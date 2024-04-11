@@ -6,10 +6,14 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.ww.mall.redis.aspect.MallRateLimitAspect;
 import com.ww.mall.redis.aspect.MallResubmissionAspect;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.BeansException;
+import org.springframework.beans.factory.InitializingBean;
 import org.springframework.boot.autoconfigure.cache.CacheProperties;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.cache.annotation.EnableCaching;
+import org.springframework.context.ApplicationContext;
+import org.springframework.context.ApplicationContextAware;
 import org.springframework.context.annotation.Bean;
 import org.springframework.data.redis.cache.RedisCacheConfiguration;
 import org.springframework.data.redis.connection.RedisConnectionFactory;
@@ -20,6 +24,8 @@ import org.springframework.data.redis.serializer.Jackson2JsonRedisSerializer;
 import org.springframework.data.redis.serializer.RedisSerializationContext;
 import org.springframework.data.redis.serializer.StringRedisSerializer;
 
+import java.util.Collection;
+
 /**
  * @author ww
  * @create 2023-07-15- 15:18
@@ -29,7 +35,9 @@ import org.springframework.data.redis.serializer.StringRedisSerializer;
 @EnableCaching
 @ConditionalOnClass({RedisTemplate.class})
 @EnableConfigurationProperties({CacheProperties.class})
-public class MallRedisAutoConfiguration {
+public class MallRedisAutoConfiguration implements ApplicationContextAware {
+
+    private ApplicationContext applicationContext;
 
     @Bean
     public RedisTemplate<String, Object> redisTemplate(RedisConnectionFactory redisConnectionFactory) {
@@ -82,6 +90,11 @@ public class MallRedisAutoConfiguration {
     public RedisMessageListenerContainer redisMessageListenerContainer(RedisConnectionFactory connectionFactory) {
         RedisMessageListenerContainer container = new RedisMessageListenerContainer();
         container.setConnectionFactory(connectionFactory);
+        Collection<MallRedisListener> mallRedisListeners = this.applicationContext.getBeansOfType(MallRedisListener.class).values();
+        mallRedisListeners.forEach(mallRedisListener -> {
+            log.info("register redis listener channelName:[{}]", mallRedisListener.channelName());
+            container.addMessageListener(mallRedisListener, new ChannelTopic(mallRedisListener.channelName()));
+        });
         return container;
     }
 
@@ -112,4 +125,8 @@ public class MallRedisAutoConfiguration {
         return new MallRedisUtil();
     }
 
+    @Override
+    public void setApplicationContext(ApplicationContext applicationContext) throws BeansException {
+        this.applicationContext = applicationContext;
+    }
 }

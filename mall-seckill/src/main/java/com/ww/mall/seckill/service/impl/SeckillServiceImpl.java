@@ -98,7 +98,7 @@ public class SeckillServiceImpl implements SeckillService {
     @Override
     public void msg() {
         log.info("seckill msg");
-        mallRedisUtil.publishMessage("cache", "5");
+        mallRedisUtil.publishMessage("spuCache", "5");
 //        rabbitTemplate.convertAndSend(QueueConstant.MALL_TEST_QUEUE, "1");
     }
 
