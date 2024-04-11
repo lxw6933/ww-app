@@ -15,7 +15,6 @@ import com.ww.mall.web.utils.IdUtil;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.context.annotation.Bean;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
 
@@ -99,7 +98,8 @@ public class SeckillServiceImpl implements SeckillService {
     @Override
     public void msg() {
         log.info("seckill msg");
-        rabbitTemplate.convertAndSend(QueueConstant.MALL_TEST_QUEUE, "1");
+        mallRedisUtil.publishMessage("cache", "5");
+//        rabbitTemplate.convertAndSend(QueueConstant.MALL_TEST_QUEUE, "1");
     }
 
 }

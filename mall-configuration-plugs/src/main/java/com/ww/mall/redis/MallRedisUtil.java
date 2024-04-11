@@ -2,6 +2,7 @@ package com.ww.mall.redis;
 
 import com.ww.mall.common.constant.RedisKeyConstant;
 import lombok.Data;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.geo.Distance;
 import org.springframework.data.geo.GeoResult;
@@ -16,10 +17,12 @@ import org.springframework.data.redis.core.ScanOptions;
 import org.springframework.data.redis.domain.geo.GeoReference;
 import org.springframework.data.redis.serializer.RedisSerializer;
 import org.springframework.stereotype.Component;
+import org.springframework.util.StringUtils;
 
 import java.util.*;
 import java.util.stream.Collectors;
 
+@Slf4j
 @Component
 public class MallRedisUtil {
 
@@ -208,6 +211,26 @@ public class MallRedisUtil {
         public Double x;
         // 纬度
         public Double y;
+    }
+
+    /**
+     * 发布订阅
+     *
+     * @param channel 发布渠道
+     * @param message 发布消息
+     */
+    public boolean publishMessage(String channel, String message) {
+        if (!StringUtils.hasText(channel)) {
+            return false;
+        }
+        try {
+            redisTemplate.convertAndSend(channel, message);
+            log.info("发布消息成功,channel：{},message：{}", channel, message);
+            return true;
+        } catch (Exception e) {
+            log.error("发布消息失败,channel：{},message：{}", channel, message);
+            return false;
+        }
     }
 
 }
