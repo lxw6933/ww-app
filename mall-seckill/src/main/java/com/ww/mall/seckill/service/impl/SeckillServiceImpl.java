@@ -4,6 +4,7 @@ import cn.hutool.core.date.DatePattern;
 import cn.hutool.core.date.DateUtil;
 import com.github.benmanes.caffeine.cache.Cache;
 import com.github.benmanes.caffeine.cache.Caffeine;
+import com.ww.mall.common.constant.RedisChannelConstant;
 import com.ww.mall.rabbitmq.MallPublisher;
 import com.ww.mall.rabbitmq.exchange.ExchangeConstant;
 import com.ww.mall.rabbitmq.queue.QueueConstant;
@@ -98,8 +99,12 @@ public class SeckillServiceImpl implements SeckillService {
     @Override
     public void msg() {
         log.info("seckill msg");
-        mallRedisUtil.publishMessage("spuCache", "5");
-//        rabbitTemplate.convertAndSend(QueueConstant.MALL_TEST_QUEUE, "1");
+        rabbitTemplate.convertAndSend(QueueConstant.MALL_TEST_QUEUE, "1");
+    }
+
+    @Override
+    public void cache(String msg) {
+        mallRedisUtil.publishMessage(RedisChannelConstant.MALL_SPU_CHANNEL, msg);
     }
 
 }

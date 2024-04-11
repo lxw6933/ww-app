@@ -13,4 +13,6 @@ public interface SeckillService {
 
     void msg();
 
+    void cache(String msg);
 }
+

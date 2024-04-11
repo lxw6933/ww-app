@@ -1,5 +1,6 @@
 package com.ww.mall.seckill.subscriber;
 
+import com.ww.mall.common.constant.RedisChannelConstant;
 import com.ww.mall.redis.MallRedisListener;
 import com.ww.mall.seckill.manager.CacheManager;
 import lombok.extern.slf4j.Slf4j;
@@ -28,6 +29,6 @@ public class RedisCacheMsgListener extends MallRedisListener {
 
     @Override
     protected String channelName() {
-        return "spuCache";
+        return RedisChannelConstant.MALL_SPU_CHANNEL;
     }
 }

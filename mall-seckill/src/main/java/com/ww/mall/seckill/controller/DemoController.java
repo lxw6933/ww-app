@@ -1,7 +1,5 @@
 package com.ww.mall.seckill.controller;
 
-import com.ww.mall.rabbitmq.exchange.ExchangeConstant;
-import com.ww.mall.rabbitmq.routekey.RouteKeyConstant;
 import com.ww.mall.seckill.service.SeckillService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -35,6 +33,11 @@ public class DemoController {
     @GetMapping("/msg")
     public void msg() {
         seckillService.msg();
+    }
+
+    @GetMapping("/cache")
+    public void cache(String msg) {
+        seckillService.cache(msg);
     }
 
 }
