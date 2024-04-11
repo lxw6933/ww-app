@@ -1,4 +1,4 @@
-package com.ww.mall.seckill.subscriber;
+package com.ww.mall.seckill.listener;
 
 import com.ww.mall.common.constant.RedisChannelConstant;
 import com.ww.mall.redis.MallRedisListener;
