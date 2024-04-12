@@ -14,7 +14,6 @@ import com.ww.mall.redis.MallRedisUtil;
 import com.ww.mall.seckill.service.SeckillService;
 import com.ww.mall.web.feign.ThirdServerFeignService;
 import com.ww.mall.web.utils.IdUtil;
-import com.ww.mall.web.utils.VerificationCodeUtil;
 import lombok.extern.slf4j.Slf4j;
 import org.redisson.api.RBloomFilter;
 import org.redisson.api.RedissonClient;
