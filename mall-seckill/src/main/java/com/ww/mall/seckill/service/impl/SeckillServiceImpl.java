@@ -2,6 +2,7 @@ package com.ww.mall.seckill.service.impl;
 
 import cn.hutool.core.date.DatePattern;
 import cn.hutool.core.date.DateUtil;
+import cn.hutool.core.util.RandomUtil;
 import com.github.benmanes.caffeine.cache.Cache;
 import com.github.benmanes.caffeine.cache.Caffeine;
 import com.ww.mall.common.constant.RedisChannelConstant;
@@ -13,7 +14,10 @@ import com.ww.mall.redis.MallRedisUtil;
 import com.ww.mall.seckill.service.SeckillService;
 import com.ww.mall.web.feign.ThirdServerFeignService;
 import com.ww.mall.web.utils.IdUtil;
+import com.ww.mall.web.utils.VerificationCodeUtil;
 import lombok.extern.slf4j.Slf4j;
+import org.redisson.api.RBloomFilter;
+import org.redisson.api.RedissonClient;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.redis.core.RedisTemplate;
@@ -21,6 +25,8 @@ import org.springframework.stereotype.Service;
 
 import javax.annotation.PostConstruct;
 import java.util.Date;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -52,6 +58,9 @@ public class SeckillServiceImpl implements SeckillService {
 
     @PostConstruct
     public void init() {
+        bloomFilter = redissonClient.getBloomFilter("filter:");
+        bloomFilter.tryInit(defaultInitSize, defaultErrorProbability);
+
         redisTemplate.opsForValue().set("skuStock", "1000");
         // 初始化活动数据信息
         activityCache.get("activityRedisCacheKey", key -> redisTemplate.opsForValue().get(key));
@@ -105,6 +114,32 @@ public class SeckillServiceImpl implements SeckillService {
     @Override
     public void cache(String msg) {
         mallRedisUtil.publishMessage(RedisChannelConstant.MALL_SPU_CHANNEL, msg);
+    }
+
+    @Autowired
+    private RedissonClient redissonClient;
+
+    private static final Long defaultInitSize = 100000000L;
+    private static final Double defaultErrorProbability = 0.01;
+
+    private RBloomFilter<String> bloomFilter;
+
+    @Override
+    public void boomFilter() {
+        ExecutorService executorService = Executors.newFixedThreadPool(50);
+        for (int i = 0; i < defaultInitSize / 10; i++) {
+            String code;
+            if (i % 2 == 0) {
+                code = RandomUtil.randomString(8);
+            } else {
+                code = RandomUtil.randomString(16);
+            }
+            executorService.submit(() -> {
+                System.out.println(code);
+                bloomFilter.add(code);
+            });
+        }
+
     }
 
 }
