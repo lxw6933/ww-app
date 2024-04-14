@@ -10,6 +10,7 @@ import com.ww.mall.rabbitmq.exchange.ExchangeConstant;
 import com.ww.mall.rabbitmq.queue.QueueConstant;
 import com.ww.mall.rabbitmq.routekey.RouteKeyConstant;
 import com.ww.mall.redis.MallRedisUtil;
+import com.ww.mall.seckill.entity.SecKillOrder;
 import com.ww.mall.seckill.manager.MallCacheManager;
 import com.ww.mall.seckill.service.SeckillService;
 import com.ww.mall.web.feign.ThirdServerFeignService;
@@ -18,6 +19,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.redisson.api.RedissonClient;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.mongodb.core.MongoTemplate;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
 
@@ -112,8 +114,17 @@ public class SeckillServiceImpl implements SeckillService {
     @Autowired
     private RedissonClient redissonClient;
 
+    @Autowired
+    private MongoTemplate mongoTemplate;
+
     @Override
     public void boomFilter() {
+        SecKillOrder secKillOrder = new SecKillOrder();
+        secKillOrder.setUserId(0L);
+        secKillOrder.setOrderType(0);
+        secKillOrder.setOrderNo(IdUtil.generatorIdStr());
+        secKillOrder.setCreateTime(DateUtil.format(new Date(), DatePattern.NORM_DATETIME_PATTERN));
+        mongoTemplate.save(secKillOrder);
         MallCacheManager.spuCache.get("1", res -> null);
         log.info("执行完毕filter数量");
     }
