@@ -40,5 +40,10 @@ public class DemoController {
         seckillService.cache(msg);
     }
 
+    @GetMapping("/boomFilter")
+    public void boomFilter() {
+        seckillService.boomFilter();
+    }
+
 
 }
