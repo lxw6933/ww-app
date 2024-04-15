@@ -60,6 +60,7 @@
         <!-- jdk11 use 3.x -->
         <!--<caffeine.version>3.1.8</caffeine.version>-->
         <caffeine.version>2.9.0</caffeine.version>
+        <xxlJob.version>2.4.0</xxlJob.version>
     </properties>
 
     <dependencyManagement>
@@ -160,6 +161,12 @@
                 <groupId>com.github.ben-manes.caffeine</groupId>
                 <artifactId>caffeine</artifactId>
                 <version>${caffeine.version}</version>
+            </dependency>
+            <!-- xxl-job -->
+            <dependency>
+                <groupId>com.xuxueli</groupId>
+                <artifactId>xxl-job-core</artifactId>
+                <version>${xxlJob.version}</version>
             </dependency>
         </dependencies>
     </dependencyManagement>

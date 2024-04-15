@@ -1,5 +1,5 @@
 server:
-  port: 9999  #服务端口号
+  port: 9900  #服务端口号
   servlet:
     context-path: /mall-seckill
 spring:
