@@ -45,5 +45,9 @@ public class DemoController {
         seckillService.boomFilter();
     }
 
+    @GetMapping("/liteFlow")
+    public void liteFlow() {
+        seckillService.liteFlow();
+    }
 
 }
