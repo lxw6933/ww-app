@@ -32,3 +32,19 @@ spring:
 feign:
   sentinel:
     enabled: true
+
+liteflow:
+  # nacos规则配置源,无需再配置liteflow.ruleSource路径【注：使用Nacos配置源的时候，Nacos里存的只能是xml形式的配置】
+  rule-source-ext-data-map:
+    # nacos服务地址
+    serverAddr: ${spring.cloud.nacos.discovery.server-addr}
+    # 配置规则文件dataid
+    dataId: liteFlowRule.xml
+    # nacos的group
+    group: DEFAULT_GROUP
+    # nacos的namespace
+    namespace: mall-${spring.profiles.active}
+    # nacos账号用户
+    username: ${spring.cloud.nacos.discovery.username}
+    # nacos账号密码
+    password: ${spring.cloud.nacos.discovery.password}

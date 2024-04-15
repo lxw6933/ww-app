@@ -61,6 +61,7 @@
         <!--<caffeine.version>3.1.8</caffeine.version>-->
         <caffeine.version>2.9.0</caffeine.version>
         <xxlJob.version>2.4.0</xxlJob.version>
+        <liteflow.version>2.12.0</liteflow.version>
     </properties>
 
     <dependencyManagement>
@@ -167,6 +168,18 @@
                 <groupId>com.xuxueli</groupId>
                 <artifactId>xxl-job-core</artifactId>
                 <version>${xxlJob.version}</version>
+            </dependency>
+            <!-- liteFlow -->
+            <dependency>
+                <groupId>com.yomahub</groupId>
+                <artifactId>liteflow-spring-boot-starter</artifactId>
+                <version>${liteflow.version}</version>
+            </dependency>
+            <!-- liteFlow-nacos -->
+            <dependency>
+                <groupId>com.yomahub</groupId>
+                <artifactId>liteflow-rule-nacos</artifactId>
+                <version>${liteflow.version}</version>
             </dependency>
         </dependencies>
     </dependencyManagement>

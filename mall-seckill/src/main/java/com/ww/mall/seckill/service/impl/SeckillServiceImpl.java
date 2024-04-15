@@ -12,6 +12,7 @@ import com.ww.mall.rabbitmq.routekey.RouteKeyConstant;
 import com.ww.mall.redis.MallRedisUtil;
 import com.ww.mall.seckill.entity.SecKillOrder;
 import com.ww.mall.seckill.manager.MallCacheManager;
+import com.ww.mall.seckill.node.executor.DemoFlowExecutor;
 import com.ww.mall.seckill.service.SeckillService;
 import com.ww.mall.web.feign.ThirdServerFeignService;
 import com.ww.mall.web.utils.IdUtil;
@@ -127,6 +128,14 @@ public class SeckillServiceImpl implements SeckillService {
         mongoTemplate.save(secKillOrder);
         MallCacheManager.spuCache.get("1", res -> null);
         log.info("执行完毕filter数量");
+    }
+
+    @Autowired
+    private DemoFlowExecutor demoFlowExecutor;
+
+    @Override
+    public void liteFlow() {
+        demoFlowExecutor.testConfig();
     }
 
 }

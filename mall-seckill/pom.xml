@@ -57,6 +57,16 @@
             <groupId>com.xuxueli</groupId>
             <artifactId>xxl-job-core</artifactId>
         </dependency>
+        <!-- liteFlow -->
+        <dependency>
+            <groupId>com.yomahub</groupId>
+            <artifactId>liteflow-spring-boot-starter</artifactId>
+        </dependency>
+        <!-- nacos-liteFlow -->
+        <dependency>
+            <groupId>com.yomahub</groupId>
+            <artifactId>liteflow-rule-nacos</artifactId>
+        </dependency>
         <!-- test -->
         <dependency>
             <groupId>org.springframework.boot</groupId>

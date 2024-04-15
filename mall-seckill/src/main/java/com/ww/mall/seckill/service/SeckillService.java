@@ -16,5 +16,7 @@ public interface SeckillService {
     void cache(String msg);
 
     void boomFilter();
+
+    void liteFlow();
 }
 
