@@ -13,6 +13,8 @@ public class SecKillOrder {
 
     private Long userId;
 
+    private String skuCode;
+
     private Integer orderType;
 
     private String orderNo;
