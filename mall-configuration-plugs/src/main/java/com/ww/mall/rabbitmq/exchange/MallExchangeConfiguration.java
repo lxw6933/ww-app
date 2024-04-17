@@ -1,6 +1,7 @@
 package com.ww.mall.rabbitmq.exchange;
 
 import org.springframework.amqp.core.CustomExchange;
+import org.springframework.amqp.core.FanoutExchange;
 import org.springframework.amqp.core.TopicExchange;
 import org.springframework.context.annotation.Bean;
 
@@ -13,6 +14,11 @@ import java.util.Map;
  * @create: 2023/7/21 22:59
  **/
 public class MallExchangeConfiguration {
+
+    @Bean(name = ExchangeConstant.MALL_CACHE_NOTICE_FANOUT_EXCHANGE)
+    public FanoutExchange mallCacheNoticeFanoutExchange() {
+        return new FanoutExchange(ExchangeConstant.MALL_CACHE_NOTICE_FANOUT_EXCHANGE);
+    }
 
     @Bean(name = ExchangeConstant.MALL_COMMON_DELAY_EXCHANGE)
     public CustomExchange mallCommonDelayExchange() {

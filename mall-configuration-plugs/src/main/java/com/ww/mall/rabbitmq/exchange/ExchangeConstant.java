@@ -10,6 +10,11 @@ public class ExchangeConstant {
     private ExchangeConstant() {}
 
     /**
+     * 缓存更新通知广播交换机
+     */
+    public static final String MALL_CACHE_NOTICE_FANOUT_EXCHANGE = "mall.cache.notice.fanout.exchange";
+
+    /**
      * 通用【定制】延时交换机
      * 注：时间最好不要超过40+天（long类型的最大值对应的天数）
      * rabbitmq 添加 延时插件才能生效
