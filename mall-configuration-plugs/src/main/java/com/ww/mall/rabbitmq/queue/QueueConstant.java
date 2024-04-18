@@ -9,6 +9,11 @@ public class QueueConstant {
 
     private QueueConstant() {}
 
+    /**
+     * 缓存更新消息通知队列
+     */
+    public static final String MALL_CACHE_NOTICE_QUEUE = "mall.cache.notice.queue";
+
     public static final String MALL_COUPON_TEST_QUEUE = "mall.coupon.test.queue";
 
     /**

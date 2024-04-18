@@ -19,6 +19,11 @@ public class MallQueueConfiguration {
     private static final String X_DEAD_LETTER_ROUTING_KEY = "x-dead-letter-routing-key";
     private static final String X_MESSAGE_TTL = "x-message-ttl";
 
+    @Bean(name = QueueConstant.MALL_CACHE_NOTICE_QUEUE)
+    public Queue mallCacheNoticeQueue() {
+        return new Queue(QueueConstant.MALL_CACHE_NOTICE_QUEUE);
+    }
+
     @Bean(name = QueueConstant.MALL_CREATE_ORDER_QUEUE)
     public Queue mallCreateOrderQueue() {
         return new Queue(QueueConstant.MALL_CREATE_ORDER_QUEUE);

@@ -16,6 +16,12 @@ import javax.annotation.Resource;
 public class MallBindingConfiguration {
 
     /**
+     * 广播交换机-缓存通知
+     */
+    @Resource(name = ExchangeConstant.MALL_CACHE_NOTICE_FANOUT_EXCHANGE)
+    private FanoutExchange mallCacheNoticeFanoutExchange;
+
+    /**
      * 通用定制延时队列
      */
     @Resource(name = ExchangeConstant.MALL_COMMON_DELAY_EXCHANGE)
@@ -38,6 +44,12 @@ public class MallBindingConfiguration {
      */
     @Resource(name = ExchangeConstant.MALL_CANAL_EXCHANGE)
     private TopicExchange mallCanalExchange;
+
+    /**
+     * 缓存通知队列
+     */
+    @Resource(name = QueueConstant.MALL_CACHE_NOTICE_QUEUE)
+    private Queue mallCacheNoticeQueue;
 
     /**
      * oms exchange
@@ -114,6 +126,11 @@ public class MallBindingConfiguration {
     @Bean
     public Binding productTimerUpBinding() {
         return BindingBuilder.bind(productTimerUpQueue).to(mallCommonDelayExchange).with(RouteKeyConstant.MALL_PRODUCT_TIMER_UP_KEY).noargs();
+    }
+
+    @Bean
+    public Binding cacheNoticeBinding() {
+        return BindingBuilder.bind(mallCacheNoticeQueue).to(mallCacheNoticeFanoutExchange);
     }
 
 }
