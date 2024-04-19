@@ -15,7 +15,6 @@ import org.redisson.api.RedissonClient;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.LocalVariableTableParameterNameDiscoverer;
 import org.springframework.expression.spel.standard.SpelExpressionParser;
-import org.springframework.expression.spel.support.StandardEvaluationContext;
 import org.springframework.stereotype.Component;
 
 import java.lang.reflect.Method;
@@ -28,12 +27,10 @@ import java.lang.reflect.Method;
 @Slf4j
 @Aspect
 @Component
-public class MallDistributedLockAspect {
+public class MallDistributedLockAspect extends MallAbstractAspect {
 
     @Autowired
     private RedissonClient redissonClient;
-
-    private final SpelExpressionParser parser = new SpelExpressionParser();
 
     private static final String LOCK_PREFIX = "mall:lock";
 
@@ -83,16 +80,4 @@ public class MallDistributedLockAspect {
         }
     }
 
-    static class MyStandardEvaluationContext extends StandardEvaluationContext {
-        public MyStandardEvaluationContext(String[] parameterNames, Object[] parameterValues) {
-            if (parameterNames == null) {
-                return;
-            }
-            for (int i = 0; i < parameterNames.length; i++) {
-                String paramName = parameterNames[i];
-                Object paramValue = parameterValues[i];
-                setVariable(paramName, paramValue);
-            }
-        }
-    }
 }

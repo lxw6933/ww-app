@@ -25,7 +25,7 @@ import java.lang.reflect.Method;
  */
 @Aspect
 @Component
-public class MallResubmissionAspect {
+public class MallResubmissionAspect extends MallAbstractAspect {
 
     @Autowired
     private RedisTemplate<String, String> redisTemplate;

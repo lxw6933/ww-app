@@ -15,7 +15,7 @@ import org.springframework.stereotype.Component;
  */
 @Aspect
 @Component
-public class MallRateLimitAspect {
+public class MallRateLimitAspect extends MallAbstractAspect {
 
     @Autowired
     private RedisTemplate<String, String> redisTemplate;
