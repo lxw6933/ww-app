@@ -1,5 +1,6 @@
 package com.ww.mall.redis.aspect;
 
+import com.alibaba.fastjson.JSON;
 import com.ww.mall.redis.annotation.MallRedisPublishMsg;
 import lombok.extern.slf4j.Slf4j;
 import org.aspectj.lang.ProceedingJoinPoint;
@@ -42,8 +43,9 @@ public class MallRedisPublishAspect extends MallAbstractAspect{
         Object message = parser.parseExpression(mallRedisPublishMsg.message()).getValue(elContext);
         Object proceed = joinPoint.proceed();
         if (Objects.nonNull(channelName) && Objects.nonNull(message)) {
-            log.info("发布redis订阅渠道【{}】消息【{}】", channelName, message);
-            redisTemplate.convertAndSend((String) channelName, message);
+            String messageJson = JSON.toJSONString(message);
+            log.info("发布redis订阅渠道【{}】消息【{}】", channelName, messageJson);
+            redisTemplate.convertAndSend((String) channelName, messageJson);
         }
         return proceed;
     }
