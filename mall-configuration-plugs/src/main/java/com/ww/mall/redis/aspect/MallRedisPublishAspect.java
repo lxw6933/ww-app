@@ -28,7 +28,7 @@ public class MallRedisPublishAspect extends MallAbstractAspect{
     private RedisTemplate<String, String> redisTemplate;
 
     @Around("@annotation(com.ww.mall.redis.annotation.MallRedisPublishMsg)")
-    public Object mallDistributedLockAdvise(ProceedingJoinPoint joinPoint) throws Throwable {
+    public Object mallRedisPublishAdvise(ProceedingJoinPoint joinPoint) throws Throwable {
         MethodSignature signature = (MethodSignature) joinPoint.getSignature();
         Method method = signature.getMethod();
         // 获取方法参数名
