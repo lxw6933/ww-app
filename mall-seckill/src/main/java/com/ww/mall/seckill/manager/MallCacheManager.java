@@ -1,16 +1,9 @@
 package com.ww.mall.seckill.manager;
 
-import cn.hutool.core.util.RandomUtil;
-import com.github.benmanes.caffeine.cache.Cache;
-import com.github.benmanes.caffeine.cache.Caffeine;
-import com.github.benmanes.caffeine.cache.Expiry;
 import com.github.benmanes.caffeine.cache.LoadingCache;
 import com.ww.mall.web.utils.MallCaffeineUtil;
 import lombok.extern.slf4j.Slf4j;
-import org.checkerframework.checker.index.qual.NonNegative;
-import org.checkerframework.checker.nullness.qual.NonNull;
 
-import java.time.Duration;
 import java.util.concurrent.TimeUnit;
 
 /**
