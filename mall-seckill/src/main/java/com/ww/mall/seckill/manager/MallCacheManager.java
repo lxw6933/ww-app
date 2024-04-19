@@ -4,6 +4,8 @@ import cn.hutool.core.util.RandomUtil;
 import com.github.benmanes.caffeine.cache.Cache;
 import com.github.benmanes.caffeine.cache.Caffeine;
 import com.github.benmanes.caffeine.cache.Expiry;
+import com.github.benmanes.caffeine.cache.LoadingCache;
+import com.ww.mall.web.utils.MallCaffeineUtil;
 import lombok.extern.slf4j.Slf4j;
 import org.checkerframework.checker.index.qual.NonNegative;
 import org.checkerframework.checker.nullness.qual.NonNull;
@@ -23,43 +25,6 @@ public class MallCacheManager {
         System.out.println(TimeUnit.SECONDS.name());
     }
 
-    public static final Cache<String, String> spuCache = Caffeine.newBuilder()
-            .initialCapacity(100)
-            .expireAfterWrite(Duration.ofHours(6))
-            .maximumSize(1000)
-            .build();
-
-    /**
-     * 自定义过期策略
-     *
-     */
-    static class MallDefaultExpiry<K, V> implements Expiry<K, V> {
-        private final Integer minExpirationTime;
-        private final Integer maxExpirationTime;
-        private final TimeUnit expireTimeUnit;
-
-        private MallDefaultExpiry(Integer minExpireTime, Integer maxExpireTime, TimeUnit expireTimeUnit) {
-            this.minExpirationTime = minExpireTime;
-            this.maxExpirationTime = maxExpireTime;
-            this.expireTimeUnit = expireTimeUnit;
-        }
-
-        @Override
-        public long expireAfterCreate(@NonNull K key, @NonNull V value, long currentTime) {
-            int expireTime = RandomUtil.randomInt(minExpirationTime, maxExpirationTime);
-            log.info("创建key:【{}】过期时间：【{}】【{}】", key, expireTime, expireTimeUnit.name());
-            return expireTimeUnit.toNanos(expireTime);
-        }
-
-        @Override
-        public long expireAfterUpdate(@NonNull K key, @NonNull V value, long currentTime, @NonNegative long currentDuration) {
-            return currentDuration;
-        }
-
-        @Override
-        public long expireAfterRead(@NonNull K key, @NonNull V value, long currentTime, @NonNegative long currentDuration) {
-            return currentDuration;
-        }
-    }
+    public static final LoadingCache<String, String> spuCache = MallCaffeineUtil.initAutoSyncRefreshCaffeine(500, 2000, 6, TimeUnit.HOURS, 30, TimeUnit.MINUTES, key -> key + "===");
 
 }
