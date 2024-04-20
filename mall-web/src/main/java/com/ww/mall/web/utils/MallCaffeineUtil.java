@@ -83,12 +83,16 @@ public class MallCaffeineUtil {
         return new CacheLoader<K, V>() {
             @Override
             public @Nullable V load(@NonNull K key) throws Exception {
-                return refreshFactory.apply(key);
+                V v = refreshFactory.apply(key);
+                log.info("query database data key:【{}】value:【{}】", key, v);
+                return v;
             }
 
             @Override
             public @Nullable V reload(@NonNull K key, @NonNull V oldValue) throws Exception {
-                return refreshFactory.apply(key);
+                V v = refreshFactory.apply(key);
+                log.info("reload database data key:【{}】value:【{}】", key, v);
+                return v;
             }
         };
     }
