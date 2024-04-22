@@ -9,6 +9,8 @@ import org.checkerframework.checker.nullness.qual.NonNull;
 import org.checkerframework.checker.nullness.qual.Nullable;
 
 import java.util.Objects;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.Executor;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
 
@@ -93,6 +95,21 @@ public class MallCaffeineUtil {
                 V v = refreshFactory.apply(key);
                 log.info("reload database data key:【{}】value:【{}】", key, v);
                 return v;
+            }
+        };
+    }
+
+    static private <K, V> AsyncCacheLoader<K, V> getAsyncCacheLoader(Function<K, V> refreshFactory) {
+        return new AsyncCacheLoader<K, V>() {
+
+            @Override
+            public @NonNull CompletableFuture<V> asyncLoad(@NonNull K key, @NonNull Executor executor) {
+                return CompletableFuture.supplyAsync(() -> refreshFactory.apply(key), executor);
+            }
+
+            @Override
+            public @NonNull CompletableFuture<V> asyncReload(@NonNull K key, @NonNull V oldValue, @NonNull Executor executor) {
+                return CompletableFuture.supplyAsync(() -> refreshFactory.apply(key), executor);
             }
         };
     }
