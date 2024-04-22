@@ -17,9 +17,7 @@ public abstract class MallRedisListener implements MessageListener {
 
     protected List<ChannelTopic> channelTopics() {
         List<ChannelTopic> channelTopics = new ArrayList<>();
-        this.channelName().forEach(channelName -> {
-            channelTopics.add(new ChannelTopic(channelName));
-        });
+        this.channelName().forEach(channelName -> channelTopics.add(new ChannelTopic(channelName)));
         return channelTopics;
     }
 
