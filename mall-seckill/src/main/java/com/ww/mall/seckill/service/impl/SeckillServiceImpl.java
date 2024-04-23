@@ -109,7 +109,6 @@ public class SeckillServiceImpl implements SeckillService {
     }
 
     @Override
-    @MallRedisPublishMsg(value = RedisChannelConstant.MALL_SPU_CHANNEL, message = )
     public void cache(String msg) {
         mallRedisUtil.publishMessage(RedisChannelConstant.MALL_SPU_CHANNEL, msg);
     }
