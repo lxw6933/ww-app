@@ -4,6 +4,7 @@ import com.alibaba.fastjson.JSON;
 import com.ww.mall.redis.MallRedisUtil;
 import com.ww.mall.redis.annotation.MallRedisPublishMsg;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.StringUtils;
 import org.aspectj.lang.ProceedingJoinPoint;
 import org.aspectj.lang.annotation.Around;
 import org.aspectj.lang.annotation.Aspect;
@@ -51,7 +52,10 @@ public class MallRedisPublishAspect extends MallAbstractAspect{
                 MyStandardEvaluationContext elContext = new MyStandardEvaluationContext(parameterNames, parameterValues);
                 MallRedisPublishMsg mallRedisPublishMsg = method.getAnnotation(MallRedisPublishMsg.class);
                 String channelName = mallRedisPublishMsg.value();
-                Object message = parser.parseExpression(mallRedisPublishMsg.message()).getValue(elContext);
+                Object message = "all";
+                if (StringUtils.isNotEmpty(mallRedisPublishMsg.message())) {
+                    message = parser.parseExpression(mallRedisPublishMsg.message()).getValue(elContext);
+                }
                 String messageJson;
                 if (message instanceof Collection) {
                     messageJson = JSON.toJSONString(message);
