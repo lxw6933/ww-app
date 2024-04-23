@@ -22,7 +22,22 @@ import java.util.function.Function;
 @Slf4j
 public class MallCaffeineUtil {
 
+    private final static Integer DEFAULT_SIZE = 100;
+    private final static Integer DEFAULT_EXPIRE_TIME = 30;
+    private final static TimeUnit DEFAULT_TIME_UNIT = TimeUnit.MINUTES;
+    private final static Integer DEFAULT_REFRESH_TIME = 10;
+
     private MallCaffeineUtil() {}
+
+    public static <K, V> Cache<K, V> initCaffeine() {
+        return commonCaffeine(0, DEFAULT_SIZE, DEFAULT_EXPIRE_TIME, DEFAULT_EXPIRE_TIME, DEFAULT_TIME_UNIT).build();
+    }
+
+    public static <K, V> LoadingCache<K, V> initAutoSyncRefreshCaffeine(Function<K, V> refreshFactory) {
+        return commonCaffeine(0, DEFAULT_SIZE, DEFAULT_EXPIRE_TIME, DEFAULT_EXPIRE_TIME, DEFAULT_TIME_UNIT)
+                .refreshAfterWrite(DEFAULT_REFRESH_TIME, DEFAULT_TIME_UNIT)
+                .build(getSyncCacheLoader(refreshFactory));
+    }
 
     public static <K, V> Cache<K, V> initCaffeine(Integer minSize,
                                                   Integer maxSize,
