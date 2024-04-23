@@ -10,6 +10,7 @@ import com.ww.mall.rabbitmq.exchange.ExchangeConstant;
 import com.ww.mall.rabbitmq.queue.QueueConstant;
 import com.ww.mall.rabbitmq.routekey.RouteKeyConstant;
 import com.ww.mall.redis.MallRedisUtil;
+import com.ww.mall.redis.annotation.MallRedisPublishMsg;
 import com.ww.mall.seckill.entity.SecKillOrder;
 import com.ww.mall.seckill.manager.MallCacheManager;
 import com.ww.mall.seckill.node.executor.DemoFlowExecutor;
@@ -108,6 +109,7 @@ public class SeckillServiceImpl implements SeckillService {
     }
 
     @Override
+    @MallRedisPublishMsg(value = RedisChannelConstant.MALL_SPU_CHANNEL, message = )
     public void cache(String msg) {
         mallRedisUtil.publishMessage(RedisChannelConstant.MALL_SPU_CHANNEL, msg);
     }

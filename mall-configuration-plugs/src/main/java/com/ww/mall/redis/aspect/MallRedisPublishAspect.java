@@ -1,19 +1,23 @@
 package com.ww.mall.redis.aspect;
 
 import com.alibaba.fastjson.JSON;
+import com.ww.mall.redis.MallRedisUtil;
 import com.ww.mall.redis.annotation.MallRedisPublishMsg;
 import lombok.extern.slf4j.Slf4j;
 import org.aspectj.lang.ProceedingJoinPoint;
 import org.aspectj.lang.annotation.Around;
 import org.aspectj.lang.annotation.Aspect;
 import org.aspectj.lang.reflect.MethodSignature;
-import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnBean;
 import org.springframework.core.LocalVariableTableParameterNameDiscoverer;
-import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Component;
 
+import javax.annotation.Resource;
 import java.lang.reflect.Method;
-import java.util.Objects;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ThreadPoolExecutor;
 
 /**
  * @author ww
@@ -23,30 +27,43 @@ import java.util.Objects;
 @Slf4j
 @Aspect
 @Component
+@ConditionalOnBean(MallRedisUtil.class)
 public class MallRedisPublishAspect extends MallAbstractAspect{
 
-    @Autowired
-    private RedisTemplate<String, String> redisTemplate;
+    @Resource
+    private MallRedisUtil mallRedisUtil;
+
+    @Resource
+    private ThreadPoolExecutor defaultThreadPoolExecutor;
 
     @Around("@annotation(com.ww.mall.redis.annotation.MallRedisPublishMsg)")
     public Object mallRedisPublishAdvise(ProceedingJoinPoint joinPoint) throws Throwable {
-        MethodSignature signature = (MethodSignature) joinPoint.getSignature();
-        Method method = signature.getMethod();
-        // 获取方法参数名
-        String[] parameterNames = new LocalVariableTableParameterNameDiscoverer().getParameterNames(method);
-        // 获取方法参数
-        Object[] parameterValues = joinPoint.getArgs();
-        // 构建SpEL上下文，并设置变量值
-        MyStandardEvaluationContext elContext = new MyStandardEvaluationContext(parameterNames, parameterValues);
-        MallRedisPublishMsg mallRedisPublishMsg = method.getAnnotation(MallRedisPublishMsg.class);
-        Object channelName = parser.parseExpression(mallRedisPublishMsg.value()).getValue(elContext);
-        Object message = parser.parseExpression(mallRedisPublishMsg.message()).getValue(elContext);
         Object proceed = joinPoint.proceed();
-        if (Objects.nonNull(channelName) && Objects.nonNull(message)) {
-            String messageJson = JSON.toJSONString(message);
-            log.info("发布redis订阅渠道【{}】消息【{}】", channelName, messageJson);
-            redisTemplate.convertAndSend((String) channelName, messageJson);
-        }
+        CompletableFuture.runAsync(() -> {
+            try {
+                MethodSignature signature = (MethodSignature) joinPoint.getSignature();
+                Method method = signature.getMethod();
+                // 获取方法参数名
+                String[] parameterNames = new LocalVariableTableParameterNameDiscoverer().getParameterNames(method);
+                // 获取方法参数
+                Object[] parameterValues = joinPoint.getArgs();
+                // 构建SpEL上下文，并设置变量值
+                MyStandardEvaluationContext elContext = new MyStandardEvaluationContext(parameterNames, parameterValues);
+                MallRedisPublishMsg mallRedisPublishMsg = method.getAnnotation(MallRedisPublishMsg.class);
+                String channelName = mallRedisPublishMsg.value();
+                Object message = parser.parseExpression(mallRedisPublishMsg.message()).getValue(elContext);
+                String messageJson;
+                if (message instanceof Collection) {
+                    messageJson = JSON.toJSONString(message);
+                } else {
+                    messageJson = JSON.toJSONString(Collections.singleton(message));
+                }
+                log.info("发布redis订阅渠道【{}】消息【{}】", channelName, messageJson);
+                mallRedisUtil.publishMessage(channelName, messageJson);
+            } catch (Exception e) {
+                log.error("发布redis订阅渠道异常：{}", e.getMessage());
+            }
+        }, defaultThreadPoolExecutor);
         return proceed;
     }
 
