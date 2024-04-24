@@ -1,6 +1,6 @@
 package com.ww.mall.minio;
 
-import com.ww.mall.minio.s3.MallMinioClient;
+import com.ww.mall.minio.s3.MallMinioS3Client;
 import io.minio.MinioAsyncClient;
 import io.minio.MinioClient;
 import lombok.extern.slf4j.Slf4j;
@@ -14,12 +14,12 @@ import org.springframework.context.annotation.Configuration;
 public class MinioConfiguration {
 
     @Bean
-    public MallMinioClient mallMinioClient(MinioProperties minioProperties) {
+    public MallMinioS3Client mallMinioS3Client(MinioProperties minioProperties) {
         MinioAsyncClient minioAsyncClient = MinioAsyncClient.builder()
                 .endpoint(minioProperties.getEndpoint())
                 .credentials(minioProperties.getAccessKey(), minioProperties.getSecretKey())
                 .build();
-        return new MallMinioClient(minioAsyncClient);
+        return new MallMinioS3Client(minioAsyncClient);
     }
 
     @Bean

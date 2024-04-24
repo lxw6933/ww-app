@@ -12,9 +12,9 @@ import io.minio.messages.Part;
  * @create 2024-04-24- 13:31
  * @description:
  */
-public class MallMinioClient extends MinioAsyncClient {
+public class MallMinioS3Client extends MinioAsyncClient {
 
-    public MallMinioClient(MinioAsyncClient client) {
+    public MallMinioS3Client(MinioAsyncClient client) {
         super(client);
     }
 
