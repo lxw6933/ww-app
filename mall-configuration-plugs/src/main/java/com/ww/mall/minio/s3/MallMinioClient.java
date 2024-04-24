@@ -14,7 +14,7 @@ import io.minio.messages.Part;
  */
 public class MallMinioClient extends MinioAsyncClient {
 
-    protected MallMinioClient(MinioAsyncClient client) {
+    public MallMinioClient(MinioAsyncClient client) {
         super(client);
     }
 

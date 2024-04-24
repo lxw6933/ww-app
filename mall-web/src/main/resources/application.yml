@@ -1,17 +1,24 @@
-# 全局日期格式处理
 spring:
+  servlet:
+    multipart:
+      # 配置单个文件大小限制
+      max-file-size: 10MB
+      # 配置单次请求文件大小限制
+      max-request-size: 20MB
   boot:
     admin:
       client:
+        # 配置服务监控
         url: http://localhost:9999
   cloud:
     nacos:
       discovery:
+        # 配置所有服务的元数据信息
         metadata:
           version: 1.0
           nacos.weight: 1
   jackson:
-    # 全局json时间格式化
+    # 全局日期格式处理jackson时间格式化
     date-format: yyyy-MM-dd HH:mm:ss
     time-zone: GMT+8
   mvc:
@@ -31,6 +38,12 @@ feign:
       default:
         connectTimeout: 3000
         readTimeout: 5000
+
+# minio
+minio:
+  endpoint: http://127.0.0.1:9000
+  accessKey: EZpgdNV3xJ0SLu3PqrAS
+  secretKey: GH27GRD6c2Zfg4vmZPKE8FFZBuhNB7xMFPOCHu4Y
 
   # 流控规则持久化
 #  cloud:
