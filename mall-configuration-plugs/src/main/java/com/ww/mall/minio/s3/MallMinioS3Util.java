@@ -26,7 +26,7 @@ import java.util.stream.Collectors;
  */
 @Slf4j
 @Component
-public class MallMinioUtil {
+public class MallMinioS3Util {
 
     private final static Integer MAX_CHUNK_NUMBER = 1000;
 
