@@ -26,6 +26,7 @@ import java.nio.charset.StandardCharsets;
 import java.text.DecimalFormat;
 import java.util.*;
 import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
 
 @Slf4j
 @Component
@@ -82,14 +83,20 @@ public class MallMinioUtil {
      *
      * @param bucketName bucketName
      * @param recursive 是否递归查询
-     * @return iterable
+     * @return list
      */
-    public Iterable<Result<Item>> listBucketAllFile(String bucketName, boolean recursive) {
+    public List<Item> listBucketAllFile(String bucketName, boolean recursive) {
         try {
-            return minioClient.listObjects(ListObjectsArgs.builder()
+            Iterable<Result<Item>> results = minioClient.listObjects(ListObjectsArgs.builder()
                     .bucket(bucketName)
                     .recursive(recursive)
                     .build());
+            Iterator<Result<Item>> iterator = results.iterator();
+            List<Item> items = new ArrayList<>();
+            while(iterator.hasNext()) {
+                items.add(iterator.next().get());
+            }
+            return items;
         } catch (Exception e) {
             log.error("查询桶内所有文件异常：{}", e.getMessage());
             return null;
@@ -105,13 +112,8 @@ public class MallMinioUtil {
     public Boolean removeBucket(String bucketName) {
         try {
             // 删除桶内文件
-            Iterable<Result<Item>> bucketFiles = listBucketAllFile(bucketName, true);
-            Iterator<Result<Item>> iterator = bucketFiles.iterator();
-            List<String> fileNames = new ArrayList<>();
-            while (iterator.hasNext()) {
-                Item item = iterator.next().get();
-                fileNames.add(item.objectName());
-            }
+            List<Item> bucketFiles = listBucketAllFile(bucketName, true);
+            List<String> fileNames = bucketFiles.stream().map(Item::objectName).collect(Collectors.toList());
             if (CollectionUtils.isNotEmpty(fileNames)) {
                 fileNames.forEach(fileName -> removeFile(bucketName, fileName));
             }
@@ -196,20 +198,8 @@ public class MallMinioUtil {
      */
     public boolean mergeFile(String originBucketName, String targetBucketName, String fileName) {
         // 获取桶内所有文件
-        Iterable<Result<Item>> results = listBucketAllFile(originBucketName, true);
-        if (results == null) {
-            throw new ApiException(originBucketName + "bucket not have file");
-        }
-        List<String> fileNameList = new ArrayList<>();
-        try {
-            for (Result<Item> result : results) {
-                Item item = result.get();
-                fileNameList.add(item.objectName());
-            }
-        } catch (Exception e) {
-            log.error("get bucket file exception: {}", e.getMessage());
-            return false;
-        }
+        List<Item> bucketFiles = listBucketAllFile(targetBucketName, true);
+        List<String> fileNameList = bucketFiles.stream().map(Item::objectName).collect(Collectors.toList());
         List<ComposeSource> composeSourceList = new ArrayList<>(fileNameList.size());
         // 对文件名集合进行升序排序
         Collections.sort(fileNameList);
