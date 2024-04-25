@@ -7,7 +7,7 @@ import org.springframework.context.annotation.Configuration;
 @Data
 @Configuration
 @ConfigurationProperties(prefix = "minio")
-public class MinioProperties {
+public class MallMinioProperties {
 
     private String endpoint;
 

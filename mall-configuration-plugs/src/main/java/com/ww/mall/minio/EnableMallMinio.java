@@ -9,6 +9,6 @@ import java.lang.annotation.Target;
 
 @Target({ElementType.TYPE})
 @Retention(RetentionPolicy.RUNTIME)
-@Import({MinioConfiguration.class})
+@Import({MinioAutoConfiguration.class})
 public @interface EnableMallMinio {
 }

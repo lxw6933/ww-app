@@ -29,11 +29,13 @@ import java.util.concurrent.TimeUnit;
 
 @Slf4j
 @Component
-@ConditionalOnBean(MinioClient.class)
 public class MallMinioUtil {
 
-    @Resource
-    private MinioClient minioClient;
+    private final MinioClient minioClient;
+
+    public MallMinioUtil(MinioClient minioClient) {
+        this.minioClient = minioClient;
+    }
 
     /**
      * 创建bucket

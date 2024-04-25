@@ -1,5 +1,6 @@
 package com.ww.mall.seckill;
 
+import com.ww.mall.minio.EnableMallMinio;
 import com.ww.mall.mongodb.EnableMallMongodb;
 import com.ww.mall.rabbitmq.EnableMallRabbitmq;
 import com.ww.mall.redis.EnableMallRedis;
@@ -9,6 +10,7 @@ import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.cloud.client.discovery.EnableDiscoveryClient;
 
+@EnableMallMinio
 @EnableMallXxlJob
 @EnableMallRedis
 @EnableMallRedisson

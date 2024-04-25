@@ -67,6 +67,11 @@
             <groupId>com.yomahub</groupId>
             <artifactId>liteflow-rule-nacos</artifactId>
         </dependency>
+        <!-- minio -->
+        <dependency>
+            <groupId>io.minio</groupId>
+            <artifactId>minio</artifactId>
+        </dependency>
         <!-- test -->
         <dependency>
             <groupId>org.springframework.boot</groupId>
