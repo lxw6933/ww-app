@@ -27,11 +27,11 @@ import java.util.stream.Collectors;
 
 @Slf4j
 @Component
-public class MallMinioUtil {
+public class MallMinioTemplate {
 
     private final MinioClient minioClient;
 
-    public MallMinioUtil(MinioClient minioClient) {
+    public MallMinioTemplate(MinioClient minioClient) {
         this.minioClient = minioClient;
     }
 

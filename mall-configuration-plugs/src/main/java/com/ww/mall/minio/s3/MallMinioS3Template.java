@@ -3,7 +3,6 @@ package com.ww.mall.minio.s3;
 import cn.hutool.core.text.CharSequenceUtil;
 import com.google.common.collect.HashMultimap;
 import com.ww.mall.common.exception.ApiException;
-import com.ww.mall.minio.java.MallMinioUtil;
 import io.minio.GetPresignedObjectUrlArgs;
 import io.minio.ListPartsResponse;
 import io.minio.http.Method;
@@ -12,7 +11,6 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.stereotype.Component;
 
-import javax.annotation.Resource;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -27,13 +25,13 @@ import java.util.stream.Collectors;
  */
 @Slf4j
 @Component
-public class MallMinioS3Util {
+public class MallMinioS3Template {
 
     private final static Integer MAX_CHUNK_NUMBER = 1000;
 
     private final MallMinioS3Client mallMinioS3Client;
 
-    public MallMinioS3Util(MallMinioS3Client mallMinioS3Client) {
+    public MallMinioS3Template(MallMinioS3Client mallMinioS3Client) {
         this.mallMinioS3Client = mallMinioS3Client;
     }
 

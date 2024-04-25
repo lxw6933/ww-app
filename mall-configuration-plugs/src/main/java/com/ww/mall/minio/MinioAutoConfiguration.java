@@ -1,8 +1,8 @@
 package com.ww.mall.minio;
 
-import com.ww.mall.minio.java.MallMinioUtil;
+import com.ww.mall.minio.java.MallMinioTemplate;
 import com.ww.mall.minio.s3.MallMinioS3Client;
-import com.ww.mall.minio.s3.MallMinioS3Util;
+import com.ww.mall.minio.s3.MallMinioS3Template;
 import io.minio.MinioAsyncClient;
 import io.minio.MinioClient;
 import lombok.extern.slf4j.Slf4j;
@@ -16,11 +16,12 @@ import org.springframework.context.annotation.Configuration;
 public class MinioAutoConfiguration {
 
     @Bean
-    public MinioAsyncClient minioAsyncClient(MallMinioProperties mallMinioProperties) {
-        return MinioAsyncClient.builder()
+    public MallMinioS3Client mallMinioS3Client(MallMinioProperties mallMinioProperties) {
+        MinioAsyncClient minioAsyncClient = MinioAsyncClient.builder()
                 .endpoint(mallMinioProperties.getEndpoint())
                 .credentials(mallMinioProperties.getAccessKey(), mallMinioProperties.getSecretKey())
                 .build();
+        return new MallMinioS3Client(minioAsyncClient);
     }
 
     @Bean
@@ -32,13 +33,13 @@ public class MinioAutoConfiguration {
     }
 
     @Bean
-    public MallMinioUtil mallMinioUtil(MinioClient minioClient) {
-        return new MallMinioUtil(minioClient);
+    public MallMinioTemplate mallMinioTemplate(MinioClient minioClient) {
+        return new MallMinioTemplate(minioClient);
     }
 
     @Bean
-    public MallMinioS3Util mallMinioS3Util(MinioAsyncClient minioAsyncClient) {
-        return new MallMinioS3Util(new MallMinioS3Client(minioAsyncClient));
+    public MallMinioS3Template mallMinioS3Template(MallMinioS3Client mallMinioS3Client) {
+        return new MallMinioS3Template(mallMinioS3Client);
     }
 
 }
