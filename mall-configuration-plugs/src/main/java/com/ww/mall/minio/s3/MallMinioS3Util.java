@@ -3,6 +3,7 @@ package com.ww.mall.minio.s3;
 import cn.hutool.core.text.CharSequenceUtil;
 import com.google.common.collect.HashMultimap;
 import com.ww.mall.common.exception.ApiException;
+import com.ww.mall.minio.java.MallMinioUtil;
 import io.minio.GetPresignedObjectUrlArgs;
 import io.minio.ListPartsResponse;
 import io.minio.http.Method;
@@ -30,8 +31,11 @@ public class MallMinioS3Util {
 
     private final static Integer MAX_CHUNK_NUMBER = 1000;
 
-    @Resource
-    private MallMinioS3Client mallMinioS3Client;
+    private final MallMinioS3Client mallMinioS3Client;
+
+    public MallMinioS3Util(MallMinioS3Client mallMinioS3Client) {
+        this.mallMinioS3Client = mallMinioS3Client;
+    }
 
     public Map<String, Object> chunkFileUpload(String uploadId,
                                                String md5,
