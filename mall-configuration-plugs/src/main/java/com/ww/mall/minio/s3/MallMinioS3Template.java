@@ -3,13 +3,13 @@ package com.ww.mall.minio.s3;
 import cn.hutool.core.text.CharSequenceUtil;
 import com.google.common.collect.HashMultimap;
 import com.ww.mall.common.exception.ApiException;
+import com.ww.mall.minio.MallMinioS3Client;
 import io.minio.GetPresignedObjectUrlArgs;
 import io.minio.ListPartsResponse;
 import io.minio.http.Method;
 import io.minio.messages.Part;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
-import org.springframework.stereotype.Component;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -24,7 +24,6 @@ import java.util.stream.Collectors;
  * @description:
  */
 @Slf4j
-@Component
 public class MallMinioS3Template {
 
     private final static Integer MAX_CHUNK_NUMBER = 1000;
@@ -51,7 +50,7 @@ public class MallMinioS3Template {
         // 获取分片上传的uploadId
         if (StringUtils.isEmpty(uploadId)) {
             try {
-                uploadId = mallMinioS3Client.chunkFileUpload(md5, null, chunkFileName, headers, null);
+                uploadId = mallMinioS3Client.createMultipartUpload(md5, null, chunkFileName, headers, null).result().uploadId();
             } catch (Exception e) {
                 log.error("【初始化】分片上传异常:{}", e.getMessage());
                 throw new ApiException("【初始化】分片上传异常");
@@ -100,7 +99,7 @@ public class MallMinioS3Template {
                 partNumber++;
             }
             // 合并分片文件
-            mallMinioS3Client.mergeChunkFile(chunkBucketName, null, chunkFileName, uploadId, parts, null, null);
+            mallMinioS3Client.mergeMultipartUploadFile(chunkBucketName, null, chunkFileName, uploadId, parts, null, null);
         } catch (Exception e) {
             log.error("分片文件【{}】合并异常:{}", uploadId, e.getMessage());
             throw new ApiException("分片文件合并异常");
