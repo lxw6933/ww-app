@@ -8,6 +8,7 @@ import io.minio.*;
 import io.minio.http.Method;
 import io.minio.messages.Item;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.collections4.CollectionUtils;
 import org.apache.tomcat.util.http.fileupload.IOUtils;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnBean;
 import org.springframework.http.HttpHeaders;
@@ -101,6 +102,18 @@ public class MallMinioUtil {
      */
     public Boolean removeBucket(String bucketName) {
         try {
+            // 删除桶内文件
+            Iterable<Result<Item>> bucketFiles = listBucketAllFile(bucketName, true);
+            Iterator<Result<Item>> iterator = bucketFiles.iterator();
+            List<String> fileNames = new ArrayList<>();
+            while (iterator.hasNext()) {
+                Item item = iterator.next().get();
+                fileNames.add(item.objectName());
+            }
+            if (CollectionUtils.isNotEmpty(fileNames)) {
+                fileNames.forEach(fileName -> removeFile(bucketName, fileName));
+            }
+            // 先删除文件，再删除bucket
             minioClient.removeBucket(RemoveBucketArgs.builder()
                     .bucket(bucketName)
                     .build());
