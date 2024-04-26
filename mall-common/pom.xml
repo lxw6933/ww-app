@@ -48,10 +48,11 @@
             <artifactId>bcprov-jdk15to18</artifactId>
             <version>1.75</version>
         </dependency>
-        <!-- JSON工具类 -->
+        <!-- jackson -->
         <dependency>
             <groupId>com.fasterxml.jackson.core</groupId>
             <artifactId>jackson-databind</artifactId>
+            <version>${jackson.version}</version>
         </dependency>
     </dependencies>
 </project>
