@@ -9,7 +9,7 @@ import com.ww.mall.rabbitmq.MallPublisher;
 import com.ww.mall.rabbitmq.exchange.ExchangeConstant;
 import com.ww.mall.rabbitmq.queue.QueueConstant;
 import com.ww.mall.rabbitmq.routekey.RouteKeyConstant;
-import com.ww.mall.redis.MallRedisUtil;
+import com.ww.mall.redis.MallRedisTemplate;
 import com.ww.mall.seckill.entity.SecKillOrder;
 import com.ww.mall.seckill.manager.MallCacheManager;
 import com.ww.mall.seckill.node.executor.DemoFlowExecutor;
@@ -45,7 +45,7 @@ public class SeckillServiceImpl implements SeckillService {
     private ThreadPoolExecutor defaultThreadPoolExecutor;
 
     @Autowired
-    private MallRedisUtil mallRedisUtil;
+    private MallRedisTemplate mallRedisTemplate;
 
     @Autowired
     private MallPublisher mallPublisher;
@@ -73,7 +73,7 @@ public class SeckillServiceImpl implements SeckillService {
 //        MallClientUser clientUser = AuthorizationContext.getClientUser();
         // 本地缓存存储活动信息，校验活动信息
         // 本地缓存商品信息，校验商品信息
-        if (mallRedisUtil.decrementStock("skuStock", 1) >= 0) {
+        if (mallRedisTemplate.decrementStock("skuStock", 1) >= 0) {
             String orderDate = DateUtil.format(new Date(), DatePattern.NORM_DATETIME_PATTERN);
             String orderNo = IdUtil.generatorIdStr();
             int totalOrderNum = num.incrementAndGet();
@@ -109,7 +109,7 @@ public class SeckillServiceImpl implements SeckillService {
 
     @Override
     public void cache(String msg) {
-        mallRedisUtil.publishMessage(RedisChannelConstant.MALL_SPU_CHANNEL, msg);
+        mallRedisTemplate.publishMessage(RedisChannelConstant.MALL_SPU_CHANNEL, msg);
     }
 
     @Autowired

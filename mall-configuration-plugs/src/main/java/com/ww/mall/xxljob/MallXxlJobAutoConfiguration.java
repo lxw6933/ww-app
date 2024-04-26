@@ -8,7 +8,7 @@ import org.springframework.context.annotation.Configuration;
 
 @Slf4j
 @Configuration
-public class XxlJobConfiguration {
+public class MallXxlJobAutoConfiguration {
 
     @Value("${xxl.job.admin.address}")
     private String adminAddress;

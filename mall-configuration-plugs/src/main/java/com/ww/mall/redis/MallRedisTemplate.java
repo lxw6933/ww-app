@@ -24,7 +24,7 @@ import java.util.stream.Collectors;
 
 @Slf4j
 @Component
-public class MallRedisUtil {
+public class MallRedisTemplate {
 
     /**
      * 默认批处理命令数量

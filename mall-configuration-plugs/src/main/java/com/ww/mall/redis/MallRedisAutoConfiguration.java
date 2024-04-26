@@ -119,8 +119,8 @@ public class MallRedisAutoConfiguration implements ApplicationContextAware {
     }
 
     @Bean
-    public MallRedisUtil mallRedisUtil() {
-        return new MallRedisUtil();
+    public MallRedisTemplate mallRedisTemplate() {
+        return new MallRedisTemplate();
     }
 
     @Override

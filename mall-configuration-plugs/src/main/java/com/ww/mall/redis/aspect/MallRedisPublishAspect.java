@@ -1,7 +1,7 @@
 package com.ww.mall.redis.aspect;
 
 import com.alibaba.fastjson.JSON;
-import com.ww.mall.redis.MallRedisUtil;
+import com.ww.mall.redis.MallRedisTemplate;
 import com.ww.mall.redis.annotation.MallRedisPublishMsg;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
@@ -28,11 +28,11 @@ import java.util.concurrent.ThreadPoolExecutor;
 @Slf4j
 @Aspect
 @Component
-@ConditionalOnBean(MallRedisUtil.class)
+@ConditionalOnBean(MallRedisTemplate.class)
 public class MallRedisPublishAspect extends MallAbstractAspect{
 
     @Resource
-    private MallRedisUtil mallRedisUtil;
+    private MallRedisTemplate mallRedisTemplate;
 
     @Resource
     private ThreadPoolExecutor defaultThreadPoolExecutor;
@@ -63,7 +63,7 @@ public class MallRedisPublishAspect extends MallAbstractAspect{
                     messageJson = JSON.toJSONString(Collections.singleton(message));
                 }
                 log.info("发布redis订阅渠道【{}】消息【{}】", channelName, messageJson);
-                mallRedisUtil.publishMessage(channelName, messageJson);
+                mallRedisTemplate.publishMessage(channelName, messageJson);
             } catch (Exception e) {
                 log.error("发布redis订阅渠道异常：{}", e.getMessage());
             }
