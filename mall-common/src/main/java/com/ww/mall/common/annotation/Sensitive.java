@@ -15,10 +15,10 @@ import java.lang.annotation.Target;
  * @create 2024-04-26- 10:46
  * @description:
  */
-@Retention(RetentionPolicy.RUNTIME)
-@Target(ElementType.FIELD)
 @JacksonAnnotationsInside
 @JsonSerialize(using = SensitiveJsonSerializer.class)
+@Target(ElementType.FIELD)
+@Retention(RetentionPolicy.RUNTIME)
 public @interface Sensitive {
 
     SensitiveDataType sensitiveDataType();
