@@ -4,7 +4,7 @@ import cn.hutool.core.date.DatePattern;
 import cn.hutool.core.date.DateUtil;
 import com.rabbitmq.client.Channel;
 import com.ww.mall.common.constant.Constant;
-import com.ww.mall.enums.MqMsgStatus;
+import com.ww.mall.rabbitmq.enums.MqMsgStatus;
 import com.ww.mall.rabbitmq.MqMsgLogEntity;
 import com.ww.mall.web.utils.SpringContextManager;
 import lombok.extern.slf4j.Slf4j;

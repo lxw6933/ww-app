@@ -1,7 +1,7 @@
 package com.ww.mall.rabbitmq;
 
 import com.alibaba.fastjson.JSON;
-import com.ww.mall.enums.MqMsgStatus;
+import com.ww.mall.rabbitmq.enums.MqMsgStatus;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import org.apache.commons.lang3.time.DateUtils;

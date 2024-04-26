@@ -1,4 +1,4 @@
-package com.ww.mall.enums;
+package com.ww.mall.rabbitmq.enums;
 
 import java.util.StringJoiner;
 

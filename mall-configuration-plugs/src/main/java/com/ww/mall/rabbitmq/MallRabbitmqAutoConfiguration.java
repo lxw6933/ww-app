@@ -4,7 +4,7 @@ import cn.hutool.core.date.DatePattern;
 import cn.hutool.core.date.DateUtil;
 import com.alibaba.fastjson.JSON;
 import com.ww.mall.common.constant.Constant;
-import com.ww.mall.enums.MqMsgStatus;
+import com.ww.mall.rabbitmq.enums.MqMsgStatus;
 import com.ww.mall.mongodb.EnableMallMongodb;
 import lombok.extern.slf4j.Slf4j;
 import org.slf4j.MDC;
@@ -59,7 +59,7 @@ public class MallRabbitmqAutoConfiguration {
      * 自定义 RabbitTemplate
      */
     @Bean
-    public RabbitTemplate rabbitTemplate(ConnectionFactory connectionFactory, RabbitProperties rabbitProperties) {
+    public RabbitTemplate rabbitTemplate(ConnectionFactory connectionFactory) {
         RabbitTemplate rabbitTemplate = new RabbitTemplate(connectionFactory);
         // 设置对象消息转换器
         rabbitTemplate.setMessageConverter(new Jackson2JsonMessageConverter());
