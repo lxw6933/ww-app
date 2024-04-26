@@ -1,11 +1,16 @@
-package com.ww.mall.minio.java;
+package com.ww.mall.minio;
 
 import cn.hutool.core.date.DatePattern;
 import cn.hutool.core.date.DateUtil;
+import cn.hutool.core.text.CharSequenceUtil;
 import cn.hutool.core.util.StrUtil;
-import com.google.common.collect.Multimap;
+import com.alibaba.fastjson.JSON;
+import com.google.common.collect.HashMultimap;
 import com.ww.mall.common.exception.ApiException;
 import com.ww.mall.minio.MallMinioS3Client;
+import com.ww.mall.minio.bo.ChunkFileMergeReqBO;
+import com.ww.mall.minio.bo.ChunkFileUploadReqBO;
+import com.ww.mall.minio.vo.CreateMultipartUploadResultVO;
 import io.minio.*;
 import io.minio.http.Method;
 import io.minio.messages.Item;
@@ -13,6 +18,7 @@ import io.minio.messages.ListPartsResult;
 import io.minio.messages.Part;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.CollectionUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.tomcat.util.http.fileupload.IOUtils;
 import org.springframework.http.*;
 import org.springframework.web.multipart.MultipartFile;
@@ -30,6 +36,8 @@ import java.util.stream.Collectors;
 
 @Slf4j
 public class MallMinioTemplate {
+
+    private final static Integer MAX_CHUNK_NUMBER = 1000;
 
     private final MinioClient minioClient;
 
@@ -136,9 +144,10 @@ public class MallMinioTemplate {
      * @param objectName     文件名称
      * @param expiryTime     过期时间
      * @param expiryTimeUnit 过期时间单位
+     * @param queryParams    查询参数
      * @return url
      */
-    public String getExpiryFileUrl(String bucketName, String objectName, int expiryTime, TimeUnit expiryTimeUnit) {
+    public String getExpiryFileUrl(String bucketName, String objectName, Map<String, String> queryParams, int expiryTime, TimeUnit expiryTimeUnit) {
         try {
             return minioClient.getPresignedObjectUrl(
                     GetPresignedObjectUrlArgs.builder()
@@ -146,6 +155,7 @@ public class MallMinioTemplate {
                             .bucket(bucketName)
                             .object(objectName)
                             .expiry(expiryTime, expiryTimeUnit)
+                            .extraQueryParams(queryParams)
                             .build());
         } catch (Exception e) {
             log.error("获取文件expiry url异常：{}", e.getMessage());
@@ -153,13 +163,14 @@ public class MallMinioTemplate {
         }
     }
 
-    public String getFileUrl(String bucketName, String objectName) {
+    public String getFileUrl(String bucketName, String objectName, Map<String, String> queryParams) {
         try {
             return minioClient.getPresignedObjectUrl(
                     GetPresignedObjectUrlArgs.builder()
                             .method(Method.GET)
                             .bucket(bucketName)
                             .object(objectName)
+                            .extraQueryParams(queryParams)
                             .build());
         } catch (Exception e) {
             log.error("获取文件url异常：{}", e.getMessage());
@@ -354,65 +365,71 @@ public class MallMinioTemplate {
         return fileSizeStr;
     }
 
-
-    /**
-     * 上传分片上传请求，返回uploadId
-     *
-     * @param bucketName       存储桶
-     * @param region           区域
-     * @param objectName       对象名
-     * @param headers          消息头
-     * @param extraQueryParams 额外查询参数
-     */
-    public String createMultipartUpload(String bucketName, String region, String objectName, Multimap<String, String> headers, Multimap<String, String> extraQueryParams) {
-        try {
-            return mallMinioS3Client.createMultipartUpload(bucketName, region, objectName, headers, extraQueryParams).result().uploadId();
-        } catch (Exception e) {
-            log.error("创建分片上传文件请求异常:{}", e.getMessage());
-            throw new ApiException("创建分片上传文件请求异常");
+    public CreateMultipartUploadResultVO chunkFileUpload(ChunkFileUploadReqBO reqBO) {
+        log.info("开始分片上传：【{}】", JSON.toJSONString(reqBO));
+        // 1. 收集分片信息
+        Map<String, Object> resMap = new HashMap<>();
+        if (CharSequenceUtil.isEmpty(reqBO.getContentType())) {
+            // 使用默认流会导致无法预览
+            reqBO.setContentType("application/octet-stream");
         }
+        HashMultimap<String, String> headers = HashMultimap.create();
+        headers.put("Content-Type", reqBO.getContentType());
+        // 2. 获取分片上传的uploadId
+        if (StringUtils.isEmpty(reqBO.getUploadId())) {
+            try {
+                String uploadId = mallMinioS3Client.createMultipartUpload(reqBO.getFileMd5(), null, reqBO.getFileName(), headers, null).result().uploadId();
+                reqBO.setUploadId(uploadId);
+            } catch (Exception e) {
+                log.error("【初始化】分片上传异常:{}", e.getMessage());
+                throw new ApiException("【初始化】分片上传异常");
+            }
+        }
+        // 3. 请求Minio 服务，获取每个分块带签名的上传URL
+        Map<String, String> chunkFileParams = new HashMap<>();
+        chunkFileParams.put("uploadId", reqBO.getUploadId());
+        // 4. 循环分块数 从1开始,MinIO 存储服务定义分片索引却是从1开始的
+        for (int i = 1; i <= reqBO.getChunkSize(); i++) {
+            chunkFileParams.put("partNumber", String.valueOf(i));
+            // 获取URL,主要这里前端上传的时候，要传递二进制流，而不是file
+            String uploadUrl = this.getFileUrl(reqBO.getFileMd5(), reqBO.getFileName(), chunkFileParams);
+            resMap.put("chunk_" + (i - 1), uploadUrl);
+        }
+        log.info("bucket【{}】uploadId【{}】分片上传成功", reqBO.getFileMd5(), reqBO.getUploadId());
+        CreateMultipartUploadResultVO createMultipartUploadResultVO = new CreateMultipartUploadResultVO();
+        createMultipartUploadResultVO.setUploadId(reqBO.getUploadId());
+        createMultipartUploadResultVO.setChunkFileList(resMap);
+        return createMultipartUploadResultVO;
     }
 
-    /**
-     * 完成分片上传，执行合并文件
-     *
-     * @param bucketName       存储桶
-     * @param region           区域
-     * @param objectName       对象名
-     * @param uploadId         上传ID
-     * @param parts            分片集合
-     * @param extraHeaders     额外消息头
-     * @param extraQueryParams 额外查询参数
-     */
-    private ObjectWriteResponse mergeMultipartUploadFile(String bucketName, String region, String objectName, String uploadId, Part[] parts, Multimap<String, String> extraHeaders, Multimap<String, String> extraQueryParams) {
+    public boolean chunkFileMerge(ChunkFileMergeReqBO reqBO) {
+        log.info("开始合并分片文件:【{}】", reqBO);
+        // 获取所有分片文件
+        ListPartsResult partsResult;
         try {
-            return mallMinioS3Client.mergeMultipartUploadFile(bucketName, region, objectName, uploadId, parts, extraHeaders, extraQueryParams);
-        } catch (Exception e) {
-            log.error("合并分片文件异常:{}", e.getMessage());
-            throw new ApiException("合并分片文件异常");
-        }
-    }
-
-    /**
-     * 查询当前上传后的分片信息
-     *
-     * @param bucketName       桶名称
-     * @param region           区域
-     * @param objectName       文件名称
-     * @param maxParts         分片数量
-     * @param partNumberMarker 分片起始值
-     * @param uploadId         上传ID
-     * @param extraHeaders     额外消息头
-     * @param extraQueryParams 额外查询参数
-     * @return ListPartsResponse
-     */
-    public ListPartsResult listMultipart(String bucketName, String region, String objectName, Integer maxParts, Integer partNumberMarker, String uploadId, Multimap<String, String> extraHeaders, Multimap<String, String> extraQueryParams) {
-        try {
-            return mallMinioS3Client.listMultipart(bucketName, region, objectName, maxParts, partNumberMarker, uploadId, extraHeaders, extraQueryParams).result();
+            partsResult = mallMinioS3Client.listMultipart(reqBO.getFileMd5(), null, reqBO.getFileName(), MAX_CHUNK_NUMBER, 0, reqBO.getUploadId(), null, null).result();
         } catch (Exception e) {
             log.error("获取存储桶内分片文件异常:{}", e.getMessage());
             throw new ApiException("获取存储桶内分片文件异常");
         }
+        if (partsResult.partList().size() > MAX_CHUNK_NUMBER) {
+            throw new ApiException("超出最大分片数量合并");
+        }
+        // 收集分片集合
+        Part[] parts = new Part[partsResult.partList().size()];
+        int partNumber = 1;
+        for (Part part : partsResult.partList()) {
+            parts[partNumber - 1] = new Part(partNumber, part.etag());
+            partNumber++;
+        }
+        // 分片合并
+        try {
+            mallMinioS3Client.mergeMultipartUploadFile(reqBO.getFileMd5(), null, reqBO.getFileName(), reqBO.getUploadId(), parts, null, null);
+        } catch (Exception e) {
+            log.error("合并分片文件异常:{}", e.getMessage());
+            throw new ApiException("合并分片文件异常");
+        }
+        return true;
     }
 
 }

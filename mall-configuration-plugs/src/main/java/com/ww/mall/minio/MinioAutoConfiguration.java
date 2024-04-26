@@ -1,7 +1,5 @@
 package com.ww.mall.minio;
 
-import com.ww.mall.minio.java.MallMinioTemplate;
-import com.ww.mall.minio.s3.MallMinioS3Template;
 import io.minio.MinioAsyncClient;
 import io.minio.MinioClient;
 import lombok.extern.slf4j.Slf4j;
@@ -36,11 +34,6 @@ public class MinioAutoConfiguration {
     @Bean
     public MallMinioTemplate mallMinioTemplate(MinioClient minioClient, MallMinioS3Client mallMinioS3Client) {
         return new MallMinioTemplate(minioClient, mallMinioS3Client);
-    }
-
-    @Bean
-    public MallMinioS3Template mallMinioS3Template(MallMinioS3Client mallMinioS3Client) {
-        return new MallMinioS3Template(mallMinioS3Client);
     }
 
 }

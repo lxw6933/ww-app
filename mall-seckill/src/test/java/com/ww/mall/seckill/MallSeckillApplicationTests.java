@@ -1,6 +1,6 @@
 package com.ww.mall.seckill;
 
-import com.ww.mall.minio.java.MallMinioTemplate;
+import com.ww.mall.minio.MallMinioTemplate;
 import com.ww.mall.minio.s3.MallMinioS3Template;
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.SpringBootTest;
