@@ -17,7 +17,7 @@ import java.util.List;
 @RefreshScope
 @Configuration
 @ConfigurationProperties(prefix = "server.gray")
-public class ServerGrayProperty {
+public class ServerGrayProperties {
 
     /**
      * 生产的版本

@@ -2,7 +2,7 @@ package com.ww.mall.gateway.filters;
 
 import cn.hutool.core.util.IdUtil;
 import com.ww.mall.common.constant.Constant;
-import com.ww.mall.gateway.properties.ServerGrayProperty;
+import com.ww.mall.gateway.properties.ServerGrayProperties;
 import com.ww.mall.gateway.utils.GatewayIpUtil;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -31,7 +31,7 @@ public class IpFilter implements GlobalFilter, Ordered {
     /**
      * 灰度自定义属性
      */
-    private final ServerGrayProperty serverGrayProperty;
+    private final ServerGrayProperties serverGrayProperties;
 
     @Override
     public Mono<Void> filter(ServerWebExchange exchange, GatewayFilterChain chain) {
@@ -40,12 +40,12 @@ public class IpFilter implements GlobalFilter, Ordered {
         MDC.put(Constant.TRACE_ID, traceId);
         String userRealIp = GatewayIpUtil.getIpAddress(exchange.getRequest());
         // 是否开启灰度
-        Boolean enableGray = serverGrayProperty.getEnable();
+        Boolean enableGray = serverGrayProperties.getEnable();
         // 获取配置的灰度版本
-        String grayVersion = serverGrayProperty.getGrayVersion();
-        String prodVersion = serverGrayProperty.getProVersion();
+        String grayVersion = serverGrayProperties.getGrayVersion();
+        String prodVersion = serverGrayProperties.getProVersion();
         // 获取配置的灰度ip白名单
-        List<String> grayIps = serverGrayProperty.getGrayIps();
+        List<String> grayIps = serverGrayProperties.getGrayIps();
         boolean grayIpFlag = CollectionUtils.isNotEmpty(grayIps) && grayIps.contains(userRealIp);
         log.info("是否开启灰度:【{}】生产版本:【{}】灰度版本:【{}】请求ip是否为灰度:【{}】",
                 enableGray, prodVersion, grayVersion, grayIpFlag);

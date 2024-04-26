@@ -12,7 +12,7 @@ import java.util.List;
  */
 @Configuration
 @ConfigurationProperties(prefix = "mall")
-public class MallGatewayProperty {
+public class MallGatewayProperties {
 
     /**
      * 不需要用户登录信息的uri集合

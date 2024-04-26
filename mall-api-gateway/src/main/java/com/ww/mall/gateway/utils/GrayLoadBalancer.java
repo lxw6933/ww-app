@@ -3,7 +3,7 @@ package com.ww.mall.gateway.utils;
 import cn.hutool.core.collection.CollUtil;
 import com.alibaba.cloud.nacos.balancer.NacosBalancer;
 import com.ww.mall.common.constant.Constant;
-import com.ww.mall.gateway.properties.ServerGrayProperty;
+import com.ww.mall.gateway.properties.ServerGrayProperties;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
@@ -42,7 +42,7 @@ public class GrayLoadBalancer implements ReactorServiceInstanceLoadBalancer {
     /**
      * 灰度自定义属性
      */
-    private final ServerGrayProperty serverGrayProperty;
+    private final ServerGrayProperties serverGrayProperties;
 
     /**
      * 服务id下所有的实例
@@ -70,7 +70,7 @@ public class GrayLoadBalancer implements ReactorServiceInstanceLoadBalancer {
         // 获取配置的灰度版本
         String grayVersion = StringUtils.defaultIfBlank(headers.getFirst(Constant.GRAY_VERSION), "error");
         // 获取配置的灰度用户列表
-        List<String> grayUsers = serverGrayProperty.getGrayUsers();
+        List<String> grayUsers = serverGrayProperties.getGrayUsers();
         // 是否灰度请求
         boolean grayFlag = Constant.GRAY_TAG_VALUE.equals(requestGrayTag);
 

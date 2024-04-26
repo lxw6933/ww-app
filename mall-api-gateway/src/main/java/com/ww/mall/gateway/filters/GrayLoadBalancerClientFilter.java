@@ -1,7 +1,7 @@
 package com.ww.mall.gateway.filters;
 
 import com.ww.mall.common.exception.ApiException;
-import com.ww.mall.gateway.properties.ServerGrayProperty;
+import com.ww.mall.gateway.properties.ServerGrayProperties;
 import com.ww.mall.gateway.utils.GrayLoadBalancer;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -37,7 +37,7 @@ public class GrayLoadBalancerClientFilter implements GlobalFilter, Ordered {
 
     private final LoadBalancerClientFactory clientFactory;
 
-    private final ServerGrayProperty serverGrayProperty;
+    private final ServerGrayProperties serverGrayProperties;
 
     private final GatewayLoadBalancerProperties properties;
 
@@ -58,7 +58,7 @@ public class GrayLoadBalancerClientFilter implements GlobalFilter, Ordered {
             throw new ApiException("{} is null", ServerWebExchangeUtils.GATEWAY_REQUEST_URL_ATTR);
         }
         String serviceId = uri.getHost();
-        GrayLoadBalancer loadBalancer = new GrayLoadBalancer(serviceId, serverGrayProperty,
+        GrayLoadBalancer loadBalancer = new GrayLoadBalancer(serviceId, serverGrayProperties,
                 clientFactory.getLazyProvider(serviceId, ServiceInstanceListSupplier.class));
         return loadBalancer.choose(new DefaultRequest(exchange.getRequest().getHeaders()));
     }
