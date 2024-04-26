@@ -5,8 +5,7 @@
     <parent>
         <groupId>com.ww.mall</groupId>
         <artifactId>ww-mall</artifactId>
-        <version>0.0.1-SNAPSHOT</version>
-        <relativePath>../pom.xml</relativePath>
+        <version>1.0.0</version>
     </parent>
 
     <groupId>com.ww</groupId>
@@ -17,13 +16,13 @@
         <dependency>
             <groupId>com.ww.mall</groupId>
             <artifactId>mall-common</artifactId>
-            <version>0.0.1-SNAPSHOT</version>
+            <version>${ww.mall.version}</version>
         </dependency>
         <!-- 插件配置 -->
         <dependency>
             <groupId>com.ww.mall</groupId>
             <artifactId>mall-configuration-plugs</artifactId>
-            <version>0.0.1-SNAPSHOT</version>
+            <version>${ww.mall.version}</version>
         </dependency>
         <!-- monitor -->
         <dependency>

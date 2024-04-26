@@ -5,9 +5,9 @@
     <parent>
         <groupId>com.ww.mall</groupId>
         <artifactId>ww-mall</artifactId>
-        <version>0.0.1-SNAPSHOT</version>
-        <relativePath>../pom.xml</relativePath>
+        <version>1.0.0</version>
     </parent>
+
     <artifactId>mall-api-gateway</artifactId>
     <name>mall-api-gateway</name>
     <description>API网关</description>
@@ -16,7 +16,7 @@
         <dependency>
             <groupId>com.ww.mall</groupId>
             <artifactId>mall-common</artifactId>
-            <version>0.0.1-SNAPSHOT</version>
+            <version>${ww.mall.version}</version>
         </dependency>
         <!-- 服务注册中心 -->
         <dependency>
@@ -72,10 +72,18 @@
     </dependencies>
 
     <build>
+        <finalName>${project.artifactId}</finalName>
         <plugins>
             <plugin>
                 <groupId>org.springframework.boot</groupId>
                 <artifactId>spring-boot-maven-plugin</artifactId>
+                <executions>
+                    <execution>
+                        <goals>
+                            <goal>repackage</goal>
+                        </goals>
+                    </execution>
+                </executions>
             </plugin>
         </plugins>
     </build>
