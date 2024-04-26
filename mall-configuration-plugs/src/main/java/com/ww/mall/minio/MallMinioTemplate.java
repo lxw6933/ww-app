@@ -7,7 +7,6 @@ import cn.hutool.core.util.StrUtil;
 import com.alibaba.fastjson.JSON;
 import com.google.common.collect.HashMultimap;
 import com.ww.mall.common.exception.ApiException;
-import com.ww.mall.minio.MallMinioS3Client;
 import com.ww.mall.minio.bo.ChunkFileMergeReqBO;
 import com.ww.mall.minio.bo.ChunkFileUploadReqBO;
 import com.ww.mall.minio.vo.CreateMultipartUploadResultVO;
@@ -365,6 +364,12 @@ public class MallMinioTemplate {
         return fileSizeStr;
     }
 
+    /**
+     * 分片上传文件
+     *
+     * @param reqBO bo
+     * @return vo
+     */
     public CreateMultipartUploadResultVO chunkFileUpload(ChunkFileUploadReqBO reqBO) {
         log.info("开始分片上传：【{}】", JSON.toJSONString(reqBO));
         // 1. 收集分片信息
@@ -378,6 +383,7 @@ public class MallMinioTemplate {
         // 2. 获取分片上传的uploadId
         if (StringUtils.isEmpty(reqBO.getUploadId())) {
             try {
+                // 初始化分片上传，获取uploadId
                 String uploadId = mallMinioS3Client.createMultipartUpload(reqBO.getFileMd5(), null, reqBO.getFileName(), headers, null).result().uploadId();
                 reqBO.setUploadId(uploadId);
             } catch (Exception e) {
@@ -402,6 +408,12 @@ public class MallMinioTemplate {
         return createMultipartUploadResultVO;
     }
 
+    /**
+     * 合并分片文件
+     *
+     * @param reqBO bo
+     * @return boolean
+     */
     public boolean chunkFileMerge(ChunkFileMergeReqBO reqBO) {
         log.info("开始合并分片文件:【{}】", reqBO);
         // 获取所有分片文件
@@ -431,5 +443,7 @@ public class MallMinioTemplate {
         }
         return true;
     }
+
+
 
 }
