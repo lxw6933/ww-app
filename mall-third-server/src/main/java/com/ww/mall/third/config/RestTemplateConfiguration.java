@@ -1,6 +1,8 @@
 package com.ww.mall.third.config;
 
+import com.alibaba.cloud.sentinel.annotation.SentinelRestTemplate;
 import com.ww.mall.third.constant.HttpProperties;
+import com.ww.mall.web.utils.RestTemplateExceptionUtil;
 import okhttp3.ConnectionPool;
 import okhttp3.OkHttpClient;
 import org.springframework.beans.factory.ObjectProvider;
@@ -34,6 +36,7 @@ public class RestTemplateConfiguration {
      * @return RestTemplate
      */
     @Bean(name = "okRestTemplate")
+    @SentinelRestTemplate(blockHandler = "handleException", blockHandlerClass = RestTemplateExceptionUtil.class, fallback = "fallback", fallbackClass = RestTemplateExceptionUtil.class)
     public RestTemplate extRestTemplate(ClientHttpRequestFactory okHttpClientHttpRequestFactory, ObjectProvider<List<ClientHttpRequestInterceptor>> requestInterceptor) {
         RestTemplate restTemplate = new RestTemplate(okHttpClientHttpRequestFactory);
         List<ClientHttpRequestInterceptor> interceptors = requestInterceptor.getIfAvailable();
