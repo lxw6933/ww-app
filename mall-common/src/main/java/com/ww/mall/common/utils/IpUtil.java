@@ -1,4 +1,4 @@
-package com.ww.mall.web.utils;
+package com.ww.mall.common.utils;
 
 import cn.hutool.core.net.NetUtil;
 import com.ww.mall.common.exception.ApiException;
@@ -74,11 +74,19 @@ public class IpUtil {
     }
 
     public static void validIp(List<String> whiteIpList, HttpServletRequest request, boolean ipRange) {
+        String ip = getRealIp(request);
+        validIpStr(whiteIpList, ip, ipRange);
+    }
+
+    private static void validIpStr(List<String> whiteIpList, String reqRealIp) {
+        validIpStr(whiteIpList, reqRealIp);
+    }
+
+    private static void validIpStr(List<String> whiteIpList, String ip, boolean ipRange) {
         // 校验ip
         if (CollectionUtils.isEmpty(whiteIpList)) {
             throw new ApiException("ip白名单校验失败");
         }
-        String ip = getRealIp(request);
         boolean flag = false;
         if (ipRange) {
             for (String ipRangeWhite : whiteIpList) {
