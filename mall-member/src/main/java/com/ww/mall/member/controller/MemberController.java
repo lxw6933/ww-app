@@ -12,7 +12,7 @@ import com.ww.mall.member.view.vo.MemberVO;
 import com.ww.mall.web.cmmon.MallPage;
 import com.ww.mall.web.cmmon.MallPageResult;
 import com.ww.mall.web.utils.AuthorizationContext;
-import com.ww.mall.web.utils.IdUtil;
+import com.ww.mall.common.utils.IdUtil;
 import com.ww.mall.web.view.dto.MemberDTO;
 import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;

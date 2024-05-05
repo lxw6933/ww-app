@@ -24,7 +24,6 @@ import org.springframework.web.multipart.MultipartFile;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
-import java.io.IOException;
 import java.io.InputStream;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
@@ -200,11 +199,11 @@ public class MallMinioTemplate {
     }
 
     public boolean upload(byte[] fileBytes, String bucketName, String fileName) {
-        try {
+        try (ByteArrayInputStream byteArrayInputStream = new ByteArrayInputStream(fileBytes)) {
             minioClient.putObject(PutObjectArgs.builder()
                     .bucket(bucketName)
                     .object(fileName)
-                    .stream(new ByteArrayInputStream(fileBytes), fileBytes.length, -1)
+                    .stream(byteArrayInputStream, fileBytes.length, -1)
                     .contentType(MediaTypeFactory.getMediaType(fileName).orElse(MediaType.APPLICATION_OCTET_STREAM).toString())
                     .build());
             return true;
@@ -225,14 +224,6 @@ public class MallMinioTemplate {
         } catch (Exception e) {
             log.error("上传文件异常：{}", e.getMessage());
             return false;
-        } finally {
-            if (fileInputStream != null) {
-                try {
-                    fileInputStream.close();
-                } catch (IOException e) {
-                    log.error("inputStream close exception");
-                }
-            }
         }
     }
 

@@ -60,6 +60,7 @@
         <commons.collections4.version>4.4</commons.collections4.version>
         <pagehelper.version>6.4</pagehelper.version>
         <okhttp.version>4.10.0</okhttp.version>
+        <ip2region.version>2.7.0</ip2region.version>
         <!-- jdk11 use 3.x -->
         <!--<caffeine.version>3.1.8</caffeine.version>-->
         <caffeine.version>2.9.0</caffeine.version>
@@ -162,6 +163,12 @@
                 <artifactId>okhttp</artifactId>
                 <version>${okhttp.version}</version>
             </dependency>
+            <!-- ip2region -->
+            <dependency>
+                <groupId>org.lionsoul</groupId>
+                <artifactId>ip2region</artifactId>
+                <version>${ip2region.version}</version>
+            </dependency>
             <!-- caffeine -->
             <dependency>
                 <groupId>com.github.ben-manes.caffeine</groupId>
@@ -202,6 +209,12 @@
                 <groupId>io.minio</groupId>
                 <artifactId>minio</artifactId>
                 <version>${minio.version}</version>
+            </dependency>
+            <!-- jackson -->
+            <dependency>
+                <groupId>com.fasterxml.jackson.core</groupId>
+                <artifactId>jackson-databind</artifactId>
+                <version>${jackson.version}</version>
             </dependency>
         </dependencies>
     </dependencyManagement>

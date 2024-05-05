@@ -1,27 +1,38 @@
 package com.ww.mall.web;
 
-import cn.hutool.core.date.DatePattern;
-import cn.hutool.core.date.DateUtil;
-import cn.hutool.core.lang.Assert;
 import cn.hutool.core.net.NetUtil;
-import cn.hutool.crypto.SecureUtil;
-import cn.hutool.crypto.asymmetric.Sign;
-import cn.hutool.crypto.asymmetric.SignAlgorithm;
-import com.alibaba.fastjson.JSON;
-import com.ww.mall.common.exception.ApiException;
-import org.apache.commons.codec.digest.DigestUtils;
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.SpringBootTest;
 
-import java.util.Date;
-import java.util.HashMap;
-import java.util.Map;
+import java.io.IOException;
+import java.nio.file.*;
+import java.nio.file.attribute.BasicFileAttributes;
 
 @SpringBootTest
 class MallWebApplicationTests {
 
     @Test
-    void contextLoads() {
+    void fileTest() throws IOException {
+//        Files.copy();
+        Files.walkFileTree(Paths.get(""), new SimpleFileVisitor<Path>() {
+            @Override
+            public FileVisitResult preVisitDirectory(Path dir, BasicFileAttributes attrs) throws IOException {
+                System.out.println("进入文件目录：" + dir);
+                return super.preVisitDirectory(dir, attrs);
+            }
+
+            @Override
+            public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) throws IOException {
+                System.out.println("目录下文件：" + file);
+                return super.visitFile(file, attrs);
+            }
+
+            @Override
+            public FileVisitResult postVisitDirectory(Path dir, IOException exc) throws IOException {
+                System.out.println("遍历完文件后退出当前目录：" + dir);
+                return super.postVisitDirectory(dir, exc);
+            }
+        });
     }
 
     public static void main(String[] args) {

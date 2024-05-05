@@ -15,7 +15,7 @@ import com.ww.mall.seckill.manager.MallCacheManager;
 import com.ww.mall.seckill.node.executor.DemoFlowExecutor;
 import com.ww.mall.seckill.service.SeckillService;
 import com.ww.mall.web.feign.ThirdServerFeignService;
-import com.ww.mall.web.utils.IdUtil;
+import com.ww.mall.common.utils.IdUtil;
 import lombok.extern.slf4j.Slf4j;
 import org.redisson.api.RedissonClient;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;

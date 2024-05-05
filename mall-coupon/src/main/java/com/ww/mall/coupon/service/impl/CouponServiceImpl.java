@@ -22,7 +22,7 @@ import com.ww.mall.coupon.view.vo.CouponPageVO;
 import com.ww.mall.redis.annotation.MallDistributedLock;
 import com.ww.mall.web.cmmon.MallPageResult;
 import com.ww.mall.web.utils.AuthorizationContext;
-import com.ww.mall.web.utils.IdUtil;
+import com.ww.mall.common.utils.IdUtil;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;

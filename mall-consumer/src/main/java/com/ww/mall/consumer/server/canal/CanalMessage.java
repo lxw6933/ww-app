@@ -5,6 +5,7 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import java.util.List;
+import java.util.Map;
 
 /**
  * @author ww
@@ -15,42 +16,81 @@ import java.util.List;
 @NoArgsConstructor
 public class CanalMessage<T> {
 
+    /**
+     * 事件ID,没有实际意义
+     */
+    @JsonProperty("id")
+    private Long id;
+
+    /**
+     * 当前更变后节点数据
+     */
     @JsonProperty("data")
     private List<T> data;
 
-    @JsonProperty("database")
-    private String database;
-
-    @JsonProperty("es")
-    private Long es;
-
-    @JsonProperty("id")
-    private Integer id;
-
-    @JsonProperty("isDdl")
-    private Boolean isDdl;
-
-    @JsonProperty("mysqlType")
-    private Object mysqlType;
-
+    /**
+     * 当前更变前节点数据
+     */
     @JsonProperty("old")
     private List<T> old;
 
-    @JsonProperty("pkNames")
-    private List<String> pkNames;
+    /**
+     * 数据库名称
+     */
+    @JsonProperty("database")
+    private String database;
 
-    @JsonProperty("sql")
-    private String sql;
-
-    @JsonProperty("sqlType")
-    private Object sqlType;
-
+    /**
+     * 表名称
+     */
     @JsonProperty("table")
     private String table;
 
+    /**
+     * binlog execute time
+     */
+    @JsonProperty("es")
+    private Long es;
+
+    /**
+     * 是否DDL语句
+     */
+    @JsonProperty("isDdl")
+    private Boolean isDdl;
+
+    /**
+     * SQL类型映射
+     */
+    @JsonProperty("sqlType")
+    private Map<String, Integer> sqlType;
+
+    /**
+     * MySQL字段类型映射
+     */
+    @JsonProperty("mysqlType")
+    private Map<String, String> mysqlType;
+
+    /**
+     * 主键列名称列表
+     */
+    @JsonProperty("pkNames")
+    private List<String> pkNames;
+
+    /**
+     * 执行的sql,不一定存在
+     */
+    @JsonProperty("sql")
+    private String sql;
+
+    /**
+     * dml build timestamp
+     */
     @JsonProperty("ts")
     private Long ts;
 
+    /**
+     * 类型 UPDATE\INSERT\DELETE\QUERY
+     */
     @JsonProperty("type")
     private String type;
 }
