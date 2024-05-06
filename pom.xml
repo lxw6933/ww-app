@@ -34,6 +34,7 @@
         <!-- 秒杀服务 -->
         <module>mall-seckill</module>
         <module>mall-flink</module>
+        <module>mall-netty</module>
     </modules>
 
     <properties>
