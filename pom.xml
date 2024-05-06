@@ -69,6 +69,7 @@
         <liteflow.version>2.12.0</liteflow.version>
         <flink.version>1.17.0</flink.version>
         <minio.version>8.5.9</minio.version>
+        <netty.version>4.1.109.Final</netty.version>
     </properties>
 
     <dependencyManagement>
@@ -216,6 +217,12 @@
                 <groupId>com.fasterxml.jackson.core</groupId>
                 <artifactId>jackson-databind</artifactId>
                 <version>${jackson.version}</version>
+            </dependency>
+            <!-- netty -->
+            <dependency>
+                <groupId>io.netty</groupId>
+                <artifactId>netty-all</artifactId>
+                <version>${netty.version}</version>
             </dependency>
         </dependencies>
     </dependencyManagement>
