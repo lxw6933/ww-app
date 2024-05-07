@@ -8,15 +8,17 @@ import io.netty.channel.ChannelHandler;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.handler.codec.MessageToMessageCodec;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.stereotype.Component;
 
 import java.util.List;
 
 /**
  * @author ww
  * @create 2024-05-06 22:19
- * @description: 必须和 MallProcotolFrameDecoder 一起使用，确保接到的 ByteBuf 消息是完整的
+ * @description: 必须和 MallProtocolFrameDecoder 一起使用，确保接到的 ByteBuf 消息是完整的
  */
 @Slf4j
+@Component
 @ChannelHandler.Sharable
 public class MallMessageCodecHandler extends MessageToMessageCodec<ByteBuf, MallMessage> {
 
