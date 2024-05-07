@@ -23,7 +23,7 @@ import java.util.List;
 @ChannelHandler.Sharable
 public class MessageCodecHandler extends MessageToMessageCodec<ByteBuf, MallChatMessage> {
 
-//    private final MallSerializerConfiguration serializeConfig = SpringUtil.getBean(MallSerializerConfiguration.class);
+    private final MallSerializerConfiguration serializeConfig = SpringUtil.getBean(MallSerializerConfiguration.class);
 
     @Override
     protected void encode(ChannelHandlerContext ctx, MallChatMessage msg, List<Object> outList) throws Exception {
@@ -42,8 +42,8 @@ public class MessageCodecHandler extends MessageToMessageCodec<ByteBuf, MallChat
         // 写入1字节对齐填充【无意义】
         out.writeByte(0xff);
         // 获取消息内容的字节数组
-//        byte[] bytes = serializeConfig.getSerializer().serialize(msg);
-        byte[] bytes = JSON.toJSONBytes(msg);
+        byte[] bytes = serializeConfig.getSerializer().serialize(msg);
+//        byte[] bytes = JSON.toJSONBytes(msg);
         // 7. 写入4字节消息长度
         out.writeInt(bytes.length);
         // 8. 写入消息内容
@@ -72,8 +72,8 @@ public class MessageCodecHandler extends MessageToMessageCodec<ByteBuf, MallChat
         in.readBytes(bytes, 0, length);
         // 确定具体消息类型
         Class<? extends MallChatMessage> messageClass = MallChatMessage.getMessageClass(messageType);
-//        MallChatMessage mallChatMessage = serializeConfig.getSerializer().deserialize(messageClass, bytes);
-        MallChatMessage mallChatMessage = JSON.parseObject(bytes, messageClass);
+        MallChatMessage mallChatMessage = serializeConfig.getSerializer().deserialize(messageClass, bytes);
+//        MallChatMessage mallChatMessage = JSON.parseObject(bytes, messageClass);
         log.debug("魔数：{}, 版本：{}, 序列化类型：{}, 消息类型：{}, 序列化id：{}, 消息长度：{}", magicNum, version, serializerType, messageType, sequenceId, length);
         log.debug("消息：{}", mallChatMessage);
         out.add(mallChatMessage);
