@@ -18,28 +18,44 @@ public abstract class MallMessage implements Serializable {
 
     private int messageType;
 
+    /**
+     * 获取消息类型
+     */
     public abstract int getMessageType();
 
-    public static final int LoginRequestMessage = 0;
-    public static final int LoginResponseMessage = 1;
-    public static final int ChatRequestMessage = 2;
-    public static final int ChatResponseMessage = 3;
-    public static final int GroupCreateRequestMessage = 4;
-    public static final int GroupCreateResponseMessage = 5;
-    public static final int GroupJoinRequestMessage = 6;
-    public static final int GroupJoinResponseMessage = 7;
-    public static final int GroupQuitRequestMessage = 8;
-    public static final int GroupQuitResponseMessage = 9;
-    public static final int GroupChatRequestMessage = 10;
-    public static final int GroupChatResponseMessage = 11;
-    public static final int GroupMembersRequestMessage = 12;
-    public static final int GroupMembersResponseMessage = 13;
-    public static final int PingMessage = 14;
-    public static final int PongMessage = 15;
-    public static final int RPC_MESSAGE_TYPE_REQUEST = 101;
-    public static final int RPC_MESSAGE_TYPE_RESPONSE = 102;
+    // 登录message
+    public static final int LOGIN_REQUEST_MESSAGE_TYPE = 0;
+    public static final int LOGIN_RESPONSE_MESSAGE_TYPE = 1;
+    // 聊天message
+    public static final int CHAT_REQUEST_MESSAGE_TYPE = 2;
+    public static final int CHAT_RESPONSE_MESSAGE_TYPE = 3;
+    // 创建群组message
+    public static final int GROUP_CREATE_REQUEST_MESSAGE_TYPE = 4;
+    public static final int GROUP_CREATE_RESPONSE_MESSAGE_TYPE = 5;
+    // 加入群组message
+    public static final int GROUP_JOIN_REQUEST_MESSAGE_TYPE = 6;
+    public static final int GROUP_JOIN_RESPONSE_MESSAGE_TYPE = 7;
+    // 离开群组message
+    public static final int GROUP_QUIT_REQUEST_MESSAGE_TYPE = 8;
+    public static final int GROUP_QUIT_RESPONSE_MESSAGE_TYPE = 9;
+    // 群组聊天message
+    public static final int GROUP_CHAT_REQUEST_MESSAGE_TYPE = 10;
+    public static final int GROUP_CHAT_RESPONSE_MESSAGE_TYPE = 11;
+    //
+    public static final int GROUP_MEMBERS_REQUEST_MESSAGE_TYPE = 12;
+    public static final int GROUP_MEMBERS_RESPONSE_MESSAGE_TYPE = 13;
+    // 心跳message
+    public static final int PING_MESSAGE_TYPE = 14;
+    public static final int PONG_MESSAGE_TYPE = 15;
+    // rpc请求message
+    public static final int RPC_MESSAGE_REQUEST_TYPE = 101;
+    public static final int RPC_MESSAGE_RESPONSE_TYPE = 102;
 
+    /**
+     * 所有消息类型map
+     */
     private static final Map<Integer, Class<? extends MallMessage>> messageClasses = new HashMap<>();
+
     /**
      * 根据消息类型字节，获得对应的消息 class
      *
@@ -51,22 +67,22 @@ public abstract class MallMessage implements Serializable {
     }
 
     static {
-        messageClasses.put(LoginRequestMessage, LoginRequestMessage.class);
-        messageClasses.put(LoginResponseMessage, LoginResponseMessage.class);
-        messageClasses.put(ChatRequestMessage, ChatRequestMessage.class);
-        messageClasses.put(ChatResponseMessage, ChatResponseMessage.class);
-        messageClasses.put(GroupCreateRequestMessage, GroupCreateRequestMessage.class);
-        messageClasses.put(GroupCreateResponseMessage, GroupCreateResponseMessage.class);
-        messageClasses.put(GroupJoinRequestMessage, GroupJoinRequestMessage.class);
-        messageClasses.put(GroupJoinResponseMessage, GroupJoinResponseMessage.class);
-        messageClasses.put(GroupQuitRequestMessage, GroupQuitRequestMessage.class);
-        messageClasses.put(GroupQuitResponseMessage, GroupQuitResponseMessage.class);
-        messageClasses.put(GroupChatRequestMessage, GroupChatRequestMessage.class);
-        messageClasses.put(GroupChatResponseMessage, GroupChatResponseMessage.class);
-        messageClasses.put(GroupMembersRequestMessage, GroupMembersRequestMessage.class);
-        messageClasses.put(GroupMembersResponseMessage, GroupMembersResponseMessage.class);
-        messageClasses.put(RPC_MESSAGE_TYPE_REQUEST, RpcRequestMessage.class);
-        messageClasses.put(RPC_MESSAGE_TYPE_RESPONSE, RpcResponseMessage.class);
+        messageClasses.put(LOGIN_REQUEST_MESSAGE_TYPE, LoginRequestMessage.class);
+        messageClasses.put(LOGIN_RESPONSE_MESSAGE_TYPE, LoginResponseMessage.class);
+        messageClasses.put(CHAT_REQUEST_MESSAGE_TYPE, ChatRequestMessage.class);
+        messageClasses.put(CHAT_RESPONSE_MESSAGE_TYPE, ChatResponseMessage.class);
+        messageClasses.put(GROUP_CREATE_REQUEST_MESSAGE_TYPE, GroupCreateRequestMessage.class);
+        messageClasses.put(GROUP_CREATE_RESPONSE_MESSAGE_TYPE, GroupCreateResponseMessage.class);
+        messageClasses.put(GROUP_JOIN_REQUEST_MESSAGE_TYPE, GroupJoinRequestMessage.class);
+        messageClasses.put(GROUP_JOIN_RESPONSE_MESSAGE_TYPE, GroupJoinResponseMessage.class);
+        messageClasses.put(GROUP_QUIT_REQUEST_MESSAGE_TYPE, GroupQuitRequestMessage.class);
+        messageClasses.put(GROUP_QUIT_RESPONSE_MESSAGE_TYPE, GroupQuitResponseMessage.class);
+        messageClasses.put(GROUP_CHAT_REQUEST_MESSAGE_TYPE, GroupChatRequestMessage.class);
+        messageClasses.put(GROUP_CHAT_RESPONSE_MESSAGE_TYPE, GroupChatResponseMessage.class);
+        messageClasses.put(GROUP_MEMBERS_REQUEST_MESSAGE_TYPE, GroupMembersRequestMessage.class);
+        messageClasses.put(GROUP_MEMBERS_RESPONSE_MESSAGE_TYPE, GroupMembersResponseMessage.class);
+        messageClasses.put(RPC_MESSAGE_REQUEST_TYPE, RpcRequestMessage.class);
+        messageClasses.put(RPC_MESSAGE_RESPONSE_TYPE, RpcResponseMessage.class);
     }
 
 }
