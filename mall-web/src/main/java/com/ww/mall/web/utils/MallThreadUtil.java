@@ -16,7 +16,7 @@ public class MallThreadUtil {
 
     private MallThreadUtil() {}
 
-    public ThreadPoolExecutor initThreadPoolExecutor(String threadName,
+    public static ThreadPoolExecutor initThreadPoolExecutor(String threadName,
                                                      Integer coreSize,
                                                      Integer maxSize,
                                                      Integer keepAliveTime,
