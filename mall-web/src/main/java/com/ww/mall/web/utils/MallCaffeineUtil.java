@@ -17,7 +17,7 @@ import java.util.function.Function;
 /**
  * @author ww
  * @create 2024-04-19- 10:58
- * @description:
+ * @description: caffeine工具类
  */
 @Slf4j
 public class MallCaffeineUtil {
@@ -54,6 +54,20 @@ public class MallCaffeineUtil {
         return commonCaffeine(minSize, maxSize, minExpireTime, maxExpireTime, expireTimeUnit).build();
     }
 
+    /**
+     * 自动刷新caffeine数据
+     *
+     * @param minSize 缓存初始化大小
+     * @param maxSize 缓存最大存储个数
+     * @param expireTime 缓存过期时间
+     * @param expireTimeUnit 缓存过期时间单位
+     * @param refreshTime 自动刷新时间
+     * @param refreshTimeUnit 自动刷新时间单位
+     * @param refreshFactory 缓存数据工厂
+     * @return LoadingCache
+     * @param <K> key
+     * @param <V> value
+     */
     public static <K, V> LoadingCache<K, V> initAutoSyncRefreshCaffeine(Integer minSize,
                                                              Integer maxSize,
                                                              Integer expireTime,
@@ -79,6 +93,18 @@ public class MallCaffeineUtil {
                 .build(getSyncCacheLoader(refreshFactory));
     }
 
+    /**
+     * 通用caffeine
+     *
+     * @param minSize 缓存初始化大小
+     * @param maxSize 缓存最大存储个数
+     * @param minExpireTime 最小过期时间
+     * @param maxExpireTime 最大过期时间
+     * @param expireTimeUnit 过期时间单位
+     * @return Caffeine
+     * @param <K> key
+     * @param <V> value
+     */
     private static <K, V> Caffeine<K, V> commonCaffeine(Integer minSize,
                                                         Integer maxSize,
                                                         Integer minExpireTime,
@@ -96,6 +122,14 @@ public class MallCaffeineUtil {
         return caffeine;
     }
 
+    /**
+     * 同步自动刷新加载器
+     *
+     * @param refreshFactory 刷新工厂
+     * @return CacheLoader
+     * @param <K> key
+     * @param <V> value
+     */
     static private <K, V> CacheLoader<K, V> getSyncCacheLoader(Function<K, V> refreshFactory) {
         return new CacheLoader<K, V>() {
             @Override
@@ -114,6 +148,14 @@ public class MallCaffeineUtil {
         };
     }
 
+    /**
+     * 异步自动刷新加载器
+     *
+     * @param refreshFactory 刷新工厂
+     * @return AsyncCacheLoader
+     * @param <K> key
+     * @param <V> value
+     */
     static private <K, V> AsyncCacheLoader<K, V> getAsyncCacheLoader(Function<K, V> refreshFactory) {
         return new AsyncCacheLoader<K, V>() {
 
@@ -131,7 +173,6 @@ public class MallCaffeineUtil {
 
     /**
      * 自定义过期策略
-     *
      */
     static class MallDefaultExpiry<K, V> implements Expiry<K, V> {
         private final Integer minExpirationTime;
