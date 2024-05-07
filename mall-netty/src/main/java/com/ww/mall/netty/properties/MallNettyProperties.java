@@ -14,5 +14,5 @@ import org.springframework.context.annotation.Configuration;
 @ConfigurationProperties(prefix = "netty")
 public class MallNettyProperties {
 
-    private Integer serializerType = 1;
+    private Integer serializerType = 2;
 }
