@@ -1,6 +1,5 @@
 package com.ww.mall.netty.config;
 
-import cn.hutool.core.map.MapUtil;
 import com.ww.mall.netty.properties.MallNettyProperties;
 import com.ww.mall.netty.serializer.MallSerializer;
 import org.springframework.beans.BeansException;
@@ -10,7 +9,6 @@ import org.springframework.context.ApplicationContextAware;
 import org.springframework.context.annotation.Configuration;
 
 import javax.annotation.Resource;
-import javax.validation.constraints.NotNull;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -33,7 +31,7 @@ public class MallSerializerConfiguration implements InitializingBean, Applicatio
     public void afterPropertiesSet() throws Exception {
         Map<String, MallSerializer> targetMap = this.applicationContext.getBeansOfType(MallSerializer.class);
         for (Map.Entry<String, MallSerializer> entry : targetMap.entrySet()) {
-            serializerMap.put(Integer.parseInt(entry.getKey()), entry.getValue());
+            serializerMap.put(entry.getValue().type().type, entry.getValue());
         }
     }
 
