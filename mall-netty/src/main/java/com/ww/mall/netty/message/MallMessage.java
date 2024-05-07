@@ -14,16 +14,6 @@ import java.util.Map;
 @Data
 public abstract class MallMessage implements Serializable {
 
-    /**
-     * 根据消息类型字节，获得对应的消息 class
-     *
-     * @param messageType 消息类型字节
-     * @return 消息 class
-     */
-    public static Class<? extends MallMessage> getMessageClass(int messageType) {
-        return messageClasses.get(messageType);
-    }
-
     private int sequenceId;
 
     private int messageType;
@@ -46,16 +36,19 @@ public abstract class MallMessage implements Serializable {
     public static final int GroupMembersResponseMessage = 13;
     public static final int PingMessage = 14;
     public static final int PongMessage = 15;
-    /**
-     * 请求类型 byte 值
-     */
     public static final int RPC_MESSAGE_TYPE_REQUEST = 101;
-    /**
-     * 响应类型 byte 值
-     */
     public static final int RPC_MESSAGE_TYPE_RESPONSE = 102;
 
     private static final Map<Integer, Class<? extends MallMessage>> messageClasses = new HashMap<>();
+    /**
+     * 根据消息类型字节，获得对应的消息 class
+     *
+     * @param messageType 消息类型字节
+     * @return 消息 class
+     */
+    public static Class<? extends MallMessage> getMessageClass(int messageType) {
+        return messageClasses.get(messageType);
+    }
 
     static {
         messageClasses.put(LoginRequestMessage, LoginRequestMessage.class);
