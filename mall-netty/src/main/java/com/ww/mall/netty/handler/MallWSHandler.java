@@ -1,6 +1,5 @@
 package com.ww.mall.netty.handler;
 
-import cn.hutool.extra.spring.SpringUtil;
 import com.alibaba.fastjson.JSON;
 import com.ww.mall.common.exception.ApiException;
 import com.ww.mall.netty.entity.WSDataContent;
@@ -18,8 +17,6 @@ import org.apache.commons.lang3.StringUtils;
 import org.apache.poi.ss.formula.functions.T;
 import org.springframework.stereotype.Component;
 
-import java.time.LocalDateTime;
-import java.time.ZoneOffset;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -56,7 +53,7 @@ public class MallWSHandler extends SimpleChannelInboundHandler<TextWebSocketFram
             Integer action = WSDataContent.getAction();
             String msgId = WSDataContent.getMsgId();
             switch (action) {
-                case WSMsgAction.CONNECT.type:
+                case 1:
                     String uid = WSDataContent.getUid();
                     if (StringUtils.isEmpty(uid)) {
                         // 主动断开连接
@@ -67,24 +64,24 @@ public class MallWSHandler extends SimpleChannelInboundHandler<TextWebSocketFram
                     Channel existChannel = managerChannel.get(uid);
                     if (existChannel != null) {
                         //存在当前用户的连接，验证登录标签
-                        LinkUserService linkUserService = (LinkUserService) SpringUtil.getBean("linkUserServiceImpl");
-                        if (linkUserService.checkUserLoginLabel(uid, loginLabel)) {
-                            //是同一次登录标签,加入新连接，关闭旧的连接
-                            managerChannel.put(uid, currentChannel);
-                            writeAndFlushResponse(WSMsgAction.BREAK_OFF.type, null, createKickMsgBody(), existChannel);
-                            writeAndFlushResponse(WSMsgAction.MESSAGE_SIGN.type, msgId, null, currentChannel);
-                            //existChannel.close();
-                        } else {
-                            //不是同一次登录标签，拒绝连接
-                            writeAndFlushResponse(WSMsgAction.BREAK_OFF.type, null, createKickMsgBody(), currentChannel);
-                            //currentChannel.close();
-                        }
+//                        LinkUserService linkUserService = (LinkUserService) SpringUtil.getBean("linkUserServiceImpl");
+//                        if (linkUserService.checkUserLoginLabel(uid, loginLabel)) {
+//                            //是同一次登录标签,加入新连接，关闭旧的连接
+//                            managerChannel.put(uid, currentChannel);
+//                            writeAndFlushResponse(WSMsgAction.BREAK_OFF.type, null, createKickMsgBody(), existChannel);
+//                            writeAndFlushResponse(WSMsgAction.MESSAGE_SIGN.type, msgId, null, currentChannel);
+//                            //existChannel.close();
+//                        } else {
+//                            //不是同一次登录标签，拒绝连接
+//                            writeAndFlushResponse(WSMsgAction.BREAK_OFF.type, null, createKickMsgBody(), currentChannel);
+//                            //currentChannel.close();
+//                        }
                     } else {
                         managerChannel.put(uid, currentChannel);
                         writeAndFlushResponse(WSMsgAction.MESSAGE_SIGN.type, msgId, null, currentChannel);
                     }
                     break;
-                case WSMsgAction.KEEPALIVE.type:
+                case 2:
                     //心跳类型的消息
                     log.info("收到来自Channel为{}的心跳包......", currentChannel);
                     writeAndFlushResponse(WSMsgAction.MESSAGE_SIGN.type, msgId, null, currentChannel);

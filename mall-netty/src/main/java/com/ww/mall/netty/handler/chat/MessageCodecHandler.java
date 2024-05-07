@@ -1,8 +1,9 @@
-package com.ww.mall.netty.handler;
+package com.ww.mall.netty.handler.chat;
 
 import cn.hutool.extra.spring.SpringUtil;
+import com.alibaba.fastjson.JSON;
 import com.ww.mall.netty.config.MallSerializerConfiguration;
-import com.ww.mall.netty.message.MallMessage;
+import com.ww.mall.netty.message.chat.MallChatMessage;
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.ChannelHandler;
 import io.netty.channel.ChannelHandlerContext;
@@ -20,19 +21,20 @@ import java.util.List;
 @Slf4j
 @Component
 @ChannelHandler.Sharable
-public class MallMessageCodecHandler extends MessageToMessageCodec<ByteBuf, MallMessage> {
+public class MessageCodecHandler extends MessageToMessageCodec<ByteBuf, MallChatMessage> {
 
-    private final MallSerializerConfiguration serializeConfig = SpringUtil.getBean(MallSerializerConfiguration.class);
+//    private final MallSerializerConfiguration serializeConfig = SpringUtil.getBean(MallSerializerConfiguration.class);
 
     @Override
-    protected void encode(ChannelHandlerContext ctx, MallMessage msg, List<Object> outList) throws Exception {
+    protected void encode(ChannelHandlerContext ctx, MallChatMessage msg, List<Object> outList) throws Exception {
         ByteBuf out = ctx.alloc().buffer();
         // 写入4字节的魔数
         out.writeBytes(new byte[]{6, 9, 3, 3});
         // 写入1字节的版本,
         out.writeByte(1);
         // 写入1字节的序列化方式
-        out.writeByte(serializeConfig.getDefaultSerializeType());
+//        out.writeByte(serializeConfig.getDefaultSerializeType());
+        out.writeByte(1);
         // 写入1字节的指令类型
         out.writeByte(msg.getMessageType());
         // 写入4个字节序列号
@@ -40,7 +42,8 @@ public class MallMessageCodecHandler extends MessageToMessageCodec<ByteBuf, Mall
         // 写入1字节对齐填充【无意义】
         out.writeByte(0xff);
         // 获取消息内容的字节数组
-        byte[] bytes = serializeConfig.getSerializer().serialize(msg);
+//        byte[] bytes = serializeConfig.getSerializer().serialize(msg);
+        byte[] bytes = JSON.toJSONBytes(msg);
         // 7. 写入4字节消息长度
         out.writeInt(bytes.length);
         // 8. 写入消息内容
@@ -68,11 +71,12 @@ public class MallMessageCodecHandler extends MessageToMessageCodec<ByteBuf, Mall
         byte[] bytes = new byte[length];
         in.readBytes(bytes, 0, length);
         // 确定具体消息类型
-        Class<? extends MallMessage> messageClass = MallMessage.getMessageClass(messageType);
-        MallMessage mallMessage = serializeConfig.getSerializer().deserialize(messageClass, bytes);
+        Class<? extends MallChatMessage> messageClass = MallChatMessage.getMessageClass(messageType);
+//        MallChatMessage mallChatMessage = serializeConfig.getSerializer().deserialize(messageClass, bytes);
+        MallChatMessage mallChatMessage = JSON.parseObject(bytes, messageClass);
         log.debug("魔数：{}, 版本：{}, 序列化类型：{}, 消息类型：{}, 序列化id：{}, 消息长度：{}", magicNum, version, serializerType, messageType, sequenceId, length);
-        log.debug("消息：{}", mallMessage);
-        out.add(mallMessage);
+        log.debug("消息：{}", mallChatMessage);
+        out.add(mallChatMessage);
     }
 
 }

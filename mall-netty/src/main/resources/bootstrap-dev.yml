@@ -1,4 +1,4 @@
 server:
-  port: 8000  #服务端口号
+  port: 8880  #服务端口号
   servlet:
     context-path: /mall-netty

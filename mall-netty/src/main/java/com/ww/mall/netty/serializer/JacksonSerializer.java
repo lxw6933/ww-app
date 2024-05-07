@@ -15,7 +15,7 @@ import java.io.IOException;
  */
 @Component
 public class JacksonSerializer implements MallSerializer {
-    ObjectMapper mapper = new ObjectMapper();
+    private static final ObjectMapper mapper = new ObjectMapper();
 
     @Override
     public SerializerTypeEnum type() {
