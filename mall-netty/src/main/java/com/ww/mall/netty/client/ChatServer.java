@@ -206,9 +206,7 @@ public class ChatServer {
         } catch (InterruptedException e) {
             log.error("Client error", e);
         } finally {
-
             group.shutdownGracefully();
-
         }
 
     }
