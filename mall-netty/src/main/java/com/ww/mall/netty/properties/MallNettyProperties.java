@@ -15,4 +15,6 @@ import org.springframework.context.annotation.Configuration;
 public class MallNettyProperties {
 
     private Integer serializerType = 2;
+
+    private Integer port = 8765;
 }

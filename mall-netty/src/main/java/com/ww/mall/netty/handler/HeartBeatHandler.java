@@ -1,10 +1,16 @@
 package com.ww.mall.netty.handler;
 
+import com.ww.mall.netty.config.ClientConfig;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInboundHandlerAdapter;
+import io.netty.channel.EventLoop;
 import io.netty.handler.timeout.IdleState;
 import io.netty.handler.timeout.IdleStateEvent;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
+
+import javax.annotation.Resource;
+import java.util.concurrent.TimeUnit;
 
 /**
  * @author ww
@@ -14,22 +20,32 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 public class HeartBeatHandler extends ChannelInboundHandlerAdapter {
 
+    @Resource
+    private ClientConfig clientConfig;
+
     @Override
     public void userEventTriggered(ChannelHandlerContext ctx, Object evt) throws Exception {
-        // 判断evt是否是IdleStateEvent（用于触发用户事件，包含 读空闲/写空闲/读写空闲 ）
         if (evt instanceof IdleStateEvent) {
-            IdleStateEvent event = (IdleStateEvent) evt;
-            if (event.state() == IdleState.READER_IDLE) {
-                log.info("进入读空闲...");
-                ctx.channel().close();
-            } else if (event.state() == IdleState.WRITER_IDLE) {
-                log.info("进入写空闲...");
-                ctx.channel().close();
-            } else if (event.state() == IdleState.ALL_IDLE) {
-                log.info("关闭无用的Channel，以防资源浪费。Channel Id：{}", ctx.channel().id());
-                ctx.channel().close();
+            IdleStateEvent idleStateEvent = (IdleStateEvent) evt;
+            if (idleStateEvent.state() == IdleState.WRITER_IDLE) {
+                log.info("已经10s没有发送消息给服务端");
+                // 向服务端送心跳包
+//                MessageBase.Message heartbeat = new MessageBase.Message().toBuilder().setCmd(MessageBase.Message.CommandType.HEARTBEAT_REQUEST)
+//                        .setRequestId(UUID.randomUUID().toString())
+//                        .setContent("heartbeat").build();
+                //发送心跳消息，并在发送失败时关闭该连接
+//                ctx.writeAndFlush(heartbeat).addListener(ChannelFutureListener.CLOSE_ON_FAILURE);
             }
+        } else {
+            super.userEventTriggered(ctx, evt);
         }
     }
 
+    @Override
+    public void channelInactive(ChannelHandlerContext ctx) throws Exception {
+        // 如果运行过程中服务端挂了,执行重连机制
+        EventLoop eventLoop = ctx.channel().eventLoop();
+        eventLoop.schedule(() -> clientConfig.start(), 10L, TimeUnit.SECONDS);
+        super.channelInactive(ctx);
+    }
 }
