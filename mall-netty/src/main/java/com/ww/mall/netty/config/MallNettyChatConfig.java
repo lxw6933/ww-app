@@ -1,7 +1,5 @@
 package com.ww.mall.netty.config;
 
-import com.ww.mall.netty.handler.HeartBeatHandler;
-import com.ww.mall.netty.handler.chat.MessageCodecHandler;
 import com.ww.mall.netty.handler.chat.*;
 import com.ww.mall.netty.protocol.MallProtocolFrameDecoder;
 import io.netty.bootstrap.ServerBootstrap;
@@ -9,12 +7,8 @@ import io.netty.channel.*;
 import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.channel.socket.SocketChannel;
 import io.netty.channel.socket.nio.NioServerSocketChannel;
-import io.netty.handler.codec.http.HttpObjectAggregator;
-import io.netty.handler.codec.http.HttpServerCodec;
-import io.netty.handler.codec.http.websocketx.WebSocketServerProtocolHandler;
 import io.netty.handler.logging.LogLevel;
 import io.netty.handler.logging.LoggingHandler;
-import io.netty.handler.stream.ChunkedWriteHandler;
 import io.netty.handler.timeout.IdleState;
 import io.netty.handler.timeout.IdleStateEvent;
 import io.netty.handler.timeout.IdleStateHandler;
@@ -24,7 +18,6 @@ import org.springframework.context.annotation.Configuration;
 
 import javax.annotation.PreDestroy;
 import javax.annotation.Resource;
-import java.util.concurrent.TimeUnit;
 
 /**
  * @author ww
