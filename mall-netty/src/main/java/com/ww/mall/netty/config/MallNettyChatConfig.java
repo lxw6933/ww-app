@@ -65,8 +65,12 @@ public class MallNettyChatConfig {
     private ChatQuitHandler chatQuitHandler;
 
     @Bean
+    public LoggingHandler loggingHandler() {
+        return new LoggingHandler(LogLevel.DEBUG);
+    }
+
+    @Bean
     public ServerBootstrap chatServerBootstrap() {
-        LoggingHandler LOGGING_HANDLER = new LoggingHandler(LogLevel.DEBUG);
         ServerBootstrap serverBootstrap = new ServerBootstrap();
         serverBootstrap.group(chatBossGroup(), chatWorkerGroup())
                 .channel(NioServerSocketChannel.class)
@@ -76,7 +80,7 @@ public class MallNettyChatConfig {
                     @Override
                     protected void initChannel(SocketChannel ch) throws Exception {
                         ch.pipeline().addLast(new MallProtocolFrameDecoder());
-                        ch.pipeline().addLast(LOGGING_HANDLER);
+                        ch.pipeline().addLast(loggingHandler());
                         ch.pipeline().addLast(messageCodecHandler);
                         ch.pipeline().addLast(new IdleStateHandler(5, 0, 0));
                         ch.pipeline().addLast(new ChannelDuplexHandler() {
