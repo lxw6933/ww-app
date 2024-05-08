@@ -5,7 +5,7 @@ import com.ww.mall.netty.message.chat.PingChatMessage;
 import com.ww.mall.netty.message.chat.req.*;
 import com.ww.mall.netty.message.chat.res.LoginResponseMessage;
 import com.ww.mall.netty.protocol.MallProtocolFrameDecoder;
-import io.netty.*;
+
 import io.netty.bootstrap.Bootstrap;
 import io.netty.channel.*;
 import io.netty.channel.nio.NioEventLoopGroup;

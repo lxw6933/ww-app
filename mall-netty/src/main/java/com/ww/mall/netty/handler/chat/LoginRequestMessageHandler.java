@@ -4,6 +4,7 @@ import com.ww.mall.netty.message.chat.req.LoginRequestMessage;
 import com.ww.mall.netty.message.chat.res.LoginResponseMessage;
 import io.netty.channel.ChannelHandler;
 import io.netty.channel.ChannelHandlerContext;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 
 /**
@@ -11,12 +12,14 @@ import org.springframework.stereotype.Component;
  * @create 2024-05-07 21:59
  * @description:
  */
+@Slf4j
 @Component
 @ChannelHandler.Sharable
 public class LoginRequestMessageHandler extends MallAbstractChatInboundHandler<LoginRequestMessage> {
 
     @Override
     protected void channelRead0(ChannelHandlerContext ctx, LoginRequestMessage msg) throws Exception {
+        log.info("用户登录请求：{}", msg);
         String username = msg.getUsername();
         String password = msg.getPassword();
         boolean login = userService.login(username, password);

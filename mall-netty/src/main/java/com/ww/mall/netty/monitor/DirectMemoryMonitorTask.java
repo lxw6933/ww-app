@@ -40,7 +40,7 @@ public class DirectMemoryMonitorTask {
     /**
      * 每隔5s统计一下堆外直接内存
      */
-    @Scheduled(fixedRate = 30000)
+    @Scheduled(fixedRate = 300000)
     public void report() {
         int currentMemory = (int) (directMemory.get() / 1024);
         log.info("【{}】:【{}k】", MONITOR_KEY, currentMemory);
