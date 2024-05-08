@@ -72,8 +72,8 @@ public class MallNettyChatConfig {
                 .childHandler(new ChannelInitializer<SocketChannel>() {
                     @Override
                     protected void initChannel(SocketChannel ch) throws Exception {
-                        ch.pipeline().addLast(new MallProtocolFrameDecoder());
                         ch.pipeline().addLast(loggingHandler());
+                        ch.pipeline().addLast(new MallProtocolFrameDecoder());
                         ch.pipeline().addLast(messageCodecHandler);
                         ch.pipeline().addLast(new IdleStateHandler(5, 0, 0));
                         ch.pipeline().addLast(new ChannelDuplexHandler() {
