@@ -29,9 +29,7 @@ public class ServerClientHandler extends ChannelInboundHandlerAdapter {
 
     @Override
     public void channelActive(ChannelHandlerContext ctx) throws Exception {
-        // 从客户端地址中解析出IP地址
         String clientIp = getClientIp(ctx);
-        // 获取客户端端口
         int clientPort = getClientPort(ctx);
         ClientSocketHolder.put(ctx.channel().id().asLongText(), (NioSocketChannel) ctx.channel());
         log.info("有新客户端【{}:{}】建立连接, 目前客户端连接数：{}", clientIp, clientPort, ClientSocketHolder.getAllClientSocket().size());
@@ -42,13 +40,17 @@ public class ServerClientHandler extends ChannelInboundHandlerAdapter {
     public void channelInactive(ChannelHandlerContext ctx) throws Exception {
         sessionService.unbind(ctx.channel());
         ClientSocketHolder.removeClientSocket((NioSocketChannel) ctx.channel());
-        log.info("客户端断开连接：{}", ctx.channel());
+        String clientIp = getClientIp(ctx);
+        int clientPort = getClientPort(ctx);
+        log.info("客户端【{}:{}】断开连接", clientIp, clientPort);
     }
 
     @Override
     public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) throws Exception {
         sessionService.unbind(ctx.channel());
-        log.info("客户端【{}】出现异常：{}", ctx.channel(), cause.getMessage());
+        String clientIp = getClientIp(ctx);
+        int clientPort = getClientPort(ctx);
+        log.info("客户端【{}:{}】出现异常：{}", clientIp, clientPort, cause.getMessage());
     }
 
     private String getClientIp(ChannelHandlerContext ctx) {
