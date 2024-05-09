@@ -26,6 +26,11 @@ public class ServerClientHandler extends ChannelInboundHandlerAdapter {
     @Resource
     private SessionService sessionService;
 
+    @Override
+    public void channelRead(ChannelHandlerContext ctx, Object msg) throws Exception {
+        log.info("客户端消息【{}】", msg);
+        super.channelRead(ctx, msg);
+    }
 
     @Override
     public void channelActive(ChannelHandlerContext ctx) throws Exception {
@@ -33,7 +38,6 @@ public class ServerClientHandler extends ChannelInboundHandlerAdapter {
         int clientPort = getClientPort(ctx);
         ClientSocketHolder.put(ctx.channel().id().asLongText(), (NioSocketChannel) ctx.channel());
         log.info("有新客户端【{}:{}】建立连接, 目前客户端连接数：{}", clientIp, clientPort, ClientSocketHolder.getAllClientSocket().size());
-        super.channelActive(ctx);
     }
 
     @Override

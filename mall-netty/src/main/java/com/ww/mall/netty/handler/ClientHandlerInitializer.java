@@ -1,5 +1,6 @@
 package com.ww.mall.netty.handler;
 
+import com.ww.mall.netty.handler.chat.ClientHandler;
 import com.ww.mall.netty.handler.chat.MessageCodecHandler;
 import com.ww.mall.netty.protocol.MallProtocolFrameDecoder;
 import io.netty.channel.ChannelInitializer;
@@ -23,9 +24,13 @@ public class ClientHandlerInitializer extends ChannelInitializer<SocketChannel> 
     @Resource
     private MessageCodecHandler messageCodecHandler;
 
+    @Resource
+    private ClientHandler clientHandler;
+
     @Override
     protected void initChannel(SocketChannel ch) {
         ch.pipeline()
+                .addLast(clientHandler)
                 .addLast(new MallProtocolFrameDecoder())
                 .addLast(messageCodecHandler)
                 .addLast(new IdleStateHandler(0, 10, 0))
