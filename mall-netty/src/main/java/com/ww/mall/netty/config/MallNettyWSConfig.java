@@ -1,6 +1,5 @@
 package com.ww.mall.netty.config;
 
-import com.ww.mall.netty.handler.HeartBeatHandler;
 import com.ww.mall.netty.handler.MallWSHandler;
 import io.netty.bootstrap.ServerBootstrap;
 import io.netty.channel.ChannelInitializer;
@@ -67,7 +66,7 @@ public class MallNettyWSConfig {
                         // 增加心跳检测机制[针对客户端，如果在1分钟时没有向服务端发送读写心跳(ALL)，则主动断开]
                         pipeline.addLast(new IdleStateHandler(60, 60, 60, TimeUnit.SECONDS));
                         // 自定义心跳检测处理器
-                        pipeline.addLast(new HeartBeatHandler());
+//                        pipeline.addLast(new HeartBeatHandler());
                         // 处理WebSocket握手请求和处理WebSocket协议的帧。它负责处理WebSocket的握手请求，并将请求升级为WebSocket连接
                         pipeline.addLast(new WebSocketServerProtocolHandler(WEBSOCKET_PATH));
                         // 处理来自客户端的WebSocket消息，并向客户端发送WebSocket消息

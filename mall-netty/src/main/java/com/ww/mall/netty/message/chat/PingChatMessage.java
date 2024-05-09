@@ -6,6 +6,7 @@ package com.ww.mall.netty.message.chat;
  * @description:
  */
 public class PingChatMessage extends MallChatMessage {
+
     @Override
     public int getMessageType() {
         return PING_MESSAGE_TYPE;
