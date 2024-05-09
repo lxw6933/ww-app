@@ -1,7 +1,6 @@
 package com.ww.mall.netty.handler.chat;
 
 import cn.hutool.extra.spring.SpringUtil;
-import com.alibaba.fastjson.JSON;
 import com.ww.mall.netty.config.MallSerializerConfiguration;
 import com.ww.mall.netty.holder.MessageTypeHolder;
 import com.ww.mall.netty.message.chat.MallChatMessage;
