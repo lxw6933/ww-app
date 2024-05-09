@@ -94,7 +94,7 @@ public class ServerConfig {
                         ch.pipeline().addLast(chatQuitHandler);
                     }
                 });
-        ChannelFuture channelFuture = serverBootstrap.bind(8880).sync();
+        ChannelFuture channelFuture = serverBootstrap.bind().sync();
         if (channelFuture.isSuccess()) {
             log.info("netty server success start");
         } else {
