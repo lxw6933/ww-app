@@ -63,18 +63,18 @@ public class ServerHandlerInitializer extends ChannelInitializer<SocketChannel> 
     @Override
     protected void initChannel(SocketChannel ch) {
         ch.pipeline()
+                .addLast(new IdleStateHandler(30, 0, 0))
                 .addLast(new MallProtocolFrameDecoder())
                 .addLast(messageCodecHandler)
-                .addLast(new IdleStateHandler(30, 0, 0))
                 .addLast(pingMessageHandler)
+                .addLast(chatQuitHandler)
                 .addLast(loginRequestMessageHandler)
                 .addLast(chatRequestMessageHandler)
                 .addLast(groupCreateRequestMessageHandler)
                 .addLast(groupJoinRequestMessageHandler)
                 .addLast(groupMembersRequestMessageHandler)
                 .addLast(groupQuitRequestMessageHandler)
-                .addLast(groupChatRequestMessageHandler)
-                .addLast(chatQuitHandler);
+                .addLast(groupChatRequestMessageHandler);
 //        ch.pipeline()
 //                //空闲检测
 //                .addLast(new ServerIdleStateHandler())
