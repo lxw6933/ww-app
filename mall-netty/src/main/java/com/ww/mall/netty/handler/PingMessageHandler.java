@@ -27,9 +27,9 @@ public class PingMessageHandler extends MallAbstractChatInboundHandler<PingChatM
         if (evt instanceof IdleStateEvent){
             IdleStateEvent idleStateEvent = (IdleStateEvent) evt ;
             if (idleStateEvent.state() == IdleState.READER_IDLE) {
-                log.info("已经30秒没有收到客户端信息！");
                 PongChatMessage pongChatMessage = new PongChatMessage();
                 pongChatMessage.setSequenceId(ctx.channel().hashCode());
+                log.info("已经30秒没有收到客户端信息！给客户端发送心跳检测消息");
                 ctx.writeAndFlush(pongChatMessage);
             }
         }
@@ -38,7 +38,7 @@ public class PingMessageHandler extends MallAbstractChatInboundHandler<PingChatM
 
     @Override
     protected void channelRead0(ChannelHandlerContext ctx, PingChatMessage msg) throws Exception {
-        log.info("【{}】服务端收到客户端心跳消息：{}", ctx.channel(), msg);
+        log.info("服务端收到客户端【{}】心跳消息：{}", ctx.channel().remoteAddress(), msg);
         ClientSocketHolder.put(String.valueOf(msg.getSequenceId()), (NioSocketChannel) ctx.channel());
     }
 

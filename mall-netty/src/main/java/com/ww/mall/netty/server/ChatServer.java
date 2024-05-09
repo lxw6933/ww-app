@@ -35,7 +35,7 @@ public class ChatServer {
         final ChatRequestMessageHandler CHAT_HANDLER = new ChatRequestMessageHandler();//--单聊---处理器
         final GroupCreateRequestMessageHandler GROUP_CREATE_HANDLER = new GroupCreateRequestMessageHandler();//--创建群聊---处理器
         final GroupChatRequestMessageHandler GROUP_CHAT_HANDLER = new GroupChatRequestMessageHandler();      //--群聊---处理器
-        final ChatQuitHandler QUIT_HANDLER = new ChatQuitHandler();  //--断开连接---处理器
+        final ServerClientHandler QUIT_HANDLER = new ServerClientHandler();  //--断开连接---处理器
 
 
         try {
