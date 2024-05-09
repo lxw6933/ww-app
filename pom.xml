@@ -71,6 +71,7 @@
         <minio.version>8.5.9</minio.version>
         <netty.version>4.1.109.Final</netty.version>
         <gson.version>2.10.1</gson.version>
+        <protobuf.version>3.25.3</protobuf.version>
     </properties>
 
     <dependencyManagement>
@@ -224,6 +225,12 @@
                 <groupId>com.google.code.gson</groupId>
                 <artifactId>gson</artifactId>
                 <version>${gson.version}</version>
+            </dependency>
+            <!-- protobuf -->
+            <dependency>
+                <groupId>com.google.protobuf</groupId>
+                <artifactId>protobuf-java</artifactId>
+                <version>${protobuf.version}</version>
             </dependency>
             <!-- netty -->
             <dependency>
