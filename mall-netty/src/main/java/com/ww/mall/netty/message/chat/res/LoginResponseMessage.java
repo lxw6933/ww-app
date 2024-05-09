@@ -1,7 +1,6 @@
 package com.ww.mall.netty.message.chat.res;
 
 import com.ww.mall.netty.message.AbstractResponseChatMessage;
-import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;

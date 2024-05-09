@@ -1,12 +1,8 @@
 package com.ww.mall.netty.message.chat;
 
-import com.ww.mall.netty.message.chat.req.*;
-import com.ww.mall.netty.message.chat.res.*;
 import lombok.Data;
 
 import java.io.Serializable;
-import java.util.HashMap;
-import java.util.Map;
 
 /**
  * @author ww
