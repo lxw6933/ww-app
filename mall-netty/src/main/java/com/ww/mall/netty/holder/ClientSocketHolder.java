@@ -12,17 +12,17 @@ import java.util.concurrent.ConcurrentHashMap;
  */
 public class ClientSocketHolder {
 
-    private static final Map<Long, NioSocketChannel> clientSocketMap = new ConcurrentHashMap<>(16);
+    private static final Map<String, NioSocketChannel> clientSocketMap = new ConcurrentHashMap<>(16);
 
-    public static void put(Long id, NioSocketChannel socketChannel) {
+    public static void put(String id, NioSocketChannel socketChannel) {
         clientSocketMap.put(id, socketChannel);
     }
 
-    public static NioSocketChannel getClientSocket(Long id) {
+    public static NioSocketChannel getClientSocket(String id) {
         return clientSocketMap.get(id);
     }
 
-    public static Map<Long, NioSocketChannel> getAllClientSocket() {
+    public static Map<String, NioSocketChannel> getAllClientSocket() {
         return clientSocketMap;
     }
 

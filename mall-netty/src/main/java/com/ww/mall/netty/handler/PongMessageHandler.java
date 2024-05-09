@@ -8,6 +8,7 @@ import io.netty.channel.ChannelHandlerContext;
 import io.netty.handler.timeout.IdleState;
 import io.netty.handler.timeout.IdleStateEvent;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.stereotype.Component;
 
 /**
  * @author ww
@@ -15,6 +16,7 @@ import lombok.extern.slf4j.Slf4j;
  * @description:
  */
 @Slf4j
+@Component
 @ChannelHandler.Sharable
 public class PongMessageHandler extends MallAbstractChatInboundHandler<PongChatMessage> {
 
@@ -40,4 +42,5 @@ public class PongMessageHandler extends MallAbstractChatInboundHandler<PongChatM
         pingChatMessage.setSequenceId(ctx.channel().hashCode());
         ctx.writeAndFlush(pingChatMessage);
     }
+
 }

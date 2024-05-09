@@ -2,24 +2,34 @@ package com.ww.mall.netty.handler;
 
 import com.ww.mall.netty.handler.chat.MessageCodecHandler;
 import com.ww.mall.netty.protocol.MallProtocolFrameDecoder;
-import io.netty.channel.Channel;
 import io.netty.channel.ChannelInitializer;
+import io.netty.channel.socket.SocketChannel;
 import io.netty.handler.timeout.IdleStateHandler;
+import org.springframework.stereotype.Component;
+
+import javax.annotation.Resource;
 
 /**
  * @author ww
  * @create 2024-05-09- 09:28
  * @description:
  */
-public class ClientHandlerInitializer extends ChannelInitializer<Channel> {
+@Component
+public class ClientHandlerInitializer extends ChannelInitializer<SocketChannel> {
+
+    @Resource
+    private PongMessageHandler pongMessageHandler;
+
+    @Resource
+    private MessageCodecHandler messageCodecHandler;
 
     @Override
-    protected void initChannel(Channel ch) throws Exception {
+    protected void initChannel(SocketChannel ch) {
         ch.pipeline()
                 .addLast(new MallProtocolFrameDecoder())
-                .addLast(new MessageCodecHandler())
+                .addLast(messageCodecHandler)
                 .addLast(new IdleStateHandler(0, 10, 0))
-                .addLast(new PongMessageHandler());
+                .addLast(pongMessageHandler);
 //        ch.pipeline()
 //                .addLast(new IdleStateHandler(0, 10, 0))
 //                .addLast(new ProtobufVarint32FrameDecoder())

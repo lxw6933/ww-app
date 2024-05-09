@@ -1,24 +1,22 @@
 package com.ww.mall.netty.config;
 
 import com.ww.mall.netty.handler.ClientHandlerInitializer;
-import com.ww.mall.netty.handler.chat.MessageCodecHandler;
 import com.ww.mall.netty.message.chat.MallChatMessage;
 import com.ww.mall.netty.properties.MallNettyProperties;
-import com.ww.mall.netty.protocol.MallProtocolFrameDecoder;
 import io.netty.bootstrap.Bootstrap;
-import io.netty.channel.*;
+import io.netty.channel.ChannelFuture;
+import io.netty.channel.ChannelFutureListener;
+import io.netty.channel.ChannelOption;
+import io.netty.channel.EventLoopGroup;
 import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.channel.socket.SocketChannel;
 import io.netty.channel.socket.nio.NioSocketChannel;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.context.annotation.DependsOn;
 import org.springframework.stereotype.Component;
 
 import javax.annotation.PostConstruct;
 import javax.annotation.Resource;
-import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
  * @author ww
@@ -36,6 +34,9 @@ public class ClientConfig {
     @Resource
     private MallNettyProperties mallNettyProperties;
 
+    @Resource
+    private ClientHandlerInitializer clientHandlerInitializer;
+
     public void sendMsg(MallChatMessage message) {
         socketChannel.writeAndFlush(message);
     }
@@ -48,15 +49,15 @@ public class ClientConfig {
                 .remoteAddress("127.0.0.1", mallNettyProperties.getPort())
                 .option(ChannelOption.SO_KEEPALIVE, true)
                 .option(ChannelOption.TCP_NODELAY, true)
-                .handler(new ClientHandlerInitializer());
+                .handler(clientHandlerInitializer);
             ChannelFuture future = bootstrap.connect();
-        //客户端断线重连逻辑
+        // 客户端连接服务端逻辑
         future.addListener((ChannelFutureListener) channelFuture -> {
             if (channelFuture.isSuccess()) {
-                log.info("连接Netty服务端成功");
+                log.info("connect netty server success");
             } else {
-                log.info("连接失败，进行断线重连");
-                channelFuture.channel().eventLoop().schedule(this::start, 20, TimeUnit.SECONDS);
+                log.warn("connect netty server fail, 3s after try to reconnect");
+                channelFuture.channel().eventLoop().schedule(this::start, 3, TimeUnit.SECONDS);
             }
         });
         socketChannel = (SocketChannel) future.channel();

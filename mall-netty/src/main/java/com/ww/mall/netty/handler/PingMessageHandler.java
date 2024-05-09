@@ -10,6 +10,7 @@ import io.netty.channel.socket.nio.NioSocketChannel;
 import io.netty.handler.timeout.IdleState;
 import io.netty.handler.timeout.IdleStateEvent;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.stereotype.Component;
 
 /**
  * @author ww
@@ -17,6 +18,7 @@ import lombok.extern.slf4j.Slf4j;
  * @description:
  */
 @Slf4j
+@Component
 @ChannelHandler.Sharable
 public class PingMessageHandler extends MallAbstractChatInboundHandler<PingChatMessage> {
 
@@ -37,12 +39,7 @@ public class PingMessageHandler extends MallAbstractChatInboundHandler<PingChatM
     @Override
     protected void channelRead0(ChannelHandlerContext ctx, PingChatMessage msg) throws Exception {
         log.info("【{}】服务端收到客户端心跳消息：{}", ctx.channel(), msg);
-        ClientSocketHolder.put((long) msg.getSequenceId(), (NioSocketChannel) ctx.channel());
+        ClientSocketHolder.put(String.valueOf(msg.getSequenceId()), (NioSocketChannel) ctx.channel());
     }
 
-    @Override
-    public void channelInactive(ChannelHandlerContext ctx) throws Exception {
-        log.info("客户端渠道无效，移除无效客户端{}", ctx.channel());
-        ClientSocketHolder.removeClientSocket((NioSocketChannel) ctx.channel());
-    }
 }

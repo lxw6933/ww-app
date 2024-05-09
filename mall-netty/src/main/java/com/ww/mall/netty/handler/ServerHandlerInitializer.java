@@ -1,33 +1,80 @@
 package com.ww.mall.netty.handler;
 
 import com.ww.mall.netty.handler.chat.*;
+import com.ww.mall.netty.holder.ClientSocketHolder;
 import com.ww.mall.netty.protocol.MallProtocolFrameDecoder;
-import io.netty.channel.Channel;
+import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInitializer;
+import io.netty.channel.socket.SocketChannel;
+import io.netty.channel.socket.nio.NioSocketChannel;
 import io.netty.handler.timeout.IdleStateHandler;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.stereotype.Component;
+
+import javax.annotation.Resource;
 
 /**
  * @author ww
  * @create 2024-05-09- 09:19
  * @description:
  */
-public class ServerHandlerInitializer extends ChannelInitializer<Channel> {
+@Slf4j
+@Component
+public class ServerHandlerInitializer extends ChannelInitializer<SocketChannel> {
+
+    @Resource
+    private MessageCodecHandler messageCodecHandler;
+    @Resource
+    private LoginRequestMessageHandler loginRequestMessageHandler;
+    @Resource
+    private ChatRequestMessageHandler chatRequestMessageHandler;
+    @Resource
+    private GroupCreateRequestMessageHandler groupCreateRequestMessageHandler;
+    @Resource
+    private GroupJoinRequestMessageHandler groupJoinRequestMessageHandler;
+    @Resource
+    private GroupMembersRequestMessageHandler groupMembersRequestMessageHandler;
+    @Resource
+    private GroupQuitRequestMessageHandler groupQuitRequestMessageHandler;
+    @Resource
+    private GroupChatRequestMessageHandler groupChatRequestMessageHandler;
+    @Resource
+    private ChatQuitHandler chatQuitHandler;
+    @Resource
+    private PingMessageHandler pingMessageHandler;
 
     @Override
-    protected void initChannel(Channel ch) throws Exception {
+    public void channelActive(ChannelHandlerContext ctx) throws Exception {
+        ClientSocketHolder.put(ctx.channel().id().asLongText(), (NioSocketChannel) ctx.channel());
+        log.info("有新客户端【{}】建立连接, 目前客户端连接数：{}", ctx.channel(), ClientSocketHolder.getAllClientSocket().size());
+    }
+
+    @Override
+    public void channelInactive(ChannelHandlerContext ctx) throws Exception {
+        ClientSocketHolder.removeClientSocket((NioSocketChannel) ctx.channel());
+        log.info("客户端断开连接：{}", ctx.channel());
+    }
+
+    @Override
+    public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) throws Exception {
+        log.info("客户端【{}】出现异常：{}", ctx.channel(), cause.getMessage());
+    }
+
+    @Override
+    protected void initChannel(SocketChannel ch) {
         ch.pipeline()
                 .addLast(new MallProtocolFrameDecoder())
-                .addLast(new MessageCodecHandler())
+                .addLast(messageCodecHandler)
                 .addLast(new IdleStateHandler(30, 0, 0))
-                .addLast(new PingMessageHandler())
-                .addLast(new LoginRequestMessageHandler())
-                .addLast(new ChatRequestMessageHandler())
-                .addLast(new GroupCreateRequestMessageHandler())
-                .addLast(new GroupJoinRequestMessageHandler())
-                .addLast(new GroupMembersRequestMessageHandler())
-                .addLast(new GroupQuitRequestMessageHandler())
-                .addLast(new GroupChatRequestMessageHandler())
-                .addLast(new ChatQuitHandler());
+                .addLast(pingMessageHandler)
+                .addLast(loginRequestMessageHandler)
+                .addLast(chatRequestMessageHandler)
+                .addLast(groupCreateRequestMessageHandler)
+                .addLast(groupJoinRequestMessageHandler)
+                .addLast(groupMembersRequestMessageHandler)
+                .addLast(groupQuitRequestMessageHandler)
+                .addLast(groupChatRequestMessageHandler)
+                .addLast(chatQuitHandler);
 //        ch.pipeline()
 //                //空闲检测
 //                .addLast(new ServerIdleStateHandler())
