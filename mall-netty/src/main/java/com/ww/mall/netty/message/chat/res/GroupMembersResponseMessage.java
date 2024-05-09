@@ -8,6 +8,8 @@ import lombok.NoArgsConstructor;
 
 import java.util.Set;
 
+import static com.ww.mall.netty.holder.MessageTypeHolder.GROUP_MEMBERS_RESPONSE_MESSAGE_TYPE;
+
 /**
  * @author ww
  * @create 2024-05-07 19:54

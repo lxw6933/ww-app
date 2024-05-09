@@ -22,13 +22,13 @@ public class PongMessageHandler extends MallAbstractChatInboundHandler<PongChatM
 
     @Override
     public void userEventTriggered(ChannelHandlerContext ctx, Object evt) throws Exception {
-        if (evt instanceof IdleStateEvent){
-            IdleStateEvent idleStateEvent = (IdleStateEvent) evt ;
-            if (idleStateEvent.state() == IdleState.WRITER_IDLE){
-                log.info("已经10秒没有给服务端发送信息！");
-//                PingChatMessage pingChatMessage = new PingChatMessage();
-//                pingChatMessage.setSequenceId(ctx.channel().hashCode());
-//                ctx.writeAndFlush(pingChatMessage);
+        if (evt instanceof IdleStateEvent) {
+            IdleStateEvent idleStateEvent = (IdleStateEvent) evt;
+            if (idleStateEvent.state() == IdleState.WRITER_IDLE) {
+                log.info("send ❤ message to server at 5 seconds interval");
+                PingChatMessage pingChatMessage = new PingChatMessage();
+                pingChatMessage.setSequenceId(ctx.channel().hashCode());
+                ctx.writeAndFlush(pingChatMessage);
             }
         }
         super.userEventTriggered(ctx, evt);
@@ -36,8 +36,8 @@ public class PongMessageHandler extends MallAbstractChatInboundHandler<PongChatM
 
     @Override
     protected void channelRead0(ChannelHandlerContext ctx, PongChatMessage msg) throws Exception {
-        log.info("客户端收到服务端【{}】发来的心跳检测消息：{}", ctx.channel().remoteAddress(), msg);
-        // 给客户端发送心跳消息
+        log.info("the client receives a ❤ message【{}】 from the server【{}】", msg, ctx.channel().remoteAddress());
+        // 给服务端发送心跳消息
         PingChatMessage pingChatMessage = new PingChatMessage();
         pingChatMessage.setSequenceId(ctx.channel().hashCode());
         ctx.writeAndFlush(pingChatMessage);

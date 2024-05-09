@@ -1,5 +1,6 @@
 package com.ww.mall.netty.handler;
 
+import com.ww.mall.netty.handler.chat.HeartbeatAckHandler;
 import com.ww.mall.netty.handler.chat.ClientHandler;
 import com.ww.mall.netty.handler.chat.MessageCodecHandler;
 import com.ww.mall.netty.protocol.MallProtocolFrameDecoder;
@@ -27,14 +28,18 @@ public class ClientHandlerInitializer extends ChannelInitializer<SocketChannel> 
     @Resource
     private ClientHandler clientHandler;
 
+    @Resource
+    private HeartbeatAckHandler heartbeatAckHandler;
+
     @Override
     protected void initChannel(SocketChannel ch) {
         ch.pipeline()
+                .addLast(new IdleStateHandler(0, 5, 0))
                 .addLast(clientHandler)
                 .addLast(new MallProtocolFrameDecoder())
                 .addLast(messageCodecHandler)
-                .addLast(new IdleStateHandler(0, 10, 0))
-                .addLast(pongMessageHandler);
+                .addLast(pongMessageHandler)
+                .addLast(heartbeatAckHandler);
 //        ch.pipeline()
 //                .addLast(new IdleStateHandler(0, 10, 0))
 //                .addLast(new ProtobufVarint32FrameDecoder())

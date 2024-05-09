@@ -43,7 +43,7 @@ public class ServerHandlerInitializer extends ChannelInitializer<SocketChannel> 
     @Override
     protected void initChannel(SocketChannel ch) {
         ch.pipeline()
-                .addLast(new IdleStateHandler(30, 0, 0))
+                .addLast(new IdleStateHandler(15, 0, 0))
                 .addLast(serverClientHandler)
                 .addLast(new MallProtocolFrameDecoder())
                 .addLast(messageCodecHandler)

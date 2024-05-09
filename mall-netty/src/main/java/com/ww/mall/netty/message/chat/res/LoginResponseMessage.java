@@ -6,6 +6,8 @@ import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
 
+import static com.ww.mall.netty.holder.MessageTypeHolder.LOGIN_RESPONSE_MESSAGE_TYPE;
+
 /**
  * @author ww
  * @create 2024-05-07 19:54

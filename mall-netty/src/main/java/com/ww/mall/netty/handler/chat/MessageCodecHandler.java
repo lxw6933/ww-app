@@ -3,6 +3,7 @@ package com.ww.mall.netty.handler.chat;
 import cn.hutool.extra.spring.SpringUtil;
 import com.alibaba.fastjson.JSON;
 import com.ww.mall.netty.config.MallSerializerConfiguration;
+import com.ww.mall.netty.holder.MessageTypeHolder;
 import com.ww.mall.netty.message.chat.MallChatMessage;
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.ChannelHandler;
@@ -71,7 +72,7 @@ public class MessageCodecHandler extends MessageToMessageCodec<ByteBuf, MallChat
         byte[] bytes = new byte[length];
         in.readBytes(bytes, 0, length);
         // 确定具体消息类型
-        Class<? extends MallChatMessage> messageClass = MallChatMessage.getMessageClass(messageType);
+        Class<? extends MallChatMessage> messageClass = MessageTypeHolder.getMessageClass(messageType);
         MallChatMessage mallChatMessage = serializeConfig.getSerializer().deserialize(messageClass, bytes);
 //        MallChatMessage mallChatMessage = JSON.parseObject(bytes, messageClass);
         log.debug("魔数：{}, 版本：{}, 序列化类型：{}, 消息类型：{}, 序列化id：{}, 消息长度：{}", magicNum, version, serializerType, messageType, sequenceId, length);

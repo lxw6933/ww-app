@@ -3,6 +3,8 @@ package com.ww.mall.netty.message.chat.req;
 import com.ww.mall.netty.message.chat.MallChatMessage;
 import lombok.*;
 
+import static com.ww.mall.netty.holder.MessageTypeHolder.CHAT_REQUEST_MESSAGE_TYPE;
+
 /**
  * @author ww
  * @create 2024-05-07 19:50

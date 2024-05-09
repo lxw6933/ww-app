@@ -2,6 +2,7 @@ package com.ww.mall.netty.handler;
 
 import com.ww.mall.netty.handler.chat.MallAbstractChatInboundHandler;
 import com.ww.mall.netty.holder.ClientSocketHolder;
+import com.ww.mall.netty.message.chat.HeartbeatAckMessage;
 import com.ww.mall.netty.message.chat.PingChatMessage;
 import com.ww.mall.netty.message.chat.PongChatMessage;
 import io.netty.channel.ChannelHandler;
@@ -27,10 +28,8 @@ public class PingMessageHandler extends MallAbstractChatInboundHandler<PingChatM
         if (evt instanceof IdleStateEvent){
             IdleStateEvent idleStateEvent = (IdleStateEvent) evt ;
             if (idleStateEvent.state() == IdleState.READER_IDLE) {
-                PongChatMessage pongChatMessage = new PongChatMessage();
-                pongChatMessage.setSequenceId(ctx.channel().hashCode());
-                log.info("已经30秒没有收到客户端信息！给客户端发送心跳检测消息");
-                ctx.writeAndFlush(pongChatMessage);
+                log.info("15 seconds did not receive the client ❤ message! Disconnect the client【{}】", ctx.channel().remoteAddress());
+                ctx.channel().close();
             }
         }
         super.userEventTriggered(ctx, evt);
@@ -38,8 +37,10 @@ public class PingMessageHandler extends MallAbstractChatInboundHandler<PingChatM
 
     @Override
     protected void channelRead0(ChannelHandlerContext ctx, PingChatMessage msg) throws Exception {
-        log.info("服务端收到客户端【{}】心跳消息：{}", ctx.channel().remoteAddress(), msg);
+        log.info("the server receives a ❤ message【{}】 from the client【{}】", msg, ctx.channel().remoteAddress());
         ClientSocketHolder.put(String.valueOf(msg.getSequenceId()), (NioSocketChannel) ctx.channel());
+        // 给客户端ack响应
+        ctx.writeAndFlush(new HeartbeatAckMessage());
     }
 
 }
