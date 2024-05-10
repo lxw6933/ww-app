@@ -37,7 +37,7 @@ public class PingMessageHandler extends MallAbstractChatInboundHandler<PingChatM
 
     @Override
     protected void channelRead0(ChannelHandlerContext ctx, PingChatMessage msg) throws Exception {
-        log.info("[server] the server receives a ❤ message【{}】 from the client【{}】", msg, ctx.channel().remoteAddress());
+        log.info("[server] the server receives a ❤ message from the client【{}】", ctx.channel().remoteAddress());
         // 给客户端ack响应
         ctx.writeAndFlush(new HeartbeatAckMessage());
     }
