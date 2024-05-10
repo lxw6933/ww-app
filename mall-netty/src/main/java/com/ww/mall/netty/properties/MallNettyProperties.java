@@ -17,4 +17,8 @@ public class MallNettyProperties {
     private Integer serializerType = 2;
 
     private Integer port = 8765;
+
+    private Integer disconnectClientTime = 15;
+
+    private Integer clientHeartbeatTime = 5;
 }

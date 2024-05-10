@@ -1,6 +1,7 @@
 package com.ww.mall.netty.handler;
 
 import com.ww.mall.netty.handler.chat.*;
+import com.ww.mall.netty.properties.MallNettyProperties;
 import com.ww.mall.netty.protocol.MallProtocolFrameDecoder;
 import io.netty.channel.ChannelInitializer;
 import io.netty.channel.socket.SocketChannel;
@@ -18,6 +19,9 @@ import javax.annotation.Resource;
 @Slf4j
 @Component
 public class ServerHandlerInitializer extends ChannelInitializer<SocketChannel> {
+
+    @Resource
+    private MallNettyProperties mallNettyProperties;
 
     @Resource
     private MessageCodecHandler messageCodecHandler;
@@ -43,7 +47,7 @@ public class ServerHandlerInitializer extends ChannelInitializer<SocketChannel> 
     @Override
     protected void initChannel(SocketChannel ch) {
         ch.pipeline()
-                .addLast(new IdleStateHandler(15, 0, 0))
+                .addLast(new IdleStateHandler(mallNettyProperties.getDisconnectClientTime(), 0, 0))
                 .addLast(serverClientHandler)
                 .addLast(new MallProtocolFrameDecoder())
                 .addLast(messageCodecHandler)
@@ -55,13 +59,5 @@ public class ServerHandlerInitializer extends ChannelInitializer<SocketChannel> 
                 .addLast(groupMembersRequestMessageHandler)
                 .addLast(groupQuitRequestMessageHandler)
                 .addLast(groupChatRequestMessageHandler);
-//        ch.pipeline()
-//                //空闲检测
-//                .addLast(new ServerIdleStateHandler())
-//                .addLast(new ProtobufVarint32FrameDecoder())
-//                .addLast(new ProtobufDecoder(MessageBase.Message.getDefaultInstance()))
-//                .addLast(new ProtobufVarint32LengthFieldPrepender())
-//                .addLast(new ProtobufEncoder())
-//                .addLast(new NettyServerHandler());
     }
 }

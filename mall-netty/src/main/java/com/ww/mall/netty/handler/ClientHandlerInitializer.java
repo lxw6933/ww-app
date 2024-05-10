@@ -3,6 +3,7 @@ package com.ww.mall.netty.handler;
 import com.ww.mall.netty.handler.chat.HeartbeatAckHandler;
 import com.ww.mall.netty.handler.chat.ClientHandler;
 import com.ww.mall.netty.handler.chat.MessageCodecHandler;
+import com.ww.mall.netty.properties.MallNettyProperties;
 import com.ww.mall.netty.protocol.MallProtocolFrameDecoder;
 import io.netty.channel.ChannelInitializer;
 import io.netty.channel.socket.SocketChannel;
@@ -20,6 +21,9 @@ import javax.annotation.Resource;
 public class ClientHandlerInitializer extends ChannelInitializer<SocketChannel> {
 
     @Resource
+    private MallNettyProperties mallNettyProperties;
+
+    @Resource
     private PongMessageHandler pongMessageHandler;
 
     @Resource
@@ -34,19 +38,11 @@ public class ClientHandlerInitializer extends ChannelInitializer<SocketChannel> 
     @Override
     protected void initChannel(SocketChannel ch) {
         ch.pipeline()
-                .addLast(new IdleStateHandler(0, 5, 0))
+                .addLast(new IdleStateHandler(0, mallNettyProperties.getClientHeartbeatTime(), 0))
                 .addLast(clientHandler)
                 .addLast(new MallProtocolFrameDecoder())
                 .addLast(messageCodecHandler)
                 .addLast(pongMessageHandler)
                 .addLast(heartbeatAckHandler);
-//        ch.pipeline()
-//                .addLast(new IdleStateHandler(0, 10, 0))
-//                .addLast(new ProtobufVarint32FrameDecoder())
-//                .addLast(new ProtobufDecoder(MessageBase.Message.getDefaultInstance()))
-//                .addLast(new ProtobufVarint32LengthFieldPrepender())
-//                .addLast(new ProtobufEncoder())
-//                .addLast(new HeartBeatHandler())
-//                .addLast(new NettyClientHandler());
     }
 }
