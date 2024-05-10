@@ -38,8 +38,8 @@ public class ServerClientHandler extends ChannelInboundHandlerAdapter {
 
     @Override
     public void channelActive(ChannelHandlerContext ctx) throws Exception {
-        String clientIp = getClientIp(ctx);
-        int clientPort = getClientPort(ctx);
+        String clientIp = ClientSocketHolder.getClientIp(ctx);
+        int clientPort = ClientSocketHolder.getClientPort(ctx);
         ClientSocketHolder.put(ctx.channel().id(), (NioSocketChannel) ctx.channel());
         log.info("[server] a new client【{}:{}】 establishes a connection, total number of current client connections：{}", clientIp, clientPort, ClientSocketHolder.getAllClientSocket().size());
     }
@@ -48,31 +48,17 @@ public class ServerClientHandler extends ChannelInboundHandlerAdapter {
     public void channelInactive(ChannelHandlerContext ctx) throws Exception {
         sessionService.unbind(ctx.channel());
         ClientSocketHolder.removeClientSocket(ctx.channel().id());
-        String clientIp = getClientIp(ctx);
-        int clientPort = getClientPort(ctx);
+        String clientIp = ClientSocketHolder.getClientIp(ctx);
+        int clientPort = ClientSocketHolder.getClientPort(ctx);
         log.info("[server] client【{}:{}】disconnect", clientIp, clientPort);
     }
 
     @Override
     public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) throws Exception {
         sessionService.unbind(ctx.channel());
-        String clientIp = getClientIp(ctx);
-        int clientPort = getClientPort(ctx);
+        String clientIp = ClientSocketHolder.getClientIp(ctx);
+        int clientPort = ClientSocketHolder.getClientPort(ctx);
         log.info("[server] an exception【{}】 occurred on the client【{}:{}】", cause.getMessage(), clientIp, clientPort);
-    }
-
-    private String getClientIp(ChannelHandlerContext ctx) {
-        // 获取客户端的IP地址和端口
-        SocketAddress clientSocketAddress = ctx.channel().remoteAddress();
-        // 从客户端地址中解析出IP地址
-        return ((InetSocketAddress) clientSocketAddress).getAddress().getHostAddress();
-    }
-
-    private int getClientPort(ChannelHandlerContext ctx) {
-        // 获取客户端的IP地址和端口
-        SocketAddress clientSocketAddress = ctx.channel().remoteAddress();
-        // 从客户端地址中解析出IP地址
-        return ((InetSocketAddress) clientSocketAddress).getPort();
     }
 
 }

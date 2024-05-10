@@ -1,8 +1,11 @@
 package com.ww.mall.netty.holder;
 
+import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelId;
 import io.netty.channel.socket.nio.NioSocketChannel;
 
+import java.net.InetSocketAddress;
+import java.net.SocketAddress;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -33,6 +36,20 @@ public class ClientSocketHolder {
 
     public static void removeClientSocket(NioSocketChannel clientSocket) {
         clientSocketMap.entrySet().stream().filter(entry -> entry.getValue() == clientSocket).forEach(entry -> clientSocketMap.remove(entry.getKey()));
+    }
+
+    public static String getClientIp(ChannelHandlerContext ctx) {
+        // 获取客户端的IP地址和端口
+        SocketAddress clientSocketAddress = ctx.channel().remoteAddress();
+        // 从客户端地址中解析出IP地址
+        return ((InetSocketAddress) clientSocketAddress).getAddress().getHostAddress();
+    }
+
+    public static int getClientPort(ChannelHandlerContext ctx) {
+        // 获取客户端的IP地址和端口
+        SocketAddress clientSocketAddress = ctx.channel().remoteAddress();
+        // 从客户端地址中解析出IP地址
+        return ((InetSocketAddress) clientSocketAddress).getPort();
     }
 
 }
