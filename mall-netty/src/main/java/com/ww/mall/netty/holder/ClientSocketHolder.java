@@ -1,5 +1,6 @@
 package com.ww.mall.netty.holder;
 
+import io.netty.channel.ChannelId;
 import io.netty.channel.socket.nio.NioSocketChannel;
 
 import java.util.Map;
@@ -12,18 +13,22 @@ import java.util.concurrent.ConcurrentHashMap;
  */
 public class ClientSocketHolder {
 
-    private static final Map<String, NioSocketChannel> clientSocketMap = new ConcurrentHashMap<>(16);
+    private static final Map<ChannelId, NioSocketChannel> clientSocketMap = new ConcurrentHashMap<>(16);
 
-    public static void put(String id, NioSocketChannel socketChannel) {
-        clientSocketMap.put(id, socketChannel);
+    public static void put(ChannelId channelId, NioSocketChannel socketChannel) {
+        clientSocketMap.put(channelId, socketChannel);
     }
 
-    public static NioSocketChannel getClientSocket(String id) {
-        return clientSocketMap.get(id);
+    public static NioSocketChannel getClientSocket(ChannelId channelId) {
+        return clientSocketMap.get(channelId);
     }
 
-    public static Map<String, NioSocketChannel> getAllClientSocket() {
+    public static Map<ChannelId, NioSocketChannel> getAllClientSocket() {
         return clientSocketMap;
+    }
+
+    public static void removeClientSocket(ChannelId channelId) {
+        clientSocketMap.remove(channelId);
     }
 
     public static void removeClientSocket(NioSocketChannel clientSocket) {

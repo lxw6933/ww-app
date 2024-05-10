@@ -40,14 +40,14 @@ public class ServerClientHandler extends ChannelInboundHandlerAdapter {
     public void channelActive(ChannelHandlerContext ctx) throws Exception {
         String clientIp = getClientIp(ctx);
         int clientPort = getClientPort(ctx);
-        ClientSocketHolder.put(ctx.channel().id().asLongText(), (NioSocketChannel) ctx.channel());
+        ClientSocketHolder.put(ctx.channel().id(), (NioSocketChannel) ctx.channel());
         log.info("[server] a new client【{}:{}】 establishes a connection, total number of current client connections：{}", clientIp, clientPort, ClientSocketHolder.getAllClientSocket().size());
     }
 
     @Override
     public void channelInactive(ChannelHandlerContext ctx) throws Exception {
         sessionService.unbind(ctx.channel());
-        ClientSocketHolder.removeClientSocket((NioSocketChannel) ctx.channel());
+        ClientSocketHolder.removeClientSocket(ctx.channel().id());
         String clientIp = getClientIp(ctx);
         int clientPort = getClientPort(ctx);
         log.info("[server] client【{}:{}】disconnect", clientIp, clientPort);

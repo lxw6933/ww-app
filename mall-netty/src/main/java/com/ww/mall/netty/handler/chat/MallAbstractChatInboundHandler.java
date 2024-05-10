@@ -4,6 +4,7 @@ import com.ww.mall.netty.service.GroupSessionService;
 import com.ww.mall.netty.service.SessionService;
 import com.ww.mall.netty.service.UserService;
 import io.netty.channel.SimpleChannelInboundHandler;
+import org.springframework.cloud.context.config.annotation.RefreshScope;
 
 import javax.annotation.Resource;
 
