@@ -41,7 +41,7 @@ public class ServerClientHandler extends ChannelInboundHandlerAdapter {
         String clientIp = getClientIp(ctx);
         int clientPort = getClientPort(ctx);
         ClientSocketHolder.put(ctx.channel().id().asLongText(), (NioSocketChannel) ctx.channel());
-        log.info("a new client【{}:{}】 establishes a connection, total number of current client connections：{}", clientIp, clientPort, ClientSocketHolder.getAllClientSocket().size());
+        log.info("[server] a new client【{}:{}】 establishes a connection, total number of current client connections：{}", clientIp, clientPort, ClientSocketHolder.getAllClientSocket().size());
     }
 
     @Override
@@ -50,7 +50,7 @@ public class ServerClientHandler extends ChannelInboundHandlerAdapter {
         ClientSocketHolder.removeClientSocket((NioSocketChannel) ctx.channel());
         String clientIp = getClientIp(ctx);
         int clientPort = getClientPort(ctx);
-        log.info("client【{}:{}】disconnect", clientIp, clientPort);
+        log.info("[server] client【{}:{}】disconnect", clientIp, clientPort);
     }
 
     @Override
@@ -58,7 +58,7 @@ public class ServerClientHandler extends ChannelInboundHandlerAdapter {
         sessionService.unbind(ctx.channel());
         String clientIp = getClientIp(ctx);
         int clientPort = getClientPort(ctx);
-        log.info("an exception【{}】 occurred on the client【{}:{}】", cause.getMessage(), clientIp, clientPort);
+        log.info("[server] an exception【{}】 occurred on the client【{}:{}】", cause.getMessage(), clientIp, clientPort);
     }
 
     private String getClientIp(ChannelHandlerContext ctx) {

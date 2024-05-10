@@ -28,7 +28,7 @@ public class PingMessageHandler extends MallAbstractChatInboundHandler<PingChatM
         if (evt instanceof IdleStateEvent){
             IdleStateEvent idleStateEvent = (IdleStateEvent) evt ;
             if (idleStateEvent.state() == IdleState.READER_IDLE) {
-                log.info("15 seconds did not receive the client ❤ message! Disconnect the client【{}】", ctx.channel().remoteAddress());
+                log.info("[server] 15 seconds did not receive the client ❤ message! Disconnect the client【{}】", ctx.channel().remoteAddress());
                 ctx.channel().close();
             }
         }
@@ -37,7 +37,7 @@ public class PingMessageHandler extends MallAbstractChatInboundHandler<PingChatM
 
     @Override
     protected void channelRead0(ChannelHandlerContext ctx, PingChatMessage msg) throws Exception {
-        log.info("the server receives a ❤ message【{}】 from the client【{}】", msg, ctx.channel().remoteAddress());
+        log.info("[server] the server receives a ❤ message【{}】 from the client【{}】", msg, ctx.channel().remoteAddress());
         ClientSocketHolder.put(String.valueOf(msg.getSequenceId()), (NioSocketChannel) ctx.channel());
         // 给客户端ack响应
         ctx.writeAndFlush(new HeartbeatAckMessage());
