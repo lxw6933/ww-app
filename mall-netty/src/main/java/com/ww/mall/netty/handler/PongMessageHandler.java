@@ -25,7 +25,7 @@ public class PongMessageHandler extends MallAbstractChatInboundHandler<PongChatM
         if (evt instanceof IdleStateEvent) {
             IdleStateEvent idleStateEvent = (IdleStateEvent) evt;
             if (idleStateEvent.state() == IdleState.WRITER_IDLE) {
-                log.info("send ❤ message to server at 5 seconds interval");
+                log.info("[client] send ❤ message to server at 5 seconds interval");
                 PingChatMessage pingChatMessage = new PingChatMessage();
                 pingChatMessage.setSequenceId(ctx.channel().hashCode());
                 ctx.writeAndFlush(pingChatMessage);
@@ -36,7 +36,7 @@ public class PongMessageHandler extends MallAbstractChatInboundHandler<PongChatM
 
     @Override
     protected void channelRead0(ChannelHandlerContext ctx, PongChatMessage msg) throws Exception {
-        log.info("the client receives a ❤ message【{}】 from the server【{}】", msg, ctx.channel().remoteAddress());
+        log.info("[client] receive a ❤ message【{}】 from the server【{}】", msg, ctx.channel().remoteAddress());
         // 给服务端发送心跳消息
         PingChatMessage pingChatMessage = new PingChatMessage();
         pingChatMessage.setSequenceId(ctx.channel().hashCode());

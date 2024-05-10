@@ -18,7 +18,7 @@ public class HeartbeatAckHandler extends MallAbstractChatInboundHandler<Heartbea
 
     @Override
     protected void channelRead0(ChannelHandlerContext ctx, HeartbeatAckMessage ack) throws Exception {
-        log.info("receive the server heartbeat message ack");
+        log.info("[client] receive the server heartbeat message ack");
     }
 
 }

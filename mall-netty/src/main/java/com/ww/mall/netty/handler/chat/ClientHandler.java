@@ -2,19 +2,13 @@ package com.ww.mall.netty.handler.chat;
 
 import cn.hutool.extra.spring.SpringUtil;
 import com.ww.mall.netty.config.ClientConfig;
-import com.ww.mall.netty.holder.ClientSocketHolder;
-import com.ww.mall.netty.service.SessionService;
 import io.netty.channel.ChannelHandler;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInboundHandlerAdapter;
-import io.netty.channel.socket.nio.NioSocketChannel;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
-import javax.annotation.Resource;
-import java.net.InetSocketAddress;
-import java.net.SocketAddress;
 import java.util.concurrent.TimeUnit;
 
 /**
@@ -35,7 +29,7 @@ public class ClientHandler extends ChannelInboundHandlerAdapter {
 
     @Override
     public void channelRead(ChannelHandlerContext ctx, Object msg) throws Exception {
-        log.info("receive netty server msg:【{}】", msg);
+        log.info("[client] receive netty server msg:【{}】", msg);
         super.channelRead(ctx, msg);
     }
 
@@ -48,14 +42,15 @@ public class ClientHandler extends ChannelInboundHandlerAdapter {
 
     @Override
     public void channelInactive(ChannelHandlerContext ctx) throws Exception {
-        log.warn("disconnect netty server, 3s after try to reconnect");
+        log.warn("[client] disconnect netty server, 3s after try to reconnect");
         ClientConfig clientConfig = SpringUtil.getBean(ClientConfig.class);
         ctx.channel().eventLoop().schedule(clientConfig::start, 3, TimeUnit.SECONDS);
     }
 
     @Override
     public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) throws Exception {
-        log.info("client exception：{}===============================", cause.getMessage());
+        log.info("[client] channel exception：{}", cause.getMessage());
+        super.exceptionCaught(ctx, cause);
     }
 
 }
