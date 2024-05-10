@@ -2,7 +2,6 @@ package com.ww.mall.netty.handler.chat;
 
 import com.ww.mall.netty.holder.ClientSocketHolder;
 import com.ww.mall.netty.service.SessionService;
-import io.netty.buffer.ByteBuf;
 import io.netty.channel.ChannelHandler;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInboundHandlerAdapter;
@@ -11,9 +10,6 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 
 import javax.annotation.Resource;
-import java.net.InetSocketAddress;
-import java.net.SocketAddress;
-import java.nio.charset.StandardCharsets;
 
 /**
  * @author ww
