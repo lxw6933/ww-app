@@ -33,5 +33,5 @@ message FutureResponse {
 */
 service FutureService {
   // rpc 请求消息 HelloRequest 响应消息 HelloResponse
-  rpc hello(FutureRequest) returns (FutureResponse){}
+  rpc test(FutureRequest) returns (FutureResponse){}
 }

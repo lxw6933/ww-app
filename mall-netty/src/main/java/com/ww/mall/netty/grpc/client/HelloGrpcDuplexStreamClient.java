@@ -1,4 +1,4 @@
-package com.ww.mall.netty.service.grpc.client;
+package com.ww.mall.netty.grpc.client;
 
 import com.ww.mall.proto.hello.HelloProto;
 import com.ww.mall.proto.hello.HelloServiceGrpc;

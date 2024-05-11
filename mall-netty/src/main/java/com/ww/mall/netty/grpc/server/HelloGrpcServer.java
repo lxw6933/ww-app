@@ -1,6 +1,7 @@
-package com.ww.mall.netty.service.grpc.server;
+package com.ww.mall.netty.grpc.server;
 
-import com.ww.mall.netty.service.grpc.service.HelloServiceImpl;
+import com.ww.mall.netty.grpc.service.FutureServiceImpl;
+import com.ww.mall.netty.grpc.service.HelloServiceImpl;
 import io.grpc.Server;
 import io.grpc.ServerBuilder;
 
@@ -16,6 +17,7 @@ public class HelloGrpcServer {
         ServerBuilder<?> serverBuilder = ServerBuilder.forPort(6933);
         // 发布服务
         serverBuilder.addService(new HelloServiceImpl());
+        serverBuilder.addService(new FutureServiceImpl());
         // 创建服务对象
         Server server = serverBuilder.build();
         server.start();
