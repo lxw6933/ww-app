@@ -34,14 +34,3 @@ message A {
   int64 id = 1;
   B b = 2;
 }
-
-/*
-  定义服务
-  1.
-  2.
-  3.
-  4.
-*/
-service HelloService {
-  rpc hello(HelloRequest) returns(HelloResponse){}
-}

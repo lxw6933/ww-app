@@ -1,4 +1,4 @@
-package com.ww.mall.netty.service.grpc;
+package com.ww.mall.netty.service.grpc.client;
 
 import com.ww.mall.proto.hello.HelloProto;
 import com.ww.mall.proto.hello.HelloServiceGrpc;
@@ -6,26 +6,28 @@ import io.grpc.ManagedChannel;
 import io.grpc.ManagedChannelBuilder;
 import lombok.extern.slf4j.Slf4j;
 
+import java.util.Iterator;
+
 /**
  * @author ww
  * @create 2024-05-11 0:10
- * @description:
+ * @description: 阻塞客户端【远程调用】
  */
 @Slf4j
-public class HelloGrpcClient {
+public class HelloGrpcBlockClient {
 
     public static void main(String[] args) {
         ManagedChannel managedChannel = null;
         try {
             // 创建通信管道
             managedChannel = ManagedChannelBuilder.forAddress("127.0.0.1", 6933).usePlaintext().build();
-            // 获取代理对象
+            // 获取代理对象【阻塞代理对象】
             HelloServiceGrpc.HelloServiceBlockingStub blockingStubHelloService = HelloServiceGrpc.newBlockingStub(managedChannel);
             // 请求参数
             HelloProto.HelloRequest.Builder requestBuilder = HelloProto.HelloRequest.newBuilder();
             requestBuilder.setName("hello");
             HelloProto.HelloRequest request = requestBuilder.build();
-            // rpc远程调用
+            // 1.rpc远程调用
             HelloProto.HelloResponse response = blockingStubHelloService.hello(request);
             log.info("rpc远程调用，请求参数：{} 响应参数：{}", request, response);
         } catch (Exception e) {

@@ -6,7 +6,7 @@ option java_multiple_files = false;
 // 指定生成的java类放哪个包中
 option java_package = "com.ww.mall.proto.hello";
 // 外部类名称[内部类是真正开发使用的]
-option java_outer_classname = "HelloProto";
+option java_outer_classname = "FutureProto";
 
 /*
   定义一个消息： 类比java class
@@ -15,12 +15,12 @@ option java_outer_classname = "HelloProto";
 */
 
 // 定义一个请求message
-message HelloRequest {
+message FutureRequest {
   string name = 1;
 }
 
 // 定义一个响应message
-message HelloResponse {
+message FutureResponse {
   string result = 1;
 }
 
@@ -31,13 +31,7 @@ message HelloResponse {
   3.客户端流式rpc 【客户端不断发送请求给到服务端】应用场景：iot
   4.双向流rpc
 */
-service HelloService {
+service FutureService {
   // rpc 请求消息 HelloRequest 响应消息 HelloResponse
-  rpc hello(HelloRequest) returns (HelloResponse){}
-  // 服务端流式rpc
-  rpc serverStreamHello(HelloRequest) returns (stream HelloResponse){}
-  // 客户端流式rpc
-  rpc clientStreamHello(stream HelloRequest) returns (HelloResponse){}
-  // 双向流式rpc
-  rpc duplexStreamHello(stream HelloRequest) returns (stream HelloResponse){}
+  rpc hello(FutureRequest) returns (FutureResponse){}
 }

@@ -32,6 +32,10 @@ public final class HelloProto {
         getNameBytes();
   }
   /**
+   * <pre>
+   * 定义一个请求message
+   * </pre>
+   *
    * Protobuf type {@code HelloRequest}
    */
   public static final class HelloRequest extends
@@ -263,6 +267,10 @@ public final class HelloProto {
       return builder;
     }
     /**
+     * <pre>
+     * 定义一个请求message
+     * </pre>
+     *
      * Protobuf type {@code HelloRequest}
      */
     public static final class Builder extends
@@ -584,6 +592,10 @@ public final class HelloProto {
         getResultBytes();
   }
   /**
+   * <pre>
+   * 定义一个响应message
+   * </pre>
+   *
    * Protobuf type {@code HelloResponse}
    */
   public static final class HelloResponse extends
@@ -815,6 +827,10 @@ public final class HelloProto {
       return builder;
     }
     /**
+     * <pre>
+     * 定义一个响应message
+     * </pre>
+     *
      * Protobuf type {@code HelloResponse}
      */
     public static final class Builder extends
@@ -1139,10 +1155,14 @@ public final class HelloProto {
   static {
     java.lang.String[] descriptorData = {
       "\n\013Hello.proto\"\034\n\014HelloRequest\022\014\n\004name\030\001 " +
-      "\001(\t\"\037\n\rHelloResponse\022\016\n\006result\030\001 \001(\t28\n\014" +
-      "HelloService\022(\n\005hello\022\r.HelloRequest\032\016.H" +
-      "elloResponse\"\000B\'\n\027com.ww.mall.proto.hell" +
-      "oB\nHelloProtoP\000b\006proto3"
+      "\001(\t\"\037\n\rHelloResponse\022\016\n\006result\030\001 \001(\t2\342\001\n" +
+      "\014HelloService\022(\n\005hello\022\r.HelloRequest\032\016." +
+      "HelloResponse\"\000\0226\n\021serverStreamHello\022\r.H" +
+      "elloRequest\032\016.HelloResponse\"\0000\001\0226\n\021clien" +
+      "tStreamHello\022\r.HelloRequest\032\016.HelloRespo" +
+      "nse\"\000(\001\0228\n\021duplexStreamHello\022\r.HelloRequ" +
+      "est\032\016.HelloResponse\"\000(\0010\001B\'\n\027com.ww.mall" +
+      ".proto.helloB\nHelloProtoP\000b\006proto3"
     };
     descriptor = com.google.protobuf.Descriptors.FileDescriptor
       .internalBuildGeneratedFileFrom(descriptorData,

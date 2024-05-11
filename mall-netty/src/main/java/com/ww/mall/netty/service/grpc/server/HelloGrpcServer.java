@@ -1,10 +1,8 @@
-package com.ww.mall.netty.service.grpc;
+package com.ww.mall.netty.service.grpc.server;
 
-import com.ww.mall.netty.service.HelloServiceImpl;
+import com.ww.mall.netty.service.grpc.service.HelloServiceImpl;
 import io.grpc.Server;
 import io.grpc.ServerBuilder;
-
-import java.io.IOException;
 
 /**
  * @author ww
