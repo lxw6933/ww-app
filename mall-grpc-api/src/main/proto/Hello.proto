@@ -1,17 +1,17 @@
-// 语法
+// 语法选用proto3
 syntax = "proto3";
 
 // 生成的java是一个源文件还是多个源文件
 option java_multiple_files = false;
 // 指定生成的java类放哪个包中
 option java_package = "com.ww.mall.proto.hello";
-// 外部类名称[内部类是真正开发使用的]
+// proto javalei结构：外部类名称[内部类是真正开发使用的]
 option java_outer_classname = "HelloProto";
 
 /*
   定义一个消息： 类比java class
-  消息字段修饰符
-  repeated ： 这个字段类比List
+  消息字段修饰符 repeated
+  repeated string imgList： 这个字段类比List<String> imgList
 */
 
 // 定义一个请求message
@@ -32,7 +32,7 @@ message HelloResponse {
   4.双向流rpc
 */
 service HelloService {
-  // rpc 请求消息 HelloRequest 响应消息 HelloResponse
+  // 简单rpc 请求消息：HelloRequest 响应消息：HelloResponse
   rpc hello(HelloRequest) returns (HelloResponse){}
   // 服务端流式rpc
   rpc serverStreamHello(HelloRequest) returns (stream HelloResponse){}
