@@ -1,7 +1,7 @@
-package com.ww.mall.netty.grpc.server;
+package com.ww.mall.server.test;
 
-import com.ww.mall.netty.grpc.service.FutureServiceImpl;
-import com.ww.mall.netty.grpc.service.HelloServiceImpl;
+import com.ww.mall.server.test.service.FutureServiceImpl;
+import com.ww.mall.server.test.service.HelloServiceImpl;
 import io.grpc.Server;
 import io.grpc.ServerBuilder;
 

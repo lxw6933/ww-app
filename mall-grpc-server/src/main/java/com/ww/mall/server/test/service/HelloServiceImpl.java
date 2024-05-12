@@ -1,4 +1,4 @@
-package com.ww.mall.netty.grpc.service;
+package com.ww.mall.server.test.service;
 
 import cn.hutool.core.util.RandomUtil;
 import com.ww.mall.proto.hello.HelloProto;

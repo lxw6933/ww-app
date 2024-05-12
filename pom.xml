@@ -35,6 +35,9 @@
         <module>mall-seckill</module>
         <module>mall-flink</module>
         <module>mall-netty</module>
+        <module>mall-grpc-api</module>
+        <module>mall-grpc-server</module>
+        <module>mall-grpc-client</module>
     </modules>
 
     <properties>
@@ -72,6 +75,8 @@
         <netty.version>4.1.109.Final</netty.version>
         <gson.version>2.10.1</gson.version>
         <protobuf.version>3.25.3</protobuf.version>
+        <grpc.version>1.51.0</grpc.version>
+        <grpc.springboot.version>2.14.0.RELEASE</grpc.springboot.version>
     </properties>
 
     <dependencyManagement>

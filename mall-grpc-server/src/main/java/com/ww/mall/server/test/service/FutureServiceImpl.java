@@ -1,8 +1,7 @@
-package com.ww.mall.netty.grpc.service;
+package com.ww.mall.server.test.service;
 
 import com.ww.mall.proto.hello.FutureProto;
 import com.ww.mall.proto.hello.FutureServiceGrpc;
-import com.ww.mall.proto.hello.HelloProto;
 import io.grpc.stub.StreamObserver;
 import lombok.extern.slf4j.Slf4j;
 

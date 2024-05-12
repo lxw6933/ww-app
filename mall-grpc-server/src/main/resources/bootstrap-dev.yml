@@ -1,0 +1,9 @@
+# grpc server 端口
+grpc:
+  server:
+    port: 9090
+
+# 使用rpc不需要tomcat
+spring:
+  main:
+    web-application-type: none

@@ -1,4 +1,4 @@
-package com.ww.mall.netty.grpc.client;
+package com.ww.mall.client.test;
 
 import com.google.common.util.concurrent.FutureCallback;
 import com.google.common.util.concurrent.Futures;
