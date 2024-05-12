@@ -22,29 +22,29 @@ public final class FutureServiceGrpc {
   public static final java.lang.String SERVICE_NAME = "FutureService";
 
   // Static method descriptors that strictly reflect the proto.
-  private static volatile io.grpc.MethodDescriptor<com.ww.mall.proto.hello.FutureProto.FutureRequest,
-      com.ww.mall.proto.hello.FutureProto.FutureResponse> getTestMethod;
+  private static volatile io.grpc.MethodDescriptor<com.ww.mall.proto.hello.FutureRequest,
+      com.ww.mall.proto.hello.FutureResponse> getTestMethod;
 
   @io.grpc.stub.annotations.RpcMethod(
       fullMethodName = SERVICE_NAME + '/' + "test",
-      requestType = com.ww.mall.proto.hello.FutureProto.FutureRequest.class,
-      responseType = com.ww.mall.proto.hello.FutureProto.FutureResponse.class,
+      requestType = com.ww.mall.proto.hello.FutureRequest.class,
+      responseType = com.ww.mall.proto.hello.FutureResponse.class,
       methodType = io.grpc.MethodDescriptor.MethodType.UNARY)
-  public static io.grpc.MethodDescriptor<com.ww.mall.proto.hello.FutureProto.FutureRequest,
-      com.ww.mall.proto.hello.FutureProto.FutureResponse> getTestMethod() {
-    io.grpc.MethodDescriptor<com.ww.mall.proto.hello.FutureProto.FutureRequest, com.ww.mall.proto.hello.FutureProto.FutureResponse> getTestMethod;
+  public static io.grpc.MethodDescriptor<com.ww.mall.proto.hello.FutureRequest,
+      com.ww.mall.proto.hello.FutureResponse> getTestMethod() {
+    io.grpc.MethodDescriptor<com.ww.mall.proto.hello.FutureRequest, com.ww.mall.proto.hello.FutureResponse> getTestMethod;
     if ((getTestMethod = FutureServiceGrpc.getTestMethod) == null) {
       synchronized (FutureServiceGrpc.class) {
         if ((getTestMethod = FutureServiceGrpc.getTestMethod) == null) {
           FutureServiceGrpc.getTestMethod = getTestMethod =
-              io.grpc.MethodDescriptor.<com.ww.mall.proto.hello.FutureProto.FutureRequest, com.ww.mall.proto.hello.FutureProto.FutureResponse>newBuilder()
+              io.grpc.MethodDescriptor.<com.ww.mall.proto.hello.FutureRequest, com.ww.mall.proto.hello.FutureResponse>newBuilder()
               .setType(io.grpc.MethodDescriptor.MethodType.UNARY)
               .setFullMethodName(generateFullMethodName(SERVICE_NAME, "test"))
               .setSampledToLocalTracing(true)
               .setRequestMarshaller(io.grpc.protobuf.ProtoUtils.marshaller(
-                  com.ww.mall.proto.hello.FutureProto.FutureRequest.getDefaultInstance()))
+                  com.ww.mall.proto.hello.FutureRequest.getDefaultInstance()))
               .setResponseMarshaller(io.grpc.protobuf.ProtoUtils.marshaller(
-                  com.ww.mall.proto.hello.FutureProto.FutureResponse.getDefaultInstance()))
+                  com.ww.mall.proto.hello.FutureResponse.getDefaultInstance()))
               .setSchemaDescriptor(new FutureServiceMethodDescriptorSupplier("test"))
               .build();
         }
@@ -113,8 +113,8 @@ public final class FutureServiceGrpc {
      * rpc 请求消息 HelloRequest 响应消息 HelloResponse
      * </pre>
      */
-    default void test(com.ww.mall.proto.hello.FutureProto.FutureRequest request,
-        io.grpc.stub.StreamObserver<com.ww.mall.proto.hello.FutureProto.FutureResponse> responseObserver) {
+    default void test(com.ww.mall.proto.hello.FutureRequest request,
+        io.grpc.stub.StreamObserver<com.ww.mall.proto.hello.FutureResponse> responseObserver) {
       io.grpc.stub.ServerCalls.asyncUnimplementedUnaryCall(getTestMethod(), responseObserver);
     }
   }
@@ -165,8 +165,8 @@ public final class FutureServiceGrpc {
      * rpc 请求消息 HelloRequest 响应消息 HelloResponse
      * </pre>
      */
-    public void test(com.ww.mall.proto.hello.FutureProto.FutureRequest request,
-        io.grpc.stub.StreamObserver<com.ww.mall.proto.hello.FutureProto.FutureResponse> responseObserver) {
+    public void test(com.ww.mall.proto.hello.FutureRequest request,
+        io.grpc.stub.StreamObserver<com.ww.mall.proto.hello.FutureResponse> responseObserver) {
       io.grpc.stub.ClientCalls.asyncUnaryCall(
           getChannel().newCall(getTestMethod(), getCallOptions()), request, responseObserver);
     }
@@ -200,7 +200,7 @@ public final class FutureServiceGrpc {
      * rpc 请求消息 HelloRequest 响应消息 HelloResponse
      * </pre>
      */
-    public com.ww.mall.proto.hello.FutureProto.FutureResponse test(com.ww.mall.proto.hello.FutureProto.FutureRequest request) {
+    public com.ww.mall.proto.hello.FutureResponse test(com.ww.mall.proto.hello.FutureRequest request) {
       return io.grpc.stub.ClientCalls.blockingUnaryCall(
           getChannel(), getTestMethod(), getCallOptions(), request);
     }
@@ -234,8 +234,8 @@ public final class FutureServiceGrpc {
      * rpc 请求消息 HelloRequest 响应消息 HelloResponse
      * </pre>
      */
-    public com.google.common.util.concurrent.ListenableFuture<com.ww.mall.proto.hello.FutureProto.FutureResponse> test(
-        com.ww.mall.proto.hello.FutureProto.FutureRequest request) {
+    public com.google.common.util.concurrent.ListenableFuture<com.ww.mall.proto.hello.FutureResponse> test(
+        com.ww.mall.proto.hello.FutureRequest request) {
       return io.grpc.stub.ClientCalls.futureUnaryCall(
           getChannel().newCall(getTestMethod(), getCallOptions()), request);
     }
@@ -261,8 +261,8 @@ public final class FutureServiceGrpc {
     public void invoke(Req request, io.grpc.stub.StreamObserver<Resp> responseObserver) {
       switch (methodId) {
         case METHODID_TEST:
-          serviceImpl.test((com.ww.mall.proto.hello.FutureProto.FutureRequest) request,
-              (io.grpc.stub.StreamObserver<com.ww.mall.proto.hello.FutureProto.FutureResponse>) responseObserver);
+          serviceImpl.test((com.ww.mall.proto.hello.FutureRequest) request,
+              (io.grpc.stub.StreamObserver<com.ww.mall.proto.hello.FutureResponse>) responseObserver);
           break;
         default:
           throw new AssertionError();
@@ -286,8 +286,8 @@ public final class FutureServiceGrpc {
           getTestMethod(),
           io.grpc.stub.ServerCalls.asyncUnaryCall(
             new MethodHandlers<
-              com.ww.mall.proto.hello.FutureProto.FutureRequest,
-              com.ww.mall.proto.hello.FutureProto.FutureResponse>(
+              com.ww.mall.proto.hello.FutureRequest,
+              com.ww.mall.proto.hello.FutureResponse>(
                 service, METHODID_TEST)))
         .build();
   }

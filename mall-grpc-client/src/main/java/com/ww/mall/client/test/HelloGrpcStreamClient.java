@@ -1,6 +1,7 @@
 package com.ww.mall.client.test;
 
-import com.ww.mall.proto.hello.HelloProto;
+import com.ww.mall.proto.hello.HelloRequest;
+import com.ww.mall.proto.hello.HelloResponse;
 import com.ww.mall.proto.hello.HelloServiceGrpc;
 import io.grpc.ManagedChannel;
 import io.grpc.ManagedChannelBuilder;
@@ -23,10 +24,10 @@ public class HelloGrpcStreamClient {
             // 获取代理对象【非阻塞对象，处理服务端流式消息】
             HelloServiceGrpc.HelloServiceStub streamClientHelloService = HelloServiceGrpc.newStub(managedChannel);
             // 1.rpc远程调用
-            StreamObserver<HelloProto.HelloRequest> helloRequestStreamObserver = streamClientHelloService.clientStreamHello(new StreamObserver<HelloProto.HelloResponse>() {
+            StreamObserver<HelloRequest> helloRequestStreamObserver = streamClientHelloService.clientStreamHello(new StreamObserver<HelloResponse>() {
                 // 监听每次发给服务端消息后 收到服务端的消息回调响应
                 @Override
-                public void onNext(HelloProto.HelloResponse helloResponse) {
+                public void onNext(HelloResponse helloResponse) {
                     log.info("收到服务端响应：{}", helloResponse);
                 }
 
@@ -42,9 +43,9 @@ public class HelloGrpcStreamClient {
             });
 
             for (int i = 0; i < 10; i++) {
-                HelloProto.HelloRequest.Builder builder = HelloProto.HelloRequest.newBuilder();
+                HelloRequest.Builder builder = HelloRequest.newBuilder();
                 builder.setName("client stream消息" + i);
-                HelloProto.HelloRequest request = builder.build();
+                HelloRequest request = builder.build();
                 helloRequestStreamObserver.onNext(request);
             }
             // 所有消息发送完毕

@@ -4,7 +4,8 @@ import com.google.common.util.concurrent.FutureCallback;
 import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
 import com.ww.mall.common.exception.ApiException;
-import com.ww.mall.proto.hello.FutureProto;
+import com.ww.mall.proto.hello.FutureRequest;
+import com.ww.mall.proto.hello.FutureResponse;
 import com.ww.mall.proto.hello.FutureServiceGrpc;
 import io.grpc.ManagedChannel;
 import io.grpc.ManagedChannelBuilder;
@@ -24,16 +25,16 @@ public class FutureClient {
         ManagedChannel managedChannel = ManagedChannelBuilder.forAddress("localhost", 9998).build();
         try {
             FutureServiceGrpc.FutureServiceFutureStub futureService = FutureServiceGrpc.newFutureStub(managedChannel);
-            ListenableFuture<FutureProto.FutureResponse> futureMessageResponse = futureService.test(FutureProto.FutureRequest.newBuilder().setName("future message request").build());
+            ListenableFuture<FutureResponse> futureMessageResponse = futureService.test(FutureRequest.newBuilder().setName("future message request").build());
 
             // 同步操作
-            FutureProto.FutureResponse futureResponse = futureMessageResponse.get();
+            FutureResponse futureResponse = futureMessageResponse.get();
 
             // 异步操作
 //            futureMessageResponse.addListener(() -> log.info("异步rpc响应"), Executors.newCachedThreadPool());
-            Futures.addCallback(futureMessageResponse, new FutureCallback<FutureProto.FutureResponse>() {
+            Futures.addCallback(futureMessageResponse, new FutureCallback<FutureResponse>() {
                 @Override
-                public void onSuccess(FutureProto.FutureResponse result) {
+                public void onSuccess(FutureResponse result) {
                     log.info("异步rpc响应成功：{}", result);
                 }
 

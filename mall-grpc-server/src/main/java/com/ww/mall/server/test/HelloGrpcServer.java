@@ -22,7 +22,6 @@ public class HelloGrpcServer {
         Server server = serverBuilder.build();
         server.start();
         server.awaitTermination();
-
     }
 
 }

@@ -1,7 +1,8 @@
 package com.ww.mall.server.service;
 
 import cn.hutool.core.util.RandomUtil;
-import com.ww.mall.proto.hello.HelloProto;
+import com.ww.mall.proto.hello.HelloRequest;
+import com.ww.mall.proto.hello.HelloResponse;
 import com.ww.mall.proto.hello.HelloServiceGrpc;
 import io.grpc.stub.StreamObserver;
 import lombok.extern.slf4j.Slf4j;
@@ -23,13 +24,13 @@ public class HelloServiceImpl extends HelloServiceGrpc.HelloServiceImplBase {
      * @param responseObserver server返回client响应
      */
     @Override
-    public void hello(HelloProto.HelloRequest request, StreamObserver<HelloProto.HelloResponse> responseObserver) {
+    public void hello(HelloRequest request, StreamObserver<HelloResponse> responseObserver) {
         // 接受客户端请求参数
         String name = request.getName();
         // 业务处理
         log.info("服务端业务处理");
         // 封装响应
-        HelloProto.HelloResponse.Builder responseBuilder = HelloProto.HelloResponse.newBuilder();
+        HelloResponse.Builder responseBuilder = HelloResponse.newBuilder();
         responseBuilder.setResult("success");
         // 将响应消息通过网络回传给client
         responseObserver.onNext(responseBuilder.build());
@@ -44,7 +45,7 @@ public class HelloServiceImpl extends HelloServiceGrpc.HelloServiceImplBase {
      * @param responseObserver server返回client响应
      */
     @Override
-    public void serverStreamHello(HelloProto.HelloRequest request, StreamObserver<HelloProto.HelloResponse> responseObserver) {
+    public void serverStreamHello(HelloRequest request, StreamObserver<HelloResponse> responseObserver) {
         // 接受客户端请求参数
         String name = request.getName();
         // 业务处理
@@ -56,7 +57,7 @@ public class HelloServiceImpl extends HelloServiceGrpc.HelloServiceImplBase {
                 throw new RuntimeException(e);
             }
             // 封装响应
-            HelloProto.HelloResponse.Builder responseBuilder = HelloProto.HelloResponse.newBuilder();
+            HelloResponse.Builder responseBuilder = HelloResponse.newBuilder();
             responseBuilder.setResult("success");
             // 将响应消息通过网络回传给client
             responseObserver.onNext(responseBuilder.build());
@@ -72,14 +73,14 @@ public class HelloServiceImpl extends HelloServiceGrpc.HelloServiceImplBase {
      * @return request监听者
      */
     @Override
-    public StreamObserver<HelloProto.HelloRequest> clientStreamHello(StreamObserver<HelloProto.HelloResponse> responseObserver) {
-        return new StreamObserver<HelloProto.HelloRequest>() {
+    public StreamObserver<HelloRequest> clientStreamHello(StreamObserver<HelloResponse> responseObserver) {
+        return new StreamObserver<HelloRequest>() {
             @Override
-            public void onNext(HelloProto.HelloRequest helloRequest) {
+            public void onNext(HelloRequest helloRequest) {
                 log.info("接收到client发送的消息：{}", helloRequest);
-                HelloProto.HelloResponse.Builder builder = HelloProto.HelloResponse.newBuilder();
+                HelloResponse.Builder builder = HelloResponse.newBuilder();
                 builder.setResult("收到消息：" + helloRequest.getName());
-                HelloProto.HelloResponse response = builder.build();
+                HelloResponse response = builder.build();
                 responseObserver.onNext(response);
             }
 
@@ -91,9 +92,9 @@ public class HelloServiceImpl extends HelloServiceGrpc.HelloServiceImplBase {
             @Override
             public void onCompleted() {
                 log.info("监听到客户端所有消息发送完毕");
-                HelloProto.HelloResponse.Builder builder = HelloProto.HelloResponse.newBuilder();
+                HelloResponse.Builder builder = HelloResponse.newBuilder();
                 builder.setResult("收到所有消息，处理完毕");
-                HelloProto.HelloResponse response = builder.build();
+                HelloResponse response = builder.build();
                 responseObserver.onNext(response);
                 responseObserver.onCompleted();
             }
@@ -107,12 +108,12 @@ public class HelloServiceImpl extends HelloServiceGrpc.HelloServiceImplBase {
      * @return request监听者
      */
     @Override
-    public StreamObserver<HelloProto.HelloRequest> duplexStreamHello(StreamObserver<HelloProto.HelloResponse> responseObserver) {
-        return new StreamObserver<HelloProto.HelloRequest>() {
+    public StreamObserver<HelloRequest> duplexStreamHello(StreamObserver<HelloResponse> responseObserver) {
+        return new StreamObserver<HelloRequest>() {
             @Override
-            public void onNext(HelloProto.HelloRequest helloRequest) {
+            public void onNext(HelloRequest helloRequest) {
                 log.info("接收到client发来的消息：{}", helloRequest);
-                responseObserver.onNext(HelloProto.HelloResponse.newBuilder().setResult("123").build());
+                responseObserver.onNext(HelloResponse.newBuilder().setResult("123").build());
             }
 
             @Override

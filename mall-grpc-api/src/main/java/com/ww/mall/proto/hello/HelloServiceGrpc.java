@@ -22,29 +22,29 @@ public final class HelloServiceGrpc {
   public static final java.lang.String SERVICE_NAME = "HelloService";
 
   // Static method descriptors that strictly reflect the proto.
-  private static volatile io.grpc.MethodDescriptor<com.ww.mall.proto.hello.HelloProto.HelloRequest,
-      com.ww.mall.proto.hello.HelloProto.HelloResponse> getHelloMethod;
+  private static volatile io.grpc.MethodDescriptor<com.ww.mall.proto.hello.HelloRequest,
+      com.ww.mall.proto.hello.HelloResponse> getHelloMethod;
 
   @io.grpc.stub.annotations.RpcMethod(
       fullMethodName = SERVICE_NAME + '/' + "hello",
-      requestType = com.ww.mall.proto.hello.HelloProto.HelloRequest.class,
-      responseType = com.ww.mall.proto.hello.HelloProto.HelloResponse.class,
+      requestType = com.ww.mall.proto.hello.HelloRequest.class,
+      responseType = com.ww.mall.proto.hello.HelloResponse.class,
       methodType = io.grpc.MethodDescriptor.MethodType.UNARY)
-  public static io.grpc.MethodDescriptor<com.ww.mall.proto.hello.HelloProto.HelloRequest,
-      com.ww.mall.proto.hello.HelloProto.HelloResponse> getHelloMethod() {
-    io.grpc.MethodDescriptor<com.ww.mall.proto.hello.HelloProto.HelloRequest, com.ww.mall.proto.hello.HelloProto.HelloResponse> getHelloMethod;
+  public static io.grpc.MethodDescriptor<com.ww.mall.proto.hello.HelloRequest,
+      com.ww.mall.proto.hello.HelloResponse> getHelloMethod() {
+    io.grpc.MethodDescriptor<com.ww.mall.proto.hello.HelloRequest, com.ww.mall.proto.hello.HelloResponse> getHelloMethod;
     if ((getHelloMethod = HelloServiceGrpc.getHelloMethod) == null) {
       synchronized (HelloServiceGrpc.class) {
         if ((getHelloMethod = HelloServiceGrpc.getHelloMethod) == null) {
           HelloServiceGrpc.getHelloMethod = getHelloMethod =
-              io.grpc.MethodDescriptor.<com.ww.mall.proto.hello.HelloProto.HelloRequest, com.ww.mall.proto.hello.HelloProto.HelloResponse>newBuilder()
+              io.grpc.MethodDescriptor.<com.ww.mall.proto.hello.HelloRequest, com.ww.mall.proto.hello.HelloResponse>newBuilder()
               .setType(io.grpc.MethodDescriptor.MethodType.UNARY)
               .setFullMethodName(generateFullMethodName(SERVICE_NAME, "hello"))
               .setSampledToLocalTracing(true)
               .setRequestMarshaller(io.grpc.protobuf.ProtoUtils.marshaller(
-                  com.ww.mall.proto.hello.HelloProto.HelloRequest.getDefaultInstance()))
+                  com.ww.mall.proto.hello.HelloRequest.getDefaultInstance()))
               .setResponseMarshaller(io.grpc.protobuf.ProtoUtils.marshaller(
-                  com.ww.mall.proto.hello.HelloProto.HelloResponse.getDefaultInstance()))
+                  com.ww.mall.proto.hello.HelloResponse.getDefaultInstance()))
               .setSchemaDescriptor(new HelloServiceMethodDescriptorSupplier("hello"))
               .build();
         }
@@ -53,29 +53,29 @@ public final class HelloServiceGrpc {
     return getHelloMethod;
   }
 
-  private static volatile io.grpc.MethodDescriptor<com.ww.mall.proto.hello.HelloProto.HelloRequest,
-      com.ww.mall.proto.hello.HelloProto.HelloResponse> getServerStreamHelloMethod;
+  private static volatile io.grpc.MethodDescriptor<com.ww.mall.proto.hello.HelloRequest,
+      com.ww.mall.proto.hello.HelloResponse> getServerStreamHelloMethod;
 
   @io.grpc.stub.annotations.RpcMethod(
       fullMethodName = SERVICE_NAME + '/' + "serverStreamHello",
-      requestType = com.ww.mall.proto.hello.HelloProto.HelloRequest.class,
-      responseType = com.ww.mall.proto.hello.HelloProto.HelloResponse.class,
+      requestType = com.ww.mall.proto.hello.HelloRequest.class,
+      responseType = com.ww.mall.proto.hello.HelloResponse.class,
       methodType = io.grpc.MethodDescriptor.MethodType.SERVER_STREAMING)
-  public static io.grpc.MethodDescriptor<com.ww.mall.proto.hello.HelloProto.HelloRequest,
-      com.ww.mall.proto.hello.HelloProto.HelloResponse> getServerStreamHelloMethod() {
-    io.grpc.MethodDescriptor<com.ww.mall.proto.hello.HelloProto.HelloRequest, com.ww.mall.proto.hello.HelloProto.HelloResponse> getServerStreamHelloMethod;
+  public static io.grpc.MethodDescriptor<com.ww.mall.proto.hello.HelloRequest,
+      com.ww.mall.proto.hello.HelloResponse> getServerStreamHelloMethod() {
+    io.grpc.MethodDescriptor<com.ww.mall.proto.hello.HelloRequest, com.ww.mall.proto.hello.HelloResponse> getServerStreamHelloMethod;
     if ((getServerStreamHelloMethod = HelloServiceGrpc.getServerStreamHelloMethod) == null) {
       synchronized (HelloServiceGrpc.class) {
         if ((getServerStreamHelloMethod = HelloServiceGrpc.getServerStreamHelloMethod) == null) {
           HelloServiceGrpc.getServerStreamHelloMethod = getServerStreamHelloMethod =
-              io.grpc.MethodDescriptor.<com.ww.mall.proto.hello.HelloProto.HelloRequest, com.ww.mall.proto.hello.HelloProto.HelloResponse>newBuilder()
+              io.grpc.MethodDescriptor.<com.ww.mall.proto.hello.HelloRequest, com.ww.mall.proto.hello.HelloResponse>newBuilder()
               .setType(io.grpc.MethodDescriptor.MethodType.SERVER_STREAMING)
               .setFullMethodName(generateFullMethodName(SERVICE_NAME, "serverStreamHello"))
               .setSampledToLocalTracing(true)
               .setRequestMarshaller(io.grpc.protobuf.ProtoUtils.marshaller(
-                  com.ww.mall.proto.hello.HelloProto.HelloRequest.getDefaultInstance()))
+                  com.ww.mall.proto.hello.HelloRequest.getDefaultInstance()))
               .setResponseMarshaller(io.grpc.protobuf.ProtoUtils.marshaller(
-                  com.ww.mall.proto.hello.HelloProto.HelloResponse.getDefaultInstance()))
+                  com.ww.mall.proto.hello.HelloResponse.getDefaultInstance()))
               .setSchemaDescriptor(new HelloServiceMethodDescriptorSupplier("serverStreamHello"))
               .build();
         }
@@ -84,29 +84,29 @@ public final class HelloServiceGrpc {
     return getServerStreamHelloMethod;
   }
 
-  private static volatile io.grpc.MethodDescriptor<com.ww.mall.proto.hello.HelloProto.HelloRequest,
-      com.ww.mall.proto.hello.HelloProto.HelloResponse> getClientStreamHelloMethod;
+  private static volatile io.grpc.MethodDescriptor<com.ww.mall.proto.hello.HelloRequest,
+      com.ww.mall.proto.hello.HelloResponse> getClientStreamHelloMethod;
 
   @io.grpc.stub.annotations.RpcMethod(
       fullMethodName = SERVICE_NAME + '/' + "clientStreamHello",
-      requestType = com.ww.mall.proto.hello.HelloProto.HelloRequest.class,
-      responseType = com.ww.mall.proto.hello.HelloProto.HelloResponse.class,
+      requestType = com.ww.mall.proto.hello.HelloRequest.class,
+      responseType = com.ww.mall.proto.hello.HelloResponse.class,
       methodType = io.grpc.MethodDescriptor.MethodType.CLIENT_STREAMING)
-  public static io.grpc.MethodDescriptor<com.ww.mall.proto.hello.HelloProto.HelloRequest,
-      com.ww.mall.proto.hello.HelloProto.HelloResponse> getClientStreamHelloMethod() {
-    io.grpc.MethodDescriptor<com.ww.mall.proto.hello.HelloProto.HelloRequest, com.ww.mall.proto.hello.HelloProto.HelloResponse> getClientStreamHelloMethod;
+  public static io.grpc.MethodDescriptor<com.ww.mall.proto.hello.HelloRequest,
+      com.ww.mall.proto.hello.HelloResponse> getClientStreamHelloMethod() {
+    io.grpc.MethodDescriptor<com.ww.mall.proto.hello.HelloRequest, com.ww.mall.proto.hello.HelloResponse> getClientStreamHelloMethod;
     if ((getClientStreamHelloMethod = HelloServiceGrpc.getClientStreamHelloMethod) == null) {
       synchronized (HelloServiceGrpc.class) {
         if ((getClientStreamHelloMethod = HelloServiceGrpc.getClientStreamHelloMethod) == null) {
           HelloServiceGrpc.getClientStreamHelloMethod = getClientStreamHelloMethod =
-              io.grpc.MethodDescriptor.<com.ww.mall.proto.hello.HelloProto.HelloRequest, com.ww.mall.proto.hello.HelloProto.HelloResponse>newBuilder()
+              io.grpc.MethodDescriptor.<com.ww.mall.proto.hello.HelloRequest, com.ww.mall.proto.hello.HelloResponse>newBuilder()
               .setType(io.grpc.MethodDescriptor.MethodType.CLIENT_STREAMING)
               .setFullMethodName(generateFullMethodName(SERVICE_NAME, "clientStreamHello"))
               .setSampledToLocalTracing(true)
               .setRequestMarshaller(io.grpc.protobuf.ProtoUtils.marshaller(
-                  com.ww.mall.proto.hello.HelloProto.HelloRequest.getDefaultInstance()))
+                  com.ww.mall.proto.hello.HelloRequest.getDefaultInstance()))
               .setResponseMarshaller(io.grpc.protobuf.ProtoUtils.marshaller(
-                  com.ww.mall.proto.hello.HelloProto.HelloResponse.getDefaultInstance()))
+                  com.ww.mall.proto.hello.HelloResponse.getDefaultInstance()))
               .setSchemaDescriptor(new HelloServiceMethodDescriptorSupplier("clientStreamHello"))
               .build();
         }
@@ -115,29 +115,29 @@ public final class HelloServiceGrpc {
     return getClientStreamHelloMethod;
   }
 
-  private static volatile io.grpc.MethodDescriptor<com.ww.mall.proto.hello.HelloProto.HelloRequest,
-      com.ww.mall.proto.hello.HelloProto.HelloResponse> getDuplexStreamHelloMethod;
+  private static volatile io.grpc.MethodDescriptor<com.ww.mall.proto.hello.HelloRequest,
+      com.ww.mall.proto.hello.HelloResponse> getDuplexStreamHelloMethod;
 
   @io.grpc.stub.annotations.RpcMethod(
       fullMethodName = SERVICE_NAME + '/' + "duplexStreamHello",
-      requestType = com.ww.mall.proto.hello.HelloProto.HelloRequest.class,
-      responseType = com.ww.mall.proto.hello.HelloProto.HelloResponse.class,
+      requestType = com.ww.mall.proto.hello.HelloRequest.class,
+      responseType = com.ww.mall.proto.hello.HelloResponse.class,
       methodType = io.grpc.MethodDescriptor.MethodType.BIDI_STREAMING)
-  public static io.grpc.MethodDescriptor<com.ww.mall.proto.hello.HelloProto.HelloRequest,
-      com.ww.mall.proto.hello.HelloProto.HelloResponse> getDuplexStreamHelloMethod() {
-    io.grpc.MethodDescriptor<com.ww.mall.proto.hello.HelloProto.HelloRequest, com.ww.mall.proto.hello.HelloProto.HelloResponse> getDuplexStreamHelloMethod;
+  public static io.grpc.MethodDescriptor<com.ww.mall.proto.hello.HelloRequest,
+      com.ww.mall.proto.hello.HelloResponse> getDuplexStreamHelloMethod() {
+    io.grpc.MethodDescriptor<com.ww.mall.proto.hello.HelloRequest, com.ww.mall.proto.hello.HelloResponse> getDuplexStreamHelloMethod;
     if ((getDuplexStreamHelloMethod = HelloServiceGrpc.getDuplexStreamHelloMethod) == null) {
       synchronized (HelloServiceGrpc.class) {
         if ((getDuplexStreamHelloMethod = HelloServiceGrpc.getDuplexStreamHelloMethod) == null) {
           HelloServiceGrpc.getDuplexStreamHelloMethod = getDuplexStreamHelloMethod =
-              io.grpc.MethodDescriptor.<com.ww.mall.proto.hello.HelloProto.HelloRequest, com.ww.mall.proto.hello.HelloProto.HelloResponse>newBuilder()
+              io.grpc.MethodDescriptor.<com.ww.mall.proto.hello.HelloRequest, com.ww.mall.proto.hello.HelloResponse>newBuilder()
               .setType(io.grpc.MethodDescriptor.MethodType.BIDI_STREAMING)
               .setFullMethodName(generateFullMethodName(SERVICE_NAME, "duplexStreamHello"))
               .setSampledToLocalTracing(true)
               .setRequestMarshaller(io.grpc.protobuf.ProtoUtils.marshaller(
-                  com.ww.mall.proto.hello.HelloProto.HelloRequest.getDefaultInstance()))
+                  com.ww.mall.proto.hello.HelloRequest.getDefaultInstance()))
               .setResponseMarshaller(io.grpc.protobuf.ProtoUtils.marshaller(
-                  com.ww.mall.proto.hello.HelloProto.HelloResponse.getDefaultInstance()))
+                  com.ww.mall.proto.hello.HelloResponse.getDefaultInstance()))
               .setSchemaDescriptor(new HelloServiceMethodDescriptorSupplier("duplexStreamHello"))
               .build();
         }
@@ -203,11 +203,11 @@ public final class HelloServiceGrpc {
 
     /**
      * <pre>
-     * rpc 请求消息 HelloRequest 响应消息 HelloResponse
+     * 简单rpc 请求消息：HelloRequest 响应消息：HelloResponse
      * </pre>
      */
-    default void hello(com.ww.mall.proto.hello.HelloProto.HelloRequest request,
-        io.grpc.stub.StreamObserver<com.ww.mall.proto.hello.HelloProto.HelloResponse> responseObserver) {
+    default void hello(com.ww.mall.proto.hello.HelloRequest request,
+        io.grpc.stub.StreamObserver<com.ww.mall.proto.hello.HelloResponse> responseObserver) {
       io.grpc.stub.ServerCalls.asyncUnimplementedUnaryCall(getHelloMethod(), responseObserver);
     }
 
@@ -216,8 +216,8 @@ public final class HelloServiceGrpc {
      * 服务端流式rpc
      * </pre>
      */
-    default void serverStreamHello(com.ww.mall.proto.hello.HelloProto.HelloRequest request,
-        io.grpc.stub.StreamObserver<com.ww.mall.proto.hello.HelloProto.HelloResponse> responseObserver) {
+    default void serverStreamHello(com.ww.mall.proto.hello.HelloRequest request,
+        io.grpc.stub.StreamObserver<com.ww.mall.proto.hello.HelloResponse> responseObserver) {
       io.grpc.stub.ServerCalls.asyncUnimplementedUnaryCall(getServerStreamHelloMethod(), responseObserver);
     }
 
@@ -226,8 +226,8 @@ public final class HelloServiceGrpc {
      * 客户端流式rpc
      * </pre>
      */
-    default io.grpc.stub.StreamObserver<com.ww.mall.proto.hello.HelloProto.HelloRequest> clientStreamHello(
-        io.grpc.stub.StreamObserver<com.ww.mall.proto.hello.HelloProto.HelloResponse> responseObserver) {
+    default io.grpc.stub.StreamObserver<com.ww.mall.proto.hello.HelloRequest> clientStreamHello(
+        io.grpc.stub.StreamObserver<com.ww.mall.proto.hello.HelloResponse> responseObserver) {
       return io.grpc.stub.ServerCalls.asyncUnimplementedStreamingCall(getClientStreamHelloMethod(), responseObserver);
     }
 
@@ -236,8 +236,8 @@ public final class HelloServiceGrpc {
      * 双向流式rpc
      * </pre>
      */
-    default io.grpc.stub.StreamObserver<com.ww.mall.proto.hello.HelloProto.HelloRequest> duplexStreamHello(
-        io.grpc.stub.StreamObserver<com.ww.mall.proto.hello.HelloProto.HelloResponse> responseObserver) {
+    default io.grpc.stub.StreamObserver<com.ww.mall.proto.hello.HelloRequest> duplexStreamHello(
+        io.grpc.stub.StreamObserver<com.ww.mall.proto.hello.HelloResponse> responseObserver) {
       return io.grpc.stub.ServerCalls.asyncUnimplementedStreamingCall(getDuplexStreamHelloMethod(), responseObserver);
     }
   }
@@ -285,11 +285,11 @@ public final class HelloServiceGrpc {
 
     /**
      * <pre>
-     * rpc 请求消息 HelloRequest 响应消息 HelloResponse
+     * 简单rpc 请求消息：HelloRequest 响应消息：HelloResponse
      * </pre>
      */
-    public void hello(com.ww.mall.proto.hello.HelloProto.HelloRequest request,
-        io.grpc.stub.StreamObserver<com.ww.mall.proto.hello.HelloProto.HelloResponse> responseObserver) {
+    public void hello(com.ww.mall.proto.hello.HelloRequest request,
+        io.grpc.stub.StreamObserver<com.ww.mall.proto.hello.HelloResponse> responseObserver) {
       io.grpc.stub.ClientCalls.asyncUnaryCall(
           getChannel().newCall(getHelloMethod(), getCallOptions()), request, responseObserver);
     }
@@ -299,8 +299,8 @@ public final class HelloServiceGrpc {
      * 服务端流式rpc
      * </pre>
      */
-    public void serverStreamHello(com.ww.mall.proto.hello.HelloProto.HelloRequest request,
-        io.grpc.stub.StreamObserver<com.ww.mall.proto.hello.HelloProto.HelloResponse> responseObserver) {
+    public void serverStreamHello(com.ww.mall.proto.hello.HelloRequest request,
+        io.grpc.stub.StreamObserver<com.ww.mall.proto.hello.HelloResponse> responseObserver) {
       io.grpc.stub.ClientCalls.asyncServerStreamingCall(
           getChannel().newCall(getServerStreamHelloMethod(), getCallOptions()), request, responseObserver);
     }
@@ -310,8 +310,8 @@ public final class HelloServiceGrpc {
      * 客户端流式rpc
      * </pre>
      */
-    public io.grpc.stub.StreamObserver<com.ww.mall.proto.hello.HelloProto.HelloRequest> clientStreamHello(
-        io.grpc.stub.StreamObserver<com.ww.mall.proto.hello.HelloProto.HelloResponse> responseObserver) {
+    public io.grpc.stub.StreamObserver<com.ww.mall.proto.hello.HelloRequest> clientStreamHello(
+        io.grpc.stub.StreamObserver<com.ww.mall.proto.hello.HelloResponse> responseObserver) {
       return io.grpc.stub.ClientCalls.asyncClientStreamingCall(
           getChannel().newCall(getClientStreamHelloMethod(), getCallOptions()), responseObserver);
     }
@@ -321,8 +321,8 @@ public final class HelloServiceGrpc {
      * 双向流式rpc
      * </pre>
      */
-    public io.grpc.stub.StreamObserver<com.ww.mall.proto.hello.HelloProto.HelloRequest> duplexStreamHello(
-        io.grpc.stub.StreamObserver<com.ww.mall.proto.hello.HelloProto.HelloResponse> responseObserver) {
+    public io.grpc.stub.StreamObserver<com.ww.mall.proto.hello.HelloRequest> duplexStreamHello(
+        io.grpc.stub.StreamObserver<com.ww.mall.proto.hello.HelloResponse> responseObserver) {
       return io.grpc.stub.ClientCalls.asyncBidiStreamingCall(
           getChannel().newCall(getDuplexStreamHelloMethod(), getCallOptions()), responseObserver);
     }
@@ -353,10 +353,10 @@ public final class HelloServiceGrpc {
 
     /**
      * <pre>
-     * rpc 请求消息 HelloRequest 响应消息 HelloResponse
+     * 简单rpc 请求消息：HelloRequest 响应消息：HelloResponse
      * </pre>
      */
-    public com.ww.mall.proto.hello.HelloProto.HelloResponse hello(com.ww.mall.proto.hello.HelloProto.HelloRequest request) {
+    public com.ww.mall.proto.hello.HelloResponse hello(com.ww.mall.proto.hello.HelloRequest request) {
       return io.grpc.stub.ClientCalls.blockingUnaryCall(
           getChannel(), getHelloMethod(), getCallOptions(), request);
     }
@@ -366,8 +366,8 @@ public final class HelloServiceGrpc {
      * 服务端流式rpc
      * </pre>
      */
-    public java.util.Iterator<com.ww.mall.proto.hello.HelloProto.HelloResponse> serverStreamHello(
-        com.ww.mall.proto.hello.HelloProto.HelloRequest request) {
+    public java.util.Iterator<com.ww.mall.proto.hello.HelloResponse> serverStreamHello(
+        com.ww.mall.proto.hello.HelloRequest request) {
       return io.grpc.stub.ClientCalls.blockingServerStreamingCall(
           getChannel(), getServerStreamHelloMethod(), getCallOptions(), request);
     }
@@ -398,11 +398,11 @@ public final class HelloServiceGrpc {
 
     /**
      * <pre>
-     * rpc 请求消息 HelloRequest 响应消息 HelloResponse
+     * 简单rpc 请求消息：HelloRequest 响应消息：HelloResponse
      * </pre>
      */
-    public com.google.common.util.concurrent.ListenableFuture<com.ww.mall.proto.hello.HelloProto.HelloResponse> hello(
-        com.ww.mall.proto.hello.HelloProto.HelloRequest request) {
+    public com.google.common.util.concurrent.ListenableFuture<com.ww.mall.proto.hello.HelloResponse> hello(
+        com.ww.mall.proto.hello.HelloRequest request) {
       return io.grpc.stub.ClientCalls.futureUnaryCall(
           getChannel().newCall(getHelloMethod(), getCallOptions()), request);
     }
@@ -431,12 +431,12 @@ public final class HelloServiceGrpc {
     public void invoke(Req request, io.grpc.stub.StreamObserver<Resp> responseObserver) {
       switch (methodId) {
         case METHODID_HELLO:
-          serviceImpl.hello((com.ww.mall.proto.hello.HelloProto.HelloRequest) request,
-              (io.grpc.stub.StreamObserver<com.ww.mall.proto.hello.HelloProto.HelloResponse>) responseObserver);
+          serviceImpl.hello((com.ww.mall.proto.hello.HelloRequest) request,
+              (io.grpc.stub.StreamObserver<com.ww.mall.proto.hello.HelloResponse>) responseObserver);
           break;
         case METHODID_SERVER_STREAM_HELLO:
-          serviceImpl.serverStreamHello((com.ww.mall.proto.hello.HelloProto.HelloRequest) request,
-              (io.grpc.stub.StreamObserver<com.ww.mall.proto.hello.HelloProto.HelloResponse>) responseObserver);
+          serviceImpl.serverStreamHello((com.ww.mall.proto.hello.HelloRequest) request,
+              (io.grpc.stub.StreamObserver<com.ww.mall.proto.hello.HelloResponse>) responseObserver);
           break;
         default:
           throw new AssertionError();
@@ -450,10 +450,10 @@ public final class HelloServiceGrpc {
       switch (methodId) {
         case METHODID_CLIENT_STREAM_HELLO:
           return (io.grpc.stub.StreamObserver<Req>) serviceImpl.clientStreamHello(
-              (io.grpc.stub.StreamObserver<com.ww.mall.proto.hello.HelloProto.HelloResponse>) responseObserver);
+              (io.grpc.stub.StreamObserver<com.ww.mall.proto.hello.HelloResponse>) responseObserver);
         case METHODID_DUPLEX_STREAM_HELLO:
           return (io.grpc.stub.StreamObserver<Req>) serviceImpl.duplexStreamHello(
-              (io.grpc.stub.StreamObserver<com.ww.mall.proto.hello.HelloProto.HelloResponse>) responseObserver);
+              (io.grpc.stub.StreamObserver<com.ww.mall.proto.hello.HelloResponse>) responseObserver);
         default:
           throw new AssertionError();
       }
@@ -466,29 +466,29 @@ public final class HelloServiceGrpc {
           getHelloMethod(),
           io.grpc.stub.ServerCalls.asyncUnaryCall(
             new MethodHandlers<
-              com.ww.mall.proto.hello.HelloProto.HelloRequest,
-              com.ww.mall.proto.hello.HelloProto.HelloResponse>(
+              com.ww.mall.proto.hello.HelloRequest,
+              com.ww.mall.proto.hello.HelloResponse>(
                 service, METHODID_HELLO)))
         .addMethod(
           getServerStreamHelloMethod(),
           io.grpc.stub.ServerCalls.asyncServerStreamingCall(
             new MethodHandlers<
-              com.ww.mall.proto.hello.HelloProto.HelloRequest,
-              com.ww.mall.proto.hello.HelloProto.HelloResponse>(
+              com.ww.mall.proto.hello.HelloRequest,
+              com.ww.mall.proto.hello.HelloResponse>(
                 service, METHODID_SERVER_STREAM_HELLO)))
         .addMethod(
           getClientStreamHelloMethod(),
           io.grpc.stub.ServerCalls.asyncClientStreamingCall(
             new MethodHandlers<
-              com.ww.mall.proto.hello.HelloProto.HelloRequest,
-              com.ww.mall.proto.hello.HelloProto.HelloResponse>(
+              com.ww.mall.proto.hello.HelloRequest,
+              com.ww.mall.proto.hello.HelloResponse>(
                 service, METHODID_CLIENT_STREAM_HELLO)))
         .addMethod(
           getDuplexStreamHelloMethod(),
           io.grpc.stub.ServerCalls.asyncBidiStreamingCall(
             new MethodHandlers<
-              com.ww.mall.proto.hello.HelloProto.HelloRequest,
-              com.ww.mall.proto.hello.HelloProto.HelloResponse>(
+              com.ww.mall.proto.hello.HelloRequest,
+              com.ww.mall.proto.hello.HelloResponse>(
                 service, METHODID_DUPLEX_STREAM_HELLO)))
         .build();
   }

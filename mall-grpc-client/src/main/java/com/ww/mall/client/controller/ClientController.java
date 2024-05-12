@@ -1,6 +1,8 @@
 package com.ww.mall.client.controller;
 
 import com.ww.mall.proto.hello.HelloProto;
+import com.ww.mall.proto.hello.HelloRequest;
+import com.ww.mall.proto.hello.HelloResponse;
 import com.ww.mall.proto.hello.HelloServiceGrpc;
 import net.devh.boot.grpc.client.inject.GrpcClient;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -19,7 +21,7 @@ public class ClientController {
 
     @RequestMapping("/hello")
     public String hello() {
-        HelloProto.HelloResponse helloResponse = helloServiceBlockingStub.hello(HelloProto.HelloRequest.newBuilder().setName("wwwww").build());
+        HelloResponse helloResponse = helloServiceBlockingStub.hello(HelloRequest.newBuilder().setName("wwwww").build());
         return helloResponse.getResult();
     }
 

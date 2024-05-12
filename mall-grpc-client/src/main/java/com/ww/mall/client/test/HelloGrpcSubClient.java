@@ -1,13 +1,13 @@
 package com.ww.mall.client.test;
 
-import com.ww.mall.proto.hello.HelloProto;
+import com.ww.mall.proto.hello.HelloRequest;
+import com.ww.mall.proto.hello.HelloResponse;
 import com.ww.mall.proto.hello.HelloServiceGrpc;
 import io.grpc.ManagedChannel;
 import io.grpc.ManagedChannelBuilder;
 import io.grpc.stub.StreamObserver;
 import lombok.extern.slf4j.Slf4j;
 
-import java.util.Iterator;
 import java.util.concurrent.TimeUnit;
 
 /**
@@ -26,13 +26,13 @@ public class HelloGrpcSubClient {
             // 获取代理对象【非阻塞对象，处理服务端流式消息】
             HelloServiceGrpc.HelloServiceStub stubHelloService = HelloServiceGrpc.newStub(managedChannel);
             // 请求参数
-            HelloProto.HelloRequest.Builder requestBuilder = HelloProto.HelloRequest.newBuilder();
+            HelloRequest.Builder requestBuilder = HelloRequest.newBuilder();
             requestBuilder.setName("hello");
-            HelloProto.HelloRequest request = requestBuilder.build();
+            HelloRequest request = requestBuilder.build();
             // 1.rpc远程调用
-            stubHelloService.serverStreamHello(request, new StreamObserver<HelloProto.HelloResponse>() {
+            stubHelloService.serverStreamHello(request, new StreamObserver<HelloResponse>() {
                 @Override
-                public void onNext(HelloProto.HelloResponse helloResponse) {
+                public void onNext(HelloResponse helloResponse) {
                     log.info("rpc远程调用，请求参数：{} 响应数据：{}", request, helloResponse);
                 }
 
