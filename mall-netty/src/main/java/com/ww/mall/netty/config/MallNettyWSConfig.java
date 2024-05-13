@@ -1,6 +1,7 @@
 package com.ww.mall.netty.config;
 
-import com.ww.mall.netty.handler.MallWSHandler;
+import com.ww.mall.netty.handler.websocket.MallWebSocketHandler;
+import com.ww.mall.netty.handler.websocket.HeartBeatHandler;
 import io.netty.bootstrap.ServerBootstrap;
 import io.netty.channel.ChannelInitializer;
 import io.netty.channel.ChannelOption;
@@ -32,7 +33,7 @@ public class MallNettyWSConfig {
     public final static String WEBSOCKET_PATH = "/ws";
 
     @Resource
-    private MallWSHandler mallWSHandler;
+    private MallWebSocketHandler mallWebSocketHandler;
 
     @Bean
     public EventLoopGroup bossGroup() {
@@ -64,13 +65,13 @@ public class MallNettyWSConfig {
                         // 将HTTP消息的多个部分合并为一个完整的FullHttpRequest或者FullHttpResponse。在WebSocket协议的握手阶段，可以将多个HTTP消息部分合并为一个完整的握手请求
                         pipeline.addLast(new HttpObjectAggregator(64 * 1024));
                         // 增加心跳检测机制[针对客户端，如果在1分钟时没有向服务端发送读写心跳(ALL)，则主动断开]
-                        pipeline.addLast(new IdleStateHandler(60, 60, 60, TimeUnit.SECONDS));
+                        pipeline.addLast(new IdleStateHandler(15, 0, 0, TimeUnit.SECONDS));
                         // 自定义心跳检测处理器
-//                        pipeline.addLast(new HeartBeatHandler());
+                        pipeline.addLast(new HeartBeatHandler());
                         // 处理WebSocket握手请求和处理WebSocket协议的帧。它负责处理WebSocket的握手请求，并将请求升级为WebSocket连接
                         pipeline.addLast(new WebSocketServerProtocolHandler(WEBSOCKET_PATH));
                         // 处理来自客户端的WebSocket消息，并向客户端发送WebSocket消息
-                        pipeline.addLast(mallWSHandler);
+                        pipeline.addLast(mallWebSocketHandler);
                     }
                 });
         return serverBootstrap;
