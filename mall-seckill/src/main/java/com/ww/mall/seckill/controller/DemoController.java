@@ -1,6 +1,7 @@
 package com.ww.mall.seckill.controller;
 
 import com.ww.mall.seckill.service.DemoService;
+import com.ww.mall.seckill.view.bo.UserInfoVO;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -48,6 +49,17 @@ public class DemoController {
     @GetMapping("/liteFlow")
     public void liteFlow() {
         demoService.liteFlow();
+    }
+
+    @GetMapping("/sensitiveData")
+    public UserInfoVO sensitiveData() {
+        UserInfoVO vo = new UserInfoVO();
+        vo.setUsername("王二狗");
+        vo.setPassword("123456789");
+        vo.setEmail("ww123456789@gamil.com");
+        vo.setMobile("1562358569856");
+        vo.setIdCard("360782166908157114");
+        return vo;
     }
 
 }

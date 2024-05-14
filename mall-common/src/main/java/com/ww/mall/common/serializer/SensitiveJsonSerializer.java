@@ -27,7 +27,7 @@ public class SensitiveJsonSerializer extends JsonSerializer<String> implements C
         Sensitive annotation = property.getAnnotation(Sensitive.class);
         if (Objects.nonNull(annotation) && Objects.equals(String.class, property.getType().getRawClass())) {
             // 获取数据敏感类型
-            this.sensitiveDataType = annotation.sensitiveDataType();
+            this.sensitiveDataType = annotation.type();
             // 返回敏感数据序列化器
             return this;
         }

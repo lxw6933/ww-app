@@ -21,5 +21,5 @@ import java.lang.annotation.Target;
 @Retention(RetentionPolicy.RUNTIME)
 public @interface Sensitive {
 
-    SensitiveDataType sensitiveDataType();
+    SensitiveDataType type();
 }
