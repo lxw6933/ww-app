@@ -65,7 +65,7 @@ public class SeckillServiceImpl implements SeckillService {
     public void captcha(HttpServletResponse response, String activityCode, Long skuId) {
         // 获取用户
         MallClientUser clientUser = AuthorizationContext.getClientUser();
-//        // 算术
+        // 算术类型
         ArithmeticCaptcha captcha = new ArithmeticCaptcha(130, 48);
         captcha.getArithmeticString();
 //        // gif类型
