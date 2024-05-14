@@ -55,8 +55,7 @@ public class MallRedisTemplate {
         return redisTemplate.execute((RedisCallback<Long>) connection -> {
             RedisSerializer keySerializer = redisTemplate.getKeySerializer();
             byte[] keyBytes = keySerializer.serialize(key);
-
-
+            // 执行lua脚本
             Object result = connection.eval(DECREMENT_STOCK_LUA_BYTE, ReturnType.INTEGER, 1, keyBytes,
                     String.valueOf(number).getBytes());
             return (Long) result;
