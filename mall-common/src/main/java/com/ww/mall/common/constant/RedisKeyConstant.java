@@ -9,8 +9,12 @@ public class RedisKeyConstant {
 
     private RedisKeyConstant() {}
 
+    public static final String SPLIT_KEY = ":";
+
     public static final String GEO_KEY = "geo:";
 
     public static final String SMS_CODE_CACHE_PREFIX = "sms:code:";
+
+    public static final String SECKILL_PATH_PREFIX = "mall-seckill:seckill:path:";
 
 }

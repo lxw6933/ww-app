@@ -2,9 +2,16 @@ package com.ww.mall.seckill.service.impl;
 
 import cn.hutool.core.date.DatePattern;
 import cn.hutool.core.date.DateUtil;
+import cn.hutool.core.lang.Assert;
+import cn.hutool.core.lang.UUID;
+import cn.hutool.crypto.digest.MD5;
 import com.github.benmanes.caffeine.cache.Cache;
 import com.github.benmanes.caffeine.cache.Caffeine;
+import com.ww.mall.common.common.MallClientUser;
 import com.ww.mall.common.constant.RedisChannelConstant;
+import com.ww.mall.common.constant.RedisKeyConstant;
+import com.ww.mall.common.exception.ApiException;
+import com.ww.mall.common.utils.IdUtil;
 import com.ww.mall.rabbitmq.MallPublisher;
 import com.ww.mall.rabbitmq.exchange.ExchangeConstant;
 import com.ww.mall.rabbitmq.queue.QueueConstant;
@@ -14,9 +21,11 @@ import com.ww.mall.seckill.entity.SecKillOrder;
 import com.ww.mall.seckill.manager.MallCacheManager;
 import com.ww.mall.seckill.node.executor.DemoFlowExecutor;
 import com.ww.mall.seckill.service.SeckillService;
+import com.ww.mall.seckill.view.bo.SecKillOrderReqBO;
 import com.ww.mall.web.feign.ThirdServerFeignService;
-import com.ww.mall.common.utils.IdUtil;
+import com.ww.mall.web.utils.AuthorizationContext;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.StringUtils;
 import org.redisson.api.RedissonClient;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -27,6 +36,7 @@ import org.springframework.stereotype.Service;
 import javax.annotation.PostConstruct;
 import java.util.Date;
 import java.util.concurrent.ThreadPoolExecutor;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
 /**
@@ -66,6 +76,51 @@ public class SeckillServiceImpl implements SeckillService {
             .initialCapacity(100)
             .maximumSize(10000)
             .build();
+
+    @Override
+    public String getSecKillPath(String activityCode, Long skuId) {
+        // 获取用户
+        MallClientUser clientUser = AuthorizationContext.getClientUser();
+        // 生成secKillPath
+        String userSecKillPath = MD5.create().digestHex(UUID.randomUUID() + clientUser.getMemberId().toString(), "UTF-8");
+        // 加密后地址存入redis
+        String key = getSecKillPathKey(clientUser, activityCode, skuId);
+        redisTemplate.opsForValue().set(key, userSecKillPath, 1, TimeUnit.MINUTES);
+        return userSecKillPath;
+    }
+
+    @Override
+    public Boolean doSecKillOrder(String userSecKillPath, SecKillOrderReqBO reqBO) {
+        // 校验用户是否存在秒杀资格
+        MallClientUser clientUser = AuthorizationContext.getClientUser();
+        // 校验地址是否正确
+        Assert.isFalse(checkSecKillPath(clientUser, userSecKillPath, reqBO.getActivityCode(), reqBO.getSkuId()), () -> new ApiException("秒杀路径异常"));
+        // 本地缓存存储活动信息，校验活动信息
+
+        // 本地缓存商品信息，校验商品信息
+        if (mallRedisTemplate.decrementStock("skuStock", 1) >= 0) {
+            String orderDate = DateUtil.format(new Date(), DatePattern.NORM_DATETIME_PATTERN);
+            String orderNo = IdUtil.generatorIdStr();
+            int totalOrderNum = num.incrementAndGet();
+            mallPublisher.publishMsg(ExchangeConstant.MALL_OMS_EXCHANGE, RouteKeyConstant.MALL_CREATE_ORDER_KEY, orderNo);
+            log.info("下单总数【{}】订单【{}】下单成功【{}】", totalOrderNum, orderNo, orderDate);
+            return true;
+        }
+        return false;
+    }
+
+    private boolean checkSecKillPath(MallClientUser clientUser, String userSecKillPath, String activityCode, Long skuId) {
+        if (StringUtils.isEmpty(userSecKillPath)) {
+            return false;
+        }
+        String key = getSecKillPathKey(clientUser, activityCode, skuId);
+        String userSecKillPathCache = redisTemplate.opsForValue().get(key);
+        return userSecKillPath.equals(userSecKillPathCache);
+    }
+
+    private String getSecKillPathKey(MallClientUser clientUser, String activityCode, Long skuId) {
+        return RedisKeyConstant.SECKILL_PATH_PREFIX + clientUser.getMemberId() + RedisKeyConstant.SPLIT_KEY + activityCode + RedisKeyConstant.SPLIT_KEY + skuId;
+    }
 
     @Override
     public boolean seckillOrder() {
