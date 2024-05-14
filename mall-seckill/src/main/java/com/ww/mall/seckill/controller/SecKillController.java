@@ -7,6 +7,7 @@ import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
 import javax.annotation.Resource;
+import javax.servlet.http.HttpServletResponse;
 
 /**
  * @author ww
@@ -21,7 +22,12 @@ public class SecKillController {
     @Resource
     private SeckillService seckillService;
 
-    @GetMapping(value = "/path")
+    @GetMapping("/captcha")
+    public void captcha(HttpServletResponse response, @RequestParam("activityCode") String activityCode, @RequestParam("skuId") Long skuId) {
+        seckillService.captcha(response, activityCode, skuId);
+    }
+
+    @GetMapping("/path")
     public String getPath(@RequestParam("activityCode") String activityCode, @RequestParam("skuId") Long skuId) {
         return seckillService.getSecKillPath(activityCode, skuId);
     }

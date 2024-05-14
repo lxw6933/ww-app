@@ -7,6 +7,7 @@ import cn.hutool.core.lang.UUID;
 import cn.hutool.crypto.digest.MD5;
 import com.github.benmanes.caffeine.cache.Cache;
 import com.github.benmanes.caffeine.cache.Caffeine;
+import com.wf.captcha.ArithmeticCaptcha;
 import com.ww.mall.common.common.MallClientUser;
 import com.ww.mall.common.constant.RedisChannelConstant;
 import com.ww.mall.common.constant.RedisKeyConstant;
@@ -34,6 +35,8 @@ import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
 
 import javax.annotation.PostConstruct;
+import javax.servlet.http.HttpServletResponse;
+import java.io.IOException;
 import java.util.Date;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
@@ -78,13 +81,44 @@ public class SeckillServiceImpl implements SeckillService {
             .build();
 
     @Override
+    public void captcha(HttpServletResponse response, String activityCode, Long skuId) {
+        // 获取用户
+        MallClientUser clientUser = AuthorizationContext.getClientUser();
+//        // 算术
+        ArithmeticCaptcha captcha = new ArithmeticCaptcha(130, 48);
+        captcha.getArithmeticString();
+//        // gif类型
+//        GifCaptcha captcha = new GifCaptcha(130, 48);
+//        // 中文类型
+//        ChineseCaptcha captcha = new ChineseCaptcha(130, 48);
+//        // 中文gif类型
+//        ChineseGifCaptcha captcha = new ChineseGifCaptcha(130, 48);
+        captcha.setLen(3);
+        captcha.text();
+        // 验证码结果存入redis
+        String key = getSecKillVerCodeKey(clientUser, activityCode, skuId);
+        redisTemplate.opsForValue().set(key, captcha.text(), 1, TimeUnit.MINUTES);
+        // 输出图片流
+        try {
+            captcha.out(response.getOutputStream());
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    @Override
     public String getSecKillPath(String activityCode, Long skuId) {
         // 获取用户
         MallClientUser clientUser = AuthorizationContext.getClientUser();
-        // 生成secKillPath
-        String userSecKillPath = MD5.create().digestHex(UUID.randomUUID() + clientUser.getMemberId().toString(), "UTF-8");
-        // 加密后地址存入redis
+
         String key = getSecKillPathKey(clientUser, activityCode, skuId);
+        String userSecKillPath = redisTemplate.opsForValue().get(key);
+        if (StringUtils.isNotEmpty(userSecKillPath)) {
+            return userSecKillPath;
+        }
+        // 生成secKillPath
+        userSecKillPath = MD5.create().digestHex(UUID.randomUUID() + activityCode + clientUser.getMemberId().toString(), "UTF-8");
+        // 加密后地址存入redis
         redisTemplate.opsForValue().set(key, userSecKillPath, 1, TimeUnit.MINUTES);
         return userSecKillPath;
     }
@@ -95,6 +129,8 @@ public class SeckillServiceImpl implements SeckillService {
         MallClientUser clientUser = AuthorizationContext.getClientUser();
         // 校验地址是否正确
         Assert.isFalse(checkSecKillPath(clientUser, userSecKillPath, reqBO.getActivityCode(), reqBO.getSkuId()), () -> new ApiException("秒杀路径异常"));
+        // 校验图形验证码是否正确
+        Assert.isFalse(checkSecKillVerCode(clientUser, reqBO.getActivityCode(), reqBO.getSkuId(), reqBO.getCaptcha()), () -> new ApiException("验证码错误"));
         // 本地缓存存储活动信息，校验活动信息
 
         // 本地缓存商品信息，校验商品信息
@@ -118,8 +154,18 @@ public class SeckillServiceImpl implements SeckillService {
         return userSecKillPath.equals(userSecKillPathCache);
     }
 
+    private boolean checkSecKillVerCode(MallClientUser clientUser, String activityCode, Long skuId, String userVerCode) {
+        String key = getSecKillVerCodeKey(clientUser, activityCode, skuId);
+        String verCodeCache = redisTemplate.opsForValue().get(key);
+        return userVerCode.equals(verCodeCache);
+    }
+
     private String getSecKillPathKey(MallClientUser clientUser, String activityCode, Long skuId) {
         return RedisKeyConstant.SECKILL_PATH_PREFIX + clientUser.getMemberId() + RedisKeyConstant.SPLIT_KEY + activityCode + RedisKeyConstant.SPLIT_KEY + skuId;
+    }
+
+    private String getSecKillVerCodeKey(MallClientUser clientUser, String activityCode, Long skuId) {
+        return RedisKeyConstant.SECKILL_CODE_PREFIX + clientUser.getMemberId() + RedisKeyConstant.SPLIT_KEY + activityCode + RedisKeyConstant.SPLIT_KEY + skuId;
     }
 
     @Override
@@ -135,6 +181,13 @@ public class SeckillServiceImpl implements SeckillService {
             mallPublisher.publishMsg(ExchangeConstant.MALL_OMS_EXCHANGE, RouteKeyConstant.MALL_CREATE_ORDER_KEY, orderNo);
             log.info("下单总数【{}】订单【{}】下单成功【{}】", totalOrderNum, orderNo, orderDate);
         }
+//        if (mallRedisTemplate.decrementStock2("skuStock", 1) >= 0) {
+//            String orderDate = DateUtil.format(new Date(), DatePattern.NORM_DATETIME_PATTERN);
+//            String orderNo = IdUtil.generatorIdStr();
+//            int totalOrderNum = num.incrementAndGet();
+//            mallPublisher.publishMsg(ExchangeConstant.MALL_OMS_EXCHANGE, RouteKeyConstant.MALL_CREATE_ORDER_KEY, orderNo);
+//            log.info("下单总数【{}】订单【{}】下单成功【{}】", totalOrderNum, orderNo, orderDate);
+//        }
         return true;
     }
 

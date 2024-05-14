@@ -19,4 +19,7 @@ public class SecKillOrderReqBO {
     @NotNull(message = "秒杀商品id不能为空")
     private Long skuId;
 
+    @NotBlank(message = "图片验证码不能为空")
+    private String captcha;
+
 }

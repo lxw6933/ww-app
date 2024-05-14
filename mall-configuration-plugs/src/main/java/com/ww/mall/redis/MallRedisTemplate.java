@@ -26,6 +26,15 @@ import java.util.stream.Collectors;
 @Component
 public class MallRedisTemplate {
 
+    private static final String DECREMENT_STOCK_LUA = "local current_stock = tonumber(redis.call('get', KEYS[1]) or 0);\n" +
+            "if current_stock >= tonumber(ARGV[1]) then\n" +
+            "    redis.call('decrby', KEYS[1], tonumber(ARGV[1]));\n" +
+            "    return current_stock - tonumber(ARGV[1]);\n" +
+            "else\n" +
+            "    return -1;\n" +
+            "end";
+    private static final byte[] DECREMENT_STOCK_LUA_BYTE = DECREMENT_STOCK_LUA.getBytes();
+
     /**
      * 默认批处理命令数量
      */
@@ -37,26 +46,19 @@ public class MallRedisTemplate {
     /**
      * lua扣减库存
      *
-     * @param key key
-     * @param decrement 扣减数量
+     * @param key    key
+     * @param number 扣减数量
      * @return long
      */
     @SuppressWarnings("all")
-    public Long decrementStock(String key, long decrement) {
+    public Long decrementStock(String key, int number) {
         return redisTemplate.execute((RedisCallback<Long>) connection -> {
             RedisSerializer keySerializer = redisTemplate.getKeySerializer();
             byte[] keyBytes = keySerializer.serialize(key);
 
-            String script = "local current_stock = tonumber(redis.call('get', KEYS[1]) or 0);\n" +
-                    "if current_stock >= tonumber(ARGV[1]) then\n" +
-                    "    redis.call('decrby', KEYS[1], tonumber(ARGV[1]));\n" +
-                    "    return current_stock - tonumber(ARGV[1]);\n" +
-                    "else\n" +
-                    "    return -1;\n" +
-                    "end";
 
-            Object result = connection.eval(script.getBytes(), ReturnType.INTEGER, 1, keyBytes,
-                    String.valueOf(decrement).getBytes());
+            Object result = connection.eval(DECREMENT_STOCK_LUA_BYTE, ReturnType.INTEGER, 1, keyBytes,
+                    String.valueOf(number).getBytes());
             return (Long) result;
         });
     }
@@ -166,12 +168,12 @@ public class MallRedisTemplate {
     /**
      * 查询当前位置附近的type地址
      *
-     * @param typeId 需要查看地址的类型【按摩店、洗脚店】
-     * @param x 当前经度
-     * @param y 当前纬度
+     * @param typeId       需要查看地址的类型【按摩店、洗脚店】
+     * @param x            当前经度
+     * @param y            当前纬度
      * @param nearDistance 附近多少距离
-     * @param page 第几页
-     * @param size 每页多少条数据
+     * @param page         第几页
+     * @param size         每页多少条数据
      * @return map
      */
     public Map<String, Distance> queryNearbyLocation(Long typeId, Double x, Double y, Double nearDistance, Integer page, Integer size) {

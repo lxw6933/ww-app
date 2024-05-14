@@ -53,7 +53,7 @@
 
         <lombok.version>1.18.20</lombok.version>
         <hutool.version>5.8.27</hutool.version>
-        <jackson.version>2.16.1</jackson.version>
+        <jackson.version>2.14.2</jackson.version>
         <fastjson.version>1.2.83</fastjson.version>
         <easyexcel.version>3.3.4</easyexcel.version>
         <druid.version>1.1.13</druid.version>
