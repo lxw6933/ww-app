@@ -36,16 +36,5 @@ public interface SeckillService {
      */
     Boolean doSecKillOrder(String secKillPath, SecKillOrderReqBO secKillOrderReqBO);
 
-    boolean seckillOrder();
-
-    void traceId();
-
-    void msg();
-
-    void cache(String msg);
-
-    void boomFilter();
-
-    void liteFlow();
 }
 

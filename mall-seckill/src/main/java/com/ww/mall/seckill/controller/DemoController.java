@@ -1,6 +1,6 @@
 package com.ww.mall.seckill.controller;
 
-import com.ww.mall.seckill.service.SeckillService;
+import com.ww.mall.seckill.service.DemoService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -18,36 +18,36 @@ import org.springframework.web.bind.annotation.RestController;
 public class DemoController {
 
     @Autowired
-    private SeckillService seckillService;
+    private DemoService demoService;
 
     @GetMapping("/order")
     public boolean redisStock() {
-        return seckillService.seckillOrder();
+        return demoService.seckillOrder();
     }
 
     @GetMapping("/traceId")
     public void traceId() {
-        seckillService.traceId();
+        demoService.traceId();
     }
 
     @GetMapping("/msg")
     public void msg() {
-        seckillService.msg();
+        demoService.msg();
     }
 
     @GetMapping("/cache")
     public void cache(String msg) {
-        seckillService.cache(msg);
+        demoService.cache(msg);
     }
 
     @GetMapping("/boomFilter")
     public void boomFilter() {
-        seckillService.boomFilter();
+        demoService.boomFilter();
     }
 
     @GetMapping("/liteFlow")
     public void liteFlow() {
-        seckillService.liteFlow();
+        demoService.liteFlow();
     }
 
 }
