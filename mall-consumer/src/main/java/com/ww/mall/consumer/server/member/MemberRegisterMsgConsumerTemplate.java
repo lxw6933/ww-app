@@ -1,10 +1,10 @@
 package com.ww.mall.consumer.server.member;
 
+import cn.hutool.extra.spring.SpringUtil;
 import com.ww.mall.common.common.Result;
 import com.ww.mall.common.exception.ApiException;
 import com.ww.mall.consumer.template.MsgConsumerTemplate;
 import com.ww.mall.web.feign.MemberFeignService;
-import com.ww.mall.web.utils.SpringContextManager;
 import com.ww.mall.web.view.bo.AddMemberIntegralBO;
 import lombok.extern.slf4j.Slf4j;
 
@@ -15,7 +15,7 @@ import lombok.extern.slf4j.Slf4j;
  **/
 @Slf4j
 public class MemberRegisterMsgConsumerTemplate extends MsgConsumerTemplate<Long> {
-    private final MemberFeignService memberFeignService = SpringContextManager.getBean(MemberFeignService.class);
+    private final MemberFeignService memberFeignService = SpringUtil.getBean(MemberFeignService.class);
 
     @Override
     public boolean serverHandler(Long msg) {

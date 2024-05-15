@@ -2,11 +2,11 @@ package com.ww.mall.consumer.template;
 
 import cn.hutool.core.date.DatePattern;
 import cn.hutool.core.date.DateUtil;
+import cn.hutool.extra.spring.SpringUtil;
 import com.rabbitmq.client.Channel;
 import com.ww.mall.common.constant.Constant;
-import com.ww.mall.rabbitmq.enums.MqMsgStatus;
 import com.ww.mall.rabbitmq.MqMsgLogEntity;
-import com.ww.mall.web.utils.SpringContextManager;
+import com.ww.mall.rabbitmq.enums.MqMsgStatus;
 import lombok.extern.slf4j.Slf4j;
 import org.slf4j.MDC;
 import org.springframework.amqp.core.Message;
@@ -29,7 +29,7 @@ public abstract class MsgConsumerTemplate<T> {
 
     private static final Integer MSG_TRY_COUNT = 3;
 
-    private final MongoTemplate mongoTemplate = SpringContextManager.getBean(MongoTemplate.class);
+    private final MongoTemplate mongoTemplate = SpringUtil.getBean(MongoTemplate.class);
 
     public final void consumer(Message message, T msg, Channel channel) throws IOException {
         MessageProperties properties = message.getMessageProperties();
