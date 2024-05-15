@@ -75,7 +75,6 @@ public class SeckillServiceImpl implements SeckillService {
 //        // 中文gif类型
 //        ChineseGifCaptcha captcha = new ChineseGifCaptcha(130, 48);
         captcha.setLen(3);
-        captcha.text();
         // 验证码结果存入redis
         String key = getSecKillVerCodeKey(clientUser, activityCode, skuId);
         redisTemplate.opsForValue().set(key, captcha.text(), 1, TimeUnit.MINUTES);

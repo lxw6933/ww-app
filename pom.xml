@@ -77,6 +77,7 @@
         <protobuf.version>3.25.3</protobuf.version>
         <grpc.version>1.51.0</grpc.version>
         <grpc.springboot.version>2.14.0.RELEASE</grpc.springboot.version>
+        <easy.captcha.version>1.6.2</easy.captcha.version>
     </properties>
 
     <dependencyManagement>
@@ -242,6 +243,12 @@
                 <groupId>io.netty</groupId>
                 <artifactId>netty-all</artifactId>
                 <version>${netty.version}</version>
+            </dependency>
+            <!-- captcha -->
+            <dependency>
+                <groupId>com.github.whvcse</groupId>
+                <artifactId>easy-captcha</artifactId>
+                <version>${easy.captcha.version}</version>
             </dependency>
         </dependencies>
     </dependencyManagement>
