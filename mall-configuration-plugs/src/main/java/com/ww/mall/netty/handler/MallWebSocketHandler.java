@@ -55,8 +55,10 @@ public class MallWebSocketHandler extends SimpleChannelInboundHandler<TextWebSoc
 
     @Override
     public void channelInactive(ChannelHandlerContext ctx) throws Exception {
-        clients.remove(ctx.channel());
-        remove(ctx.channel());
+        Channel channel = ctx.channel();
+        ctx.close();
+        clients.remove(channel);
+        remove(channel);
         log.info("客户端断开连接，通道关闭！id={},localAddress={},remoteAddress={}", ctx.channel().id(), ctx.channel().localAddress(), ctx.channel().remoteAddress());
     }
 
@@ -73,6 +75,7 @@ public class MallWebSocketHandler extends SimpleChannelInboundHandler<TextWebSoc
     @Override
     public void userEventTriggered(ChannelHandlerContext ctx, Object evt) throws Exception {
         if (evt instanceof WebSocketServerProtocolHandler.HandshakeComplete) {
+            log.info("client handler websocket server");
             WebSocketServerProtocolHandler.HandshakeComplete complete = (WebSocketServerProtocolHandler.HandshakeComplete) evt;
             String uri = complete.requestUri();
             String token = getToken(uri);
