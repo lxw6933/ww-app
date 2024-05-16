@@ -1,10 +1,5 @@
-package com.ww.mall.netty.handler.websocket;
+package com.ww.mall.netty.handler;
 
-import com.alibaba.fastjson.JSON;
-import com.ww.mall.common.exception.ApiException;
-import com.ww.mall.netty.entity.WSDataContent;
-import com.ww.mall.netty.enums.WSMsgAction;
-import com.ww.mall.netty.holder.WebSocketClientChannelHolder;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelHandler;
 import io.netty.channel.ChannelHandlerContext;
@@ -16,7 +11,6 @@ import io.netty.handler.codec.http.websocketx.WebSocketServerProtocolHandler;
 import io.netty.util.concurrent.GlobalEventExecutor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
-import org.apache.poi.ss.formula.functions.T;
 import org.springframework.stereotype.Component;
 
 import java.util.Map;
@@ -46,54 +40,6 @@ public class MallWebSocketHandler extends SimpleChannelInboundHandler<TextWebSoc
     protected void channelRead0(ChannelHandlerContext ctx, TextWebSocketFrame msg) throws Exception {
         // 接收到客户端发送的消息
         String content = msg.text();
-        Channel currentChannel = ctx.channel();
-        try {
-            WSDataContent<?> WSDataContent = JSON.parseObject(content, WSDataContent.class);
-            if (WSDataContent == null) {
-                throw new ApiException("数据异常");
-            }
-            Integer action = WSDataContent.getAction();
-            String msgId = WSDataContent.getMsgId();
-            switch (action) {
-                case 1:
-                    String uid = WSDataContent.getUid();
-                    if (StringUtils.isEmpty(uid)) {
-                        // 主动断开连接
-                        writeAndFlushResponse(WSMsgAction.BREAK_OFF.type, msgId, null, currentChannel);
-                        return;
-                    }
-                    String loginLabel = WSDataContent.getLoginLabel();
-                    Channel existChannel = managerChannel.get(uid);
-                    if (existChannel != null) {
-                        //存在当前用户的连接，验证登录标签
-//                        LinkUserService linkUserService = (LinkUserService) SpringUtil.getBean("linkUserServiceImpl");
-//                        if (linkUserService.checkUserLoginLabel(uid, loginLabel)) {
-//                            //是同一次登录标签,加入新连接，关闭旧的连接
-//                            managerChannel.put(uid, currentChannel);
-//                            writeAndFlushResponse(WSMsgAction.BREAK_OFF.type, null, createKickMsgBody(), existChannel);
-//                            writeAndFlushResponse(WSMsgAction.MESSAGE_SIGN.type, msgId, null, currentChannel);
-//                            //existChannel.close();
-//                        } else {
-//                            //不是同一次登录标签，拒绝连接
-//                            writeAndFlushResponse(WSMsgAction.BREAK_OFF.type, null, createKickMsgBody(), currentChannel);
-//                            //currentChannel.close();
-//                        }
-                    } else {
-                        managerChannel.put(uid, currentChannel);
-                        writeAndFlushResponse(WSMsgAction.MESSAGE_SIGN.type, msgId, null, currentChannel);
-                    }
-                    break;
-                case 2:
-                    //心跳类型的消息
-                    log.info("收到来自Channel为{}的心跳包......", currentChannel);
-                    writeAndFlushResponse(WSMsgAction.MESSAGE_SIGN.type, msgId, null, currentChannel);
-                    break;
-                default:
-                    throw new IllegalStateException("非法数据");
-            }
-        } catch (Exception e) {
-
-        }
         log.info("Received client message: {}", content);
         // 假设这里有一个业务逻辑处理过程
         String responseMessage = "server processed: " + content;
@@ -130,13 +76,11 @@ public class MallWebSocketHandler extends SimpleChannelInboundHandler<TextWebSoc
             WebSocketServerProtocolHandler.HandshakeComplete complete = (WebSocketServerProtocolHandler.HandshakeComplete) evt;
             String uri = complete.requestUri();
             String token = getToken(uri);
-            if (StringUtils.isEmpty(token)) {
-                ctx.channel().close();
-                return;
-            }
-            log.info("uri: {}", uri);
-            // 获取用户信息
-            WebSocketClientChannelHolder.addContext("", ctx.channel());
+//            if (StringUtils.isEmpty(token)) {
+//                ctx.channel().close();
+//                return;
+//            }
+            log.info("client request uri: {}", uri);
         }
     }
 
@@ -153,17 +97,6 @@ public class MallWebSocketHandler extends SimpleChannelInboundHandler<TextWebSoc
             return null;
         }
         return params[1];
-    }
-
-    /**
-     * 响应客户端
-     */
-    public static void writeAndFlushResponse(Integer action, String msgId, T data, Channel channel) {
-        WSDataContent<T> wsDataContent = new WSDataContent<>();
-        wsDataContent.setAction(action);
-        wsDataContent.setMsgId(msgId);
-        wsDataContent.setData(data);
-        channel.writeAndFlush(new TextWebSocketFrame(JSON.toJSONString(wsDataContent)));
     }
 
     /**

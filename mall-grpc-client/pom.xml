@@ -47,6 +47,11 @@
             <artifactId>grpc-client-spring-boot-starter</artifactId>
             <version>${grpc.springboot.version}</version>
         </dependency>
+        <!-- netty -->
+        <dependency>
+            <groupId>io.netty</groupId>
+            <artifactId>netty-all</artifactId>
+        </dependency>
         <!-- test -->
         <dependency>
             <groupId>org.springframework.boot</groupId>
