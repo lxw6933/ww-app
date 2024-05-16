@@ -18,7 +18,7 @@ public class MallNettyProperties {
 
     private Integer serverPort = 8765;
 
-    private Integer websocketPort = 8889;
+    private Integer websocketPort = 8764;
 
     private String websocketPath = "/ws";
 
