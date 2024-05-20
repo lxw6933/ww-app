@@ -2,7 +2,7 @@ package com.ww.mall.admin.service.impl;
 
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.ww.mall.admin.dao.SysUserMapper;
-import easycode.entity.SysUser;
+import com.ww.mall.admin.entity.SysUser;
 import com.ww.mall.admin.service.SysUserService;
 import org.springframework.stereotype.Service;
 

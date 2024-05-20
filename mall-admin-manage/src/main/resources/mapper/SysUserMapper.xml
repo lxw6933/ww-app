@@ -24,6 +24,34 @@
         <result property="updateTime" column="update_time" jdbcType="TIMESTAMP"/>
     </resultMap>
 
+    <sql id="Base_Column_List">
+        id,
+        platform,
+        username,
+        nickname,
+        password,
+        salt,
+        head_picture,
+        sex,
+        email,
+        phone,
+        remark,
+        status,
+        valid,
+        platform_id,
+        version,
+        creator_id,
+        updater_id,
+        create_time,
+        update_time
+    </sql>
+
+    <select id="findMenuIdsByRoleIds" resultType="java.lang.Long">
+        select menu_id from sys_role_menu where role_id in
+        <foreach item="roleId" collection="roleIds" index="index" open="(" separator="," close=")">
+            #{roleId}
+        </foreach>
+    </select>
 
 </mapper>
 

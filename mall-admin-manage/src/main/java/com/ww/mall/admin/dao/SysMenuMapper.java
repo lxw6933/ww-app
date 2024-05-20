@@ -1,7 +1,7 @@
 package com.ww.mall.admin.dao;
 
 import com.baomidou.mybatisplus.core.mapper.BaseMapper;
-import easycode.entity.SysMenu;
+import com.ww.mall.admin.entity.SysMenu;
 import org.apache.ibatis.annotations.Mapper;
 
 /**

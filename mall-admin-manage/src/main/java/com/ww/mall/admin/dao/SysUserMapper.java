@@ -1,8 +1,11 @@
 package com.ww.mall.admin.dao;
 
 import com.baomidou.mybatisplus.core.mapper.BaseMapper;
-import easycode.entity.SysUser;
+import com.ww.mall.admin.entity.SysUser;
 import org.apache.ibatis.annotations.Mapper;
+import org.apache.ibatis.annotations.Select;
+
+import java.util.List;
 
 /**
  * @author ww
@@ -11,6 +14,11 @@ import org.apache.ibatis.annotations.Mapper;
  */
 @Mapper
 public interface SysUserMapper extends BaseMapper<SysUser> {
+
+    @Select("select role_id from sys_user_role where user_id = #{userId}")
+    List<Long> findRoleIdsByUserId(Long userId);
+
+    List<Long> findMenuIdsByRoleIds(List<Long> roleIds);
 
 }
 

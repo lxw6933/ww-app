@@ -1,7 +1,7 @@
 package com.ww.mall.admin.service;
 
 import com.baomidou.mybatisplus.extension.service.IService;
-import easycode.entity.SysRole;
+import com.ww.mall.admin.entity.SysRole;
 
 /**
  * @author ww

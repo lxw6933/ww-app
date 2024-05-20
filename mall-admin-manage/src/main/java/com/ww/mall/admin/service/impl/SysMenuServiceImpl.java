@@ -2,7 +2,7 @@ package com.ww.mall.admin.service.impl;
 
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.ww.mall.admin.dao.SysMenuMapper;
-import easycode.entity.SysMenu;
+import com.ww.mall.admin.entity.SysMenu;
 import com.ww.mall.admin.service.SysMenuService;
 import org.springframework.stereotype.Service;
 

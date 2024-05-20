@@ -22,6 +22,18 @@
         <result property="updateTime" column="update_time" jdbcType="TIMESTAMP"/>
     </resultMap>
 
+    <sql id="Base_Column_List">
+        menu.id,
+        menu.platform,
+        menu.type,
+        menu.name,
+        menu.pid,
+        menu.url,
+        menu.icon,
+        menu.sort,
+        menu.remark,
+        menu.platform_id,
+    </sql>
 
 </mapper>
 

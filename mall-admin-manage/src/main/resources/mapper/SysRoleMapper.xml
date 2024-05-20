@@ -18,6 +18,16 @@
         <result property="updateTime" column="update_time" jdbcType="TIMESTAMP"/>
     </resultMap>
 
+    <sql id="Base_Column_List">
+        role.id
+        role.platform,
+        role.name,
+        role.role_no,
+        role.remark,
+        role.status,
+        role.valid,
+        role.platform_id
+    </sql>
 
 </mapper>
 
