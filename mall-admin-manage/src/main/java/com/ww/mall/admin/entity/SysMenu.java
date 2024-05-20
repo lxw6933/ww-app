@@ -67,4 +67,9 @@ public class SysMenu extends BaseEntity {
      */
     private Boolean valid;
 
+    /**
+     * 平台id
+     */
+    private Long platformId;
+
 }
