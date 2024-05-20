@@ -1,31 +1,40 @@
-package com.ww.mall.admin.entity;
+package easycode.entity;
 
-import com.baomidou.mybatisplus.annotation.TableName;
-import com.ww.mall.admin.enums.SysMenuType;
-import com.ww.mall.admin.enums.SysPlatformType;
+import java.util.Date;
+
+import com.baomidou.mybatisplus.extension.activerecord.Model;
+
+import java.io.Serializable;
+
 import com.ww.mall.web.cmmon.BaseEntity;
+
 import lombok.Data;
 import lombok.EqualsAndHashCode;
+import com.baomidou.mybatisplus.annotation.TableName;
 
 /**
  * @author ww
- * @create 2024-05-20- 09:47
+ * @create 2024-05-20 14:02:20
  * @description:
  */
 @Data
 @TableName("sys_menu")
 @EqualsAndHashCode(callSuper = true)
 public class SysMenu extends BaseEntity {
+    /**
+     * 物理主键
+     */
+    private Long id;
 
     /**
      * 平台
      */
-    private SysPlatformType platform;
+    private String platform;
 
     /**
-     * 菜单类型
+     * 类型
      */
-    private SysMenuType type;
+    private String type;
 
     /**
      * 菜单名称
@@ -48,11 +57,6 @@ public class SysMenu extends BaseEntity {
     private String icon;
 
     /**
-     * 类型
-     */
-    private SysMenuType type;
-
-    /**
      * 排序
      */
     private Integer sort;
@@ -65,11 +69,27 @@ public class SysMenu extends BaseEntity {
     /**
      * 状态
      */
-    private Boolean status;
+    private Integer status;
 
     /**
      * 是否有效
      */
-    private Boolean valid;
+    private Integer valid;
+
+    /**
+     * 平台id
+     */
+    private Long platformId;
+
+    private Long version;
+
+    private Long creatorId;
+
+    private Long updaterId;
+
+    private Date createTime;
+
+    private Date updateTime;
 
 }
+
