@@ -2,6 +2,7 @@ package com.ww.mall.coupon.entity;
 
 import com.baomidou.mybatisplus.annotation.TableName;
 import com.ww.mall.coupon.eunms.*;
+import com.ww.mall.web.cmmon.BaseEntity;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 

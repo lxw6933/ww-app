@@ -25,7 +25,7 @@
         <module>mall-api-gateway</module>
 <!--        <module>mall-code-generator</module>-->
         <!-- 后台管理模块 -->
-<!--        <module>mall-admin</module>-->
+        <module>mall-admin-manage</module>
         <!-- 公共模块 -->
         <module>mall-web</module>
         <module>mall-configuration-plugs</module>
