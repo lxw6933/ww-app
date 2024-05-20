@@ -48,11 +48,6 @@ public class SysMenu extends BaseEntity {
     private String icon;
 
     /**
-     * 类型
-     */
-    private SysMenuType type;
-
-    /**
      * 排序
      */
     private Integer sort;
