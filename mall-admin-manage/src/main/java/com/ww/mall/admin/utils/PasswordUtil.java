@@ -10,11 +10,24 @@ import cn.hutool.crypto.digest.MD5;
  */
 public class PasswordUtil {
 
+    private static final String DEFAULT_PASSWORD = "123456";
+
     private static final int WORKLOAD = 12;
 
     private static final MD5 md5 = MD5.create();
 
     private PasswordUtil() {}
+
+    /**
+     * 重置密码
+     *
+     * @param resetSalt resetSalt
+     * @return 重置密码
+     */
+    public static String resetPassword(String resetSalt) {
+        String md5Password = md5.digestHex(DEFAULT_PASSWORD);
+        return generatePassword(md5Password, resetSalt);
+    }
 
     /**
      * 随机生成用户salt
@@ -44,7 +57,7 @@ public class PasswordUtil {
      */
     public static boolean checkPassword(String userMd5Password, String hashedPassword) {
         if (hashedPassword == null || !hashedPassword.startsWith("$2a$")) {
-            throw new IllegalArgumentException("无效的加密密码");
+            throw new IllegalArgumentException("无效密码");
         }
         return BCrypt.checkpw(userMd5Password, hashedPassword);
     }
@@ -64,6 +77,11 @@ public class PasswordUtil {
 
         boolean isMatch = PasswordUtil.checkPassword(md5.digestHex("admin"), salt + hashedPassword);
         System.out.println("密码匹配: " + isMatch);
+
+        System.out.println("====================");
+        String resetSalt = generateSalt();
+        String res = resetPassword(resetSalt);
+        System.out.println("重置结果：" + checkPassword(md5.digestHex(DEFAULT_PASSWORD), resetSalt + res));
     }
 
 }
