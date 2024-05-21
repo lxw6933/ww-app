@@ -5,7 +5,7 @@ package com.ww.mall.common.enums;
  * @create 2024-04-26- 10:39
  * @description:
  */
-public enum OperatorType {
+public enum UserType {
 
     /**
      * 其它
@@ -15,11 +15,11 @@ public enum OperatorType {
     /**
      * 后台用户
      */
-    MANAGE,
+    ADMIN,
 
     /**
      * 手机端用户
      */
-    MOBILE
+    CLIENT
 
 }

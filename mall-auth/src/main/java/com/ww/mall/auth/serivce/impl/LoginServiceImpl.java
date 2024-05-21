@@ -8,6 +8,7 @@ import com.ww.mall.auth.vo.LoginVO;
 import com.ww.mall.common.common.Result;
 import com.ww.mall.common.constant.RedisKeyConstant;
 import com.ww.mall.common.enums.CodeEnum;
+import com.ww.mall.common.enums.UserType;
 import com.ww.mall.common.exception.ApiException;
 import com.ww.mall.web.feign.MemberFeignService;
 import com.ww.mall.web.feign.ThirdServerFeignService;
@@ -70,6 +71,7 @@ public class LoginServiceImpl implements LoginService {
                 map.put("exp", tokenExpTime.getTime());
                 map.put("nbf", tokenEffectTime.getTime());
                 map.put("iss", jwtProperties.getIss());
+                map.put("userType", UserType.CLIENT);
                 String token = JWTUtil.createToken(map, jwtProperties.getSecret().getBytes());
                 LoginVO loginVO = new LoginVO();
                 loginVO.setToken(token);

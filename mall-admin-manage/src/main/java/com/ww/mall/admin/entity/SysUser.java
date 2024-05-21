@@ -1,7 +1,7 @@
 package com.ww.mall.admin.entity;
 
 import com.baomidou.mybatisplus.annotation.TableName;
-import com.ww.mall.admin.enums.SysPlatformType;
+import com.ww.mall.common.enums.SysPlatformType;
 import com.ww.mall.web.cmmon.BaseEntity;
 import lombok.Data;
 import lombok.EqualsAndHashCode;

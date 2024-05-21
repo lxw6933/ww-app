@@ -10,5 +10,13 @@ import com.ww.mall.admin.entity.SysUser;
  */
 public interface SysUserService extends IService<SysUser> {
 
+    /**
+     * 重置用户密码
+     *
+     * @param userId 用户id
+     * @return boolean
+     */
+    boolean resetPassword(Long userId);
+
 }
 

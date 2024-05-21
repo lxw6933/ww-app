@@ -1,6 +1,7 @@
 package com.ww.mall.common.common;
 
 import lombok.Data;
+import lombok.EqualsAndHashCode;
 
 /**
  * @author ww
@@ -8,22 +9,8 @@ import lombok.Data;
  * @description:
  */
 @Data
-public class MallClientUser {
-
-    /**
-     * 发行人
-     */
-    private String iss;
-
-    /**
-     * 过期时间
-     */
-    private Long exp;
-
-    /**
-     * 生效时间
-     */
-    private Long nbf;
+@EqualsAndHashCode(callSuper = true)
+public class MallClientUser extends MallBaseUser {
 
     /**
      * 手机号

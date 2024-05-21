@@ -1,6 +1,11 @@
 package com.ww.mall.gateway.utils;
 
 import com.alibaba.fastjson.JSON;
+import com.alibaba.nacos.common.http.param.MediaType;
+import com.ww.mall.common.common.Result;
+import com.ww.mall.gateway.enums.GatewayResultEnum;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpStatus;
 import org.springframework.web.server.ServerWebExchange;
 import reactor.core.publisher.Mono;
 
@@ -16,7 +21,10 @@ public final class WebFluxResultUtils {
     public WebFluxResultUtils() {
     }
 
-    public static Mono<Void> result(final ServerWebExchange exchange, final Object result) {
+    public static Mono<Void> result(final ServerWebExchange exchange, final GatewayResultEnum resultEnum, final HttpStatus status) {
+        Result<Object> result = new Result<>(resultEnum.getCode(), resultEnum.getMsg());
+        exchange.getResponse().setStatusCode(status);
+        exchange.getResponse().getHeaders().set(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON);
         return exchange.getResponse().writeWith(Mono.just(exchange.getResponse().bufferFactory().wrap((Objects.requireNonNull(JSON.toJSONString(result))).getBytes())));
     }
 

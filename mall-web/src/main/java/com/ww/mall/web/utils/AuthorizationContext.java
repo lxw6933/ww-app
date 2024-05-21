@@ -1,6 +1,7 @@
 package com.ww.mall.web.utils;
 
 import com.alibaba.fastjson.JSON;
+import com.ww.mall.common.common.MallAdminUser;
 import com.ww.mall.common.common.MallClientUser;
 import com.ww.mall.common.constant.Constant;
 import com.ww.mall.common.enums.CodeEnum;
@@ -23,6 +24,7 @@ public class AuthorizationContext {
     private AuthorizationContext() {}
 
     private static final ThreadLocal<MallClientUser> CLIENT_USER_THREAD_LOCAL = new ThreadLocal<>();
+    private static final ThreadLocal<MallAdminUser> ADMIN_USER_THREAD_LOCAL = new ThreadLocal<>();
 
     public static MallClientUser getClientUser() {
         return getClientUser(true);
@@ -34,6 +36,23 @@ public class AuthorizationContext {
         if (mallClientUser != null) {
             return mallClientUser;
         }
+        return getUserTokenInfo(ex, MallClientUser.class);
+    }
+
+    public static MallAdminUser getAdminUser() {
+        return getAdminUser(true);
+    }
+
+    public static MallAdminUser getAdminUser(boolean ex) {
+        MallAdminUser mallAdminUser = ADMIN_USER_THREAD_LOCAL.get();
+        // 获取当前线程是否有用户信息
+        if (mallAdminUser != null) {
+            return mallAdminUser;
+        }
+        return getUserTokenInfo(ex, MallAdminUser.class);
+    }
+
+    private static <T> T getUserTokenInfo(boolean ex, Class<T> tClass) {
         // 获取当前线程是否带有token
         ServletRequestAttributes attributes = (ServletRequestAttributes) RequestContextHolder
                 .getRequestAttributes();
@@ -53,11 +72,12 @@ public class AuthorizationContext {
                 return null;
             }
         }
-        return JSON.parseObject(tokenInfo, MallClientUser.class);
+        return JSON.parseObject(tokenInfo, tClass);
     }
 
     public static void remove() {
         CLIENT_USER_THREAD_LOCAL.remove();
+        ADMIN_USER_THREAD_LOCAL.remove();
     }
 
 }
