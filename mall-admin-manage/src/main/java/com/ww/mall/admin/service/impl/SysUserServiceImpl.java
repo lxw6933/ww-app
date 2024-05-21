@@ -109,7 +109,7 @@ public class SysUserServiceImpl extends BaseService<SysUserMapper, SysUser> impl
     @Override
     @Transactional
     @MallResubmission
-    public boolean edit(SysUserForm form) {
+    public boolean update(SysUserForm form) {
         SysUser sysUser = this.getById(form.getId());
         if (sysUser == null) {
             throw new ApiException("用户不存在");
@@ -165,7 +165,7 @@ public class SysUserServiceImpl extends BaseService<SysUserMapper, SysUser> impl
 
     @Override
     @MallResubmission
-    public boolean remove(IdForm form) {
+    public boolean delete(IdForm form) {
         MallAdminUser adminUser = AuthorizationContext.getAdminUser();
         if (Objects.equals(adminUser.getUserId(), form.getId())) {
             throw new ApiException("禁止删除自己账号");

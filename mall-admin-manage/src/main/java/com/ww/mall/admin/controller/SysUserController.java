@@ -37,12 +37,12 @@ public class SysUserController extends MallAbstractController {
 
     @PostMapping("/update")
     public boolean update(@RequestBody @Validated({UpdateGroup.class}) SysUserForm form) {
-        return sf.getSysUserService().edit(form);
+        return sf.getSysUserService().update(form);
     }
 
     @PostMapping("/delete")
     public boolean delete(@RequestBody @Validated({DeleteGroup.class}) IdForm form) {
-        return sf.getSysUserService().remove(form);
+        return sf.getSysUserService().delete(form);
     }
 
     @PostMapping("/modifyPassword")

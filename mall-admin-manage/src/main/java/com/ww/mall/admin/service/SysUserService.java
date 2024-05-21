@@ -42,7 +42,7 @@ public interface SysUserService extends IService<SysUser> {
      * @param form form
      * @return boolean
      */
-    boolean edit(SysUserForm form);
+    boolean update(SysUserForm form);
 
     /**
      * 获取用户信息
@@ -66,7 +66,7 @@ public interface SysUserService extends IService<SysUser> {
      * @param form form
      * @return boolean
      */
-    boolean remove(IdForm form);
+    boolean delete(IdForm form);
 
     /**
      * 修改用户密码
