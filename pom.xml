@@ -78,6 +78,7 @@
         <grpc.version>1.51.0</grpc.version>
         <grpc.springboot.version>2.14.0.RELEASE</grpc.springboot.version>
         <easy.captcha.version>1.6.2</easy.captcha.version>
+        <elasticsearch.version>7.16.3</elasticsearch.version>
     </properties>
 
     <dependencyManagement>
