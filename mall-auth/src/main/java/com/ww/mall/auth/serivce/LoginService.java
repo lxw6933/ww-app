@@ -1,7 +1,7 @@
 package com.ww.mall.auth.serivce;
 
 import com.ww.mall.web.view.bo.MemberLoginBO;
-import com.ww.mall.auth.vo.LoginVO;
+import com.ww.mall.auth.view.vo.LoginVO;
 
 import javax.servlet.http.HttpServletRequest;
 

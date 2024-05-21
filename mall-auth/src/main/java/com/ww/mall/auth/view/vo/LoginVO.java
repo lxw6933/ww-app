@@ -1,4 +1,4 @@
-package com.ww.mall.auth.vo;
+package com.ww.mall.auth.view.vo;
 
 import lombok.Data;
 

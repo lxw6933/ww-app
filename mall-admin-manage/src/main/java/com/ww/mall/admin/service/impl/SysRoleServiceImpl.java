@@ -1,8 +1,8 @@
 package com.ww.mall.admin.service.impl;
 
-import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.ww.mall.admin.dao.SysRoleMapper;
 import com.ww.mall.admin.entity.SysRole;
+import com.ww.mall.admin.service.BaseService;
 import com.ww.mall.admin.service.SysRoleService;
 import org.springframework.stereotype.Service;
 
@@ -12,7 +12,7 @@ import org.springframework.stereotype.Service;
  * @description:
  */
 @Service("sysRoleService")
-public class SysRoleServiceImpl extends ServiceImpl<SysRoleMapper, SysRole> implements SysRoleService {
+public class SysRoleServiceImpl extends BaseService<SysRoleMapper, SysRole> implements SysRoleService {
 
 }
 

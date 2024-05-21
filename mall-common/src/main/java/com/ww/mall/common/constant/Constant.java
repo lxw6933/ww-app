@@ -7,6 +7,8 @@ package com.ww.mall.common.constant;
  */
 public class Constant {
 
+    public static final Long SUPER_ADMIN_MANAGER_ID = 1L;
+
     public static final String SPLIT  = ":";
     public static final String GRAY_VERSION = "gray-version";
     public static final String PROD_VERSION = "prod-version";

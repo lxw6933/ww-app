@@ -4,7 +4,7 @@ import cn.hutool.core.util.RandomUtil;
 import cn.hutool.jwt.JWTUtil;
 import com.ww.mall.auth.config.JwtProperties;
 import com.ww.mall.auth.serivce.LoginService;
-import com.ww.mall.auth.vo.LoginVO;
+import com.ww.mall.auth.view.vo.LoginVO;
 import com.ww.mall.common.common.Result;
 import com.ww.mall.common.constant.RedisKeyConstant;
 import com.ww.mall.common.enums.CodeEnum;

@@ -5,12 +5,12 @@ import org.springframework.web.bind.annotation.RestController;
 
 /**
  * @author ww
- * @create 2024-05-20 14:02:19
+ * @create 2024-05-20 14:02:20
  * @description:
  */
 @RestController
-@RequestMapping("/sysMenu")
-public class SysMenuController extends MallAbstractController {
+@RequestMapping("/sysRole")
+public class SysRoleControllerMall extends MallAbstractController {
 
 }
 

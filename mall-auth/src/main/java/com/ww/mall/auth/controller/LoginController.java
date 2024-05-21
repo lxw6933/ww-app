@@ -1,7 +1,7 @@
 package com.ww.mall.auth.controller;
 
 import com.ww.mall.auth.serivce.LoginService;
-import com.ww.mall.auth.vo.LoginVO;
+import com.ww.mall.auth.view.vo.LoginVO;
 import com.ww.mall.web.view.bo.MemberLoginBO;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
