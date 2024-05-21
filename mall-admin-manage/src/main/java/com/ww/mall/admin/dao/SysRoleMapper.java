@@ -12,5 +12,19 @@ import org.apache.ibatis.annotations.Mapper;
 @Mapper
 public interface SysRoleMapper extends BaseMapper<SysRole> {
 
+    /**
+     * 删除角色下所有用户关联信息
+     *
+     * @param roleId roleId
+     */
+    void deleteRoleOfUser(Long roleId);
+
+    /**
+     * 删除角色下所有菜单关联信息
+     *
+     * @param roleId roleId
+     */
+    void deleteRoleOfMenu(Long roleId);
+
 }
 

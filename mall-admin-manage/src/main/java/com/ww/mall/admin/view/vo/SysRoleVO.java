@@ -34,11 +34,6 @@ public class SysRoleVO {
     private String remark;
 
     /**
-     * 状态
-     */
-    private Boolean status;
-
-    /**
      * 是否有效
      */
     private Boolean valid;

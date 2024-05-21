@@ -38,13 +38,13 @@ public interface SysUserMapper extends BaseMapper<SysUser> {
      *
      * @param form from
      */
-    void saveUserOfRoleInfo(UserAndRoleForm form);
+    void addUserOfRoleInfo(UserAndRoleForm form);
 
     /**
      * 删除用户角色信息
      *
      * @param userId userId
      */
-    void removeUserOfRole(Long userId);
+    void deleteUserOfRole(Long userId);
 }
 

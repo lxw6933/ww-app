@@ -27,7 +27,7 @@ public class SysUserController extends MallAbstractController {
 
     @GetMapping("/info/{userId}")
     public SysUserVO info(@PathVariable("userId") Long userId) {
-        return sf.getSysUserService().get(userId);
+        return sf.getSysUserService().info(userId);
     }
 
     @PostMapping("/save")

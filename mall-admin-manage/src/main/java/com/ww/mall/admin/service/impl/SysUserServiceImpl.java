@@ -79,6 +79,7 @@ public class SysUserServiceImpl extends BaseService<SysUserMapper, SysUser> impl
     @Transactional
     @MallResubmission
     public boolean add(SysUserForm form) {
+        MallAdminUser adminUser = AuthorizationContext.getAdminUser();
         // 保证同一平台下username不重复
         List<SysUser> userList = this.list(new QueryWrapper<SysUser>()
                 .eq("username", form.getUsername())
@@ -101,7 +102,7 @@ public class SysUserServiceImpl extends BaseService<SysUserMapper, SysUser> impl
             UserAndRoleForm data = new UserAndRoleForm();
             data.setRoleIds(form.getRoleIds());
             data.setUserId(newSysUser.getId());
-            df.getSysUserMapper().saveUserOfRoleInfo(data);
+            df.getSysUserMapper().addUserOfRoleInfo(data);
         }
         return true;
     }
@@ -125,19 +126,19 @@ public class SysUserServiceImpl extends BaseService<SysUserMapper, SysUser> impl
         List<Long> userOfRoleIdList = df.getSysUserMapper().findRoleIdsByUserId(sysUser.getId());
         if (!CollectionUtils.isEqualCollection(form.getRoleIds(), userOfRoleIdList)) {
             // 删除之前所有的关联信息，新增目前的关联信息
-            df.getSysUserMapper().removeUserOfRole(sysUser.getId());
+            df.getSysUserMapper().deleteUserOfRole(sysUser.getId());
             if (CollectionUtils.isNotEmpty(form.getRoleIds())) {
                 UserAndRoleForm data = new UserAndRoleForm();
                 data.setUserId(sysUser.getId());
                 data.setRoleIds(form.getRoleIds());
-                df.getSysUserMapper().saveUserOfRoleInfo(data);
+                df.getSysUserMapper().addUserOfRoleInfo(data);
             }
         }
         return true;
     }
 
     @Override
-    public SysUserVO get(Long userId) {
+    public SysUserVO info(Long userId) {
         SysUserVO sysUserVO = new SysUserVO();
         SysUser sysUser = this.getById(userId);
         if (sysUser == null) {
@@ -212,7 +213,7 @@ public class SysUserServiceImpl extends BaseService<SysUserMapper, SysUser> impl
     }
 
     @Override
-    public SysUserVO get(String username, String password) {
+    public SysUserVO info(String username, String password) {
         return null;
     }
 

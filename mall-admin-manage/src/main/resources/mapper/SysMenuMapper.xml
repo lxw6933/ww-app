@@ -12,28 +12,13 @@
         <result property="icon" column="icon" jdbcType="VARCHAR"/>
         <result property="sort" column="sort" jdbcType="INTEGER"/>
         <result property="remark" column="remark" jdbcType="VARCHAR"/>
-        <result property="status" column="status" jdbcType="INTEGER"/>
         <result property="valid" column="valid" jdbcType="INTEGER"/>
-        <result property="platformId" column="platform_id" jdbcType="INTEGER"/>
         <result property="version" column="version" jdbcType="INTEGER"/>
         <result property="creatorId" column="creator_id" jdbcType="INTEGER"/>
         <result property="updaterId" column="updater_id" jdbcType="INTEGER"/>
         <result property="createTime" column="create_time" jdbcType="TIMESTAMP"/>
         <result property="updateTime" column="update_time" jdbcType="TIMESTAMP"/>
     </resultMap>
-
-    <sql id="Base_Column_List">
-        menu.id,
-        menu.platform,
-        menu.type,
-        menu.name,
-        menu.pid,
-        menu.url,
-        menu.icon,
-        menu.sort,
-        menu.remark,
-        menu.platform_id,
-    </sql>
 
 </mapper>
 

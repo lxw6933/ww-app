@@ -8,9 +8,7 @@
         <result property="name" column="name" jdbcType="VARCHAR"/>
         <result property="roleNo" column="role_no" jdbcType="VARCHAR"/>
         <result property="remark" column="remark" jdbcType="VARCHAR"/>
-        <result property="status" column="status" jdbcType="INTEGER"/>
         <result property="valid" column="valid" jdbcType="INTEGER"/>
-        <result property="platformId" column="platform_id" jdbcType="INTEGER"/>
         <result property="version" column="version" jdbcType="INTEGER"/>
         <result property="creatorId" column="creator_id" jdbcType="INTEGER"/>
         <result property="updaterId" column="updater_id" jdbcType="INTEGER"/>
@@ -18,16 +16,13 @@
         <result property="updateTime" column="update_time" jdbcType="TIMESTAMP"/>
     </resultMap>
 
-    <sql id="Base_Column_List">
-        role.id
-        role.platform,
-        role.name,
-        role.role_no,
-        role.remark,
-        role.status,
-        role.valid,
-        role.platform_id
-    </sql>
+    <delete id="deleteRoleOfUser">
+        delete from sys_user_role where role_id = #{roelId}
+    </delete>
+
+    <delete id="deleteRoleOfMenu">
+        delete from sys_role_menu where role_id = #{roelId}
+    </delete>
 
 </mapper>
 

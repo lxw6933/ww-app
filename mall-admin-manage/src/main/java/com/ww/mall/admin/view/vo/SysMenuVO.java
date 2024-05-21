@@ -55,18 +55,8 @@ public class SysMenuVO {
     private String remark;
 
     /**
-     * 状态
-     */
-    private Boolean status;
-
-    /**
      * 是否有效
      */
     private Boolean valid;
-
-    /**
-     * 平台id
-     */
-    private Long platformId;
 
 }

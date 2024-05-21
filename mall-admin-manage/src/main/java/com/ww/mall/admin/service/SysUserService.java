@@ -50,15 +50,7 @@ public interface SysUserService extends IService<SysUser> {
      * @param userId 用户id
      * @return sysUserVO
      */
-    SysUserVO get(Long userId);
-
-    /**
-     * 修改用户状态
-     *
-     * @param userId 修改状态用户
-     * @return boolean
-     */
-    boolean modifySysUserStatus(Long userId, boolean status);
+    SysUserVO info(Long userId);
 
     /**
      * 删除用户
@@ -85,13 +77,21 @@ public interface SysUserService extends IService<SysUser> {
     boolean resetPassword(Long userId);
 
     /**
+     * 修改用户状态
+     *
+     * @param userId 修改状态用户
+     * @return boolean
+     */
+    boolean modifySysUserStatus(Long userId, boolean status);
+
+    /**
      * 账号密码获取用户信息
      *
      * @param username 账号
      * @param password 密码
      * @return sysUser
      */
-    SysUserVO get(String username, String password);
+    SysUserVO info(String username, String password);
 
     /**
      * 查询用户下所有的角色
