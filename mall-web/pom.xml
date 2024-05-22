@@ -12,6 +12,22 @@
     <artifactId>mall-web</artifactId>
 
     <dependencies>
+        <!-- grpc-api -->
+        <dependency>
+            <groupId>com.ww.mall</groupId>
+            <artifactId>mall-grpc-api</artifactId>
+            <version>${ww.mall.version}</version>
+        </dependency>
+        <!-- grpc-server -->
+        <dependency>
+            <groupId>net.devh</groupId>
+            <artifactId>grpc-server-spring-boot-starter</artifactId>
+        </dependency>
+        <!-- grpc-client -->
+        <dependency>
+            <groupId>net.devh</groupId>
+            <artifactId>grpc-client-spring-boot-starter</artifactId>
+        </dependency>
         <!-- common -->
         <dependency>
             <groupId>com.ww.mall</groupId>

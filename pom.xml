@@ -252,6 +252,18 @@
                 <artifactId>easy-captcha</artifactId>
                 <version>${easy.captcha.version}</version>
             </dependency>
+            <!-- grpc-server -->
+            <dependency>
+                <groupId>net.devh</groupId>
+                <artifactId>grpc-server-spring-boot-starter</artifactId>
+                <version>${grpc.springboot.version}</version>
+            </dependency>
+            <!-- grpc-client -->
+            <dependency>
+                <groupId>net.devh</groupId>
+                <artifactId>grpc-client-spring-boot-starter</artifactId>
+                <version>${grpc.springboot.version}</version>
+            </dependency>
             <!-- mapStruct -->
             <dependency>
                 <groupId>org.mapstruct</groupId>
