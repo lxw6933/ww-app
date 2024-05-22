@@ -1,6 +1,5 @@
 package com.ww.mall.client.controller;
 
-import com.ww.mall.proto.hello.HelloProto;
 import com.ww.mall.proto.hello.HelloRequest;
 import com.ww.mall.proto.hello.HelloResponse;
 import com.ww.mall.proto.hello.HelloServiceGrpc;
@@ -18,6 +17,7 @@ public class ClientController {
 
     @GrpcClient("grpc-server")
     private HelloServiceGrpc.HelloServiceBlockingStub helloServiceBlockingStub;
+    
 
     @RequestMapping("/hello")
     public String hello() {

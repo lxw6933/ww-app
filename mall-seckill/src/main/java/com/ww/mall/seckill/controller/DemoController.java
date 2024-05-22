@@ -1,5 +1,6 @@
 package com.ww.mall.seckill.controller;
 
+import com.ww.mall.seckill.grpc.GrpcClientService;
 import com.ww.mall.seckill.service.DemoService;
 import com.ww.mall.seckill.view.bo.UserInfoVO;
 import lombok.extern.slf4j.Slf4j;
@@ -7,6 +8,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
+
+import javax.annotation.Resource;
 
 /**
  * @author ww
@@ -60,6 +63,14 @@ public class DemoController {
         vo.setMobile("1562358569856");
         vo.setIdCard("360782166908157114");
         return vo;
+    }
+
+    @Resource
+    private GrpcClientService grpcClientService;
+
+    @GetMapping("/grpc/hello")
+    public String hello() {
+        return grpcClientService.sendMessage("mall-seckill");
     }
 
 }

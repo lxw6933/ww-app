@@ -2,11 +2,12 @@ package com.ww.mall.seckill.grpc;
 
 import com.ww.mall.proto.hello.HelloRequest;
 import com.ww.mall.proto.hello.HelloServiceGrpc;
-import io.grpc.ManagedChannel;
-import org.springframework.beans.factory.annotation.Autowired;
+import io.grpc.ClientInterceptor;
+import net.devh.boot.grpc.client.inject.GrpcClient;
 import org.springframework.stereotype.Service;
 
 import javax.annotation.Resource;
+import java.util.concurrent.TimeUnit;
 
 /**
  * @author ww
@@ -16,16 +17,21 @@ import javax.annotation.Resource;
 @Service
 public class GrpcClientService {
 
-    private final HelloServiceGrpc.HelloServiceBlockingStub helloServiceBlockingStub;
+    @GrpcClient("mall-member")
+    private HelloServiceGrpc.HelloServiceBlockingStub helloServiceBlockingStub;
 
-    @Autowired
-    public GrpcClientService(ManagedChannel mallMemberChannel) {
-        helloServiceBlockingStub = HelloServiceGrpc.newBlockingStub(mallMemberChannel);
-    }
+    @Resource
+    private ClientInterceptor globalClientInterceptor;
 
     public String sendMessage(String name) {
         // 调用 gRPC 服务
-        return helloServiceBlockingStub.hello(HelloRequest.newBuilder().setName(name).build()).getResult();
+        return helloServiceBlockingStub
+                // 配置请求超时时间
+                .withDeadlineAfter(3, TimeUnit.SECONDS)
+                // 配置拦截器
+                .withInterceptors(globalClientInterceptor)
+                .hello(HelloRequest.newBuilder().setName(name).build())
+                .getResult();
     }
 
 }

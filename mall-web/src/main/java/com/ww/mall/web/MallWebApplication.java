@@ -8,12 +8,14 @@ import com.fasterxml.jackson.datatype.jsr310.ser.LocalDateSerializer;
 import com.fasterxml.jackson.datatype.jsr310.ser.LocalDateTimeSerializer;
 import com.fasterxml.jackson.datatype.jsr310.ser.LocalTimeSerializer;
 import com.ww.mall.web.config.LoadBalancerConfiguration;
+import com.ww.mall.web.interceptor.grpc.GlobalClientInterceptor;
 import com.ww.mall.web.excel.ExcelManager;
 import com.ww.mall.web.handler.RequestBodyHandler;
 import com.ww.mall.web.handler.ResExceptionHandler;
 import com.ww.mall.web.handler.ResponseBodyHandler;
 import com.ww.mall.web.handler.ServerSentinelHandler;
 import com.ww.mall.web.interceptor.FeignRequestInterceptor;
+import io.grpc.ClientInterceptor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.autoconfigure.jackson.Jackson2ObjectMapperBuilderCustomizer;
 import org.springframework.cloud.context.config.annotation.RefreshScope;
@@ -39,6 +41,11 @@ import java.time.LocalTime;
 @EnableFeignClients(basePackages = "com.ww.mall.web.feign")
 @LoadBalancerClients(defaultConfiguration = {LoadBalancerConfiguration.class})
 public class MallWebApplication {
+
+    @Bean
+    public ClientInterceptor globalClientInterceptor() {
+        return new GlobalClientInterceptor();
+    }
 
 //    @Bean
 //    public ServerRequestFilter serverRequestFilter() {
