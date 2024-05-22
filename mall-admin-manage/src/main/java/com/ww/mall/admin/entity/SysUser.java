@@ -77,8 +77,8 @@ public class SysUser extends BaseEntity {
     private Boolean valid;
 
     /**
-     * 平台id
+     * 角色id
      */
-    private Long platformId;
+    private Long roleId;
 
 }

@@ -41,6 +41,6 @@ public class MallAdminUser extends MallBaseUser {
     /**
      * 平台id
      */
-    private Long platformId;
+    private Long roleId;
 
 }

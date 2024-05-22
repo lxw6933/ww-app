@@ -68,7 +68,7 @@ public class SysUserVO {
     /**
      * 平台id
      */
-    private Long platformId;
+    private Long roleId;
 
     /**
      * 创建时间

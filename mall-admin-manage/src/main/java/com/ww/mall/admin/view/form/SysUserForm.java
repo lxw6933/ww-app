@@ -62,13 +62,8 @@ public class SysUserForm {
     private SysPlatformType platform;
 
     /**
-     * 平台id
-     */
-    private Long platformId;
-
-    /**
      * 角色id集合
      */
-    private List<Long> roleIds;
+    private Long roleId;
 
 }

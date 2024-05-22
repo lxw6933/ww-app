@@ -40,9 +40,4 @@ public class SysRoleForm {
      */
     private SysPlatformType platform;
 
-    /**
-     * 平台id
-     */
-    private Long platformId;
-
 }

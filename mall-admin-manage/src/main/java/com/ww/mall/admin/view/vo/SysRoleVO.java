@@ -38,9 +38,4 @@ public class SysRoleVO {
      */
     private Boolean valid;
 
-    /**
-     * 平台id
-     */
-    private Long platformId;
-
 }

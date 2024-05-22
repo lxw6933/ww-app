@@ -16,6 +16,7 @@
         <result property="remark" column="remark" jdbcType="VARCHAR"/>
         <result property="status" column="status" jdbcType="INTEGER"/>
         <result property="valid" column="valid" jdbcType="INTEGER"/>
+        <result property="roleId" column="role_id" jdbcType="INTEGER"/>
         <result property="version" column="version" jdbcType="INTEGER"/>
         <result property="creatorId" column="creator_id" jdbcType="INTEGER"/>
         <result property="updaterId" column="updater_id" jdbcType="INTEGER"/>

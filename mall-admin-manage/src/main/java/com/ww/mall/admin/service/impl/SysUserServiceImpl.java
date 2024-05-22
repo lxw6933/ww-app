@@ -51,6 +51,7 @@ public class SysUserServiceImpl extends BaseService<SysUserMapper, SysUser> impl
 
     @Override
     public MallPageResult<SysUserVO> page(SysUserPageQuery query) {
+        // 1：BOSS平台用户能看到所有平台用户 2：其他平台用户只能看到【当前平台dataId】、【当前渠道dataId】的用户数据
         MallAdminUser adminUser = AuthorizationContext.getAdminUser();
         QueryWrapper<SysUser> queryWrapper = new QueryWrapper<>();
         if (StringUtils.isNotEmpty(query.getUsername())) {
@@ -64,7 +65,15 @@ public class SysUserServiceImpl extends BaseService<SysUserMapper, SysUser> impl
         }
         queryWrapper.eq("platform", adminUser.getPlatform());
         if (adminUser.getPlatform() != SysPlatformType.BOSS) {
-            queryWrapper.eq("platformId", adminUser.getPlatformId());
+            // 查看当前用户角色是否拥有dataId的权限
+            List<Long> roleDataList = df.getSysRoleMapper().queryRoleOfAllData(adminUser.getRoleId(), adminUser.getPlatform());
+            if (!roleDataList.contains(query.getDataId())) {
+                throw new ApiException("权限不足");
+            }
+            // 查询当前dataId下所有的roleId
+            List<Long> dataRoleIdList = df.getSysRoleMapper().queryDataIdOfAllRoleId(query.getDataId(), adminUser.getPlatform());
+            // 查询dataId下的所有用户id
+            queryWrapper.in("role_id", dataRoleIdList);
         }
         IPage<SysUser> page = new Page<>(query.getPageNum(), query.getPageSize());
         this.page(page, queryWrapper);
@@ -80,6 +89,11 @@ public class SysUserServiceImpl extends BaseService<SysUserMapper, SysUser> impl
     @MallResubmission
     public boolean save(SysUserForm form) {
         MallAdminUser adminUser = AuthorizationContext.getAdminUser();
+        if (adminUser.getPlatform() == SysPlatformType.BOSS) {
+
+        } else {
+
+        }
         // 保证同一平台下username不重复
         List<SysUser> userList = this.list(new QueryWrapper<SysUser>()
                 .eq("username", form.getUsername())
@@ -96,15 +110,7 @@ public class SysUserServiceImpl extends BaseService<SysUserMapper, SysUser> impl
         newSysUser.setValid(true);
         newSysUser.setStatus(true);
         // 保存新用户
-        this.save(newSysUser);
-        // 处理用户分配的角色信息
-        if (CollectionUtils.isNotEmpty(form.getRoleIds())) {
-            UserAndRoleForm data = new UserAndRoleForm();
-            data.setRoleIds(form.getRoleIds());
-            data.setUserId(newSysUser.getId());
-            df.getSysUserMapper().addUserOfRoleInfo(data);
-        }
-        return true;
+        return this.save(newSysUser);
     }
 
     @Override
@@ -121,20 +127,7 @@ public class SysUserServiceImpl extends BaseService<SysUserMapper, SysUser> impl
         // 账号不能更新
         form.setUsername(sysUser.getUsername());
         BeanUtils.copyProperties(form, sysUser);
-        super.updateById(sysUser);
-        // 判断角色是否变化
-        List<Long> userOfRoleIdList = df.getSysUserMapper().findRoleIdsByUserId(sysUser.getId());
-        if (!CollectionUtils.isEqualCollection(form.getRoleIds(), userOfRoleIdList)) {
-            // 删除之前所有的关联信息，新增目前的关联信息
-            df.getSysUserMapper().deleteUserOfRole(sysUser.getId());
-            if (CollectionUtils.isNotEmpty(form.getRoleIds())) {
-                UserAndRoleForm data = new UserAndRoleForm();
-                data.setUserId(sysUser.getId());
-                data.setRoleIds(form.getRoleIds());
-                df.getSysUserMapper().addUserOfRoleInfo(data);
-            }
-        }
-        return true;
+        return super.updateById(sysUser);
     }
 
     @Override

@@ -43,7 +43,7 @@ public class SysRoleServiceImpl extends BaseService<SysRoleMapper, SysRole> impl
             // 非BOSS账号，只能查看当前平台的角色
             sysRole = this.getOne(new QueryWrapper<SysRole>()
                     .eq("id", id)
-                    .eq("platform_id", adminUser.getPlatformId())
+                    .eq("platform_id", adminUser.getRoleId())
                     .eq("platform", adminUser.getPlatform())
             );
         }
@@ -74,7 +74,7 @@ public class SysRoleServiceImpl extends BaseService<SysRoleMapper, SysRole> impl
             // 校验角色编号在同一平台下唯一
             SysRole exist = sf.getSysRoleService().getOne(new QueryWrapper<SysRole>()
                     .eq("role_no", form.getRoleNo())
-                    .eq("platform_id", adminUser.getPlatformId())
+                    .eq("platform_id", adminUser.getRoleId())
                     .eq("platform", adminUser.getPlatform())
             );
             // 非BOSS账号，只能添加当前平台的角色
@@ -102,7 +102,7 @@ public class SysRoleServiceImpl extends BaseService<SysRoleMapper, SysRole> impl
             // 非BOSS账号，只能删除当前平台的角色
             success = this.remove(new QueryWrapper<SysRole>()
                     .eq("id", form.getId())
-                    .eq("platform_id", adminUser.getPlatformId())
+                    .eq("platform_id", adminUser.getRoleId())
                     .eq("platform", adminUser.getPlatform())
             );
         }

@@ -17,7 +17,7 @@ import lombok.EqualsAndHashCode;
 public class SysRole extends BaseEntity {
 
     /**
-     * 平台  角色类型
+     * 平台
      */
     private SysPlatformType platform;
 
@@ -40,10 +40,5 @@ public class SysRole extends BaseEntity {
      * 是否有效
      */
     private Boolean valid;
-
-    /**
-     * 平台id
-     */
-    private Long platformId;
 
 }

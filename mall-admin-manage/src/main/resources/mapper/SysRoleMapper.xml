@@ -24,5 +24,13 @@
         delete from sys_role_menu where role_id = #{roelId}
     </delete>
 
+    <select id="queryRoleOfAllData" resultType="java.lang.Long">
+        select data_id from sys_role_data where roel_id = #{roleId} and platform = #{platform}
+    </select>
+
+    <select id="queryDataIdOfAllRoleId" resultType="java.lang.Long">
+        select role_id from sys_role_data where data_id = #{dataId} and platform = #{platform}
+    </select>
+
 </mapper>
 

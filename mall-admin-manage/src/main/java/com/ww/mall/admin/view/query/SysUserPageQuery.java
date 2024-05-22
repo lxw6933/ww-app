@@ -19,4 +19,6 @@ public class SysUserPageQuery extends MallPage {
 
     private Boolean valid;
 
+    private Long dataId;
+
 }
