@@ -34,7 +34,7 @@ public interface SysUserService extends IService<SysUser> {
      * @param form form
      * @return boolean
      */
-    boolean add(SysUserForm form);
+    boolean save(SysUserForm form);
 
     /**
      * 编辑用户

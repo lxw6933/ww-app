@@ -32,7 +32,7 @@ public class SysUserController extends MallAbstractController {
 
     @PostMapping("/save")
     public boolean save(@RequestBody @Validated SysUserForm form) {
-        return sf.getSysUserService().add(form);
+        return sf.getSysUserService().save(form);
     }
 
     @PostMapping("/update")

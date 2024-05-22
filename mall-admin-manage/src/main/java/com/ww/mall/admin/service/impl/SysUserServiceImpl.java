@@ -78,7 +78,7 @@ public class SysUserServiceImpl extends BaseService<SysUserMapper, SysUser> impl
     @Override
     @Transactional
     @MallResubmission
-    public boolean add(SysUserForm form) {
+    public boolean save(SysUserForm form) {
         MallAdminUser adminUser = AuthorizationContext.getAdminUser();
         // 保证同一平台下username不重复
         List<SysUser> userList = this.list(new QueryWrapper<SysUser>()

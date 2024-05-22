@@ -5,9 +5,11 @@ import cn.hutool.core.lang.tree.Tree;
 import cn.hutool.core.lang.tree.TreeNode;
 import cn.hutool.core.lang.tree.TreeNodeConfig;
 import cn.hutool.core.lang.tree.TreeUtil;
+import com.ww.mall.admin.entity.SysMenu;
 import com.ww.mall.admin.enums.SysMenuType;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
+import org.apache.commons.collections4.CollectionUtils;
 
 import java.util.List;
 
@@ -42,7 +44,10 @@ public class SysMenuTreeNodeVO extends TreeNode<Long> {
         this.icon = icon;
     }
 
-    public static List<Tree<Long>> menuTree(List<SysMenuVO> sysMenuList) {
+    public static List<Tree<Long>> menuTree(List<SysMenu> sysMenuList) {
+        if (CollectionUtils.isEmpty(sysMenuList)) {
+            return CollUtil.newArrayList();
+        }
         List<SysMenuTreeNodeVO> nodeList = CollUtil.newArrayList();
         sysMenuList.forEach(menu -> {
             SysMenuTreeNodeVO node = new SysMenuTreeNodeVO(menu.getId(), menu.getPid(), menu.getName(), menu.getSort(), menu.getType(), menu.getUrl(), menu.getIcon());
