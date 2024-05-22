@@ -5,6 +5,7 @@ import com.baomidou.mybatisplus.extension.service.IService;
 import com.ww.mall.admin.entity.SysMenu;
 import com.ww.mall.admin.view.form.SysMenuForm;
 import com.ww.mall.admin.view.vo.SysMenuVO;
+import com.ww.mall.common.enums.SysPlatformType;
 import com.ww.mall.web.view.form.IdForm;
 
 import java.util.List;
@@ -21,7 +22,7 @@ public interface SysMenuService extends IService<SysMenu> {
      *
      * @return tree
      */
-    List<Tree<Long>> tree();
+    List<Tree<Long>> tree(SysPlatformType platform);
 
     /**
      * 详情

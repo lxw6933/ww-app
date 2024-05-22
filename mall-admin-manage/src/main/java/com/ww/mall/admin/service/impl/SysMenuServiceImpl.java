@@ -9,6 +9,7 @@ import com.ww.mall.admin.service.SysMenuService;
 import com.ww.mall.admin.view.form.SysMenuForm;
 import com.ww.mall.admin.view.vo.SysMenuTreeNodeVO;
 import com.ww.mall.admin.view.vo.SysMenuVO;
+import com.ww.mall.common.enums.SysPlatformType;
 import com.ww.mall.common.exception.ApiException;
 import com.ww.mall.web.view.form.IdForm;
 import org.springframework.beans.BeanUtils;
@@ -25,9 +26,10 @@ import java.util.List;
 public class SysMenuServiceImpl extends BaseService<SysMenuMapper, SysMenu> implements SysMenuService {
 
     @Override
-    public List<Tree<Long>> tree() {
+    public List<Tree<Long>> tree(SysPlatformType platform) {
         List<SysMenu> menuList = this.list(new QueryWrapper<SysMenu>()
                 .eq("valid", true)
+                .eq("platform", platform)
         );
         return SysMenuTreeNodeVO.menuTree(menuList);
     }
