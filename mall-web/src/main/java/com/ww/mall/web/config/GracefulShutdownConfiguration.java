@@ -1,9 +1,11 @@
 package com.ww.mall.web.config;
 
+import cn.hutool.extra.spring.SpringUtil;
 import com.alibaba.cloud.nacos.NacosDiscoveryProperties;
-import com.alibaba.nacos.api.exception.NacosException;
-import com.alibaba.nacos.api.naming.NamingService;
+import com.alibaba.cloud.nacos.registry.NacosAutoServiceRegistration;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.boot.SpringApplication;
+import org.springframework.context.ConfigurableApplicationContext;
 import org.springframework.context.SmartLifecycle;
 import org.springframework.stereotype.Component;
 
@@ -19,10 +21,10 @@ import javax.annotation.Resource;
 public class GracefulShutdownConfiguration implements SmartLifecycle {
 
     @Resource
-    private NacosDiscoveryProperties nacosDiscoveryProperties;
+    private NacosAutoServiceRegistration nacosAutoServiceRegistration;
 
     @Resource
-    private NamingService namingService;
+    private NacosDiscoveryProperties nacosDiscoveryProperties;
 
     private boolean isRunning = false;
 
@@ -35,23 +37,16 @@ public class GracefulShutdownConfiguration implements SmartLifecycle {
     public void stop() {
         // 取消nacos服务实例的注册
         deregisterNacosInstance();
+        // 关闭容器
+        SpringApplication.exit(SpringUtil.getApplicationContext());
+        ((ConfigurableApplicationContext) SpringUtil.getApplicationContext()).close();
         isRunning = false;
     }
 
     private void deregisterNacosInstance() {
-        if (namingService != null && nacosDiscoveryProperties != null) {
-            try {
-                log.info("即将关闭nacos服务【{}】【{}】【{}:{}】注册...", nacosDiscoveryProperties.getService(), nacosDiscoveryProperties.getGroup(), nacosDiscoveryProperties.getIp(), nacosDiscoveryProperties.getPort());
-                namingService.deregisterInstance(
-                        nacosDiscoveryProperties.getService(),
-                        nacosDiscoveryProperties.getGroup(),
-                        nacosDiscoveryProperties.getIp(),
-                        nacosDiscoveryProperties.getPort());
-                log.info("成功关闭nacos服务【{}】【{}】【{}:{}】注册...", nacosDiscoveryProperties.getService(), nacosDiscoveryProperties.getGroup(), nacosDiscoveryProperties.getIp(), nacosDiscoveryProperties.getPort());
-            } catch (NacosException e) {
-                log.error("关闭nacos服务【{}】【{}】【{}:{}】注册...异常：【{}】", nacosDiscoveryProperties.getService(), nacosDiscoveryProperties.getGroup(), nacosDiscoveryProperties.getIp(), nacosDiscoveryProperties.getPort(), e.getErrMsg());
-            }
-        }
+        log.info("即将关闭nacos服务【{}】【{}】【{}:{}】注册...", nacosDiscoveryProperties.getService(), nacosDiscoveryProperties.getGroup(), nacosDiscoveryProperties.getIp(), nacosDiscoveryProperties.getPort());
+        nacosAutoServiceRegistration.stop();
+        log.info("成功关闭nacos服务【{}】【{}】【{}:{}】注册...", nacosDiscoveryProperties.getService(), nacosDiscoveryProperties.getGroup(), nacosDiscoveryProperties.getIp(), nacosDiscoveryProperties.getPort());
     }
 
     @Override
@@ -61,7 +56,6 @@ public class GracefulShutdownConfiguration implements SmartLifecycle {
 
     @Override
     public int getPhase() {
-        // 确保此bean最后执行逻辑
         return Integer.MAX_VALUE;
     }
 }

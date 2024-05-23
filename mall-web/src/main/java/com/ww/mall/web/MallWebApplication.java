@@ -41,12 +41,6 @@ import java.time.LocalTime;
 public class MallWebApplication {
 
 //    @Bean
-//    public ServerRequestFilter serverRequestFilter() {
-//        log.info("初始化ServerRequestFilter成功...");
-//        return new ServerRequestFilter();
-//    }
-
-//    @Bean
 //    @Primary
 //    public DataSourceTransactionManager dataSourceTransactionManager(DataSource dataSource) {
 //        // 如果引入mongodb事务管理器，这个bean必须存在，否则可以不需要
