@@ -8,4 +8,5 @@ org.springframework.boot.autoconfigure.EnableAutoConfiguration=\
   com.ww.mall.web.config.FeignFallBackConfiguration, \
   com.ww.mall.web.config.LoadBalancerConfiguration, \
   com.ww.mall.web.config.ip2region.Ip2RegionConfiguration, \
-  com.ww.mall.web.filter.ServerRequestFilter
+  com.ww.mall.web.filter.ServerRequestFilter, \
+  com.ww.mall.web.config.GracefulShutdownConfiguration
