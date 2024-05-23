@@ -1,4 +1,4 @@
-package com.ww.mall.web.interceptor.grpc;
+package com.ww.mall.web.interceptor.grpc.client;
 
 import com.ww.mall.common.exception.ApiException;
 import io.grpc.*;

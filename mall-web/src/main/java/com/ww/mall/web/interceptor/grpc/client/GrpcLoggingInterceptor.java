@@ -1,4 +1,4 @@
-package com.ww.mall.web.interceptor.grpc;
+package com.ww.mall.web.interceptor.grpc.client;
 
 import io.grpc.*;
 import lombok.extern.slf4j.Slf4j;
