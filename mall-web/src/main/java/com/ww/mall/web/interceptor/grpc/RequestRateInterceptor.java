@@ -37,34 +37,7 @@ public class RequestRateInterceptor implements ClientInterceptor {
             Thread.currentThread().interrupt();
             throw new ApiException("Thread interrupted", e);
         }
-
-        return new ForwardingClientCall.SimpleForwardingClientCall<ReqT, RespT>(
-                next.newCall(method, callOptions)) {
-
-            @Override
-            public void start(Listener<RespT> responseListener, Metadata headers) {
-                // 请求大小限流
-                int requestSize = getRequestSize(headers);
-                if (requestSize > MAX_REQUEST_SIZE || !requestSizeSemaphore.tryAcquire(requestSize)) {
-                    throw new RuntimeException("Request size limit exceeded");
-                }
-
-                super.start(responseListener, headers);
-            }
-
-            @Override
-            public void close(Status status, Metadata trailers) {
-                // 释放请求大小的限流
-                int requestSize = getRequestSize(trailers);
-                requestSizeSemaphore.release(requestSize);
-                super.close(status, trailers);
-            }
-        };
-    }
-
-    private int getRequestSize(Metadata metadata) {
-        // 在实际应用中根据需要获取请求大小，这里假设请求大小为固定值
-        return 1024;
+        return null;
     }
 
 }
