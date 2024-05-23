@@ -14,7 +14,6 @@ import com.ww.mall.web.handler.ResExceptionHandler;
 import com.ww.mall.web.handler.ResponseBodyHandler;
 import com.ww.mall.web.handler.ServerSentinelHandler;
 import com.ww.mall.web.interceptor.FeignRequestInterceptor;
-import com.ww.mall.web.listener.NacosShutdownListener;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.autoconfigure.jackson.Jackson2ObjectMapperBuilderCustomizer;
 import org.springframework.cloud.context.config.annotation.RefreshScope;
@@ -40,11 +39,6 @@ import java.time.LocalTime;
 @EnableFeignClients(basePackages = "com.ww.mall.web.feign")
 @LoadBalancerClients(defaultConfiguration = {LoadBalancerConfiguration.class})
 public class MallWebApplication {
-
-    @Bean
-    public NacosShutdownListener nacosShutdownListener() {
-        return new NacosShutdownListener();
-    }
 
 //    @Bean
 //    public ServerRequestFilter serverRequestFilter() {
