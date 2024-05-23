@@ -23,6 +23,12 @@ spring:
         metadata:
           version: 1.0
           nacos.weight: 1
+          # 心跳间隔。时间单位:毫秒。心跳间隔
+          preserved.heart.beat.interval: 1000
+          # 心跳暂停。时间单位:毫秒。 即服务端6秒收不到客户端心跳，会将该客户端注册的实例设为不健康：
+          preserved.heart.beat.timeout: 3000
+          # Ip删除超时。时间单位:毫秒。即服务端9秒收不到客户端心跳，会将该客户端注册的实例删除：
+          preserved.ip.delete.timeout: 3000
   jackson:
     # 全局日期格式处理jackson时间格式化
     date-format: yyyy-MM-dd HH:mm:ss

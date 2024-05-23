@@ -21,8 +21,8 @@ import static org.springframework.cloud.loadbalancer.core.CachingServiceInstance
  * @description:
  */
 @Slf4j
-@EnableCaching
-@Component
+//@EnableCaching
+//@Component
 public class NacosServiceEventListener extends Subscriber<InstancesChangeEvent> {
 
     @Resource
