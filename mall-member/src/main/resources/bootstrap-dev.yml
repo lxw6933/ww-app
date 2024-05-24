@@ -1,6 +1,6 @@
 grpc:
   server:
-    port: 16001
+    port: 12001
     # 是否开启保持连接（长连接）
     enableKeepAlive: true
     # 保持连接时长（默认20s）
@@ -13,7 +13,7 @@ grpc:
     max-inbound-message-size: 10485760
 
 server:
-  port: 12001  #服务端口号
+  port: 12100  #服务端口号
   servlet:
     context-path: /mall-member
 spring:

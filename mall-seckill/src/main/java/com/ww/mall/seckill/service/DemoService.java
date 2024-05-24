@@ -1,5 +1,8 @@
 package com.ww.mall.seckill.service;
 
+import com.ww.mall.seckill.view.bo.SensitiveWordBO;
+import com.ww.mall.seckill.view.bo.UserInfoVO;
+
 /**
  * @author ww
  * @create 2024-05-14 23:23
@@ -18,5 +21,7 @@ public interface DemoService {
     void boomFilter();
 
     void liteFlow();
+
+    String sensitiveWord(SensitiveWordBO content);
 
 }

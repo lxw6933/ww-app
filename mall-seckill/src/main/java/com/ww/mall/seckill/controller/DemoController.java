@@ -1,12 +1,15 @@
 package com.ww.mall.seckill.controller;
 
+import com.github.houbb.sensitive.word.bs.SensitiveWordBs;
 import com.ww.mall.seckill.grpc.GrpcClientService;
 import com.ww.mall.seckill.service.DemoService;
+import com.ww.mall.seckill.view.bo.SensitiveWordBO;
 import com.ww.mall.seckill.view.bo.UserInfoVO;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import javax.annotation.Resource;
@@ -71,6 +74,19 @@ public class DemoController {
     @GetMapping("/grpc/hello")
     public String hello() {
         return grpcClientService.sendMessage("mall-seckill");
+    }
+
+    @GetMapping("/sensitiveWord")
+    public String sensitiveWord(SensitiveWordBO content) {
+        return demoService.sensitiveWord(content);
+    }
+
+    @Resource
+    private SensitiveWordBs sensitiveWordBs;
+
+    @GetMapping("/refreshSensitiveData")
+    public void refreshSensitiveData() {
+        sensitiveWordBs.init();
     }
 
 }

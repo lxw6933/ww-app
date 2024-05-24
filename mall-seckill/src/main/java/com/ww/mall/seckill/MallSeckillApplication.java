@@ -5,11 +5,13 @@ import com.ww.mall.mongodb.EnableMallMongodb;
 import com.ww.mall.rabbitmq.EnableMallRabbitmq;
 import com.ww.mall.redis.EnableMallRedis;
 import com.ww.mall.redis.EnableMallRedisson;
+import com.ww.mall.sensitive.annotation.EnableMallSensitiveWord;
 import com.ww.mall.xxljob.EnableMallXxlJob;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.cloud.client.discovery.EnableDiscoveryClient;
 
+@EnableMallSensitiveWord
 @EnableMallMinio
 @EnableMallXxlJob
 @EnableMallRedis

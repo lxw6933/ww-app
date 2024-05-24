@@ -94,8 +94,6 @@
             <groupId>org.apache.lucene</groupId>
             <artifactId>lucene-core</artifactId>
             <version>8.10.1</version>
-            <scope>test</scope>
-            <optional>true</optional>
         </dependency>
     </dependencies>
 

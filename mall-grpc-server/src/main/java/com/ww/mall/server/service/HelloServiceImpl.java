@@ -2,10 +2,11 @@ package com.ww.mall.server.service;
 
 import cn.hutool.core.util.RandomUtil;
 import com.github.houbb.sensitive.word.bs.SensitiveWordBs;
-import com.github.houbb.sensitive.word.core.SensitiveWordHelper;
+import com.ww.mall.common.enums.SensitiveWordHandlerType;
 import com.ww.mall.proto.hello.HelloRequest;
 import com.ww.mall.proto.hello.HelloResponse;
 import com.ww.mall.proto.hello.HelloServiceGrpc;
+import com.ww.mall.sensitive.annotation.MallSensitiveWordHandler;
 import io.grpc.stub.StreamObserver;
 import lombok.extern.slf4j.Slf4j;
 import net.devh.boot.grpc.server.service.GrpcService;
@@ -31,17 +32,14 @@ public class HelloServiceImpl extends HelloServiceGrpc.HelloServiceImplBase {
      * @param responseObserver server返回client响应
      */
     @Override
+    @MallSensitiveWordHandler(content = {"#request.name", "#request.name"}, handlerType = SensitiveWordHandlerType.REPLACE)
     public void hello(HelloRequest request, StreamObserver<HelloResponse> responseObserver) {
         // 接受客户端请求参数
         String content = request.getName();
         log.info("用户端输入的内容：{}", content);
-        String replaceContent = sensitiveWordBs.replace(content);
-        log.info("替换用户端输入的内容后：{}", replaceContent);
-        // 业务处理
-        log.info("服务端业务处理");
         // 封装响应
         HelloResponse.Builder responseBuilder = HelloResponse.newBuilder();
-        responseBuilder.setResult("success");
+        responseBuilder.setResult(content);
         // 将响应消息通过网络回传给client
         responseObserver.onNext(responseBuilder.build());
         // 通知client服务端处理完了

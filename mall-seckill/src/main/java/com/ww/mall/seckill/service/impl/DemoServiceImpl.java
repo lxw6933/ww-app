@@ -2,7 +2,10 @@ package com.ww.mall.seckill.service.impl;
 
 import cn.hutool.core.date.DatePattern;
 import cn.hutool.core.date.DateUtil;
+import com.alibaba.fastjson.JSON;
+import com.github.houbb.sensitive.word.bs.SensitiveWordBs;
 import com.ww.mall.common.constant.RedisChannelConstant;
+import com.ww.mall.common.enums.SensitiveWordHandlerType;
 import com.ww.mall.common.utils.IdUtil;
 import com.ww.mall.rabbitmq.MallPublisher;
 import com.ww.mall.rabbitmq.exchange.ExchangeConstant;
@@ -13,6 +16,9 @@ import com.ww.mall.seckill.entity.SecKillOrder;
 import com.ww.mall.seckill.manager.MallCacheManager;
 import com.ww.mall.seckill.node.executor.DemoFlowExecutor;
 import com.ww.mall.seckill.service.DemoService;
+import com.ww.mall.seckill.view.bo.SensitiveWordBO;
+import com.ww.mall.seckill.view.bo.UserInfoVO;
+import com.ww.mall.sensitive.annotation.MallSensitiveWordHandler;
 import com.ww.mall.web.feign.ThirdServerFeignService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
@@ -20,6 +26,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.mongodb.core.MongoTemplate;
 import org.springframework.stereotype.Service;
 
+import javax.annotation.Resource;
 import java.util.Date;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -109,6 +116,15 @@ public class DemoServiceImpl implements DemoService {
     @Override
     public void liteFlow() {
         demoFlowExecutor.testConfig();
+    }
+
+    @Resource
+    private SensitiveWordBs sensitiveWordBs;
+
+    @Override
+    @MallSensitiveWordHandler(content = {"#content.word", "#content.content"}, handlerType = SensitiveWordHandlerType.REPLACE)
+    public String sensitiveWord(SensitiveWordBO content) {
+        return JSON.toJSONString(content);
     }
 
 }

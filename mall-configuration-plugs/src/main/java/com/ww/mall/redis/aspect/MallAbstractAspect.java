@@ -7,7 +7,7 @@ public abstract class MallAbstractAspect {
 
     protected final SpelExpressionParser parser = new SpelExpressionParser();
 
-    static class MyStandardEvaluationContext extends StandardEvaluationContext {
+    public static class MyStandardEvaluationContext extends StandardEvaluationContext {
         public MyStandardEvaluationContext(String[] parameterNames, Object[] parameterValues) {
             if (parameterNames == null) {
                 return;
