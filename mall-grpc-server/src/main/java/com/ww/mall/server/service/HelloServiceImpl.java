@@ -1,12 +1,16 @@
 package com.ww.mall.server.service;
 
 import cn.hutool.core.util.RandomUtil;
+import com.github.houbb.sensitive.word.bs.SensitiveWordBs;
+import com.github.houbb.sensitive.word.core.SensitiveWordHelper;
 import com.ww.mall.proto.hello.HelloRequest;
 import com.ww.mall.proto.hello.HelloResponse;
 import com.ww.mall.proto.hello.HelloServiceGrpc;
 import io.grpc.stub.StreamObserver;
 import lombok.extern.slf4j.Slf4j;
 import net.devh.boot.grpc.server.service.GrpcService;
+
+import javax.annotation.Resource;
 
 /**
  * @author ww
@@ -17,6 +21,9 @@ import net.devh.boot.grpc.server.service.GrpcService;
 @GrpcService
 public class HelloServiceImpl extends HelloServiceGrpc.HelloServiceImplBase {
 
+    @Resource
+    private SensitiveWordBs sensitiveWordBs;
+
     /**
      * 普通prc
      *
@@ -26,7 +33,10 @@ public class HelloServiceImpl extends HelloServiceGrpc.HelloServiceImplBase {
     @Override
     public void hello(HelloRequest request, StreamObserver<HelloResponse> responseObserver) {
         // 接受客户端请求参数
-        String name = request.getName();
+        String content = request.getName();
+        log.info("用户端输入的内容：{}", content);
+        String replaceContent = sensitiveWordBs.replace(content);
+        log.info("替换用户端输入的内容后：{}", replaceContent);
         // 业务处理
         log.info("服务端业务处理");
         // 封装响应

@@ -84,6 +84,12 @@
             <artifactId>netty-all</artifactId>
             <optional>true</optional>
         </dependency>
+        <!-- sensitive word -->
+        <dependency>
+            <groupId>com.github.houbb</groupId>
+            <artifactId>sensitive-word</artifactId>
+            <optional>true</optional>
+        </dependency>
     </dependencies>
 
 </project>

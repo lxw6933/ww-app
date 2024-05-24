@@ -9,7 +9,7 @@ grpc:
     # grpc-server是服务端配置的名字，GrpcClient注解会用到
     grpc-server:
       # gRPC服务端地址
-      address: 'static://127.0.0.1:9090'
+      address: 'static://127.0.0.1:9990'
       # 是否开启保持连接（长连接）
       enableKeepAlive: true
       # 保持连接时长（默认20s）

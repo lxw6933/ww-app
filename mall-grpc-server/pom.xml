@@ -51,6 +51,11 @@
             <artifactId>grpc-server-spring-boot-starter</artifactId>
             <version>${grpc.springboot.version}</version>
         </dependency>
+        <!-- sensitive word -->
+        <dependency>
+            <groupId>com.github.houbb</groupId>
+            <artifactId>sensitive-word</artifactId>
+        </dependency>
         <!-- test -->
         <dependency>
             <groupId>org.springframework.boot</groupId>

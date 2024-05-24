@@ -1,7 +1,7 @@
 # grpc server 端口
 grpc:
   server:
-    port: 9090
+    port: 9990
 
 # 使用rpc不需要tomcat
 spring:

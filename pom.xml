@@ -80,6 +80,7 @@
         <easy.captcha.version>1.6.2</easy.captcha.version>
         <elasticsearch.version>7.16.3</elasticsearch.version>
         <mapstruct.version>1.5.5.Final</mapstruct.version>
+        <sensitive.word.version>0.16.1</sensitive.word.version>
     </properties>
 
     <dependencyManagement>
@@ -275,6 +276,12 @@
                 <artifactId>mapstruct-processor</artifactId>
                 <version>${mapstruct.version}</version>
                 <scope>provided</scope>
+            </dependency>
+            <!-- sensitive word -->
+            <dependency>
+                <groupId>com.github.houbb</groupId>
+                <artifactId>sensitive-word</artifactId>
+                <version>${sensitive.word.version}</version>
             </dependency>
         </dependencies>
     </dependencyManagement>
