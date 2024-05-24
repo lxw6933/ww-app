@@ -1,6 +1,9 @@
 package com.ww.mall.sensitive;
 
 import com.github.houbb.sensitive.word.bs.SensitiveWordBs;
+import com.github.houbb.sensitive.word.support.allow.WordAllows;
+import com.github.houbb.sensitive.word.support.data.WordDatas;
+import com.github.houbb.sensitive.word.support.deny.WordDenys;
 import com.github.houbb.sensitive.word.support.ignore.SensitiveWordCharIgnores;
 import com.github.houbb.sensitive.word.support.resultcondition.WordResultConditions;
 import com.github.houbb.sensitive.word.support.tag.WordTags;
@@ -19,6 +22,10 @@ public class MallSensitiveWordConfiguration implements DisposableBean {
     @Bean
     public SensitiveWordBs sensitiveWordBs() {
         return SensitiveWordBs.newInstance()
+                // 不是一个敏感词数据集合
+                .wordAllow(WordAllows.defaults())
+                // 是一个敏感词数据集合
+                .wordDeny(WordDenys.defaults())
                 // 忽略大小写
                 .ignoreCase(true)
                 // 忽略半角圆角
@@ -44,9 +51,9 @@ public class MallSensitiveWordConfiguration implements DisposableBean {
                 // 词对应的标签
                 .wordTag(WordTags.none())
                 // 忽略的字符
-                .charIgnore(SensitiveWordCharIgnores.defaults())
+                .charIgnore(SensitiveWordCharIgnores.specialChars())
                 // 针对匹配的敏感词额外加工，比如可以限制英文单词必须全匹配
-                .wordResultCondition(WordResultConditions.alwaysTrue())
+                .wordResultCondition(WordResultConditions.englishWordMatch())
                 .init();
     }
 
