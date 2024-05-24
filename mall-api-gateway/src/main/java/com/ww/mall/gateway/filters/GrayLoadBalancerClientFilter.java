@@ -60,7 +60,7 @@ public class GrayLoadBalancerClientFilter implements GlobalFilter, Ordered {
         String serviceId = uri.getHost();
         GrayLoadBalancer loadBalancer = new GrayLoadBalancer(serviceId, serverGrayProperties,
                 clientFactory.getLazyProvider(serviceId, ServiceInstanceListSupplier.class));
-        return loadBalancer.choose(new DefaultRequest(exchange.getRequest().getHeaders()));
+        return loadBalancer.choose(new DefaultRequest<>(exchange.getRequest().getHeaders()));
     }
 
     private Mono<Void> doFilter(ServerWebExchange exchange, GatewayFilterChain chain, URI url) {
