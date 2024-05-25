@@ -7,6 +7,11 @@ package com.ww.mall.common.constant;
  */
 public class Constant {
 
+    public static final String RSA_PUBLIC_KEY = "publicKey";
+    public static final String RSA_PRIVATE_KEY = "privateKey";
+    public static final String RSA_KEY_ALGORITHMS = "RSA";
+    public static final String RSA_SIGNATURE_ALGORITHMS = "SHA256withRSA";
+
     public static final Long SUPER_ADMIN_MANAGER_ID = 1L;
 
     public static final String SPLIT  = ":";
