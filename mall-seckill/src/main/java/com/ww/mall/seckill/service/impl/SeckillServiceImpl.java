@@ -120,8 +120,10 @@ public class SeckillServiceImpl implements SeckillService {
             mallPublisher.publishMsg(ExchangeConstant.MALL_OMS_EXCHANGE, RouteKeyConstant.MALL_CREATE_ORDER_KEY, orderNo);
             log.info("订单【{}】下单成功【{}】", orderNo, orderDate);
             return true;
+        } else {
+            // TODO 标记秒杀结束，无库存
+            return false;
         }
-        return false;
     }
 
     private boolean checkSecKillPath(MallClientUser clientUser, String userSecKillPath, String activityCode, Long skuId) {
