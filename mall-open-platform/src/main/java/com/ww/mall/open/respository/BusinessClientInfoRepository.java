@@ -1,6 +1,6 @@
-package com.ww.mall.open.domain.client.respository;
+package com.ww.mall.open.respository;
 
-import com.ww.mall.open.domain.client.entity.BusinessClientInfo;
+import com.ww.mall.open.entity.BusinessClientInfo;
 import com.ww.mall.web.cmmon.MallPage;
 import com.ww.mall.web.cmmon.MallPageResult;
 
@@ -22,7 +22,7 @@ public interface BusinessClientInfoRepository {
     /**
      * 开放平台商户列表
      *
-     * @param mallPage
+     * @param mallPage pageQuery
      * @return MallPageResult
      */
     MallPageResult<BusinessClientInfo> page(MallPage mallPage);

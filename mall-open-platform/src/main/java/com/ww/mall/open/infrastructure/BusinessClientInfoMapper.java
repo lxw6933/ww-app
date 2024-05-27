@@ -1,7 +1,7 @@
-package com.ww.mall.open.domain.client.infrastructure;
+package com.ww.mall.open.infrastructure;
 
 import com.baomidou.mybatisplus.core.mapper.BaseMapper;
-import com.ww.mall.open.domain.client.entity.BusinessClientInfo;
+import com.ww.mall.open.entity.BusinessClientInfo;
 import org.apache.ibatis.annotations.Mapper;
 
 /**
