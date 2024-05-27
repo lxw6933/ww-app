@@ -26,6 +26,16 @@ public class BusinessClientInfo extends BaseEntity {
     private String businessName;
 
     /**
+     * 公钥
+     */
+    private String publicKey;
+
+    /**
+     * 私钥
+     */
+    private String privateKey;
+
+    /**
      * 状态
      */
     private Boolean status;
