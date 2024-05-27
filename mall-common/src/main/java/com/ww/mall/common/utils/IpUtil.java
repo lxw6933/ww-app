@@ -78,11 +78,11 @@ public class IpUtil {
         validIpStr(whiteIpList, ip, ipRange);
     }
 
-    private static void validIpStr(List<String> whiteIpList, String reqRealIp) {
-        validIpStr(whiteIpList, reqRealIp);
+    public static void validIpStr(List<String> whiteIpList, String reqRealIp) {
+        validIpStr(whiteIpList, reqRealIp, false);
     }
 
-    private static void validIpStr(List<String> whiteIpList, String ip, boolean ipRange) {
+    public static void validIpStr(List<String> whiteIpList, String ip, boolean ipRange) {
         // 校验ip
         if (CollectionUtils.isEmpty(whiteIpList)) {
             throw new ApiException("ip白名单校验失败");
