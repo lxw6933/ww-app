@@ -1,10 +1,13 @@
 package com.ww.mall.common.enums;
 
+import lombok.Getter;
+
 /**
  * @author ww
  * @create 2023-07-15- 10:19
  * @description:
  */
+@Getter
 public enum CodeEnum {
 
     SUCCESS("0","成功"),
@@ -22,6 +25,7 @@ public enum CodeEnum {
     NOT_HANDLER_FOUND("404", "没找到相关请求处理器"),
     NOT_SUPPORTED_MEDIA("415","不支持当前媒体类型"),
     ILLEGAL_REQUEST("-999", "非法请求"),
+    SIGN_EXCEPTION("-9999", "签名异常"),
     ;
 
     CodeEnum(String code, String message) {
@@ -29,24 +33,8 @@ public enum CodeEnum {
         this.message = message;
     }
 
-    private String code;
+    private final String code;
 
-    private String message;
-
-    public String getCode() {
-        return code;
-    }
-
-    public void setCode(String code) {
-        this.code = code;
-    }
-
-    public String getMessage() {
-        return message;
-    }
-
-    public void setMessage(String message) {
-        this.message = message;
-    }
+    private final String message;
 
 }

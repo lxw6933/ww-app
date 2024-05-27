@@ -26,10 +26,15 @@ public class RSAEncryptUtil {
      * @return map
      */
     public static HashMap<String, String> generatePublicPrivateKeys() {
+        return generatePublicPrivateKeys(2048);
+    }
+
+    public static HashMap<String, String> generatePublicPrivateKeys(int length) {
         try {
             HashMap<String, String> keys = new HashMap<>();
             // KeyPairGenerator:秘钥对生成器对象
             KeyPairGenerator keyPairGenerator = KeyPairGenerator.getInstance(Constant.RSA_KEY_ALGORITHMS);
+            keyPairGenerator.initialize(length);
             // 生成密钥对
             KeyPair keyPair = keyPairGenerator.generateKeyPair();
             // 生成公钥

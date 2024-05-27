@@ -1,6 +1,7 @@
 package com.ww.mall.open.domain.business.adaptor;
 
 import com.alibaba.fastjson.JSONObject;
+import com.ww.mall.open.common.BaseOpenRequest;
 
 /**
  * @author ww
