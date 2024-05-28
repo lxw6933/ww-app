@@ -1,4 +1,4 @@
-package com.ww.mall.open.domain.client.entity;
+package com.ww.mall.open.entity;
 
 import com.baomidou.mybatisplus.annotation.TableName;
 import com.ww.mall.web.cmmon.BaseEntity;
@@ -14,4 +14,30 @@ import lombok.EqualsAndHashCode;
 @TableName("open_business_client_info")
 @EqualsAndHashCode(callSuper = true)
 public class BusinessClientInfo extends BaseEntity {
+
+    /**
+     * 商户编码
+     */
+    private String sysCode;
+
+    /**
+     * 商户名称
+     */
+    private String businessName;
+
+    /**
+     * 公钥
+     */
+    private String publicKey;
+
+    /**
+     * 私钥
+     */
+    private String privateKey;
+
+    /**
+     * 状态
+     */
+    private Boolean status;
+
 }

@@ -1,6 +1,8 @@
 package com.ww.mall.common.common;
 
 import com.ww.mall.common.enums.CodeEnum;
+import lombok.Getter;
+import lombok.Setter;
 import org.apache.commons.lang3.builder.ToStringBuilder;
 
 import java.io.Serializable;
@@ -10,6 +12,8 @@ import java.io.Serializable;
  * @create 2023-07-15- 11:03
  * @description: 通用返回结果
  */
+@Getter
+@Setter
 public class Result<T> implements Serializable {
     protected static final String SUCCESS_CODE = CodeEnum.SUCCESS.getCode();
     protected static final String SUCCESS_MSG = CodeEnum.SUCCESS.getMessage();
@@ -42,30 +46,6 @@ public class Result<T> implements Serializable {
 
     public Boolean isSuccess() {
         return SUCCESS_CODE.equals(this.code);
-    }
-
-    public String getCode() {
-        return this.code;
-    }
-
-    public void setCode(String code) {
-        this.code = code;
-    }
-
-    public String getMessage() {
-        return this.message;
-    }
-
-    public void setMessage(String message) {
-        this.message = message;
-    }
-
-    public T getValue() {
-        return this.value;
-    }
-
-    public void setValue(T value) {
-        this.value = value;
     }
 
     @Override

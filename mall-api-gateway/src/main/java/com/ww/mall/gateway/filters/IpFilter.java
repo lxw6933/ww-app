@@ -53,7 +53,7 @@ public class IpFilter implements GlobalFilter, Ordered {
         if (Boolean.TRUE.equals(enableGray) && grayIpFlag) {
             ipRequest = exchange.getRequest()
                     .mutate()
-                    .header("traceId", traceId)
+                    .header(Constant.TRACE_ID, traceId)
                     .header(Constant.GRAY_VERSION, grayVersion)
                     .header(Constant.PROD_VERSION, prodVersion)
                     .header(Constant.GRAY_TAG, Constant.GRAY_TAG_VALUE)
@@ -62,7 +62,7 @@ public class IpFilter implements GlobalFilter, Ordered {
         } else {
             ipRequest = exchange.getRequest()
                     .mutate()
-                    .header("traceId", traceId)
+                    .header(Constant.TRACE_ID, traceId)
                     .header(Constant.GRAY_VERSION, grayVersion)
                     .header(Constant.PROD_VERSION, prodVersion)
                     .header(Constant.USER_REAL_IP, userRealIp)
