@@ -26,7 +26,7 @@ public class DigitalSignatureUtil {
     public static String generationSignature(String signatureContent, byte[] privateKeyEncoded) {
         try {
             // 创建key的工厂
-            KeyFactory keyFactory = KeyFactory.getInstance(Constant.RSA_KEY_ALGORITHMS);
+            KeyFactory keyFactory = KeyFactory.getInstance(Constant.RSA);
             // 创建已编码的私钥规格
             PKCS8EncodedKeySpec encPriKeySpec = new PKCS8EncodedKeySpec(privateKeyEncoded);
             // 获取指定算法的密钥工厂, 根据已编码的私钥规格, 生成私钥对象
@@ -54,7 +54,7 @@ public class DigitalSignatureUtil {
     public static boolean verifySignature(String signatureContent, String signature, byte[] publicKeyEncoded) {
         try {
             // 创建key的工厂
-            KeyFactory keyFactory = KeyFactory.getInstance(Constant.RSA_KEY_ALGORITHMS);
+            KeyFactory keyFactory = KeyFactory.getInstance(Constant.RSA);
             // 创建已编码的公钥规格
             X509EncodedKeySpec encPubKeySpec = new X509EncodedKeySpec(publicKeyEncoded);
             // 获取指定算法的密钥工厂, 根据已编码的公钥规格, 生成公钥对象
@@ -74,7 +74,7 @@ public class DigitalSignatureUtil {
      * 效验签名的规则：签名的内容、生成好的签名、RSA签名公钥
      */
     public static void main(String[] args) {
-        HashMap<String, String> rsaMap = RSAEncryptUtil.generatePublicPrivateKeys();
+        HashMap<String, String> rsaMap = RSAUtil.generatePublicPrivateKeys();
         String publicKey = rsaMap.get(Constant.RSA_PUBLIC_KEY);
         String privateKey = rsaMap.get(Constant.RSA_PRIVATE_KEY);
         System.out.println("签名公钥：【" + publicKey + "】");

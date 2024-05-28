@@ -1,4 +1,4 @@
-package com.ww.mall.web.utils;
+package com.ww.mall.common.utils;
 
 import cn.hutool.core.util.CharsetUtil;
 import cn.hutool.crypto.symmetric.SymmetricAlgorithm;
