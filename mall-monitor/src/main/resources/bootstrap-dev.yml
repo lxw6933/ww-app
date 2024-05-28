@@ -1,0 +1,21 @@
+server:
+  port: 9900  #服务端口号
+  servlet:
+    context-path: /mall-monitor
+
+management:
+  server:
+    port: 19999
+  endpoints:
+    web:
+      exposure:
+        include: "*"
+  endpoint:
+    health:
+      show-details: always
+
+spring:
+  boot:
+    admin:
+      discovery:
+        enabled: true

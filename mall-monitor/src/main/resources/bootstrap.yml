@@ -1,0 +1,12 @@
+spring:
+  application:
+    name: mall-monitor
+  profiles:
+    active: dev
+  cloud:
+    nacos:
+      discovery:
+        server-addr: localhost:8848
+        namespace: mall-${spring.profiles.active}
+        username: nacos
+        password: nacos

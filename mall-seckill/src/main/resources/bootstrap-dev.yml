@@ -27,7 +27,7 @@ grpc:
     max-inbound-message-size: 10485760
 
 server:
-  port: 19100  #服务端口号
+  port: 9100  #服务端口号
   servlet:
     context-path: /mall-seckill
 spring:

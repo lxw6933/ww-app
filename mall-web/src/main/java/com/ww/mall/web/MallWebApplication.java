@@ -16,7 +16,6 @@ import com.ww.mall.web.handler.ServerSentinelHandler;
 import com.ww.mall.web.interceptor.FeignRequestInterceptor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.autoconfigure.jackson.Jackson2ObjectMapperBuilderCustomizer;
-import org.springframework.cloud.context.config.annotation.RefreshScope;
 import org.springframework.cloud.loadbalancer.annotation.LoadBalancerClients;
 import org.springframework.cloud.openfeign.EnableFeignClients;
 import org.springframework.context.annotation.Bean;
@@ -34,7 +33,6 @@ import java.time.LocalTime;
  */
 @Slf4j
 @EnableRetry
-@RefreshScope
 @Configuration
 @EnableFeignClients(basePackages = "com.ww.mall.web.feign")
 @LoadBalancerClients(defaultConfiguration = {LoadBalancerConfiguration.class})

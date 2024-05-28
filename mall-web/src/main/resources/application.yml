@@ -11,11 +11,6 @@ spring:
       max-file-size: 10MB
       # 配置单次请求文件大小限制
       max-request-size: 20MB
-  boot:
-    admin:
-      client:
-        # 配置服务监控
-        url: http://localhost:9999
   cloud:
     nacos:
       discovery:
@@ -43,6 +38,9 @@ management:
     web:
       exposure:
         include: "*"
+  endpoint:
+    health:
+      show-details: always
 
 feign:
   # 开启sentinel feign支持【调用方（调用服务方）的熔断保护、被调用方（服务提供方）的降级保护】

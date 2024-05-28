@@ -40,12 +40,6 @@
             <artifactId>mall-configuration-plugs</artifactId>
             <version>${ww.mall.version}</version>
         </dependency>
-        <!-- monitor -->
-        <dependency>
-            <groupId>de.codecentric</groupId>
-            <artifactId>spring-boot-admin-starter-client</artifactId>
-            <version>${spring-boot.version}</version>
-        </dependency>
         <!-- 服务注册中心 -->
         <dependency>
             <groupId>com.alibaba.cloud</groupId>
