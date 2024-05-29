@@ -1,5 +1,6 @@
 package com.ww.mall.rabbitmq;
 
+import cn.hutool.extra.spring.SpringUtil;
 import com.ww.mall.rabbitmq.enums.MqMsgStatus;
 import com.ww.mall.rabbitmq.repository.BaseMqLog;
 import com.ww.mall.rabbitmq.repository.MqLogRepository;
@@ -24,8 +25,8 @@ public class MallPublisher {
     @Resource
     private MessagePostProcessor correlationIdProcessor;
 
-    @Resource
-    private MqLogRepository<String, BaseMqLog> mqLogRepository;
+    @SuppressWarnings("unchecked")
+    private final MqLogRepository<String, BaseMqLog> mqLogRepository = SpringUtil.getBean(MqLogRepository.class);
 
     public <T> void publishMsg(String exchange, String routeKey, T msg) {
         // 自定义消息id
