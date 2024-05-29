@@ -3,8 +3,6 @@ package com.ww.mall.rabbitmq.repository;
 import com.ww.mall.rabbitmq.enums.MqMsgStatus;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-import org.apache.commons.lang3.time.DateUtils;
-import org.apache.poi.ss.formula.functions.T;
 
 import java.util.Date;
 
@@ -57,13 +55,5 @@ public class BaseMqLog {
 
     /** 修改时间 */
     private String updateTime;
-
-    public BaseMqLog(String message, String exchange, String routingKey) {
-        this.message = message;
-        this.exchange = exchange;
-        this.routingKey = routingKey;
-        this.status = MqMsgStatus.DELIVER_SUCCESS;
-        this.nextTryTime = (DateUtils.addMinutes(new Date(), 1));
-    }
 
 }
