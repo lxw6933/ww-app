@@ -23,7 +23,7 @@ public abstract class MsgConsumerTemplate<T> {
 
     private static final Integer MSG_TRY_COUNT = 3;
 
-//    ResolvableType type = ResolvableType.forClassWithGenerics(MqLogRepository.class, String.class, BaseMqLog.class);
+    @SuppressWarnings("unchecked")
     private final MqLogRepository<String, BaseMqLog> mqLogRepository = SpringUtil.getBean(MqLogRepository.class);
 
     public final void consumer(Message message, T msg, Channel channel) throws IOException {

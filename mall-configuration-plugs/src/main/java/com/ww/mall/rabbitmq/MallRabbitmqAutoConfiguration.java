@@ -42,6 +42,7 @@ public class MallRabbitmqAutoConfiguration {
     private MqLogRepository<String, BaseMqLog> mqLogRepository;
 
     @PostConstruct
+    @SuppressWarnings("unchecked")
     public void init() {
         mqLogRepository = SpringUtil.getBean(MqLogRepository.class);
         log.info("消息日志持久化处理器初始化完成：{}", mqLogRepository);
