@@ -82,16 +82,10 @@ public abstract class MsgConsumerTemplate<T> {
 
     void exceptionMsgHandler(String correlationId, long tag, Channel channel, Exception e) throws IOException {
         log.error("【tag：{}】【消息：{}】消费异常", tag, correlationId, e);
-
         BaseMqLog mqMsgLog = getMqMsgById(correlationId);
-        if (mqMsgLog.getTryCount() >= MSG_TRY_COUNT) {
-            // 重试三次，如果还未消费成功，则改变状态
-            channel.basicNack(tag, false, false);
-            mqLogRepository.update(correlationId, MqMsgStatus.CONSUMED_FAIL);
-        } else {
-            channel.basicNack(tag, false, true);
-            mqLogRepository.update(correlationId, null);
-        }
+        mqLogRepository.update(correlationId, MqMsgStatus.CONSUMED_FAIL);
+        // 重试三次，如果还未消费成功，则改变状态
+        channel.basicNack(tag, false, mqMsgLog.getTryCount() <= MSG_TRY_COUNT);
     }
 
     private BaseMqLog getMqMsgById(String correlationId) {

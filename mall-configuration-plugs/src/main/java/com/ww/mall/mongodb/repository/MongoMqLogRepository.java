@@ -45,12 +45,11 @@ public class MongoMqLogRepository implements MqLogRepository<String, MqMsgLogEnt
     public boolean update(String correlationId, MqMsgStatus status) {
         Criteria criteria = Criteria.where("msgId").is(correlationId);
         Update update = new Update();
-        if (status == null) {
-            update.inc("tryCount", 1);
-        } else {
-            update.set("status", status);
-        }
         update.set("updateTime", DateUtil.format(new Date(), DatePattern.NORM_DATETIME_PATTERN));
+        update.set("status", status);
+        if (MqMsgStatus.CONSUMED_FAIL == status) {
+            update.inc("tryCount", 1);
+        }
         mongoTemplate.updateFirst(new Query().addCriteria(criteria), update, MqMsgLogEntity.class);
         return true;
     }

@@ -82,7 +82,7 @@ public class MallRabbitmqAutoConfiguration {
                 log.error("消息发送到Exchange失败, {}, cause: {}", correlationData, cause);
                 mqLogRepository.update(mallCorrelationData.getId(), MqMsgStatus.DELIVER_FAIL);
             }
-            log.info("消息成功抵达broker：{}", correlationData);
+//            log.info("消息【{}】成功抵达broker", correlationData.getId());
         });
 
         /**

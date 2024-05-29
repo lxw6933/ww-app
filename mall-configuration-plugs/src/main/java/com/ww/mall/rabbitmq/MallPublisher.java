@@ -4,6 +4,7 @@ import cn.hutool.extra.spring.SpringUtil;
 import com.ww.mall.rabbitmq.enums.MqMsgStatus;
 import com.ww.mall.rabbitmq.repository.BaseMqLog;
 import com.ww.mall.rabbitmq.repository.MqLogRepository;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.amqp.core.MessagePostProcessor;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.stereotype.Component;
@@ -16,6 +17,7 @@ import java.util.UUID;
  * @create 2023-12-13- 18:18
  * @description:
  */
+@Slf4j
 @Component
 public class MallPublisher {
 
@@ -33,7 +35,6 @@ public class MallPublisher {
         MallCorrelationData<T> msgData = new MallCorrelationData<>();
         msgData.setExchange(exchange);
         msgData.setMessage(msg);
-        msgData.setRetryCount(0);
         msgData.setRoutingKey(routeKey);
         msgData.setId(UUID.randomUUID().toString().replaceAll("-", ""));
         // 保存消息

@@ -30,10 +30,6 @@ public class MallCorrelationData<T> extends CorrelationData {
      */
     private String routingKey;
     /**
-     * 重试次数
-     */
-    private Integer retryCount;
-    /**
      * tracId
      */
     private String traceId;
