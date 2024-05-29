@@ -14,10 +14,14 @@ spring:
   rabbitmq:
     addresses: localhost:5672
     virtual-host: /
-    # 设置消费消息ack机制
     listener:
       simple:
+        # 手动ack消息
         acknowledge-mode: manual
+        # 每次最多消费10条消息
+        prefetch: 10
+        # 开启20个线程来处理
+        concurrency: 20
 
 # 开启sentinel feign支持【调用方（调用服务方）的熔断保护、被调用方（服务提供方）的降级保护】
 feign:

@@ -4,7 +4,6 @@ import com.ww.mall.common.constant.Constant;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
-import lombok.NoArgsConstructor;
 import org.slf4j.MDC;
 import org.springframework.amqp.rabbit.connection.CorrelationData;
 
@@ -21,7 +20,7 @@ public class MallCorrelationData<T> extends CorrelationData {
     /**
      * 消息体
      */
-    private volatile T message;
+    private T message;
     /**
      * 交换机
      */

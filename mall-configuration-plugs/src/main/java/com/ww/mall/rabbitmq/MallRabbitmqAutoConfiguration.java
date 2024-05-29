@@ -78,14 +78,11 @@ public class MallRabbitmqAutoConfiguration {
             }
             MallCorrelationData<?> mallCorrelationData = (MallCorrelationData<?>) correlationData;
             MDC.put(Constant.TRACE_ID, mallCorrelationData.getTraceId());
-            log.info("消息成功抵达broker：{}", correlationData);
-            if (ack) {
-                // 发送成功保存消息日志 状态
-                mqLogRepository.save(mallCorrelationData, MqMsgStatus.DELIVER_SUCCESS);
-            } else {
+            if (!ack) {
                 log.error("消息发送到Exchange失败, {}, cause: {}", correlationData, cause);
-                mqLogRepository.save(mallCorrelationData, MqMsgStatus.DELIVER_FAIL);
+                mqLogRepository.update(mallCorrelationData.getId(), MqMsgStatus.DELIVER_FAIL);
             }
+            log.info("消息成功抵达broker：{}", correlationData);
         });
 
         /**
