@@ -1,23 +1,17 @@
-package com.ww.mall.consumer.template;
+package com.ww.mall.rabbitmq.template;
 
-import cn.hutool.core.date.DatePattern;
-import cn.hutool.core.date.DateUtil;
 import cn.hutool.extra.spring.SpringUtil;
 import com.rabbitmq.client.Channel;
 import com.ww.mall.common.constant.Constant;
-import com.ww.mall.rabbitmq.MqMsgLogEntity;
 import com.ww.mall.rabbitmq.enums.MqMsgStatus;
+import com.ww.mall.rabbitmq.repository.BaseMqLog;
+import com.ww.mall.rabbitmq.repository.MqLogRepository;
 import lombok.extern.slf4j.Slf4j;
 import org.slf4j.MDC;
 import org.springframework.amqp.core.Message;
 import org.springframework.amqp.core.MessageProperties;
-import org.springframework.data.mongodb.core.MongoTemplate;
-import org.springframework.data.mongodb.core.query.Criteria;
-import org.springframework.data.mongodb.core.query.Query;
-import org.springframework.data.mongodb.core.query.Update;
 
 import java.io.IOException;
-import java.util.Date;
 
 /**
  * @description:
@@ -29,7 +23,8 @@ public abstract class MsgConsumerTemplate<T> {
 
     private static final Integer MSG_TRY_COUNT = 3;
 
-    private final MongoTemplate mongoTemplate = SpringUtil.getBean(MongoTemplate.class);
+//    ResolvableType type = ResolvableType.forClassWithGenerics(MqLogRepository.class, String.class, BaseMqLog.class);
+    private final MqLogRepository<String, BaseMqLog> mqLogRepository = SpringUtil.getBean(MqLogRepository.class);
 
     public final void consumer(Message message, T msg, Channel channel) throws IOException {
         MessageProperties properties = message.getMessageProperties();
@@ -58,19 +53,15 @@ public abstract class MsgConsumerTemplate<T> {
     }
 
     void successMsgHandler(Channel channel, long tag, String correlationId) throws IOException {
-        Criteria criteria = Criteria.where("msgId").is(correlationId);
-        Update update = new Update();
-        update.set("updateTime", DateUtil.format(new Date(), DatePattern.NORM_DATETIME_PATTERN));
-        update.set("status", MqMsgStatus.DELIVER_SUCCESS);
         // 消费确认
         channel.basicAck(tag, false);
         log.info("【tag：{}】【消息：{}】消费完成", tag, correlationId);
-        mongoTemplate.updateFirst(new Query().addCriteria(criteria), update, MqMsgLogEntity.class);
+        mqLogRepository.update(correlationId, MqMsgStatus.CONSUMED_SUCCESS);
     }
 
     boolean preMsgConsumer(String correlationId, long tag, Channel channel) throws IOException {
         // 查询消息日志
-        MqMsgLogEntity mqMsgLog = getMqMsgById(correlationId);
+        BaseMqLog mqMsgLog = getMqMsgById(correlationId);
         // 消费幂等性, 防止消息被重复消费
         if (mqMsgLog != null && MqMsgStatus.CONSUMED_SUCCESS.equals(mqMsgLog.getStatus())) {
             log.warn("重复消费, correlationId: {}", correlationId);
@@ -92,25 +83,19 @@ public abstract class MsgConsumerTemplate<T> {
     void exceptionMsgHandler(String correlationId, long tag, Channel channel, Exception e) throws IOException {
         log.error("【tag：{}】【消息：{}】消费异常", tag, correlationId, e);
 
-        Criteria criteria = Criteria.where("msgId").is(correlationId);
-        Update update = new Update();
-        update.set("updateTime", DateUtil.format(new Date(), DatePattern.NORM_DATETIME_PATTERN));
-
-        MqMsgLogEntity mqMsgLog = getMqMsgById(correlationId);
-        if (mqMsgLog.getTryCount() > MSG_TRY_COUNT) {
+        BaseMqLog mqMsgLog = getMqMsgById(correlationId);
+        if (mqMsgLog.getTryCount() >= MSG_TRY_COUNT) {
             // 重试三次，如果还未消费成功，则改变状态
             channel.basicNack(tag, false, false);
-            update.set("status", MqMsgStatus.CONSUMED_FAIL);
+            mqLogRepository.update(correlationId, MqMsgStatus.CONSUMED_FAIL);
         } else {
             channel.basicNack(tag, false, true);
-            update.set("tryCount", mqMsgLog.getTryCount() + 1);
+            mqLogRepository.update(correlationId, null);
         }
-        mongoTemplate.updateFirst(new Query().addCriteria(criteria), update, MqMsgLogEntity.class);
     }
 
-    private MqMsgLogEntity getMqMsgById(String correlationId) {
-        Criteria criteria = Criteria.where("msgId").is(correlationId);
-        return mongoTemplate.findOne(new Query().addCriteria(criteria), MqMsgLogEntity.class);
+    private BaseMqLog getMqMsgById(String correlationId) {
+        return mqLogRepository.get(correlationId);
     }
 
 }

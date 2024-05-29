@@ -1,27 +1,21 @@
-package com.ww.mall.rabbitmq;
+package com.ww.mall.rabbitmq.repository;
 
-import com.alibaba.fastjson.JSON;
 import com.ww.mall.rabbitmq.enums.MqMsgStatus;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import org.apache.commons.lang3.time.DateUtils;
-import org.springframework.data.annotation.Id;
-import org.springframework.data.mongodb.core.mapping.Document;
+import org.apache.poi.ss.formula.functions.T;
 
 import java.util.Date;
 
 /**
+ * @author ww
+ * @create 2024-05-28- 16:11
  * @description:
- * @author: ww
- * @create: 2023/7/15 23:42
- **/
+ */
 @Data
 @NoArgsConstructor
-@Document("t_mq_msg_log")
-public class MqMsgLogEntity {
-
-    @Id
-    private String id;
+public class BaseMqLog {
 
     /**
      * ack消息id
@@ -58,19 +52,14 @@ public class MqMsgLogEntity {
      */
     private Date nextTryTime;
 
-    /**
-     * 是否删除（0：否，1：是）
-     */
-    private Boolean isDel;
-
     /** 创建时间 */
     private String createTime;
 
     /** 修改时间 */
     private String updateTime;
 
-    public MqMsgLogEntity(Object message, String exchange, String routingKey) {
-        this.message = JSON.toJSONString(message);
+    public BaseMqLog(String message, String exchange, String routingKey) {
+        this.message = message;
         this.exchange = exchange;
         this.routingKey = routingKey;
         this.status = MqMsgStatus.DELIVER_SUCCESS;

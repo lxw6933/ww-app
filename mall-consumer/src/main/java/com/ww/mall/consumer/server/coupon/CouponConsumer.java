@@ -1,14 +1,11 @@
 package com.ww.mall.consumer.server.coupon;
 
 import com.rabbitmq.client.Channel;
-import com.ww.mall.consumer.template.MsgConsumerTemplate;
-import com.ww.mall.rabbitmq.queue.MallQueueConfiguration;
+import com.ww.mall.rabbitmq.template.MsgConsumerTemplate;
 import com.ww.mall.rabbitmq.queue.QueueConstant;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.amqp.core.Message;
 import org.springframework.amqp.rabbit.annotation.RabbitListener;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnBean;
-import org.springframework.context.annotation.DependsOn;
 import org.springframework.stereotype.Component;
 
 import javax.annotation.PostConstruct;
@@ -29,10 +26,10 @@ public class CouponConsumer {
     }
 
     @RabbitListener(queues = {QueueConstant.MALL_COUPON_TEST_QUEUE})
-    public void memberRegisterMessage(Message message, Object msg, Channel channel) throws IOException {
+    public void memberRegisterMessage(Message message, Integer msg, Channel channel) throws IOException {
         log.info("收到mall_coupon服务发送traceId测试的消息：{}", msg);
-        MsgConsumerTemplate<String> couponTraceIdTestMsgConsumer = new CouponTraceIdTestMsgConsumerTemplate();
-        couponTraceIdTestMsgConsumer.consumer(message, msg.toString(), channel);
+        MsgConsumerTemplate<Integer> couponTraceIdTestMsgConsumer = new CouponTraceIdTestMsgConsumerTemplate();
+        couponTraceIdTestMsgConsumer.consumer(message, msg, channel);
     }
 
 }

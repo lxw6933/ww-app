@@ -33,6 +33,10 @@
                     <artifactId>caffeine</artifactId>
                     <groupId>com.github.ben-manes.caffeine</groupId>
                 </exclusion>
+                <exclusion>
+                    <groupId>net.devh</groupId>
+                    <artifactId>grpc-server-spring-boot-starter</artifactId>
+                </exclusion>
             </exclusions>
         </dependency>
         <!-- grpc-api -->
@@ -51,6 +55,16 @@
         <dependency>
             <groupId>io.netty</groupId>
             <artifactId>netty-all</artifactId>
+        </dependency>
+        <!-- rabbitmq -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-amqp</artifactId>
+        </dependency>
+        <!-- mongodb -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-data-mongodb</artifactId>
         </dependency>
         <!-- test -->
         <dependency>

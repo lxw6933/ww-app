@@ -22,3 +22,30 @@ grpc:
       # plaintext | plaintext_upgrade | tls
       # 明文通信且http/2 | 明文通信且升级http/1.1为http/2 | 使用TLS（ALPN/NPN）通信
       negotiation-type: plaintext
+
+# 测试其他功能
+spring:
+  redis:
+    host: localhost
+    password: 123456
+    port: 6379
+  data:
+    mongodb:
+      # 副本集群配置
+      #      uri: mongodb://ww:admin@172.28.174.84:27001,172.28.174.84:27002,172.28.174.84:27003/ww_mall?replicaSet=rs&readPreference=secondaryPreferred&connectTimeoutMS=300000
+      # 单机配置
+      host: localhost:27017
+      database: ww_mall
+      username: admin
+      password: admin
+      authentication-database: admin
+  rabbitmq:
+    addresses: localhost:5672
+    virtual-host: /
+    # 设置发送端到exchange确认回调
+    publisher-confirm-type: correlated
+    # 设置发送端到queue确认回调
+    publisher-returns: true
+    # 设置消息抵达queue，以异步方式回调 publisher-returns
+    template:
+      mandatory: true

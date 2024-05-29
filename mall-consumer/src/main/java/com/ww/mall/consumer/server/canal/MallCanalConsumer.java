@@ -2,7 +2,7 @@ package com.ww.mall.consumer.server.canal;
 
 import cn.hutool.json.JSONUtil;
 import com.rabbitmq.client.Channel;
-import com.ww.mall.consumer.template.MsgConsumerTemplate;
+import com.ww.mall.rabbitmq.template.MsgConsumerTemplate;
 import com.ww.mall.rabbitmq.queue.MallQueueConfiguration;
 import com.ww.mall.rabbitmq.queue.QueueConstant;
 import lombok.extern.slf4j.Slf4j;

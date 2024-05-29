@@ -1,6 +1,6 @@
 package com.ww.mall.consumer.server.product;
 
-import com.ww.mall.consumer.template.MsgConsumerTemplate;
+import com.ww.mall.rabbitmq.template.MsgConsumerTemplate;
 import lombok.extern.slf4j.Slf4j;
 
 /**

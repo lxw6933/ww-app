@@ -28,7 +28,7 @@ public class MallPublisher {
         msgData.setMessage(msg);
         msgData.setRetryCount(0);
         msgData.setRoutingKey(routeKey);
-        msgData.setId(UUID.randomUUID().toString());
+        msgData.setId(UUID.randomUUID().toString().replaceAll("-", ""));
         // 发送用户对象信息到broker
         rabbitTemplate.convertAndSend(exchange, routeKey, msg, correlationIdProcessor, msgData);
     }

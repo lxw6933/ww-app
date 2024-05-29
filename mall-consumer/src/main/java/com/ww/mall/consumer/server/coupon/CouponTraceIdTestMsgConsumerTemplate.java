@@ -1,6 +1,6 @@
 package com.ww.mall.consumer.server.coupon;
 
-import com.ww.mall.consumer.template.MsgConsumerTemplate;
+import com.ww.mall.rabbitmq.template.MsgConsumerTemplate;
 import lombok.extern.slf4j.Slf4j;
 
 /**
@@ -9,10 +9,11 @@ import lombok.extern.slf4j.Slf4j;
  * @description:
  */
 @Slf4j
-public class CouponTraceIdTestMsgConsumerTemplate extends MsgConsumerTemplate<String>  {
+public class CouponTraceIdTestMsgConsumerTemplate extends MsgConsumerTemplate<Integer>  {
     @Override
-    public boolean serverHandler(String msg) {
+    public boolean serverHandler(Integer msg) {
         log.info("traceId 测试 消息【{}】消费处理逻辑", msg);
+        int a = 1 / msg;
         return true;
     }
 }

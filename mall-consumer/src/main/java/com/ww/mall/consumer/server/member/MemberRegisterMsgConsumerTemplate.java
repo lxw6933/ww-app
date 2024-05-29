@@ -3,7 +3,7 @@ package com.ww.mall.consumer.server.member;
 import cn.hutool.extra.spring.SpringUtil;
 import com.ww.mall.common.common.Result;
 import com.ww.mall.common.exception.ApiException;
-import com.ww.mall.consumer.template.MsgConsumerTemplate;
+import com.ww.mall.rabbitmq.template.MsgConsumerTemplate;
 import com.ww.mall.web.feign.MemberFeignService;
 import com.ww.mall.web.view.bo.AddMemberIntegralBO;
 import lombok.extern.slf4j.Slf4j;

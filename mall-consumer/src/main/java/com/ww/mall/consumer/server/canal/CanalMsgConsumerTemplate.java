@@ -1,6 +1,6 @@
 package com.ww.mall.consumer.server.canal;
 
-import com.ww.mall.consumer.template.MsgConsumerTemplate;
+import com.ww.mall.rabbitmq.template.MsgConsumerTemplate;
 
 /**
  * @author ww
