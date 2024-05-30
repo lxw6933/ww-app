@@ -83,6 +83,7 @@
         <elasticsearch.version>7.16.3</elasticsearch.version>
         <mapstruct.version>1.5.5.Final</mapstruct.version>
         <sensitive.word.version>0.16.1</sensitive.word.version>
+        <jol.version>0.17</jol.version>
     </properties>
 
     <dependencyManagement>
@@ -284,6 +285,12 @@
                 <groupId>com.github.houbb</groupId>
                 <artifactId>sensitive-word</artifactId>
                 <version>${sensitive.word.version}</version>
+            </dependency>
+            <!-- jol -->
+            <dependency>
+                <groupId>org.openjdk.jol</groupId>
+                <artifactId>jol-core</artifactId>
+                <version>${jol.version}</version>
             </dependency>
         </dependencies>
     </dependencyManagement>

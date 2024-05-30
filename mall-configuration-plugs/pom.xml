@@ -90,6 +90,12 @@
             <artifactId>sensitive-word</artifactId>
             <optional>true</optional>
         </dependency>
+        <!-- jol -->
+        <dependency>
+            <groupId>org.openjdk.jol</groupId>
+            <artifactId>jol-core</artifactId>
+            <optional>true</optional>
+        </dependency>
     </dependencies>
 
 </project>
