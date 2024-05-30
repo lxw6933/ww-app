@@ -7,8 +7,8 @@ import com.github.houbb.sensitive.word.support.ignore.SensitiveWordCharIgnores;
 import com.github.houbb.sensitive.word.support.resultcondition.WordResultConditions;
 import com.github.houbb.sensitive.word.support.tag.WordTags;
 import com.ww.mall.sensitive.aspect.SensitiveWordAspect;
+import jdk.nashorn.internal.ir.debug.ObjectSizeCalculator;
 import lombok.extern.slf4j.Slf4j;
-import org.openjdk.jol.info.GraphLayout;
 import org.springframework.beans.factory.DisposableBean;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
@@ -35,12 +35,12 @@ public class MallSensitiveWordConfiguration implements DisposableBean {
     }
 
     @Bean
-    public SensitiveWordBs sensitiveWordBs() {
+    public SensitiveWordBs sensitiveWordBs(MallCustomWordDeny mallCustomWordDeny, MallCustomWordAllow mallCustomWordAllow) {
         SensitiveWordBs sensitiveWordBs = SensitiveWordBs.newInstance()
                 // 不是一个敏感词数据集合
-                .wordAllow(WordAllows.chains(WordAllows.defaults(), mallCustomWordAllow()))
+                .wordAllow(WordAllows.chains(WordAllows.defaults(), mallCustomWordAllow))
                 // 是一个敏感词数据集合
-                .wordDeny(WordDenys.chains(WordDenys.defaults(), mallCustomWordDeny()))
+                .wordDeny(WordDenys.chains(WordDenys.defaults(), mallCustomWordDeny))
                 // 忽略大小写
                 .ignoreCase(true)
                 // 忽略半角圆角
@@ -70,8 +70,12 @@ public class MallSensitiveWordConfiguration implements DisposableBean {
                 // 针对匹配的敏感词额外加工，比如可以限制英文单词必须全匹配
                 .wordResultCondition(WordResultConditions.englishWordMatch())
                 .init();
-        long size = GraphLayout.parseInstance(sensitiveWordBs).totalSize();
-        log.info("sensitiveWordBs size：【{}】byte", size);
+        long customAllowSize = ObjectSizeCalculator.getObjectSize(mallCustomWordAllow);
+        log.info("customAllowSize size：【{}】byte", customAllowSize);
+        long customDenySize = ObjectSizeCalculator.getObjectSize(mallCustomWordDeny);
+        log.info("customDenySize size：【{}】byte", customDenySize);
+        long sensitiveWordTotalSize = ObjectSizeCalculator.getObjectSize(sensitiveWordBs);
+        log.info("sensitiveWordTotalSize size：【{}】byte", sensitiveWordTotalSize);
         return sensitiveWordBs;
     }
 
@@ -82,6 +86,7 @@ public class MallSensitiveWordConfiguration implements DisposableBean {
 
     @Override
     public void destroy() {
-        sensitiveWordBs().destroy();
+        sensitiveWordBs(mallCustomWordDeny(), mallCustomWordAllow()).destroy();
     }
+
 }

@@ -8,7 +8,6 @@ import org.springframework.stereotype.Component;
 
 import javax.annotation.Resource;
 import java.io.FileInputStream;
-import java.io.FileNotFoundException;
 import java.util.Collections;
 import java.util.List;
 
@@ -28,14 +27,12 @@ public class MallCustomWordAllow implements IWordAllow {
     public List<String> allow() {
         List<String> customWordAllow = null;
         if (StringUtils.isNoneEmpty(mallSensitiveWordProperties.getAllowFileUrl())) {
-            FileInputStream fileInputStream;
-            try {
-                fileInputStream = new FileInputStream(mallSensitiveWordProperties.getAllowFileUrl());
-            } catch (FileNotFoundException e) {
+            try (FileInputStream fileInputStream = new FileInputStream(mallSensitiveWordProperties.getAllowFileUrl())) {
+                customWordAllow = StreamUtil.readAllLines(fileInputStream);
+            } catch (Exception e) {
                 log.error("自定义敏感文件【{}】读取异常{}", mallSensitiveWordProperties.getAllowFileUrl(), e.getMessage());
                 return Collections.emptyList();
             }
-            customWordAllow = StreamUtil.readAllLines(fileInputStream);
         }
         return customWordAllow != null ?  customWordAllow : Collections.emptyList();
     }
