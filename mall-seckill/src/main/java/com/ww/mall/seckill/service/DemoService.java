@@ -1,7 +1,9 @@
 package com.ww.mall.seckill.service;
 
 import com.ww.mall.seckill.view.bo.SensitiveWordBO;
-import com.ww.mall.seckill.view.bo.UserInfoVO;
+import org.springframework.web.multipart.MultipartFile;
+
+import javax.servlet.http.HttpServletResponse;
 
 /**
  * @author ww
@@ -24,4 +26,7 @@ public interface DemoService {
 
     String sensitiveWord(SensitiveWordBO content);
 
+    void importData(MultipartFile file);
+
+    void exportDate(HttpServletResponse response);
 }

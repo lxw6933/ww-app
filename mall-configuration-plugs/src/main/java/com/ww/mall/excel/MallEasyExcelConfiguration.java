@@ -1,5 +1,6 @@
 package com.ww.mall.excel;
 
+import com.ww.mall.excel.aspect.ExcelHandlerAspect;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -17,6 +18,11 @@ public class MallEasyExcelConfiguration {
     public ExcelManager excelManager() {
         log.info("初始化excelManager功能成功...");
         return new ExcelManager();
+    }
+
+    @Bean
+    public ExcelHandlerAspect excelHandlerAspect() {
+        return new ExcelHandlerAspect();
     }
 
 }

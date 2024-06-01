@@ -2,7 +2,6 @@ package com.ww.mall.excel;
 
 import com.alibaba.excel.context.AnalysisContext;
 import com.alibaba.excel.event.AnalysisEventListener;
-import com.alibaba.fastjson.JSON;
 import com.ww.mall.common.exception.ApiException;
 import com.ww.mall.common.utils.MallThreadUtil;
 import lombok.extern.slf4j.Slf4j;
@@ -10,7 +9,8 @@ import org.apache.commons.collections4.CollectionUtils;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.concurrent.*;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.atomic.AtomicInteger;
 
 /**
@@ -26,13 +26,14 @@ public abstract class MallAbstractImportListener<T> extends AnalysisEventListene
     protected ThreadLocal<ArrayList<T>> dataList = ThreadLocal.withInitial(ArrayList::new);
     protected ThreadLocal<ArrayList<T>> errorDataList = ThreadLocal.withInitial(ArrayList::new);
 
-    protected AtomicInteger count = new AtomicInteger(1);
+    protected final AtomicInteger count = new AtomicInteger(0);
 
     protected ThreadPoolExecutor excelThreadPoolExecutor = MallThreadUtil.initFixedThreadPoolExecutor("mall-excel", 20);
 
     protected List<CompletableFuture<Void>> importTaskList = new ArrayList<>();
 
-    protected ExcelImportResultVO excelImportResultVO = new ExcelImportResultVO();
+    protected final AtomicInteger importErrorCount = new AtomicInteger(0);
+    protected final AtomicInteger importTotalCount = new AtomicInteger(0);
 
     public MallAbstractImportListener() {}
 
@@ -42,16 +43,16 @@ public abstract class MallAbstractImportListener<T> extends AnalysisEventListene
 
     @Override
     public void invoke(T data, AnalysisContext analysisContext) {
-        log.info("解析到一条数据:{}", JSON.toJSONString(data));
+//        log.info("解析到一条数据:{}", JSON.toJSONString(data));
         if (validData(data)) {
             dataList.get().add(data);
         } else {
             errorDataList.get().add(data);
         }
-        if (dataList.get().size() > MAX_COUNT) {
+        if (dataList.get().size() >= MAX_COUNT) {
             this.syncHandlerData();
         }
-        if (errorDataList.get().size() > MAX_COUNT) {
+        if (errorDataList.get().size() >= MAX_COUNT) {
             @SuppressWarnings("unchecked")
             List<T> errorDataListTask = (ArrayList<T>) errorDataList.get().clone();
             this.handleErrorData(errorDataListTask);
@@ -74,25 +75,28 @@ public abstract class MallAbstractImportListener<T> extends AnalysisEventListene
             }
             importTaskList.clear();
         }
-        log.info("数据全部处理完成");
+        log.info("此次导入总数据量：【{}】异常数据量：【{}】", importTotalCount.get(), importErrorCount.get());
     }
 
     private void syncHandlerData() {
         // 拷贝线程数据
         @SuppressWarnings("unchecked")
         List<T> dataListTask = (ArrayList<T>) dataList.get().clone();
+        int size = dataListTask.size();
         // 异步处理
         CompletableFuture<Void> task = CompletableFuture.runAsync(() -> {
-            log.info("第{}次插入{}条数据", count.getAndAdd(1), dataListTask.size());
+            log.info("第{}次插入{}条数据", count.incrementAndGet(), size);
             handleData(dataListTask);
         }, excelThreadPoolExecutor).exceptionally((e) -> {
             log.error("导入异常：{}", e.getMessage());
             handleErrorData(dataListTask);
+            importErrorCount.addAndGet(size);
             return null;
         });
         importTaskList.add(task);
         // 清空线程数据
         dataList.get().clear();
+        importTotalCount.addAndGet(size);
     }
 
     /**

@@ -82,11 +82,8 @@ public class ExcelManager {
      * @param fileName 导出excel文件名称
      */
     public <T> void exportExcelOfManySheet(HttpServletResponse response, Map<String, List<T>> data, String fileName) throws IOException {
-        ExcelWriter excelWriter = null;
-        try {
-            setResponse(response, fileName);
-            // 指定excel文件
-            excelWriter = EasyExcelFactory.write(response.getOutputStream()).build();
+        setResponse(response, fileName);
+        try (ExcelWriter excelWriter = EasyExcelFactory.write(response.getOutputStream()).build()) {
             int i = 0;
             for (Map.Entry<String, List<T>> entry : data.entrySet()) {
                 // 每次都要创建 writeSheet 这里注意必须指定sheetNo 而且sheetName必须不一样。
@@ -96,10 +93,6 @@ public class ExcelManager {
             }
         } catch (Exception e) {
             exportErrorReturn(response, e);
-        } finally {
-            if (excelWriter != null) {
-                excelWriter.finish();
-            }
         }
     }
 

@@ -7,28 +7,40 @@ import com.github.houbb.sensitive.word.bs.SensitiveWordBs;
 import com.ww.mall.common.constant.RedisChannelConstant;
 import com.ww.mall.common.enums.SensitiveWordHandlerType;
 import com.ww.mall.common.utils.IdUtil;
+import com.ww.mall.excel.ExcelManager;
+import com.ww.mall.excel.annotation.ExcelExportTimer;
+import com.ww.mall.excel.annotation.ExcelImportTimer;
 import com.ww.mall.rabbitmq.MallPublisher;
 import com.ww.mall.rabbitmq.exchange.ExchangeConstant;
 import com.ww.mall.rabbitmq.queue.QueueConstant;
 import com.ww.mall.rabbitmq.routekey.RouteKeyConstant;
 import com.ww.mall.redis.MallRedisTemplate;
+import com.ww.mall.seckill.entity.Demo;
 import com.ww.mall.seckill.entity.SecKillOrder;
+import com.ww.mall.seckill.listener.DemoImportListener;
 import com.ww.mall.seckill.manager.MallCacheManager;
+import com.ww.mall.seckill.model.DemoModel;
 import com.ww.mall.seckill.node.executor.DemoFlowExecutor;
 import com.ww.mall.seckill.service.DemoService;
 import com.ww.mall.seckill.view.bo.SensitiveWordBO;
-import com.ww.mall.seckill.view.bo.UserInfoVO;
 import com.ww.mall.sensitive.annotation.MallSensitiveWordHandler;
 import com.ww.mall.web.feign.ThirdServerFeignService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.data.mongodb.core.MongoTemplate;
+import org.springframework.data.mongodb.core.aggregation.Aggregation;
+import org.springframework.data.mongodb.core.aggregation.AggregationOperation;
+import org.springframework.data.mongodb.core.query.Query;
 import org.springframework.stereotype.Service;
+import org.springframework.web.multipart.MultipartFile;
 
 import javax.annotation.Resource;
-import java.util.Date;
-import java.util.concurrent.ThreadPoolExecutor;
+import javax.servlet.http.HttpServletResponse;
+import java.io.IOException;
+import java.util.*;
+import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicInteger;
 
 /**
@@ -125,6 +137,86 @@ public class DemoServiceImpl implements DemoService {
     @MallSensitiveWordHandler(content = {"#content.word", "#content.content"}, handlerType = SensitiveWordHandlerType.REPLACE)
     public String sensitiveWord(SensitiveWordBO content) {
         return JSON.toJSONString(content);
+    }
+
+    @Resource
+    private ExcelManager excelManager;
+
+    private ExecutorService executorService = Executors.newFixedThreadPool(20);
+
+    @Override
+    @ExcelImportTimer
+    public void importData(MultipartFile file) {
+        List<Callable<Integer>> tasks = new ArrayList<>();
+        for (int i = 0; i < 20; i++) {
+            try {
+                int num = i;
+                tasks.add(() -> {
+                    log.info("线程{}执行任务{}", Thread.currentThread().getName(), num);
+                    excelManager.readExcel(file, num, DemoModel.class, new DemoImportListener());
+                    return num;
+                });
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+        }
+        List<Future<Integer>> futures;
+        try {
+            futures = executorService.invokeAll(tasks);
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+        futures.forEach(objectFuture -> {
+            try {
+                Integer task = objectFuture.get();
+                System.out.println("任务【" + task + "】执行完成");
+            } catch (Exception e) {
+                throw new RuntimeException(e);
+            }
+        });
+        System.out.println("==============导入完成=============");
+    }
+
+    @Override
+    @ExcelExportTimer
+    public void exportDate(HttpServletResponse response) {
+        long totalCount = mongoTemplate.count(new Query(), Demo.class);
+        int sheetNumber = 20;
+        int sheetPageNumber = (int) (totalCount / sheetNumber);
+        // 每个sheet都开启一个线程去写入
+        ExecutorService executorService = Executors.newFixedThreadPool(sheetNumber);
+        CountDownLatch countDownLatch = new CountDownLatch(sheetNumber);
+
+        Map<String, List<Demo>> map = new HashMap<>();
+        for (int i = 0; i < sheetNumber; i++) {
+            int sheetIndex = i;
+            executorService.submit(() -> {
+                PageRequest pageRequest = PageRequest.of(sheetIndex, sheetPageNumber);
+                // 构建聚合管道
+                List<AggregationOperation> pipeline = Arrays.asList(
+                        // 跳过前面的记录
+                        Aggregation.skip((long) pageRequest.getPageNumber() * pageRequest.getPageSize()),
+                        // 限制返回的记录数
+                        Aggregation.limit(pageRequest.getPageSize())
+                );
+                // 执行聚合操作
+                Aggregation aggregation = Aggregation.newAggregation(pipeline);
+                List<Demo> resultList = mongoTemplate.aggregate(aggregation, "demo", Demo.class).getMappedResults();
+                map.put("demo" + sheetIndex, resultList);
+                countDownLatch.countDown();
+            });
+        }
+        try {
+            countDownLatch.await();
+        } catch (InterruptedException e) {
+            throw new RuntimeException(e);
+        }
+        try {
+            excelManager.exportExcelOfManySheet(response, map, "demo");
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+        // https://github.com/alibaba/easyexcel/issues/2358
     }
 
 }

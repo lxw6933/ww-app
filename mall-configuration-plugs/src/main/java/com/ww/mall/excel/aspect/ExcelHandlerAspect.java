@@ -19,12 +19,12 @@ import java.time.Duration;
 @Component
 public class ExcelHandlerAspect extends MallAbstractAspect {
 
-    @Around("")
-    public void exportExcel(ProceedingJoinPoint joinPoint) {
+    @Around("@annotation(com.ww.mall.excel.annotation.ExcelExportTimer)")
+    public Object exportExcel(ProceedingJoinPoint joinPoint) {
         long startTime = System.nanoTime();
         log.info("开始导出：{}", joinPoint.getSignature().getName());
         try {
-            joinPoint.proceed();
+            return joinPoint.proceed();
         } catch (Throwable e) {
             throw new RuntimeException(e);
         } finally {
@@ -33,12 +33,12 @@ public class ExcelHandlerAspect extends MallAbstractAspect {
         }
     }
 
-    @Around("")
-    public void importExcel(ProceedingJoinPoint joinPoint) {
+    @Around("@annotation(com.ww.mall.excel.annotation.ExcelImportTimer)")
+    public Object importExcel(ProceedingJoinPoint joinPoint) {
         long startTime = System.nanoTime();
         log.info("开始导入：{}", joinPoint.getSignature().getName());
         try {
-            joinPoint.proceed();
+            return joinPoint.proceed();
         } catch (Throwable e) {
             throw new RuntimeException(e);
         } finally {

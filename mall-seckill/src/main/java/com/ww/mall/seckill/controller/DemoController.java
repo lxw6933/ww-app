@@ -7,11 +7,11 @@ import com.ww.mall.seckill.view.bo.SensitiveWordBO;
 import com.ww.mall.seckill.view.bo.UserInfoVO;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
 import javax.annotation.Resource;
+import javax.servlet.http.HttpServletResponse;
 
 /**
  * @author ww
@@ -86,6 +86,16 @@ public class DemoController {
     @GetMapping("/refreshSensitiveData")
     public void refreshSensitiveData() {
         sensitiveWordBs.init();
+    }
+
+    @PostMapping("import")
+    public void importData(@RequestParam("file") MultipartFile file) {
+        demoService.importData(file);
+    }
+
+    @PostMapping("export")
+    public void exportData(HttpServletResponse response) {
+        demoService.exportDate(response);
     }
 
 }
