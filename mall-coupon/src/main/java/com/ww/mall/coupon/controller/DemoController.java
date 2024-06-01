@@ -46,9 +46,6 @@ public class DemoController {
     private CouponProperties couponProperties;
 
     @Autowired
-    private Ip2regionSearcher ip2regionSearcher;
-
-    @Autowired
     private RedissonClient redissonClient;
 
     @Autowired
