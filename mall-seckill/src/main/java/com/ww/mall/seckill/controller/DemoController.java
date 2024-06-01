@@ -11,6 +11,7 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
 import javax.annotation.Resource;
+import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
 /**
@@ -93,9 +94,14 @@ public class DemoController {
         demoService.importData(file);
     }
 
-    @PostMapping("export")
+    @PostMapping("/export")
     public void exportData(HttpServletResponse response) {
         demoService.exportDate(response);
+    }
+
+    @GetMapping("/ip")
+    public String ip2region(HttpServletRequest request) {
+        return demoService.ip2region(request);
     }
 
 }

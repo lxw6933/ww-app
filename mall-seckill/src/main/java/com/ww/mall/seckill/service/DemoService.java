@@ -3,6 +3,7 @@ package com.ww.mall.seckill.service;
 import com.ww.mall.seckill.view.bo.SensitiveWordBO;
 import org.springframework.web.multipart.MultipartFile;
 
+import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
 /**
@@ -29,4 +30,6 @@ public interface DemoService {
     void importData(MultipartFile file);
 
     void exportDate(HttpServletResponse response);
+
+    String ip2region(HttpServletRequest request);
 }

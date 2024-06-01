@@ -7,9 +7,12 @@ import com.github.houbb.sensitive.word.bs.SensitiveWordBs;
 import com.ww.mall.common.constant.RedisChannelConstant;
 import com.ww.mall.common.enums.SensitiveWordHandlerType;
 import com.ww.mall.common.utils.IdUtil;
+import com.ww.mall.common.utils.IpUtil;
 import com.ww.mall.excel.ExcelManager;
 import com.ww.mall.excel.annotation.ExcelExportTimer;
 import com.ww.mall.excel.annotation.ExcelImportTimer;
+import com.ww.mall.ip2region.Ip2regionSearcher;
+import com.ww.mall.ip2region.IpInfo;
 import com.ww.mall.rabbitmq.MallPublisher;
 import com.ww.mall.rabbitmq.exchange.ExchangeConstant;
 import com.ww.mall.rabbitmq.queue.QueueConstant;
@@ -37,6 +40,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
 import javax.annotation.Resource;
+import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.util.*;
@@ -142,7 +146,7 @@ public class DemoServiceImpl implements DemoService {
     @Resource
     private ExcelManager excelManager;
 
-    private ExecutorService executorService = Executors.newFixedThreadPool(20);
+    private final ExecutorService executorService = Executors.newFixedThreadPool(20);
 
     @Override
     @ExcelImportTimer
@@ -217,6 +221,14 @@ public class DemoServiceImpl implements DemoService {
             throw new RuntimeException(e);
         }
         // https://github.com/alibaba/easyexcel/issues/2358
+    }
+
+    @Autowired
+    private Ip2regionSearcher ip2regionSearcher;
+
+    public String ip2region(HttpServletRequest request) {
+        IpInfo ipInfo = ip2regionSearcher.search(IpUtil.getIp(request));
+        return ipInfo.toString();
     }
 
 }
