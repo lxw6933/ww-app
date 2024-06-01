@@ -4,7 +4,6 @@ import lombok.SneakyThrows;
 import org.lionsoul.ip2region.xdb.Searcher;
 import org.springframework.beans.factory.DisposableBean;
 import org.springframework.lang.Nullable;
-import org.springframework.stereotype.Component;
 
 import java.math.BigDecimal;
 import java.util.Arrays;
