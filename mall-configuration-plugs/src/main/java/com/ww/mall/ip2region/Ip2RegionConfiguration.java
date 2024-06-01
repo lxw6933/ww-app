@@ -1,4 +1,4 @@
-package com.ww.mall.web.config.ip2region;
+package com.ww.mall.ip2region;
 
 import cn.hutool.core.io.IoUtil;
 import cn.hutool.core.util.ClassLoaderUtil;
@@ -20,7 +20,7 @@ import java.io.InputStream;
 @Slf4j
 @Configuration
 @EnableConfigurationProperties(Ip2RegionProperties.class)
-@ConditionalOnProperty(prefix = Ip2RegionProperties.PREFIX, name = "enabled", havingValue = "true")
+@ConditionalOnProperty(prefix = Ip2RegionProperties.PREFIX, name = "enabled", havingValue = "true", matchIfMissing = true)
 public class Ip2RegionConfiguration {
 
     @Bean

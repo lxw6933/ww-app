@@ -1,9 +1,10 @@
-package com.ww.mall.web.config.ip2region;
+package com.ww.mall.ip2region;
 
 import lombok.SneakyThrows;
 import org.lionsoul.ip2region.xdb.Searcher;
 import org.springframework.beans.factory.DisposableBean;
 import org.springframework.lang.Nullable;
+import org.springframework.stereotype.Component;
 
 import java.math.BigDecimal;
 import java.util.Arrays;
@@ -15,6 +16,7 @@ import java.util.regex.Pattern;
  * @description:
  */
 public class Ip2regionSearcher implements DisposableBean {
+
     private static final Pattern SPLIT_PATTERN = Pattern.compile("\\|");
 
     private final Searcher searcher;

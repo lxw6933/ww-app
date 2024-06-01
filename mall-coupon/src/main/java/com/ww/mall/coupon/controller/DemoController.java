@@ -9,7 +9,7 @@ import com.ww.mall.rabbitmq.MallPublisher;
 import com.ww.mall.rabbitmq.exchange.ExchangeConstant;
 import com.ww.mall.rabbitmq.routekey.RouteKeyConstant;
 import com.ww.mall.web.config.SecretProperties;
-import com.ww.mall.web.config.ip2region.Ip2regionSearcher;
+import com.ww.mall.ip2region.Ip2regionSearcher;
 import com.ww.mall.web.config.thread.DefaultThreadPoolProperties;
 import com.ww.mall.web.utils.VerificationCodeUtil;
 import lombok.extern.slf4j.Slf4j;
