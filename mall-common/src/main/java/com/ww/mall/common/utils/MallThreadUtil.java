@@ -1,7 +1,7 @@
-package com.ww.mall.web.utils;
+package com.ww.mall.common.utils;
 
-import com.ww.mall.web.config.thread.DefaultThreadFactoryBuilder;
-import com.ww.mall.web.config.thread.ThreadPoolExecutorMdcWrapper;
+import com.ww.mall.common.thread.DefaultThreadFactoryBuilder;
+import com.ww.mall.common.thread.ThreadPoolExecutorMdcWrapper;
 import lombok.extern.slf4j.Slf4j;
 
 import java.util.concurrent.*;
@@ -31,6 +31,17 @@ public class MallThreadUtil {
                 new ArrayBlockingQueue<>(queueLength),
                 threadFactory,
                 handler
+        );
+    }
+
+    public static ThreadPoolExecutor initFixedThreadPoolExecutor(String threadName, int threadSize) {
+        ThreadFactory threadFactory = new DefaultThreadFactoryBuilder().setNamePrefix(threadName).build();
+        return new ThreadPoolExecutorMdcWrapper(threadSize,
+                threadSize,
+                0L,
+                TimeUnit.MILLISECONDS,
+                new LinkedBlockingQueue<>(),
+                threadFactory
         );
     }
 

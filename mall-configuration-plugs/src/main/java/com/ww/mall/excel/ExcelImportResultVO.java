@@ -1,4 +1,4 @@
-package com.ww.mall.web.excel;
+package com.ww.mall.excel;
 
 import lombok.Data;
 

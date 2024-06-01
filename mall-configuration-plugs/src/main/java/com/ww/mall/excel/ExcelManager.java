@@ -1,4 +1,4 @@
-package com.ww.mall.web.excel;
+package com.ww.mall.excel;
 
 import com.alibaba.excel.EasyExcelFactory;
 import com.alibaba.excel.ExcelWriter;
@@ -6,6 +6,7 @@ import com.alibaba.excel.write.metadata.WriteSheet;
 import com.alibaba.fastjson.JSON;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.CollectionUtils;
+import org.springframework.stereotype.Component;
 import org.springframework.web.multipart.MultipartFile;
 
 import javax.servlet.http.HttpServletResponse;
@@ -23,6 +24,7 @@ import java.util.Set;
  * @create: 2021-05-14 14:04
  */
 @Slf4j
+@Component
 public class ExcelManager {
 
     /**
@@ -54,12 +56,12 @@ public class ExcelManager {
             setResponse(response, fileName);
             if (CollectionUtils.isNotEmpty(includeColumnFiledNames)) {
                 EasyExcelFactory.write(response.getOutputStream(), pojoClass)
-                        .includeColumnFiledNames(includeColumnFiledNames)
+                        .includeColumnFieldNames(includeColumnFiledNames)
                         .sheet(sheetName)
                         .doWrite(data);
             } else if (CollectionUtils.isNotEmpty(excludeColumnFiledNames)) {
                 EasyExcelFactory.write(response.getOutputStream(), pojoClass)
-                        .excludeColumnFiledNames(excludeColumnFiledNames)
+                        .excludeColumnFieldNames(excludeColumnFiledNames)
                         .sheet(sheetName)
                         .doWrite(data);
             } else {
@@ -113,6 +115,14 @@ public class ExcelManager {
                 modelClass,
                 listener
         ).sheet().doRead();
+    }
+
+    public <T> void readExcel(MultipartFile file, int sheetNum, Class<T> modelClass, MallAbstractImportListener<T> listener) throws IOException {
+        EasyExcelFactory.read(
+                file.getInputStream(),
+                modelClass,
+                listener
+        ).sheet(sheetNum).doRead();
     }
 
     private void setResponse(HttpServletResponse response, String fileName) throws UnsupportedEncodingException {

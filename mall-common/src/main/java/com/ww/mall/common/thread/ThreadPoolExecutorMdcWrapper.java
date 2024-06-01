@@ -1,8 +1,7 @@
-package com.ww.mall.web.config.thread;
+package com.ww.mall.common.thread;
 
-import com.ww.mall.web.utils.ThreadMdcUtil;
+import lombok.NonNull;
 import org.slf4j.MDC;
-import org.springframework.lang.NonNull;
 
 import java.util.concurrent.*;
 

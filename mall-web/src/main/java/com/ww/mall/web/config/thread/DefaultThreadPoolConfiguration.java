@@ -1,5 +1,7 @@
 package com.ww.mall.web.config.thread;
 
+import com.ww.mall.common.thread.DefaultThreadFactoryBuilder;
+import com.ww.mall.common.thread.ThreadPoolExecutorMdcWrapper;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;

@@ -1,4 +1,4 @@
-package com.ww.mall.web.config.thread;
+package com.ww.mall.common.thread;
 
 import org.apache.commons.lang3.StringUtils;
 

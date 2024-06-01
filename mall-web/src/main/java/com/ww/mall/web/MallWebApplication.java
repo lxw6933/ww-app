@@ -8,7 +8,6 @@ import com.fasterxml.jackson.datatype.jsr310.ser.LocalDateSerializer;
 import com.fasterxml.jackson.datatype.jsr310.ser.LocalDateTimeSerializer;
 import com.fasterxml.jackson.datatype.jsr310.ser.LocalTimeSerializer;
 import com.ww.mall.web.config.LoadBalancerConfiguration;
-import com.ww.mall.web.excel.ExcelManager;
 import com.ww.mall.web.handler.RequestBodyHandler;
 import com.ww.mall.web.handler.ResExceptionHandler;
 import com.ww.mall.web.handler.ResponseBodyHandler;
@@ -45,13 +44,6 @@ public class MallWebApplication {
 //        log.info("初始化mysql的默认事务管理器...");
 //        return new DataSourceTransactionManager(dataSource);
 //    }
-
-    @Bean
-    // @ConditionalOnBean(MallMybatisPlusConfig.class)
-    public ExcelManager excelManager() {
-        log.info("初始化excelManager功能成功...");
-        return new ExcelManager();
-    }
 
     @Bean
     public Jackson2ObjectMapperBuilderCustomizer jacksonCustomizer() {

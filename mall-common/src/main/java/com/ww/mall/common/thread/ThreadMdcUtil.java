@@ -1,4 +1,4 @@
-package com.ww.mall.web.utils;
+package com.ww.mall.common.thread;
 
 import cn.hutool.core.util.IdUtil;
 import com.ww.mall.common.constant.Constant;
