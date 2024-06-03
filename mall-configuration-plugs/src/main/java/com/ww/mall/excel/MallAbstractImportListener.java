@@ -51,8 +51,8 @@ public abstract class MallAbstractImportListener<T> extends AnalysisEventListene
         if (errorDataList.get().size() >= MAX_COUNT) {
             @SuppressWarnings("unchecked")
             List<T> errorDataListTask = (ArrayList<T>) errorDataList.get().clone();
-            this.handleErrorData(errorDataListTask);
             errorDataList.remove();
+            this.handleErrorData(errorDataListTask);
         }
     }
 
@@ -61,6 +61,13 @@ public abstract class MallAbstractImportListener<T> extends AnalysisEventListene
         // 处理剩余数据
         if (!dataList.get().isEmpty()) {
             this.asyncHandlerData();
+        }
+        // 处理剩余异常数据
+        if (!errorDataList.get().isEmpty()) {
+            @SuppressWarnings("unchecked")
+            List<T> errorDataListTask = (ArrayList<T>) errorDataList.get().clone();
+            errorDataList.remove();
+            this.handleErrorData(errorDataListTask);
         }
         // 等待所有线程执行完成
         if (CollectionUtils.isNotEmpty(importTaskList)) {
