@@ -220,8 +220,10 @@ public class DemoServiceImpl implements DemoService {
         } catch (InterruptedException e) {
             throw new RuntimeException(e);
         }
+        Set<String> fieldNames = new HashSet<>();
+        fieldNames.add("empNo");
         try {
-            excelManager.exportExcelOfManySheet(response, map, "demo");
+            excelManager.exportExcelOfManySheet(response, map, "demo", fieldNames, false);
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
