@@ -46,7 +46,7 @@ public abstract class MallAbstractImportListener<T> extends AnalysisEventListene
             errorDataList.get().add(data);
         }
         if (dataList.get().size() >= MAX_COUNT) {
-            this.syncHandlerData();
+            this.asyncHandlerData();
         }
         if (errorDataList.get().size() >= MAX_COUNT) {
             @SuppressWarnings("unchecked")
@@ -60,7 +60,7 @@ public abstract class MallAbstractImportListener<T> extends AnalysisEventListene
     public void doAfterAllAnalysed(AnalysisContext analysisContext) {
         // 处理剩余数据
         if (!dataList.get().isEmpty()) {
-            this.syncHandlerData();
+            this.asyncHandlerData();
         }
         // 等待所有线程执行完成
         if (CollectionUtils.isNotEmpty(importTaskList)) {
@@ -74,7 +74,7 @@ public abstract class MallAbstractImportListener<T> extends AnalysisEventListene
         log.info("此次导入总数据量：【{}】异常数据量：【{}】", importTotalCount.get(), importErrorCount.get());
     }
 
-    private void syncHandlerData() {
+    private void asyncHandlerData() {
         // 拷贝线程数据
         @SuppressWarnings("unchecked")
         List<T> dataListTask = (ArrayList<T>) dataList.get().clone();
