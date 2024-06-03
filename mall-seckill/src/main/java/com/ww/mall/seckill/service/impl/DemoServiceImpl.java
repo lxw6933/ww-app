@@ -6,11 +6,13 @@ import com.alibaba.fastjson.JSON;
 import com.github.houbb.sensitive.word.bs.SensitiveWordBs;
 import com.ww.mall.common.constant.RedisChannelConstant;
 import com.ww.mall.common.enums.SensitiveWordHandlerType;
+import com.ww.mall.common.exception.ApiException;
 import com.ww.mall.common.utils.IdUtil;
 import com.ww.mall.common.utils.IpUtil;
 import com.ww.mall.excel.ExcelManager;
 import com.ww.mall.excel.annotation.ExcelExportTimer;
 import com.ww.mall.excel.annotation.ExcelImportTimer;
+import com.ww.mall.excel.vo.ExcelResultVO;
 import com.ww.mall.ip2region.Ip2regionSearcher;
 import com.ww.mall.ip2region.IpInfo;
 import com.ww.mall.rabbitmq.MallPublisher;
@@ -151,17 +153,18 @@ public class DemoServiceImpl implements DemoService {
     @Override
     @ExcelImportTimer
     public void importData(MultipartFile file) {
+        ExcelResultVO excelResult = new ExcelResultVO();
         List<Callable<Integer>> tasks = new ArrayList<>();
         for (int i = 0; i < 20; i++) {
             try {
                 int num = i;
                 tasks.add(() -> {
                     log.info("线程{}执行任务{}", Thread.currentThread().getName(), num);
-                    excelManager.readExcel(file, num, DemoModel.class, new DemoImportListener());
+                    excelManager.readExcel(file, num, DemoModel.class, new DemoImportListener(excelResult));
                     return num;
                 });
             } catch (Exception e) {
-                e.printStackTrace();
+                throw new ApiException("导入数据异常");
             }
         }
         List<Future<Integer>> futures;
@@ -178,6 +181,8 @@ public class DemoServiceImpl implements DemoService {
                 throw new RuntimeException(e);
             }
         });
+        System.out.println("==============导入完成=============");
+        System.out.println(excelResult);
         System.out.println("==============导入完成=============");
     }
 
