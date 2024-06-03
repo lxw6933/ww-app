@@ -21,25 +21,21 @@ import java.util.concurrent.atomic.AtomicInteger;
 @Slf4j
 public abstract class MallAbstractImportListener<T> extends AnalysisEventListener<T> {
 
-    protected static final int MAX_COUNT = 10000;
+    private static final int MAX_COUNT = 10000;
 
-    protected ThreadLocal<ArrayList<T>> dataList = ThreadLocal.withInitial(ArrayList::new);
-    protected ThreadLocal<ArrayList<T>> errorDataList = ThreadLocal.withInitial(ArrayList::new);
+    private static final ThreadPoolExecutor excelThreadPoolExecutor = MallThreadUtil.initFixedThreadPoolExecutor("mall-excel", 20);
 
-    protected final AtomicInteger count = new AtomicInteger(0);
+    private final ThreadLocal<ArrayList<T>> dataList = ThreadLocal.withInitial(ArrayList::new);
+    private final ThreadLocal<ArrayList<T>> errorDataList = ThreadLocal.withInitial(ArrayList::new);
 
-    protected ThreadPoolExecutor excelThreadPoolExecutor = MallThreadUtil.initFixedThreadPoolExecutor("mall-excel", 20);
+    private final AtomicInteger count = new AtomicInteger(0);
 
-    protected List<CompletableFuture<Void>> importTaskList = new ArrayList<>();
+    private final List<CompletableFuture<Void>> importTaskList = new ArrayList<>();
 
-    protected final AtomicInteger importErrorCount = new AtomicInteger(0);
-    protected final AtomicInteger importTotalCount = new AtomicInteger(0);
+    private final AtomicInteger importErrorCount = new AtomicInteger(0);
+    private final AtomicInteger importTotalCount = new AtomicInteger(0);
 
     public MallAbstractImportListener() {}
-
-    public MallAbstractImportListener(ThreadPoolExecutor excelThreadPoolExecutor) {
-        this.excelThreadPoolExecutor = excelThreadPoolExecutor;
-    }
 
     @Override
     public void invoke(T data, AnalysisContext analysisContext) {
@@ -56,7 +52,7 @@ public abstract class MallAbstractImportListener<T> extends AnalysisEventListene
             @SuppressWarnings("unchecked")
             List<T> errorDataListTask = (ArrayList<T>) errorDataList.get().clone();
             this.handleErrorData(errorDataListTask);
-            errorDataList.get().clear();
+            errorDataList.remove();
         }
     }
 
@@ -83,6 +79,8 @@ public abstract class MallAbstractImportListener<T> extends AnalysisEventListene
         @SuppressWarnings("unchecked")
         List<T> dataListTask = (ArrayList<T>) dataList.get().clone();
         int size = dataListTask.size();
+        // 清空线程数据
+        dataList.remove();
         // 异步处理
         CompletableFuture<Void> task = CompletableFuture.runAsync(() -> {
             log.info("第{}次插入{}条数据", count.incrementAndGet(), size);
@@ -94,8 +92,6 @@ public abstract class MallAbstractImportListener<T> extends AnalysisEventListene
             return null;
         });
         importTaskList.add(task);
-        // 清空线程数据
-        dataList.get().clear();
         importTotalCount.addAndGet(size);
     }
 

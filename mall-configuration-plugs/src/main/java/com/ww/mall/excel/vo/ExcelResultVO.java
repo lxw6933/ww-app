@@ -1,4 +1,4 @@
-package com.ww.mall.excel;
+package com.ww.mall.excel.vo;
 
 import lombok.Data;
 
@@ -8,7 +8,7 @@ import lombok.Data;
  * @description:
  */
 @Data
-public class ExcelImportResultVO {
+public class ExcelResultVO {
 
     /**
      * 成功数量
