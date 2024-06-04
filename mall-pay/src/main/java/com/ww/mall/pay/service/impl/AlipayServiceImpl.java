@@ -42,9 +42,6 @@ public class AlipayServiceImpl implements AlipayService {
      * 证书模式
      */
     private final static String NOTIFY_URL = "/aliPay/cert_notify_url";
-    /**
-     * 证书模式
-     */
     private final static String RETURN_URL = "/aliPay/cert_return_url";
 
     @Override
