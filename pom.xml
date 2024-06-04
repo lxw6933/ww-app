@@ -85,6 +85,7 @@
         <elasticsearch.version>7.16.3</elasticsearch.version>
         <mapstruct.version>1.5.5.Final</mapstruct.version>
         <sensitive.word.version>0.16.1</sensitive.word.version>
+        <pay.version>2.9.11</pay.version>
     </properties>
 
     <dependencyManagement>
