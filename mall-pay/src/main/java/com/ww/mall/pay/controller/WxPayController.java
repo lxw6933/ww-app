@@ -5,6 +5,7 @@ import com.ijpay.core.kit.WxPayKit;
 import com.ijpay.wxpay.WxPayApi;
 import com.ijpay.wxpay.WxPayApiConfig;
 import com.ijpay.wxpay.WxPayApiConfigKit;
+import com.ww.mall.common.exception.ApiException;
 import com.ww.mall.pay.properties.WxPayProperties;
 import com.ww.mall.pay.service.WxPayService;
 import com.ww.mall.pay.vo.PayResult;
@@ -158,9 +159,8 @@ public class WxPayController {
             params.put("sign", createSign);
             return WxPayApi.getPublicKey(params, wxPayApiConfig.getCertPath(), wxPayApiConfig.getMchId());
         } catch (Exception e) {
-            e.printStackTrace();
+            throw new ApiException("获取加密公钥异常");
         }
-        return null;
     }
 
 }
