@@ -12,7 +12,6 @@ import com.ww.mall.common.constant.Constant;
 import com.ww.mall.common.exception.ApiException;
 import com.ww.mall.pay.properties.AliPayProperties;
 import com.ww.mall.pay.service.AlipayService;
-import com.ww.mall.pay.vo.PayResult;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.stereotype.Service;
@@ -33,8 +32,6 @@ public class AlipayServiceImpl implements AlipayService {
 
     @Resource
     private AliPayProperties aliPayProperties;
-
-    private final PayResult result = new PayResult();
 
     // 支付结果回调地址
     private final static String NOTIFY_URL = "/aliPay/notify_url";
@@ -128,17 +125,15 @@ public class AlipayServiceImpl implements AlipayService {
     }
 
     @Override
-    public PayResult appPay() {
+    public String appPay() {
         AlipayTradeAppPayModel model = new AlipayTradeAppPayModel();
         setPayInfo(model, "", "", "", "", "", "");
         try {
-            String appPayInfo = AliPayApi.appPayToResponse(model, aliPayProperties.getDomain() + NOTIFY_URL).getBody();
-            result.success(appPayInfo);
+            return AliPayApi.appPayToResponse(model, aliPayProperties.getDomain() + NOTIFY_URL).getBody();
         } catch (AlipayApiException e) {
             log.error("app pay exception", e);
-            result.addError("system error:" + e.getMessage());
+            throw new ApiException("支付异常");
         }
-        return result;
     }
 
     @Override
