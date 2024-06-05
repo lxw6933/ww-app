@@ -11,7 +11,7 @@ import com.ijpay.alipay.AliPayApiConfigKit;
 import com.ww.mall.common.constant.Constant;
 import com.ww.mall.common.exception.ApiException;
 import com.ww.mall.pay.properties.AliPayProperties;
-import com.ww.mall.pay.service.AlipayService;
+import com.ww.mall.pay.service.AliPayService;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.stereotype.Service;
@@ -28,7 +28,7 @@ import java.util.Map;
  */
 @Slf4j
 @Service
-public class AlipayServiceImpl implements AlipayService {
+public class AliPayServiceImpl implements AliPayService {
 
     @Resource
     private AliPayProperties aliPayProperties;

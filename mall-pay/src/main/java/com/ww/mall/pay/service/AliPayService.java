@@ -11,7 +11,7 @@ import javax.servlet.http.HttpServletResponse;
  * @create 2024-06-04- 19:23
  * @description:
  */
-public interface AlipayService {
+public interface AliPayService {
 
     /**
      * 获取支付宝配置
