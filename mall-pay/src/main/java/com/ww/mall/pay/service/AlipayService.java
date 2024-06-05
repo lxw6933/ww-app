@@ -35,7 +35,7 @@ public interface AlipayService {
     void pcPay(HttpServletResponse response);
 
     /**
-     * 扫码支付
+     * 生成支付二维码
      */
     String tradePreCreatePay();
 
@@ -55,20 +55,23 @@ public interface AlipayService {
     void toAuth(HttpServletResponse response);
 
     /**
-     * 授权获取到的code，来获取用户支付宝授权信息
+     * 使用 app_auth_code 换取 app_auth_token 用于获取用户信息
      */
-    String redirectUri(String appId, String appAuthCode);
+    String getAuthToken(String appId, String appAuthCode);
 
     /**
      * 查询支付宝用户信息
      */
-    String openAuthTokenAppQuery(String appAuthToken);
+    String getAuthTokenUserInfo(String appAuthToken);
 
+    /**
+     * 支付跳转
+     */
     String returnUrl(HttpServletRequest request);
 
-    String certReturnUrl(HttpServletRequest request);
-
+    /**
+     * 支付回调
+     */
     String notifyUrl(HttpServletRequest request);
 
-    String certNotifyUrl(HttpServletRequest request);
 }

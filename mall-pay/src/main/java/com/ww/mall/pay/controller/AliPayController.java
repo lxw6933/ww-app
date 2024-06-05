@@ -66,14 +66,14 @@ public class AliPayController {
         alipayService.toAuth(response);
     }
 
-    @RequestMapping(value = "/redirect_uri")
-    public String redirectUri(@RequestParam("app_id") String appId, @RequestParam("app_auth_code") String appAuthCode) {
-        return alipayService.redirectUri(appId, appAuthCode);
+    @RequestMapping(value = "/getAuthToken")
+    public String getAuthToken(@RequestParam("app_id") String appId, @RequestParam("app_auth_code") String appAuthCode) {
+        return alipayService.getAuthToken(appId, appAuthCode);
     }
 
-    @RequestMapping(value = "/openAuthTokenAppQuery")
-    public String openAuthTokenAppQuery(@RequestParam("appAuthToken") String appAuthToken) {
-        return alipayService.openAuthTokenAppQuery(appAuthToken);
+    @RequestMapping(value = "/getAuthTokenUserInfo")
+    public String getAuthTokenUserInfo(@RequestParam("appAuthToken") String appAuthToken) {
+        return alipayService.getAuthTokenUserInfo(appAuthToken);
     }
 
     @RequestMapping(value = "/return_url")
@@ -81,19 +81,9 @@ public class AliPayController {
         return alipayService.returnUrl(request);
     }
 
-    @RequestMapping(value = "/cert_return_url")
-    public String certReturnUrl(HttpServletRequest request) {
-       return alipayService.certReturnUrl(request);
-    }
-
     @RequestMapping(value = "/notify_url")
     public String notifyUrl(HttpServletRequest request) {
         return alipayService.notifyUrl(request);
-    }
-
-    @RequestMapping(value = "/cert_notify_url")
-    public String certNotifyUrl(HttpServletRequest request) {
-        return alipayService.certNotifyUrl(request);
     }
 
 }

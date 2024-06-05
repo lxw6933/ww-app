@@ -7,9 +7,11 @@ package com.ww.mall.common.constant;
  */
 public class Constant {
 
-    private static final String AES_ECB = "AES/ECB/PKCS5Padding";
-    private static final String AES_CBC = "AES/CBC/PKCS5Padding";
-    private static final String AES_CFB = "AES/CFB/PKCS5Padding";
+    public static final String UTF_8 = "UTF-8";
+
+    public static final String AES_ECB = "AES/ECB/PKCS5Padding";
+    public static final String AES_CBC = "AES/CBC/PKCS5Padding";
+    public static final String AES_CFB = "AES/CFB/PKCS5Padding";
 
     public static final String RSA_PUBLIC_KEY = "publicKey";
     public static final String RSA_PRIVATE_KEY = "privateKey";

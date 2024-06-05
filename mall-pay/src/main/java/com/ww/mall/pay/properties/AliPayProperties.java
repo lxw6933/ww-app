@@ -30,4 +30,8 @@ public class AliPayProperties {
 
     private String domain;
 
+    private String signType = "RSA2";
+
+    private Boolean useCer = true;
+
 }
