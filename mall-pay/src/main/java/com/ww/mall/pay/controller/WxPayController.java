@@ -150,7 +150,7 @@ public class WxPayController {
         try {
             WxPayApiConfig wxPayApiConfig = WxPayApiConfigKit.getWxPayApiConfig();
 
-            Map<String, String> params = new HashMap<String, String>(4);
+            Map<String, String> params = new HashMap<>(4);
             params.put("mch_id", wxPayApiConfig.getMchId());
             params.put("nonce_str", String.valueOf(System.currentTimeMillis()));
             params.put("sign_type", "MD5");
