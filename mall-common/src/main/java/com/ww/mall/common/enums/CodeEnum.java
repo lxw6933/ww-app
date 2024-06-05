@@ -26,6 +26,12 @@ public enum CodeEnum {
     NOT_SUPPORTED_MEDIA("415","不支持当前媒体类型"),
     ILLEGAL_REQUEST("-999", "非法请求"),
     SIGN_EXCEPTION("-9999", "签名异常"),
+
+    FLOW_EXCEPTION("-1001", "当前访问人数过多，请稍后再试"),
+    DEGRADE_EXCEPTION("-1002", "服务正在排队，请稍后再试"),
+    PARMA_FLOW_EXCEPTION("-1003", "访问人数过于爆满，请稍后再试"),
+    SYSTEM_BLOCK_EXCEPTION("-1004", "当前系统流量过大，请稍后再试"),
+    AUTH_LIMIT_EXCEPTION("-1005", "当前没有访问权限"),
     ;
 
     CodeEnum(String code, String message) {
