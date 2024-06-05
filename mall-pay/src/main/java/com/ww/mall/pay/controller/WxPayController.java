@@ -17,7 +17,6 @@ import org.springframework.web.bind.annotation.RestController;
 import javax.annotation.Resource;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
-import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -43,7 +42,7 @@ public class WxPayController {
     }
 
     @RequestMapping(value = "/wapPay")
-    public void wapPay(HttpServletRequest request, HttpServletResponse response) throws IOException {
+    public void wapPay(HttpServletRequest request, HttpServletResponse response) {
         wxPayService.wapPay(request, response);
     }
 
@@ -100,7 +99,8 @@ public class WxPayController {
     }
 
     @RequestMapping(value = "/queryOrder")
-    public String queryPayResult(@RequestParam(value = "transactionId", required = false) String transactionId, @RequestParam(value = "outTradeNo", required = false) String outTradeNo) {
+    public String queryPayResult(@RequestParam(value = "transactionId", required = false) String transactionId,
+                                 @RequestParam(value = "outTradeNo", required = false) String outTradeNo) {
         return wxPayService.queryPayResult(transactionId, outTradeNo);
     }
 
