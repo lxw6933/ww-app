@@ -18,7 +18,6 @@ import javax.servlet.http.HttpServletResponse;
  * @create 2024-06-04- 18:26
  * @description:
  */
-@Slf4j
 @RestController
 @RequestMapping("/aliPay")
 public class AliPayController {
