@@ -2,7 +2,6 @@ package com.ww.mall.rabbitmq.repository;
 
 import com.ww.mall.rabbitmq.MallCorrelationData;
 import com.ww.mall.rabbitmq.enums.MqMsgStatus;
-import org.springframework.core.Ordered;
 
 /**
  * @author ww
