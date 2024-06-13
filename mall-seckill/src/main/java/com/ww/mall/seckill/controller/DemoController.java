@@ -29,8 +29,11 @@ public class DemoController {
 
     @GetMapping("/order")
     public boolean redisStock() {
-        return demoService.seckillOrder();
+        return demoService.secKillOrder();
     }
+
+    @GetMapping("/hashStock")
+    public boolean redisHashStock(Integer type) {return demoService.secKillHashStock(type);}
 
     @GetMapping("/traceId")
     public void traceId() {

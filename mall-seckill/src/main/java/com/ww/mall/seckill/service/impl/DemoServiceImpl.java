@@ -38,9 +38,12 @@ import org.springframework.data.mongodb.core.MongoTemplate;
 import org.springframework.data.mongodb.core.aggregation.Aggregation;
 import org.springframework.data.mongodb.core.aggregation.AggregationOperation;
 import org.springframework.data.mongodb.core.query.Query;
+import org.springframework.data.redis.core.BoundHashOperations;
+import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
+import javax.annotation.PostConstruct;
 import javax.annotation.Resource;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
@@ -75,8 +78,54 @@ public class DemoServiceImpl implements DemoService {
 
     private final AtomicInteger num = new AtomicInteger(0);
 
+    @Autowired
+    private RedisTemplate<String, String> redisTemplate;
+
+    @PostConstruct
+    public void init() {
+        BoundHashOperations<String, Object, Object> skuHashStock = redisTemplate.boundHashOps("skuHashStock");
+        skuHashStock.put("totalStock", "10");
+        skuHashStock.put("lockStock", "0");
+        skuHashStock.put("useStock", "0");
+    }
+
     @Override
-    public boolean seckillOrder() {
+    public boolean secKillHashStock(Integer type) {
+        switch (type) {
+            case 1:
+                // 锁定库存
+                if (mallRedisTemplate.lockHashStock("skuHashStock", 1)) {
+                    log.info("扣减成功");
+                    return true;
+                } else {
+                    log.error("扣减失败");
+                    return false;
+                }
+            case 2:
+                // 使用库存
+                if (mallRedisTemplate.useHashStock("skuHashStock", 1)) {
+                    log.info("使用成功");
+                    return true;
+                } else {
+                    log.error("使用失败");
+                    return false;
+                }
+            case 3:
+                // 回滚库存
+                if (mallRedisTemplate.rollbackHashStock("skuHashStock", 1)) {
+                    log.info("回滚成功");
+                    return true;
+                } else {
+                    log.error("回滚失败");
+                    return false;
+                }
+            default:
+                throw new ApiException("不支持类型");
+        }
+    }
+
+    @Override
+    public boolean secKillOrder() {
         if (mallRedisTemplate.decrementStock("skuStock", 1) >= 0) {
             String orderDate = DateUtil.format(new Date(), DatePattern.NORM_DATETIME_PATTERN);
             String orderNo = IdUtil.generatorIdStr();

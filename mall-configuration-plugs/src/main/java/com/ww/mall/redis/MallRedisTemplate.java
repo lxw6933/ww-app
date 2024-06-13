@@ -35,6 +35,52 @@ public class MallRedisTemplate {
             "end";
     private static final byte[] DECREMENT_STOCK_LUA_BYTE = DECREMENT_STOCK_LUA.getBytes();
 
+    private static final String LOCK_STOCK_HASH_LUA = "local hashKey = KEYS[1]\n" +
+            "local decrementStock = tonumber(ARGV[1])\n" +
+            "local totalStock = tonumber(redis.call('hget', hashKey, 'totalStock'))\n" +
+            "local lockStock = tonumber(redis.call('hget', hashKey, 'lockStock'))\n" +
+            "local useStock = tonumber(redis.call('hget', hashKey, 'useStock'))\n" +
+            "if totalStock == nil or lockStock == nil or useStock == nil then\n" +
+            "   return -1\n" +
+            "end\n" +
+            "local availableStock = totalStock - lockStock - useStock\n" +
+            "if availableStock < decrementStock then\n" +
+            "   return -2\n" +
+            "end\n" +
+            "local newLockStock = lockStock + decrementStock\n" +
+            "redis.call('hset', hashKey, 'lockStock', newLockStock)\n" +
+            "return 1";
+    private static final byte[] LOCK_STOCK_HASH_LUA_BYTE = LOCK_STOCK_HASH_LUA.getBytes();
+
+    private static final String LOCK_STOCK_HASH_BATCH_LUA = "for i = 1, #KEYS do\n" +
+            "local hashKey = KEYS[i]\n" +
+            "local decrementStock = tonumber(ARGV[i])\n" +
+            "local totalStock = tonumber(redis.call('hget', hashKey, 'totalStock'))\n" +
+            "local lockStock = tonumber(redis.call('hget', hashKey, 'lockStock'))\n" +
+            "local useStock = tonumber(redis.call('hget', hashKey, 'useStock'))\n" +
+            "if totalStock == nil or lockStock == nil or useStock == nil then\n" +
+            "    return -1\n" +
+            "end\n" +
+            "local availableStock = totalStock - lockStock - useStock\n" +
+            "if availableStock < decrementStock then\n" +
+            "    return -2\n" +
+            "end\n" +
+            "local newLockStock = lockStock + decrementStock\n" +
+            "redis.call('hset', hashKey, 'lockStock', newLockStock)\n" +
+            "end\n" +
+            "return 1";
+    private static final byte[] LOCK_STOCK_HASH_BATCH_LUA_BYTE = LOCK_STOCK_HASH_BATCH_LUA.getBytes();
+
+    private static final String USE_STOCK_HASH_LUA =
+            "local hashKey = KEYS[1]\n" +
+                    "local lockStock = ARGV[1]\n" +
+                    "local useStock = ARGV[2]\n" +
+                    "local number = tonumber(ARGV[3])\n" +
+                    "redis.call('HINCRBYFLOAT', hashKey, lockStock, -number)\n" +
+                    "redis.call('HINCRBYFLOAT', hashKey, useStock, number)\n" +
+                    "return 1";
+    private static final byte[] USE_STOCK_HASH_LUA_BYTE = USE_STOCK_HASH_LUA.getBytes();
+
     /**
      * 默认批处理命令数量
      */
@@ -60,6 +106,56 @@ public class MallRedisTemplate {
                     String.valueOf(number).getBytes());
             return (Long) result;
         });
+    }
+
+    /**
+     * 锁定库存
+     *
+     * @param hashKey hashKey
+     * @param number 数量
+     * @return success > 0
+     */
+    public boolean lockHashStock(String hashKey, int number) {
+        Long res = redisTemplate.execute((RedisCallback<Long>) connection -> {
+            RedisSerializer keySerializer = redisTemplate.getKeySerializer();
+            byte[] keyBytes = keySerializer.serialize(hashKey);
+            // 执行lua脚本
+            Object result = connection.eval(LOCK_STOCK_HASH_LUA_BYTE, ReturnType.INTEGER, 1, keyBytes,
+                    String.valueOf(number).getBytes());
+            return (Long) result;
+        });
+        return res != null && res > 0;
+    }
+
+    /**
+     * 使用库存
+     *
+     * @param hashKey hashKey
+     * @param number 数量
+     * @return success > 0
+     */
+    public boolean useHashStock(String hashKey, int number) {
+        Long res = redisTemplate.execute((RedisCallback<Long>) connection -> {
+            RedisSerializer keySerializer = redisTemplate.getKeySerializer();
+            byte[] keyBytes = keySerializer.serialize(hashKey);
+            // 执行lua脚本
+            Object result = connection.eval(USE_STOCK_HASH_LUA_BYTE, ReturnType.INTEGER, 1, keyBytes,
+                    "lockStock".getBytes(), "useStock".getBytes(), String.valueOf(number).getBytes());
+            return (Long) result;
+        });
+        return res != null && res > 0;
+    }
+
+    /**
+     * 回滚库存
+     *
+     * @param hashKey hashKey
+     * @param number 数量
+     * @return boolean
+     */
+    public boolean rollbackHashStock(String hashKey, int number) {
+        Long res = redisTemplate.opsForHash().increment(hashKey, "lockStock", Math.negateExact(number));
+        return res > 0;
     }
 
     /**

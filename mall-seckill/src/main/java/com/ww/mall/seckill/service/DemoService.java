@@ -13,7 +13,9 @@ import javax.servlet.http.HttpServletResponse;
  */
 public interface DemoService {
 
-    boolean seckillOrder();
+    boolean secKillHashStock(Integer type);
+
+    boolean secKillOrder();
 
     void traceId();
 
