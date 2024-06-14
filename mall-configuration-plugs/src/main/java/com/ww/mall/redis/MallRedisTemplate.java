@@ -84,6 +84,15 @@ public class MallRedisTemplate {
         skuHashStock.put("useStock", "0");
     }
 
+    /**
+     * 生成redis stock key
+     *
+     * @param activityCode 活动编码
+     * @param subActivityCode 场次编码
+     * @param spuCode 商品编码
+     * @param skuId skuId
+     * @return stockKey
+     */
     public String getStockHashKey(String activityCode, String subActivityCode, String spuCode, Long skuId) {
         List<Object> keys = new ArrayList<>();
         keys.add(RedisKeyConstant.MALL_STOCK_KEY);
