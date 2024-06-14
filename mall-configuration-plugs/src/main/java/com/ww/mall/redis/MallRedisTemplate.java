@@ -84,7 +84,7 @@ public class MallRedisTemplate {
         skuHashStock.put("useStock", "0");
     }
 
-    public static String getStockHashKey(String activityCode, String subActivityCode, String spuCode, Long skuId) {
+    public String getStockHashKey(String activityCode, String subActivityCode, String spuCode, Long skuId) {
         List<Object> keys = new ArrayList<>();
         keys.add(RedisKeyConstant.MALL_STOCK_KEY);
         if (StringUtils.isNotEmpty(activityCode)) {
