@@ -128,9 +128,4 @@ public class MallRedisAutoConfiguration implements ApplicationContextAware {
         this.applicationContext = applicationContext;
     }
 
-    @Bean
-    public LuaScriptConfig luaScriptConfig() {
-        return new LuaScriptConfig();
-    }
-
 }

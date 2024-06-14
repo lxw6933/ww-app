@@ -41,10 +41,10 @@ public class MallRedisTemplate {
     private DefaultRedisScript<Long> decrementStockScript;
 
     @Resource
-    private DefaultRedisScript<Long> lockStockScript;
+    private DefaultRedisScript<Long> lockHashStockScript;
 
     @Resource
-    private DefaultRedisScript<Long> useStockScript;
+    private DefaultRedisScript<Long> useHashStockScript;
 
     /**
      * lua扣减库存
@@ -119,17 +119,17 @@ public class MallRedisTemplate {
     }
 
     public boolean a(String key, int number) {
-        Long res = redisTemplate.execute(decrementStockScript, Collections.singletonList(key), number);
+        Long res = redisTemplate.execute(decrementStockScript, Collections.singletonList(key), String.valueOf(number));
         return res != null && res >= 0;
     }
 
     public boolean b(String key, int number) {
-        Long res = redisTemplate.execute(lockStockScript, Collections.singletonList(key), number);
+        Long res = redisTemplate.execute(lockHashStockScript, Collections.singletonList(key), String.valueOf(number));
         return res != null && res >= 0;
     }
 
     public boolean c(String key, int number) {
-        Long res = redisTemplate.execute(useStockScript, Collections.singletonList(key), number);
+        Long res = redisTemplate.execute(useHashStockScript, Collections.singletonList(key), String.valueOf(number));
         return res != null && res >= 0;
     }
 

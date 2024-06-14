@@ -19,7 +19,7 @@ public class LuaScriptConfig {
     @Bean
     public DefaultRedisScript<Long> decrementStockScript() {
         DefaultRedisScript<Long> redisScript = new DefaultRedisScript<>();
-        redisScript.setScriptSource(new ResourceScriptSource(new ClassPathResource("/lua/stock_decrement.lua")));
+        redisScript.setScriptSource(new ResourceScriptSource(new ClassPathResource("/lua/decrement_stock_script.lua")));
         redisScript.setResultType(Long.class);
         log.info("load decrement stock redis lua script success");
         return redisScript;

@@ -14,6 +14,6 @@ import java.lang.annotation.Target;
  */
 @Target({ElementType.TYPE})
 @Retention(RetentionPolicy.RUNTIME)
-@Import({MallRedisAutoConfiguration.class})
+@Import({MallRedisAutoConfiguration.class, LuaScriptConfig.class})
 public @interface EnableMallRedis {
 }
