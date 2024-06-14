@@ -110,7 +110,6 @@ public class DemoServiceImpl implements DemoService {
                     log.info("扣减成功");
                     return true;
                 } else {
-                    log.error("扣减失败");
                     return false;
                 }
             case 2:
@@ -119,7 +118,6 @@ public class DemoServiceImpl implements DemoService {
                     log.info("使用成功");
                     return true;
                 } else {
-                    log.error("使用失败");
                     return false;
                 }
             case 3:
@@ -128,7 +126,6 @@ public class DemoServiceImpl implements DemoService {
                     log.info("回滚成功");
                     return true;
                 } else {
-                    log.error("回滚失败");
                     return false;
                 }
             default:

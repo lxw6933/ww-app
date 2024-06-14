@@ -54,12 +54,25 @@ public class LuaConstant {
 
     public static final String USE_STOCK_HASH_LUA =
             "local hashKey = KEYS[1]\n" +
-                    "local lockStock = ARGV[1]\n" +
-                    "local useStock = ARGV[2]\n" +
-                    "local number = tonumber(ARGV[3])\n" +
-                    "redis.call('HINCRBYFLOAT', hashKey, lockStock, -number)\n" +
-                    "redis.call('HINCRBYFLOAT', hashKey, useStock, number)\n" +
+                    "local number = tonumber(ARGV[1])\n" +
+                    "local lockStock = tonumber(redis.call('hget', hashKey, 'lockStock'))\n" +
+                    "if lockStock < number then\n" +
+                    "    return -1\n" +
+                    "end\n" +
+                    "redis.call('HINCRBYFLOAT', hashKey, 'lockStock', -number)\n" +
+                    "redis.call('HINCRBYFLOAT', hashKey, 'useStock', number)\n" +
                     "return 1";
     public static final byte[] USE_STOCK_HASH_LUA_BYTE = USE_STOCK_HASH_LUA.getBytes();
+
+    public static final String ROLLBACK_STOCK_HASH_LUA =
+            "local hashKey = KEYS[1]\n" +
+                    "local number = tonumber(ARGV[1])\n" +
+                    "local lockStock = tonumber(redis.call('hget', hashKey, 'lockStock'))\n" +
+                    "if lockStock < number then\n" +
+                    "    return -1\n" +
+                    "end\n" +
+                    "redis.call('HINCRBYFLOAT', hashKey, 'lockStock', -number)\n" +
+                    "return 1";
+    public static final byte[] ROLLBACK_STOCK_HASH_LUA_BYTE = ROLLBACK_STOCK_HASH_LUA.getBytes();
     
 }
