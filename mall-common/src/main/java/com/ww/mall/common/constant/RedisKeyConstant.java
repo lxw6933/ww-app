@@ -9,6 +9,8 @@ public class RedisKeyConstant {
 
     private RedisKeyConstant() {}
 
+    public static final String MALL_STOCK_KEY = "mall-stock";
+
     public static final String SPLIT_KEY = ":";
 
     public static final String GEO_KEY = "geo:";

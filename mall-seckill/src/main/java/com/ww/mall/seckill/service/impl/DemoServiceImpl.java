@@ -38,8 +38,6 @@ import org.springframework.data.mongodb.core.MongoTemplate;
 import org.springframework.data.mongodb.core.aggregation.Aggregation;
 import org.springframework.data.mongodb.core.aggregation.AggregationOperation;
 import org.springframework.data.mongodb.core.query.Query;
-import org.springframework.data.redis.core.BoundHashOperations;
-import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -78,15 +76,9 @@ public class DemoServiceImpl implements DemoService {
 
     private final AtomicInteger num = new AtomicInteger(0);
 
-    @Autowired
-    private RedisTemplate<String, String> redisTemplate;
-
     @PostConstruct
     public void init() {
-        BoundHashOperations<String, Object, Object> skuHashStock = redisTemplate.boundHashOps("skuHashStock");
-        skuHashStock.put("totalStock", "10");
-        skuHashStock.put("lockStock", "0");
-        skuHashStock.put("useStock", "0");
+        mallRedisTemplate.initHashStock("skuHashStock", 10);
     }
 
     @Override

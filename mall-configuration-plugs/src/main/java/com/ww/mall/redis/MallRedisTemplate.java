@@ -4,6 +4,7 @@ import com.ww.mall.common.constant.RedisKeyConstant;
 import com.ww.mall.redis.constant.LuaConstant;
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.geo.Distance;
 import org.springframework.data.geo.GeoResult;
@@ -11,15 +12,11 @@ import org.springframework.data.geo.GeoResults;
 import org.springframework.data.geo.Point;
 import org.springframework.data.redis.connection.RedisGeoCommands;
 import org.springframework.data.redis.connection.ReturnType;
-import org.springframework.data.redis.core.Cursor;
-import org.springframework.data.redis.core.RedisCallback;
-import org.springframework.data.redis.core.RedisTemplate;
-import org.springframework.data.redis.core.ScanOptions;
+import org.springframework.data.redis.core.*;
 import org.springframework.data.redis.core.script.DefaultRedisScript;
 import org.springframework.data.redis.domain.geo.GeoReference;
 import org.springframework.data.redis.serializer.RedisSerializer;
 import org.springframework.stereotype.Component;
-import org.springframework.util.StringUtils;
 
 import javax.annotation.PostConstruct;
 import javax.annotation.Resource;
@@ -62,6 +59,43 @@ public class MallRedisTemplate {
         lockHashStockSha1 = redisTemplate.execute((RedisCallback<String>) connection -> connection.scriptLoad(LuaConstant.LOCK_STOCK_HASH_LUA_BYTE));
         useHashStockSha1 = redisTemplate.execute((RedisCallback<String>) connection -> connection.scriptLoad(LuaConstant.USE_STOCK_HASH_LUA_BYTE));
         rollbackHashStockSha1 = redisTemplate.execute((RedisCallback<String>) connection -> connection.scriptLoad(LuaConstant.ROLLBACK_STOCK_HASH_LUA_BYTE));
+    }
+
+    /**
+     * 初始化库存数据
+     *
+     * @param strKey stringKey
+     * @param totalStock 总库存
+     */
+    public void initStock(String strKey, int totalStock) {
+        redisTemplate.opsForValue().set(strKey, String.valueOf(totalStock));
+    }
+
+    /**
+     * 初始化hash库存数据
+     *
+     * @param hashKey hashKey
+     * @param totalStock 总库存
+     */
+    public void initHashStock(String hashKey, int totalStock) {
+        BoundHashOperations<String, Object, Object> skuHashStock = redisTemplate.boundHashOps(hashKey);
+        skuHashStock.put("totalStock", String.valueOf(totalStock));
+        skuHashStock.put("lockStock", "0");
+        skuHashStock.put("useStock", "0");
+    }
+
+    public static String getStockHashKey(String activityCode, String subActivityCode, String spuCode, Long skuId) {
+        List<Object> keys = new ArrayList<>();
+        keys.add(RedisKeyConstant.MALL_STOCK_KEY);
+        if (StringUtils.isNotEmpty(activityCode)) {
+            keys.add(activityCode);
+        }
+        if (StringUtils.isNotEmpty(subActivityCode)) {
+            keys.add(subActivityCode);
+        }
+        keys.add(spuCode);
+        keys.add(skuId);
+        return StringUtils.joinWith(RedisKeyConstant.SPLIT_KEY, keys.toArray());
     }
 
     /**
@@ -316,7 +350,7 @@ public class MallRedisTemplate {
      * @param message 发布消息
      */
     public boolean publishMessage(String channel, String message) {
-        if (!StringUtils.hasText(channel)) {
+        if (!StringUtils.isNotEmpty(channel)) {
             return false;
         }
         try {

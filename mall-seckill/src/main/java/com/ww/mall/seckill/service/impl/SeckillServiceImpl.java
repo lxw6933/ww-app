@@ -51,7 +51,7 @@ public class SeckillServiceImpl implements SeckillService {
 
     @PostConstruct
     public void init() {
-        redisTemplate.opsForValue().set("skuStock", "1000");
+        mallRedisTemplate.initStock("skuStock", 1000);
         // 初始化活动数据信息
         activityCache.get("activityRedisCacheKey", key -> redisTemplate.opsForValue().get(key));
     }
