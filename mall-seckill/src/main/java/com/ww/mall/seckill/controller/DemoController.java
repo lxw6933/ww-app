@@ -27,7 +27,7 @@ public class DemoController {
     @Autowired
     private DemoService demoService;
 
-    @GetMapping("/order")
+    @GetMapping("/testLua")
     public boolean testLuaScript(Integer type) {
         return demoService.testLuaScript(type);
     }
