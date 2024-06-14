@@ -90,6 +90,18 @@ public class DemoServiceImpl implements DemoService {
     }
 
     @Override
+    public boolean testLuaScript(Integer type) {
+        switch (type) {
+            case 1:
+                return mallRedisTemplate.a("skuStock", 1);
+            case 2:
+                return mallRedisTemplate.decrementStock("skuStock", 1);
+            default:
+                throw new ApiException("不支持类型");
+        }
+    }
+
+    @Override
     public boolean secKillHashStock(Integer type) {
         switch (type) {
             case 1:
@@ -126,7 +138,7 @@ public class DemoServiceImpl implements DemoService {
 
     @Override
     public boolean secKillOrder() {
-        if (mallRedisTemplate.decrementStock("skuStock", 1) >= 0) {
+        if (mallRedisTemplate.decrementStock("skuStock", 1)) {
             String orderDate = DateUtil.format(new Date(), DatePattern.NORM_DATETIME_PATTERN);
             String orderNo = IdUtil.generatorIdStr();
             int totalOrderNum = num.incrementAndGet();

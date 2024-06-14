@@ -128,20 +128,9 @@ public class MallRedisAutoConfiguration implements ApplicationContextAware {
         this.applicationContext = applicationContext;
     }
 
-//    @Bean
-//    public DefaultRedisScript<Long> decrementStockLua() {
-//        DefaultRedisScript<Long> decrementStockScript = new DefaultRedisScript<>();
-//        decrementStockScript.setScriptSource(new ResourceScriptSource(new ClassPathResource("/lua/decrement_stock_script.lua")));
-//        decrementStockScript.setResultType(Long.class);
-//        return decrementStockScript;
-//    }
-//
-//    @Bean
-//    public DefaultRedisScript<Boolean> rateLimitLua() {
-//        DefaultRedisScript<Boolean>rateLimitScript = new DefaultRedisScript<>();
-//        rateLimitScript.setScriptSource(new ResourceScriptSource(new ClassPathResource("/lua/rate_limit_script.lua")));
-//        rateLimitScript.setResultType(Boolean.class);
-//        return rateLimitScript;
-//    }
+    @Bean
+    public LuaScriptConfig luaScriptConfig() {
+        return new LuaScriptConfig();
+    }
 
 }

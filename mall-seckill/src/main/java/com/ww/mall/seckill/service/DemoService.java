@@ -13,6 +13,8 @@ import javax.servlet.http.HttpServletResponse;
  */
 public interface DemoService {
 
+    boolean testLuaScript(Integer type);
+
     boolean secKillHashStock(Integer type);
 
     boolean secKillOrder();

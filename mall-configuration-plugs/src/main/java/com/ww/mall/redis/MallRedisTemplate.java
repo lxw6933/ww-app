@@ -15,11 +15,13 @@ import org.springframework.data.redis.core.Cursor;
 import org.springframework.data.redis.core.RedisCallback;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.data.redis.core.ScanOptions;
+import org.springframework.data.redis.core.script.DefaultRedisScript;
 import org.springframework.data.redis.domain.geo.GeoReference;
 import org.springframework.data.redis.serializer.RedisSerializer;
 import org.springframework.stereotype.Component;
 import org.springframework.util.StringUtils;
 
+import javax.annotation.Resource;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -35,6 +37,15 @@ public class MallRedisTemplate {
     @Autowired
     private RedisTemplate<String, String> redisTemplate;
 
+    @Resource
+    private DefaultRedisScript<Long> decrementStockScript;
+
+    @Resource
+    private DefaultRedisScript<Long> lockStockScript;
+
+    @Resource
+    private DefaultRedisScript<Long> useStockScript;
+
     /**
      * lua扣减库存
      *
@@ -43,8 +54,8 @@ public class MallRedisTemplate {
      * @return long
      */
     @SuppressWarnings("all")
-    public Long decrementStock(String key, int number) {
-        return redisTemplate.execute((RedisCallback<Long>) connection -> {
+    public boolean decrementStock(String key, int number) {
+        Long res = redisTemplate.execute((RedisCallback<Long>) connection -> {
             RedisSerializer keySerializer = redisTemplate.getKeySerializer();
             byte[] keyBytes = keySerializer.serialize(key);
             // 执行lua脚本
@@ -52,6 +63,7 @@ public class MallRedisTemplate {
                     String.valueOf(number).getBytes());
             return (Long) result;
         });
+        return res != null && res >= 0;
     }
 
     /**
@@ -61,6 +73,7 @@ public class MallRedisTemplate {
      * @param number 数量
      * @return success > 0
      */
+    @SuppressWarnings("all")
     public boolean lockHashStock(String hashKey, int number) {
         Long res = redisTemplate.execute((RedisCallback<Long>) connection -> {
             RedisSerializer keySerializer = redisTemplate.getKeySerializer();
@@ -70,7 +83,7 @@ public class MallRedisTemplate {
                     String.valueOf(number).getBytes());
             return (Long) result;
         });
-        return res != null && res > 0;
+        return res != null && res >= 0;
     }
 
     /**
@@ -80,6 +93,7 @@ public class MallRedisTemplate {
      * @param number 数量
      * @return success > 0
      */
+    @SuppressWarnings("all")
     public boolean useHashStock(String hashKey, int number) {
         Long res = redisTemplate.execute((RedisCallback<Long>) connection -> {
             RedisSerializer keySerializer = redisTemplate.getKeySerializer();
@@ -89,7 +103,7 @@ public class MallRedisTemplate {
                     "lockStock".getBytes(), "useStock".getBytes(), String.valueOf(number).getBytes());
             return (Long) result;
         });
-        return res != null && res > 0;
+        return res != null && res >= 0;
     }
 
     /**
@@ -102,6 +116,21 @@ public class MallRedisTemplate {
     public boolean rollbackHashStock(String hashKey, int number) {
         Long res = redisTemplate.opsForHash().increment(hashKey, "lockStock", Math.negateExact(number));
         return res > 0;
+    }
+
+    public boolean a(String key, int number) {
+        Long res = redisTemplate.execute(decrementStockScript, Collections.singletonList(key), number);
+        return res != null && res >= 0;
+    }
+
+    public boolean b(String key, int number) {
+        Long res = redisTemplate.execute(lockStockScript, Collections.singletonList(key), number);
+        return res != null && res >= 0;
+    }
+
+    public boolean c(String key, int number) {
+        Long res = redisTemplate.execute(useStockScript, Collections.singletonList(key), number);
+        return res != null && res >= 0;
     }
 
     /**

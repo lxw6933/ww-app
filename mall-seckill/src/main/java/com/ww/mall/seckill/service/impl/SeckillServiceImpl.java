@@ -114,7 +114,7 @@ public class SeckillServiceImpl implements SeckillService {
         // 本地缓存存储活动信息，校验活动信息
 
         // 本地缓存商品信息，校验商品信息
-        if (mallRedisTemplate.decrementStock("skuStock", 1) >= 0) {
+        if (mallRedisTemplate.decrementStock("skuStock", 1)) {
             String orderDate = DateUtil.format(new Date(), DatePattern.NORM_DATETIME_PATTERN);
             String orderNo = IdUtil.generatorIdStr();
             mallPublisher.publishMsg(ExchangeConstant.MALL_OMS_EXCHANGE, RouteKeyConstant.MALL_CREATE_ORDER_KEY, orderNo);

@@ -28,6 +28,11 @@ public class DemoController {
     private DemoService demoService;
 
     @GetMapping("/order")
+    public boolean testLuaScript(Integer type) {
+        return demoService.testLuaScript(type);
+    }
+
+    @GetMapping("/order")
     public boolean redisStock() {
         return demoService.secKillOrder();
     }
