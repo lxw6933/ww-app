@@ -21,9 +21,7 @@ import com.ww.mall.rabbitmq.queue.QueueConstant;
 import com.ww.mall.rabbitmq.routekey.RouteKeyConstant;
 import com.ww.mall.redis.MallRedisTemplate;
 import com.ww.mall.seckill.entity.Demo;
-import com.ww.mall.seckill.entity.SecKillOrder;
 import com.ww.mall.seckill.listener.DemoImportListener;
-import com.ww.mall.seckill.manager.MallCacheManager;
 import com.ww.mall.seckill.model.DemoModel;
 import com.ww.mall.seckill.node.executor.DemoFlowExecutor;
 import com.ww.mall.seckill.service.DemoService;
@@ -31,6 +29,8 @@ import com.ww.mall.seckill.view.bo.SensitiveWordBO;
 import com.ww.mall.sensitive.annotation.MallSensitiveWordHandler;
 import com.ww.mall.web.feign.ThirdServerFeignService;
 import lombok.extern.slf4j.Slf4j;
+import org.redisson.api.RBloomFilter;
+import org.redisson.api.RedissonClient;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.PageRequest;
@@ -38,6 +38,8 @@ import org.springframework.data.mongodb.core.MongoTemplate;
 import org.springframework.data.mongodb.core.aggregation.Aggregation;
 import org.springframework.data.mongodb.core.aggregation.AggregationOperation;
 import org.springframework.data.mongodb.core.query.Query;
+import org.springframework.data.redis.core.BoundValueOperations;
+import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -76,8 +78,16 @@ public class DemoServiceImpl implements DemoService {
 
     private final AtomicInteger num = new AtomicInteger(0);
 
+    @Autowired
+    private RedissonClient redissonClient;
+
+    @Autowired
+    private RedisTemplate<String, String> redisTemplate;
+
     @PostConstruct
     public void init() {
+        RBloomFilter<Long> bloomFilter = redissonClient.getBloomFilter("testBoomFiler");
+        bloomFilter.tryInit(1000000, 0.03);
         mallRedisTemplate.initHashStock("skuHashStock", 10);
     }
 
@@ -166,16 +176,39 @@ public class DemoServiceImpl implements DemoService {
         mallRedisTemplate.publishMessage(RedisChannelConstant.MALL_SPU_CHANNEL, msg);
     }
 
+    private int number = 0;
+
     @Override
-    public void boomFilter() {
-        SecKillOrder secKillOrder = new SecKillOrder();
-        secKillOrder.setUserId(0L);
-        secKillOrder.setOrderType(0);
-        secKillOrder.setOrderNo(IdUtil.generatorIdStr());
-        secKillOrder.setCreateTime(DateUtil.format(new Date(), DatePattern.NORM_DATETIME_PATTERN));
-        mongoTemplate.save(secKillOrder);
-        MallCacheManager.spuCache.get("1", res -> null);
-        log.info("执行完毕filter数量");
+    public void boomFilter(Integer type, Long ele) {
+//        RBloomFilter<Long> bloomFilter = redissonClient.getBloomFilter("testBoomFiler");
+//        switch (type) {
+//            case 1:
+//                // 新增
+//                for (long i = number * 50000; i < (number + 1) * 50000; i++) {
+//                    bloomFilter.add(i);
+//                }
+//                number++;
+//                log.info("number: {}", number);
+//                break;
+//            case 2:
+//                // 判断
+//                log.info("是否包含：【{}】,【{}】", ele, bloomFilter.contains(ele));
+//        }
+        switch (type) {
+            case 1:
+                // 新增
+                List<Integer> dataList = new ArrayList<>();
+                for (int i = number * 50000; i < (number + 1) * 50000; i++) {
+                    dataList.add(i);
+                }
+                mallRedisTemplate.initializeBitmap("bitMapTest", dataList);
+                number++;
+                log.info("number: {}", number);
+                break;
+            case 2:
+                // 判断
+                log.info("是否包含：【{}】,【{}】", ele, redisTemplate.opsForValue().getBit("bitMapTest", ele));
+        }
     }
 
     @Autowired
