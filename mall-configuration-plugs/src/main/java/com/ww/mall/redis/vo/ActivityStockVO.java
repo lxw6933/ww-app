@@ -10,10 +10,10 @@ import lombok.Data;
 @Data
 public class ActivityStockVO {
 
-    private Integer totalStock;
+    private int totalStock;
 
-    private Integer lockStock;
+    private int lockStock;
 
-    private Integer useStock;
+    private int useStock;
 
 }
