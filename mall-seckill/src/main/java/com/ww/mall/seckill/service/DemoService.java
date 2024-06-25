@@ -25,7 +25,7 @@ public interface DemoService {
 
     void cache(String msg);
 
-    void boomFilter();
+    void boomFilter(Integer type, Long ele);
 
     void liteFlow();
 

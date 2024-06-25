@@ -56,8 +56,8 @@ public class DemoController {
     }
 
     @GetMapping("/boomFilter")
-    public void boomFilter() {
-        demoService.boomFilter();
+    public void boomFilter(@RequestParam Integer type, @RequestParam(required = false) Long ele) {
+        demoService.boomFilter(type, ele);
     }
 
     @GetMapping("/liteFlow")

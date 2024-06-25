@@ -310,6 +310,16 @@ public class MallRedisTemplate {
         }
     }
 
+    public boolean initializeBitmap(String key, List<Integer> dataList) {
+        redisTemplate.executePipelined((RedisCallback<Object>) connection -> {
+            for (Integer index : dataList) {
+                connection.setBit(key.getBytes(), index, true);
+            }
+            return null;
+        });
+        return true;
+    }
+
     /**
      * 初始化geo相关数据
      *
