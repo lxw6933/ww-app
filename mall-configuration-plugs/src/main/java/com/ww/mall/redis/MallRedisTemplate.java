@@ -2,6 +2,7 @@ package com.ww.mall.redis;
 
 import com.ww.mall.common.constant.RedisKeyConstant;
 import com.ww.mall.redis.constant.LuaConstant;
+import com.ww.mall.redis.vo.ActivityStockVO;
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
@@ -82,6 +83,28 @@ public class MallRedisTemplate {
         skuHashStock.put("totalStock", String.valueOf(totalStock));
         skuHashStock.put("lockStock", "0");
         skuHashStock.put("useStock", "0");
+    }
+
+    /**
+     * 获取活动库存
+     *
+     * @param hashKey hashKey
+     * @return ActivityStockVO
+     */
+    public ActivityStockVO getHashStock(String hashKey) {
+        if (Boolean.TRUE.equals(redisTemplate.hasKey(hashKey))) {
+            BoundHashOperations<String, Object, Object> skuHashStock = redisTemplate.boundHashOps(hashKey);
+            int totalStock = (int) Optional.ofNullable(skuHashStock.get("totalStock")).orElse(0);
+            int lockStock = (int) Optional.ofNullable(skuHashStock.get("lockStock")).orElse(0);
+            int useStock = (int) Optional.ofNullable(skuHashStock.get("useStock")).orElse(0);
+            ActivityStockVO vo = new ActivityStockVO();
+            vo.setTotalStock(totalStock);
+            vo.setLockStock(lockStock);
+            vo.setUseStock(useStock);
+            return vo;
+        } else {
+            return null;
+        }
     }
 
     /**
