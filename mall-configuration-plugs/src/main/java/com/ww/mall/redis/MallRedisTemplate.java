@@ -56,6 +56,8 @@ public class MallRedisTemplate {
 
     private String rollbackHashStockSha1;
 
+    private String batchLockHashStockSha1;
+
     @PostConstruct
     public void init() {
         // 预加载的lua脚本
@@ -63,6 +65,8 @@ public class MallRedisTemplate {
         lockHashStockSha1 = redisTemplate.execute((RedisCallback<String>) connection -> connection.scriptLoad(LuaConstant.LOCK_STOCK_HASH_LUA_BYTE));
         useHashStockSha1 = redisTemplate.execute((RedisCallback<String>) connection -> connection.scriptLoad(LuaConstant.USE_STOCK_HASH_LUA_BYTE));
         rollbackHashStockSha1 = redisTemplate.execute((RedisCallback<String>) connection -> connection.scriptLoad(LuaConstant.ROLLBACK_STOCK_HASH_LUA_BYTE));
+        // 批量处理lua脚本
+        batchLockHashStockSha1 = redisTemplate.execute((RedisCallback<String>) connection -> connection.scriptLoad(LuaConstant.LOCK_STOCK_HASH_BATCH_LUA_BYTE));
     }
 
     /**
@@ -237,6 +241,38 @@ public class MallRedisTemplate {
 
     public boolean c(String key, int number) {
         Long res = redisTemplate.execute(useHashStockScript, Collections.singletonList(key), String.valueOf(number));
+        return res != null && res >= 0;
+    }
+
+    /**
+     * 批量原子锁定库存
+     *
+     * @param hashKey hashKey
+     * @param number 数量
+     * @return success > 0
+     */
+    @SuppressWarnings("all")
+    public boolean batchLockHashStock(Map<String, Integer> lockStockMap) {
+        if (lockStockMap.isEmpty()) {
+            return false;
+        }
+        List<byte[]> keys = new ArrayList<>();
+        List<byte[]> values = new ArrayList<>();
+        lockStockMap.forEach((key, stock) -> {
+            keys.add(key.getBytes());
+            values.add(String.valueOf(stock).getBytes());
+        });
+        List<byte[]> args = new ArrayList<>(keys);
+        args.addAll(values);
+        Long res = redisTemplate.execute((RedisCallback<Long>) connection -> {
+            RedisSerializer keySerializer = redisTemplate.getKeySerializer();
+            // 执行lua脚本
+            Object result = connection.evalSha(batchLockHashStockSha1,
+                    ReturnType.INTEGER,
+                    keys.size(),
+                    args.toArray(new byte[0][0]));
+            return (Long) result;
+        });
         return res != null && res >= 0;
     }
 
