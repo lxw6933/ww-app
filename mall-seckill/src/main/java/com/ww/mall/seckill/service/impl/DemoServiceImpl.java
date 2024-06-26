@@ -103,7 +103,7 @@ public class DemoServiceImpl implements DemoService {
             case 2:
                 return mallRedisTemplate.decrementStock("skuStock", 1);
             case 3:
-                return mallRedisTemplate.batchLockHashStock(map);
+                return mallRedisTemplate.multipleLockHashStock(map);
             case 4:
                 return mallRedisTemplate.batchUseHashStock(map);
             case 5:

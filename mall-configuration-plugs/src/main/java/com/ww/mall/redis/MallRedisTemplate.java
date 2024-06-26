@@ -238,6 +238,33 @@ public class MallRedisTemplate {
         return batchHashStockHandler(stockMap, batchLockHashStockSha1);
     }
 
+    public boolean multipleLockHashStock(Map<String, Integer> stockMap) {
+        Map<String, Integer> successMap = new HashMap<>();
+        for (Map.Entry<String, Integer> entry : stockMap.entrySet()) {
+            String hashKey = entry.getKey();
+            Integer number = entry.getValue();
+            if (this.lockHashStock(hashKey, number)) {
+                successMap.put(hashKey, number);
+                log.info("库存锁定成功：key：{} number: {}", hashKey, number);
+            } else {
+                log.error("库存锁定失败：key：{} number: {}", hashKey, number);
+                break;
+            }
+        }
+        if (successMap.size() != stockMap.size()) {
+            // 回滚库存
+            successMap.forEach((hashKey, number) -> {
+                if (this.rollbackHashStock(hashKey, number)) {
+                    log.info("库存回滚成功：key：{} number: {}", hashKey, number);
+                } else {
+                    log.error("库存回滚失败：key：{} number: {}", hashKey, number);
+                }
+            });
+            return false;
+        }
+        return true;
+    }
+
     /**
      * 批量原子使用库存
      *
