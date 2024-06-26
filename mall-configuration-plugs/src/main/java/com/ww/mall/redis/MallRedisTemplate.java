@@ -57,6 +57,8 @@ public class MallRedisTemplate {
     private String rollbackHashStockSha1;
 
     private String batchLockHashStockSha1;
+    private String batchUseHashStockSha1;
+    private String batchRollbackHashStockSha1;
 
     @PostConstruct
     public void init() {
@@ -66,7 +68,9 @@ public class MallRedisTemplate {
         useHashStockSha1 = redisTemplate.execute((RedisCallback<String>) connection -> connection.scriptLoad(LuaConstant.USE_STOCK_HASH_LUA_BYTE));
         rollbackHashStockSha1 = redisTemplate.execute((RedisCallback<String>) connection -> connection.scriptLoad(LuaConstant.ROLLBACK_STOCK_HASH_LUA_BYTE));
         // 批量处理lua脚本
-        batchLockHashStockSha1 = redisTemplate.execute((RedisCallback<String>) connection -> connection.scriptLoad(LuaConstant.LOCK_STOCK_HASH_BATCH_LUA_BYTE));
+        batchLockHashStockSha1 = redisTemplate.execute((RedisCallback<String>) connection -> connection.scriptLoad(LuaConstant.BATCH_LOCK_STOCK_HASH_LUA_BYTE));
+        batchUseHashStockSha1 = redisTemplate.execute((RedisCallback<String>) connection -> connection.scriptLoad(LuaConstant.BATCH_USE_STOCK_HASH_LUA_BYTE));
+        batchRollbackHashStockSha1 = redisTemplate.execute((RedisCallback<String>) connection -> connection.scriptLoad(LuaConstant.BATCH_ROLLBACK_STOCK_HASH_LUA_BYTE));
     }
 
     /**
@@ -160,15 +164,7 @@ public class MallRedisTemplate {
      */
     @SuppressWarnings("all")
     public boolean decrementStock(String key, int number) {
-        Long res = redisTemplate.execute((RedisCallback<Long>) connection -> {
-            RedisSerializer keySerializer = redisTemplate.getKeySerializer();
-            byte[] keyBytes = keySerializer.serialize(key);
-            // 执行lua脚本
-            Object result = connection.evalSha(decrementStockSha1, ReturnType.INTEGER, 1, keyBytes,
-                    String.valueOf(number).getBytes());
-            return (Long) result;
-        });
-        return res != null && res >= 0;
+        return hashStockHandler(key, decrementStockSha1, number);
     }
 
     /**
@@ -178,17 +174,8 @@ public class MallRedisTemplate {
      * @param number 数量
      * @return success > 0
      */
-    @SuppressWarnings("all")
     public boolean lockHashStock(String hashKey, int number) {
-        Long res = redisTemplate.execute((RedisCallback<Long>) connection -> {
-            RedisSerializer keySerializer = redisTemplate.getKeySerializer();
-            byte[] keyBytes = keySerializer.serialize(hashKey);
-            // 执行lua脚本
-            Object result = connection.evalSha(lockHashStockSha1, ReturnType.INTEGER, 1, keyBytes,
-                    String.valueOf(number).getBytes());
-            return (Long) result;
-        });
-        return res != null && res >= 0;
+        return hashStockHandler(lockHashStockSha1, hashKey, number);
     }
 
     /**
@@ -198,16 +185,8 @@ public class MallRedisTemplate {
      * @param number 数量
      * @return success > 0
      */
-    @SuppressWarnings("all")
     public boolean useHashStock(String hashKey, int number) {
-        Long res = redisTemplate.execute((RedisCallback<Long>) connection -> {
-            RedisSerializer keySerializer = redisTemplate.getKeySerializer();
-            byte[] keyBytes = keySerializer.serialize(hashKey);
-            // 执行lua脚本
-            Object result = connection.evalSha(useHashStockSha1, ReturnType.INTEGER, 1, keyBytes, String.valueOf(number).getBytes());
-            return (Long) result;
-        });
-        return res != null && res >= 0;
+        return hashStockHandler(useHashStockSha1, hashKey, number);
     }
 
     /**
@@ -217,13 +196,17 @@ public class MallRedisTemplate {
      * @param number 数量
      * @return boolean
      */
-    @SuppressWarnings("all")
     public boolean rollbackHashStock(String hashKey, int number) {
+        return hashStockHandler(rollbackHashStockSha1, hashKey, number);
+    }
+
+    @SuppressWarnings("all")
+    private boolean hashStockHandler(String lua, String hashKey, int number) {
         Long res = redisTemplate.execute((RedisCallback<Long>) connection -> {
             RedisSerializer keySerializer = redisTemplate.getKeySerializer();
             byte[] keyBytes = keySerializer.serialize(hashKey);
             // 执行lua脚本
-            Object result = connection.evalSha(rollbackHashStockSha1, ReturnType.INTEGER, 1, keyBytes, String.valueOf(number).getBytes());
+            Object result = connection.evalSha(lua, ReturnType.INTEGER, 1, keyBytes, String.valueOf(number).getBytes());
             return (Long) result;
         });
         return res != null && res >= 0;
@@ -253,21 +236,48 @@ public class MallRedisTemplate {
      */
     @SuppressWarnings("all")
     public boolean batchLockHashStock(Map<String, Integer> lockStockMap) {
-        if (lockStockMap.isEmpty()) {
+        return batchHashStockHandler(lockStockMap, batchLockHashStockSha1);
+    }
+
+    /**
+     * 批量原子使用库存
+     *
+     * @param hashKey hashKey
+     * @param number 数量
+     * @return success > 0
+     */
+    @SuppressWarnings("all")
+    public boolean batchUseHashStock(Map<String, Integer> lockStockMap) {
+        return batchHashStockHandler(lockStockMap, batchUseHashStockSha1);
+    }
+
+    /**
+     * 批量原子回滚库存
+     *
+     * @param hashKey hashKey
+     * @param number 数量
+     * @return success > 0
+     */
+    @SuppressWarnings("all")
+    public boolean batchRollbackHashStock(Map<String, Integer> lockStockMap) {
+        return batchHashStockHandler(lockStockMap, batchRollbackHashStockSha1);
+    }
+
+    private boolean batchHashStockHandler(Map<String, Integer> hashStockMap, String batchLua) {
+        if (hashStockMap.isEmpty()) {
             return false;
         }
         List<byte[]> keys = new ArrayList<>();
         List<byte[]> values = new ArrayList<>();
-        lockStockMap.forEach((key, stock) -> {
+        hashStockMap.forEach((key, stock) -> {
             keys.add(key.getBytes());
             values.add(String.valueOf(stock).getBytes());
         });
         List<byte[]> args = new ArrayList<>(keys);
         args.addAll(values);
         Long res = redisTemplate.execute((RedisCallback<Long>) connection -> {
-            RedisSerializer keySerializer = redisTemplate.getKeySerializer();
             // 执行lua脚本
-            Object result = connection.evalSha(batchLockHashStockSha1,
+            Object result = connection.evalSha(batchLua,
                     ReturnType.INTEGER,
                     keys.size(),
                     args.toArray(new byte[0][0]));
