@@ -88,15 +88,26 @@ public class DemoServiceImpl implements DemoService {
         RBloomFilter<Long> bloomFilter = redissonClient.getBloomFilter("testBoomFiler");
         bloomFilter.tryInit(1000000, 0.03);
         mallRedisTemplate.initHashStock("skuHashStock", 10);
+        mallRedisTemplate.setHashStock("stock1", 10, 2, 2);
+        mallRedisTemplate.setHashStock("stock2", 10, 7, 2);
     }
 
     @Override
     public boolean testLuaScript(Integer type) {
+        Map<String, Integer> map = new HashMap<>();
+        map.put("stock1", 1);
+        map.put("stock2", 1);
         switch (type) {
             case 1:
                 return mallRedisTemplate.a("skuStock", 1);
             case 2:
                 return mallRedisTemplate.decrementStock("skuStock", 1);
+            case 3:
+                return mallRedisTemplate.batchLockHashStock(map);
+            case 4:
+                return mallRedisTemplate.batchUseHashStock(map);
+            case 5:
+                return mallRedisTemplate.batchRollbackHashStock(map);
             default:
                 throw new ApiException("不支持类型");
         }

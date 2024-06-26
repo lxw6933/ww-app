@@ -162,7 +162,6 @@ public class MallRedisTemplate {
      * @param number 扣减数量
      * @return long
      */
-    @SuppressWarnings("all")
     public boolean decrementStock(String key, int number) {
         return hashStockHandler(key, decrementStockSha1, number);
     }
@@ -230,37 +229,37 @@ public class MallRedisTemplate {
     /**
      * 批量原子锁定库存
      *
-     * @param hashKey hashKey
-     * @param number 数量
+     * @param stockMap key: hashKey value: number
      * @return success > 0
+     * @deprecated 不能保证事务，存在事务影响性能
      */
-    @SuppressWarnings("all")
-    public boolean batchLockHashStock(Map<String, Integer> lockStockMap) {
-        return batchHashStockHandler(lockStockMap, batchLockHashStockSha1);
+    @Deprecated
+    public boolean batchLockHashStock(Map<String, Integer> stockMap) {
+        return batchHashStockHandler(stockMap, batchLockHashStockSha1);
     }
 
     /**
      * 批量原子使用库存
      *
-     * @param hashKey hashKey
-     * @param number 数量
+     * @param stockMap key: hashKey value: number
      * @return success > 0
+     * @deprecated 不能保证事务，存在事务影响性能
      */
-    @SuppressWarnings("all")
-    public boolean batchUseHashStock(Map<String, Integer> lockStockMap) {
-        return batchHashStockHandler(lockStockMap, batchUseHashStockSha1);
+    @Deprecated
+    public boolean batchUseHashStock(Map<String, Integer> stockMap) {
+        return batchHashStockHandler(stockMap, batchUseHashStockSha1);
     }
 
     /**
      * 批量原子回滚库存
      *
-     * @param hashKey hashKey
-     * @param number 数量
+     * @param stockMap key: hashKey value: number
      * @return success > 0
+     * @deprecated 不能保证事务，存在事务影响性能
      */
-    @SuppressWarnings("all")
-    public boolean batchRollbackHashStock(Map<String, Integer> lockStockMap) {
-        return batchHashStockHandler(lockStockMap, batchRollbackHashStockSha1);
+    @Deprecated
+    public boolean batchRollbackHashStock(Map<String, Integer> stockMap) {
+        return batchHashStockHandler(stockMap, batchRollbackHashStockSha1);
     }
 
     private boolean batchHashStockHandler(Map<String, Integer> hashStockMap, String batchLua) {
