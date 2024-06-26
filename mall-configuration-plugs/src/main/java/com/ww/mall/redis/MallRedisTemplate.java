@@ -2,6 +2,7 @@ package com.ww.mall.redis;
 
 import com.ww.mall.common.constant.RedisKeyConstant;
 import com.ww.mall.redis.constant.LuaConstant;
+import com.ww.mall.redis.vo.ActivityHashStockInitBO;
 import com.ww.mall.redis.vo.ActivityStockVO;
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
@@ -32,6 +33,8 @@ public class MallRedisTemplate {
      * 默认批处理命令数量
      */
     private static final Integer DEFAULT_BATCH_NUM = 1000;
+
+    private static final List<Object> stockFieldList = Arrays.asList("totalStock", "lockStock", "useStock");
 
     @Autowired
     private RedisTemplate<String, String> redisTemplate;
@@ -93,10 +96,10 @@ public class MallRedisTemplate {
      */
     public ActivityStockVO getHashStock(String hashKey) {
         if (Boolean.TRUE.equals(redisTemplate.hasKey(hashKey))) {
-            BoundHashOperations<String, Object, Object> skuHashStock = redisTemplate.boundHashOps(hashKey);
-            int totalStock = (int) Optional.ofNullable(skuHashStock.get("totalStock")).orElse(0);
-            int lockStock = (int) Optional.ofNullable(skuHashStock.get("lockStock")).orElse(0);
-            int useStock = (int) Optional.ofNullable(skuHashStock.get("useStock")).orElse(0);
+            List<Object> values = redisTemplate.opsForHash().multiGet(hashKey, stockFieldList);
+            int totalStock = (int) Optional.ofNullable(values.get(0)).orElse(0);
+            int lockStock = (int) Optional.ofNullable(values.get(1)).orElse(0);
+            int useStock = (int) Optional.ofNullable(values.get(2)).orElse(0);
             ActivityStockVO vo = new ActivityStockVO();
             vo.setTotalStock(totalStock);
             vo.setLockStock(lockStock);
@@ -105,6 +108,20 @@ public class MallRedisTemplate {
         } else {
             return null;
         }
+    }
+
+    /**
+     * hash库存数据
+     *
+     * @param hashKey hashKey
+     * @param totalStock 总库存
+     */
+    public void setHashStock(String hashKey, int totalStock, int lockStock, int useStock) {
+        Map<String, String> param = new HashMap<>();
+        param.put("totalStock", String.valueOf(totalStock));
+        param.put("lockStock", String.valueOf(lockStock));
+        param.put("useStock", String.valueOf(useStock));
+        redisTemplate.opsForHash().putAll(hashKey, param);
     }
 
     /**
@@ -403,6 +420,29 @@ public class MallRedisTemplate {
             log.error("发布消息失败,channel：{},message：{}", channel, message);
             return false;
         }
+    }
+
+    /**
+     * 批量初始化hash数据【事务】
+     *
+     * @param initBOList initBOList
+     * @return boolean
+     */
+    public boolean initializeHashStockInTransaction(List<ActivityHashStockInitBO> initBOList) {
+        redisTemplate.execute(new SessionCallback<Void>() {
+            @Override
+            public Void execute(RedisOperations operations) {
+                operations.multi();
+                initBOList.forEach(initBO -> {
+                    initBO.getDataMap().forEach(
+                            (field, stock) -> operations.opsForHash().putAll(initBO.getStockHashKey(), initBO.getDataMap())
+                    );
+                });
+                operations.exec();
+                return null;
+            }
+        });
+        return true;
     }
 
 }
