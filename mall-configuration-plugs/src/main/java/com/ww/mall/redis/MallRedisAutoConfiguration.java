@@ -5,6 +5,7 @@ import com.fasterxml.jackson.annotation.PropertyAccessor;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.ww.mall.redis.aspect.MallRateLimitAspect;
 import com.ww.mall.redis.aspect.MallResubmissionAspect;
+import com.ww.mall.redis.handler.RedisStockHandlerManager;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.BeansException;
 import org.springframework.boot.autoconfigure.cache.CacheProperties;
@@ -121,6 +122,11 @@ public class MallRedisAutoConfiguration implements ApplicationContextAware {
     @Bean
     public MallRedisTemplate mallRedisTemplate() {
         return new MallRedisTemplate();
+    }
+
+    @Bean
+    public RedisStockHandlerManager redisStockHandlerManager() {
+        return new RedisStockHandlerManager();
     }
 
     @Override
