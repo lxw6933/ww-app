@@ -2,6 +2,7 @@ package com.ww.mall.redis;
 
 import com.ww.mall.common.constant.RedisKeyConstant;
 import com.ww.mall.redis.constant.LuaConstant;
+import com.ww.mall.redis.handler.RedisStockHandlerManager;
 import com.ww.mall.redis.vo.ActivityHashStockInitBO;
 import com.ww.mall.redis.vo.ActivityStockVO;
 import lombok.Data;
@@ -35,6 +36,9 @@ public class MallRedisTemplate {
     private static final Integer DEFAULT_BATCH_NUM = 1000;
 
     private static final List<Object> stockFieldList = Arrays.asList("totalStock", "lockStock", "useStock");
+
+    @Resource
+    private RedisStockHandlerManager redisStockHandlerManager;
 
     @Autowired
     private RedisTemplate<String, String> redisTemplate;
@@ -258,6 +262,7 @@ public class MallRedisTemplate {
                     log.info("库存回滚成功：key：{} number: {}", hashKey, number);
                 } else {
                     log.error("库存回滚失败：key：{} number: {}", hashKey, number);
+                    redisStockHandlerManager.handleFailRollbackStock(hashKey, number, 0);
                 }
             });
             return false;
