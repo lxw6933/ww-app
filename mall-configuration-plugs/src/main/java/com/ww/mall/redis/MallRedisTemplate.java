@@ -257,17 +257,22 @@ public class MallRedisTemplate {
         }
         if (successMap.size() != stockMap.size()) {
             // 回滚库存
-            successMap.forEach((hashKey, number) -> {
-                if (this.rollbackHashStock(hashKey, number)) {
-                    log.info("库存回滚成功：key：{} number: {}", hashKey, number);
-                } else {
-                    log.error("库存回滚失败：key：{} number: {}", hashKey, number);
-                    redisStockHandlerManager.handleFailRollbackStock(hashKey, number, 0);
-                }
-            });
+            multipleRollbackHashStock(successMap);
             return false;
         }
         return true;
+    }
+
+    public void multipleRollbackHashStock(Map<String, Integer> rollbckStockMap) {
+        // 回滚库存
+        rollbckStockMap.forEach((hashKey, number) -> {
+            if (this.rollbackHashStock(hashKey, number)) {
+                log.info("库存回滚成功：key：{} number: {}", hashKey, number);
+            } else {
+                log.error("库存回滚失败：key：{} number: {}", hashKey, number);
+                redisStockHandlerManager.handleFailRollbackStock(hashKey, number, 0);
+            }
+        });
     }
 
     /**
