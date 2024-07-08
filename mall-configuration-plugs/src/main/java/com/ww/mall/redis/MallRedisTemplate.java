@@ -1,5 +1,6 @@
 package com.ww.mall.redis;
 
+import cn.hutool.core.map.MapUtil;
 import com.ww.mall.common.constant.RedisKeyConstant;
 import com.ww.mall.redis.constant.LuaConstant;
 import com.ww.mall.redis.handler.RedisStockHandlerManager;
@@ -59,6 +60,7 @@ public class MallRedisTemplate {
     private String useHashStockSha1;
 
     private String rollbackHashStockSha1;
+    private String rollbackHashAfterStockSha1;
 
     private String batchLockHashStockSha1;
     private String batchUseHashStockSha1;
@@ -71,6 +73,7 @@ public class MallRedisTemplate {
         lockHashStockSha1 = redisTemplate.execute((RedisCallback<String>) connection -> connection.scriptLoad(LuaConstant.LOCK_STOCK_HASH_LUA_BYTE));
         useHashStockSha1 = redisTemplate.execute((RedisCallback<String>) connection -> connection.scriptLoad(LuaConstant.USE_STOCK_HASH_LUA_BYTE));
         rollbackHashStockSha1 = redisTemplate.execute((RedisCallback<String>) connection -> connection.scriptLoad(LuaConstant.ROLLBACK_STOCK_HASH_LUA_BYTE));
+        rollbackHashAfterStockSha1 = redisTemplate.execute((RedisCallback<String>) connection -> connection.scriptLoad(LuaConstant.ROLLBACK_AFTER_STOCK_HASH_LUA_BYTE));
         // 批量处理lua脚本
         batchLockHashStockSha1 = redisTemplate.execute((RedisCallback<String>) connection -> connection.scriptLoad(LuaConstant.BATCH_LOCK_STOCK_HASH_LUA_BYTE));
         batchUseHashStockSha1 = redisTemplate.execute((RedisCallback<String>) connection -> connection.scriptLoad(LuaConstant.BATCH_USE_STOCK_HASH_LUA_BYTE));
@@ -203,6 +206,17 @@ public class MallRedisTemplate {
         return hashStockHandler(rollbackHashStockSha1, hashKey, number);
     }
 
+    /**
+     * 回滚售后库存
+     *
+     * @param hashKey hashKey
+     * @param number 数量
+     * @return boolean
+     */
+    public boolean rollbackHashAfterStock(String hashKey, int number) {
+        return hashStockHandler(rollbackHashAfterStockSha1, hashKey, number);
+    }
+
     @SuppressWarnings("all")
     private boolean hashStockHandler(String lua, String hashKey, int number) {
         Long res = redisTemplate.execute((RedisCallback<Long>) connection -> {
@@ -243,6 +257,9 @@ public class MallRedisTemplate {
     }
 
     public boolean multipleLockHashStock(Map<String, Integer> stockMap) {
+        if (MapUtil.isEmpty(stockMap)) {
+            return true;
+        }
         Map<String, Integer> successMap = new HashMap<>();
         for (Map.Entry<String, Integer> entry : stockMap.entrySet()) {
             String hashKey = entry.getKey();
@@ -257,19 +274,22 @@ public class MallRedisTemplate {
         }
         if (successMap.size() != stockMap.size()) {
             // 回滚库存
-            multipleRollbackHashStock(successMap);
+            multipleRollbackHashStock(successMap, true);
             return false;
         }
         return true;
     }
 
-    public void multipleRollbackHashStock(Map<String, Integer> rollbckStockMap) {
+    public void multipleRollbackHashStock(Map<String, Integer> rollbckStockMap, boolean isCancel) {
+        if (MapUtil.isEmpty(rollbckStockMap)) {
+            return;
+        }
         // 回滚库存
         rollbckStockMap.forEach((hashKey, number) -> {
-            if (this.rollbackHashStock(hashKey, number)) {
-                log.info("库存回滚成功：key：{} number: {}", hashKey, number);
+            if (isCancel ? this.rollbackHashStock(hashKey, number) : this.rollbackHashAfterStock(hashKey, number)) {
+                log.info("【{}】库存回滚成功：key：{} number: {}", isCancel, hashKey, number);
             } else {
-                log.error("库存回滚失败：key：{} number: {}", hashKey, number);
+                log.error("【{}】库存回滚失败：key：{} number: {}", isCancel, hashKey, number);
                 redisStockHandlerManager.handleFailRollbackStock(hashKey, number, 0);
             }
         });

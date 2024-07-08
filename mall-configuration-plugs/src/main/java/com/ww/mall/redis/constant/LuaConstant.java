@@ -93,6 +93,16 @@ public class LuaConstant {
             "return 1";
     public static final byte[] ROLLBACK_STOCK_HASH_LUA_BYTE = ROLLBACK_STOCK_HASH_LUA.getBytes();
 
+    public static final String ROLLBACK_AFTER_STOCK_HASH_LUA = "local hashKey = KEYS[1]\n" +
+            "local number = tonumber(ARGV[1])\n" +
+            "local useStock = tonumber(redis.call('HGET', hashKey, 'useStock'))\n" +
+            "if useStock < number then\n" +
+            "    return -1\n" +
+            "end\n" +
+            "redis.call('HINCRBYFLOAT', hashKey, 'useStock', -number)\n" +
+            "return 1";
+    public static final byte[] ROLLBACK_AFTER_STOCK_HASH_LUA_BYTE = ROLLBACK_AFTER_STOCK_HASH_LUA.getBytes();
+
     public static final String BATCH_ROLLBACK_STOCK_HASH_LUA = "for i = 1, #KEYS do\n" +
             "local hashKey = KEYS[i]\n" +
             "local number = tonumber(ARGV[i])\n" +
