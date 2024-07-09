@@ -256,6 +256,26 @@ public class MallRedisTemplate {
         return batchHashStockHandler(stockMap, batchLockHashStockSha1);
     }
 
+    public boolean multiplePayHashStock(Map<String, Integer> stockMap) {
+        if (MapUtil.isEmpty(stockMap)) {
+            return true;
+        }
+        Map<String, Integer> successMap = new HashMap<>();
+        for (Map.Entry<String, Integer> entry : stockMap.entrySet()) {
+            String hashKey = entry.getKey();
+            Integer number = entry.getValue();
+            if (this.useHashStock(hashKey, number)) {
+                successMap.put(hashKey, number);
+                log.info("【支付】库存更新成功：key：{} number: {}", hashKey, number);
+            } else {
+                log.error("【支付】库存更新失败：key：{} number: {}", hashKey, number);
+                redisStockHandlerManager.handleFailRollbackStock(hashKey, number, 2);
+                break;
+            }
+        }
+        return successMap.size() == stockMap.size();
+    }
+
     public boolean multipleLockHashStock(Map<String, Integer> stockMap) {
         if (MapUtil.isEmpty(stockMap)) {
             return true;
