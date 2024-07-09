@@ -1,5 +1,6 @@
 package com.ww.mall.mongodb;
 
+import com.ww.mall.mongodb.handler.CommonStockHandler;
 import com.ww.mall.mongodb.repository.MongoMqLogRepository;
 import com.ww.mall.mongodb.repository.MqMsgLogEntity;
 import com.ww.mall.rabbitmq.repository.MqLogRepository;
@@ -46,6 +47,11 @@ public class MallMongodbAutoConfiguration {
     public MqLogRepository<String, MqMsgLogEntity> mongoMqLogRepository() {
         log.info("初始化消息日志mongo持久化");
         return new MongoMqLogRepository();
+    }
+
+    @Bean
+    public CommonStockHandler commonStockHandler() {
+        return new CommonStockHandler();
     }
 
 }

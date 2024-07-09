@@ -1,0 +1,34 @@
+package com.ww.mall.mongodb.handler;
+
+import cn.hutool.core.date.DatePattern;
+import com.ww.mall.redis.handler.IRedisStockHandler;
+import com.xxl.job.core.util.DateUtil;
+import org.springframework.data.mongodb.core.MongoTemplate;
+import org.springframework.stereotype.Component;
+
+import javax.annotation.Resource;
+import java.util.Date;
+
+/**
+ * @author ww
+ * @create 2024-07-09- 09:02
+ * @description:
+ */
+@Component
+public class CommonStockHandler implements IRedisStockHandler {
+
+    @Resource
+    private MongoTemplate mongoTemplate;
+
+    @Override
+    public void handleFailRollbackStock(String hashKey, int number, int type) {
+        StockExceptionData stockData = new StockExceptionData();
+        stockData.setRedisKey(hashKey);
+        stockData.setNumber(number);
+        stockData.setType(type);
+        stockData.setErrorDate(DateUtil.format(new Date(), DatePattern.NORM_DATETIME_PATTERN));
+        stockData.setRetryDate("");
+        stockData.setValid(true);
+        mongoTemplate.save(stockData);
+    }
+}
