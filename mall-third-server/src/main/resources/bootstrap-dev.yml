@@ -14,9 +14,3 @@ edu:
   eduDomain: https://test-edu.founderyt.com
   reqUri: /apple/edu/onlineorder
   uploadImgUri: /apple/edu/image/upload
-
-management:
-  endpoints:
-    web:
-      exposure:
-        include: "*"

@@ -25,9 +25,3 @@ spring:
 feign:
   sentinel:
     enabled: true
-
-management:
-  endpoints:
-    web:
-      exposure:
-        include: "*"

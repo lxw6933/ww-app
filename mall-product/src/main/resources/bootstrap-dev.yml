@@ -54,8 +54,3 @@ mybatis-plus:
       logic-not-delete-value: 0
     banner: false
 
-management:
-  endpoints:
-    web:
-      exposure:
-        include: "*"
