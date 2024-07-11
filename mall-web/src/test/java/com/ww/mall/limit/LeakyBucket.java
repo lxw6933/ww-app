@@ -2,7 +2,7 @@ package com.ww.mall.limit;
 
 import lombok.extern.slf4j.Slf4j;
 
-import java.util.concurrent.atomic.AtomicLong;
+import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  * @author ww
@@ -30,7 +30,7 @@ public class LeakyBucket {
     /**
      * 漏桶当前存放数量
      */
-    private final AtomicLong water = new AtomicLong(0);
+    private final AtomicInteger water = new AtomicInteger(0);
 
     public LeakyBucket(int capacity, int rate) {
         this.capacity = capacity;
@@ -45,7 +45,7 @@ public class LeakyBucket {
         if (decr > 0) {
             this.lastTimeStamp = currentTimeMillis;
         }
-        this.water.getAndSet(Math.max(0, this.water.addAndGet(-decr)));
+        this.water.getAndSet(Math.max(0, this.water.addAndGet((int) -decr)));
         if (this.water.get() < this.capacity) {
             log.info("thread[{}] water:{}", Thread.currentThread().getId(), this.water.addAndGet(1));
         }
