@@ -42,10 +42,10 @@ public class LeakyBucket {
         long currentTimeMillis = System.currentTimeMillis();
         // 获取截止当前，漏桶消耗water,剩余多少water
         long decr = ((currentTimeMillis - this.lastTimeStamp) / 1000) * this.rate;
-        this.water.getAndSet(Math.max(0, this.water.addAndGet(-decr)));
         if (decr > 0) {
             this.lastTimeStamp = currentTimeMillis;
         }
+        this.water.getAndSet(Math.max(0, this.water.addAndGet(-decr)));
         if (this.water.get() < this.capacity) {
             log.info("thread[{}] water:{}", Thread.currentThread().getId(), this.water.addAndGet(1));
         }
