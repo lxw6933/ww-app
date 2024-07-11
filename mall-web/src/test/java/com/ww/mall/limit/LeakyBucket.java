@@ -20,17 +20,22 @@ public class LeakyBucket {
     /**
      * 漏桶容量
      */
-    private final int capacity = 20;
+    private final int capacity;
 
     /**
      * 漏桶消耗速率
      */
-    private final int rate = 5;
+    private final int rate;
 
     /**
      * 漏桶当前存放数量
      */
     private final AtomicLong water = new AtomicLong(0);
+
+    public LeakyBucket(int capacity, int rate) {
+        this.capacity = capacity;
+        this.rate = rate;
+    }
 
     public void req() {
         // 获取当前请求时间
@@ -47,14 +52,12 @@ public class LeakyBucket {
     }
 
     public static void main(String[] args) throws InterruptedException {
-        LeakyBucket leakyBucket = new LeakyBucket();
+        LeakyBucket leakyBucket = new LeakyBucket(20, 5);
         A a = new A(leakyBucket);
         B b = new B(leakyBucket);
         a.start();
         b.start();
-        while (true) {
-
-        }
+        Thread.sleep(5000);
     }
 
     static class A extends Thread {
@@ -78,7 +81,7 @@ public class LeakyBucket {
     }
 
     static class B extends Thread {
-        private LeakyBucket leakyBucket;
+        private final LeakyBucket leakyBucket;
 
         public B(LeakyBucket leakyBucket) {
             this.leakyBucket = leakyBucket;
