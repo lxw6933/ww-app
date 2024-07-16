@@ -112,9 +112,9 @@ public class MallRedisTemplate {
     public ActivityStockVO getHashStock(String hashKey) {
         if (Boolean.TRUE.equals(redisTemplate.hasKey(hashKey))) {
             List<Object> values = redisTemplate.opsForHash().multiGet(hashKey, stockFieldList);
-            int totalStock = (int) Optional.ofNullable(values.get(0)).orElse(0);
-            int lockStock = (int) Optional.ofNullable(values.get(1)).orElse(0);
-            int useStock = (int) Optional.ofNullable(values.get(2)).orElse(0);
+            int totalStock = Integer.parseInt(values.get(0) == null ? "0" : values.get(0).toString());
+            int lockStock = Integer.parseInt(values.get(1) == null ? "0" : values.get(1).toString());
+            int useStock = Integer.parseInt(values.get(2) == null ? "0" : values.get(2).toString());
             ActivityStockVO vo = new ActivityStockVO();
             vo.setTotalStock(totalStock);
             vo.setLockStock(lockStock);
