@@ -1,8 +1,18 @@
 package com.ww.mall.coupon.controller;
+import com.ww.mall.coupon.eunms.AllowProductRangeType;
+import java.math.BigDecimal;
+import com.ww.mall.coupon.eunms.CouponDiscountType;
+import com.ww.mall.coupon.eunms.CouponUseTimeType;
+import com.ww.mall.coupon.eunms.CouponLimitReceiveTimeType;
+import com.ww.mall.coupon.eunms.AllowMemberRangeType;
+import com.ww.mall.coupon.eunms.CouponType;
+import java.util.Date;
+import com.ww.mall.coupon.eunms.CouponDistributeType;
 
 import com.ww.mall.common.exception.ApiException;
 import com.ww.mall.coupon.config.CouponProperties;
 import com.ww.mall.coupon.dao.CouponMapper;
+import com.ww.mall.coupon.entity.Coupon;
 import com.ww.mall.coupon.service.CouponService;
 import com.ww.mall.coupon.view.bo.CouponPageBO;
 import com.ww.mall.rabbitmq.MallPublisher;
@@ -20,6 +30,7 @@ import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.web.bind.annotation.*;
 
 import javax.servlet.http.HttpServletRequest;
+import java.util.Collections;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -59,6 +70,41 @@ public class DemoController {
 
     @Autowired
     private CouponMapper couponMapper;
+
+    @GetMapping("saveMysql")
+    public void saveMysql() {
+        Coupon coupon = new Coupon();
+        coupon.setActivityCode("");
+        coupon.setChannelId(0L);
+        coupon.setMerchantId(0L);
+        coupon.setTitle("");
+        coupon.setCouponType(CouponType.PLATFORM);
+        coupon.setCouponDiscountType(CouponDiscountType.FULL_REDUCTION);
+        coupon.setAchieveAmount(new BigDecimal("0"));
+        coupon.setDeductionAmount(new BigDecimal("0"));
+        coupon.setReceiveStartTime(new Date());
+        coupon.setReceiveEndTime(new Date());
+        coupon.setCouponUseTimeType(CouponUseTimeType.FIXED);
+        coupon.setUseStartTime(new Date());
+        coupon.setUseEndTime(new Date());
+        coupon.setReceiveAfterDayEffect(0);
+        coupon.setReceiveAfterEffectDay(0);
+        coupon.setInitTotalCouponNumber(0);
+        coupon.setInitSuccess(false);
+        coupon.setCouponLimitReceiveTimeType(CouponLimitReceiveTimeType.FOREVER);
+        coupon.setCouponLimitReceiveNumber(0);
+        coupon.setAllowMemberRangeType(AllowMemberRangeType.ALL);
+        coupon.setCouponDistributeType(CouponDistributeType.RECEIVE);
+        coupon.setAllowProductRangeType(AllowProductRangeType.ALL);
+        coupon.setState(false);
+        coupon.setRemark("");
+        coupon.setVersion(0L);
+        coupon.setCreatorId(0L);
+        coupon.setUpdaterId(0L);
+        coupon.setCreateTime(new Date());
+        coupon.setUpdateTime(new Date());
+        couponService.saveBatch(Collections.singletonList(coupon));
+    }
 
     @GetMapping("/testMsg")
     public void testMsg(String msg) {
