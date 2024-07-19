@@ -27,6 +27,11 @@ public class DemoController {
     @Autowired
     private DemoService demoService;
 
+    @GetMapping("testInsertMongo")
+    public void testInsertMongo() {
+        demoService.testInsertMongo();
+    }
+
     @GetMapping("/testLua")
     public boolean testLuaScript(Integer type) {
         return demoService.testLuaScript(type);

@@ -1,4 +1,5 @@
 package com.ww.mall.seckill.service.impl;
+import java.util.Date;
 
 import cn.hutool.core.date.DatePattern;
 import cn.hutool.core.date.DateUtil;
@@ -90,6 +91,16 @@ public class DemoServiceImpl implements DemoService {
         mallRedisTemplate.initHashStock("skuHashStock", 10);
         mallRedisTemplate.setHashStock("stock1", 10, 2, 2);
         mallRedisTemplate.setHashStock("stock2", 10, 7, 2);
+    }
+
+    @Override
+    public void testInsertMongo() {
+        Demo demo = new Demo();
+        demo.setEmpNo(0);
+        demo.setSalary(0);
+        demo.setFromDate(new Date());
+        demo.setToDate(new Date());
+        mongoTemplate.save(demo);
     }
 
     @Override
