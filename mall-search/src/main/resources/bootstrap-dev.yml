@@ -3,6 +3,10 @@ server:
   servlet:
     context-path: /mall-search
 spring:
+  data:
+    mongodb:
+      # 副本集群配置
+      uri: mongodb://ww:admin@172.28.174.84:27001,172.28.174.84:27002,172.28.174.84:27003/ww_mall?replicaSet=rs&readPreference=secondaryPreferred&connectTimeoutMS=300000
   redis:
     host: localhost
     password: 123456

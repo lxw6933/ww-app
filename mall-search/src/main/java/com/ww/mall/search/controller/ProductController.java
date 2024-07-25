@@ -1,6 +1,10 @@
 package com.ww.mall.search.controller;
 
 import com.ww.mall.search.entity.Product;
+import com.ww.mall.search.service.ProductSearchService;
+import com.ww.mall.search.view.bo.PortalProductSearchBO;
+import com.ww.mall.search.view.vo.PortalProductSearchVO;
+import com.ww.mall.web.cmmon.MallPageResult;
 import org.elasticsearch.index.query.BoolQueryBuilder;
 import org.elasticsearch.index.query.QueryBuilders;
 import org.elasticsearch.search.fetch.subphase.highlight.HighlightBuilder;
@@ -10,9 +14,8 @@ import org.springframework.data.elasticsearch.core.SearchHit;
 import org.springframework.data.elasticsearch.core.SearchHits;
 import org.springframework.data.elasticsearch.core.query.NativeSearchQuery;
 import org.springframework.data.elasticsearch.core.query.NativeSearchQueryBuilder;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.validation.annotation.Validated;
+import org.springframework.web.bind.annotation.*;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -29,6 +32,14 @@ public class ProductController {
 
     @Autowired
     private ElasticsearchRestTemplate elasticsearchRestTemplate;
+
+    @Autowired
+    private ProductSearchService productSearchService;
+
+    @PostMapping("/portal/product/search")
+    public MallPageResult<PortalProductSearchVO> portalProductSearch(@RequestBody @Validated PortalProductSearchBO portalProductSearchBO, @RequestHeader("appkey") String appKey) {
+        return productSearchService.portalProductSearch(portalProductSearchBO, appKey);
+    }
 
     @GetMapping("/query")
     public List<Product> queryProduct(String name) {
