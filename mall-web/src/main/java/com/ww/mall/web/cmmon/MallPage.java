@@ -19,4 +19,19 @@ public class MallPage implements Serializable {
     private Integer pageNum = 1;
 
     private Integer pageSize = 10;
+
+    public Integer getPageNum() {
+        if (this.pageNum < 1) {
+            return 1;
+        }
+        return this.pageNum;
+    }
+
+    public Integer getPageSize() {
+        if (this.pageSize < 1) {
+            return 10;
+        }
+        return this.pageSize;
+    }
+
 }

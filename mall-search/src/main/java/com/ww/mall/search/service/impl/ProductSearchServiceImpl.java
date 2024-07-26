@@ -42,7 +42,7 @@ public class ProductSearchServiceImpl implements ProductSearchService {
         // group condition
         AggregationOperation groupAggregation = portalProductSearchBO.buildGroup(integralChannel);
         // page condition
-        AggregationOperation skip = Aggregation.skip((long) (portalProductSearchBO.getPageNum() < 1 ? 1 : portalProductSearchBO.getPageNum() - 1) * portalProductSearchBO.getPageSize());
+        AggregationOperation skip = Aggregation.skip((long) (portalProductSearchBO.getPageNum() - 1) * portalProductSearchBO.getPageSize());
         AggregationOperation limit = Aggregation.limit(portalProductSearchBO.getPageSize());
         // build the aggregation pipeline
         Aggregation aggregation = Aggregation.newAggregation(matchAggregation, sortAggregation, groupAggregation, skip, limit);
