@@ -96,21 +96,22 @@ public class PortalProductSearchBO extends MallPage {
     public AggregationOperation buildSortAggregation(boolean integralChannel) {
         List<Sort.Order> sortFieldList = new ArrayList<>();
         if (this.searchSortBO != null) {
+            boolean asc = Boolean.TRUE.equals(this.searchSortBO.getSort());
             switch (this.searchSortBO.getSortType()) {
                 case INTEGRAL:
-                    sortFieldList.add(this.searchSortBO.getSort() ? Sort.Order.asc("minFixIntegral") : Sort.Order.desc("minFixIntegral"));
+                    sortFieldList.add(asc ? Sort.Order.asc("minFixIntegral") : Sort.Order.desc("minFixIntegral"));
                     break;
                 case SALE_NUMBER:
-                    sortFieldList.add(this.searchSortBO.getSort() ? Sort.Order.asc("spuSaleNumber") : Sort.Order.desc("spuSaleNumber"));
+                    sortFieldList.add(asc ? Sort.Order.asc("spuSaleNumber") : Sort.Order.desc("spuSaleNumber"));
                     break;
                 case TIME:
-                    sortFieldList.add(this.searchSortBO.getSort() ? Sort.Order.asc("upTime") : Sort.Order.desc("upTime"));
+                    sortFieldList.add(asc ? Sort.Order.asc("upTime") : Sort.Order.desc("upTime"));
                     break;
                 case PRICE:
                     if (integralChannel) {
-                        sortFieldList.add(this.searchSortBO.getSort() ? Sort.Order.asc("minFixPrice") : Sort.Order.desc("minFixPrice"));
+                        sortFieldList.add(asc ? Sort.Order.asc("minFixPrice") : Sort.Order.desc("minFixPrice"));
                     } else {
-                        sortFieldList.add(this.searchSortBO.getSort() ? Sort.Order.asc("salePrice") : Sort.Order.desc("salePrice"));
+                        sortFieldList.add(asc ? Sort.Order.asc("salePrice") : Sort.Order.desc("salePrice"));
                     }
                     break;
                 default:
