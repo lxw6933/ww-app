@@ -1,6 +1,7 @@
 package com.ww.mall.search.view.bo;
 
 import cn.hutool.core.collection.CollUtil;
+import com.ww.mall.common.exception.ApiException;
 import com.ww.mall.web.cmmon.MallPage;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
@@ -8,7 +9,6 @@ import org.apache.commons.lang3.StringUtils;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.mongodb.core.aggregation.Aggregation;
 import org.springframework.data.mongodb.core.aggregation.AggregationOperation;
-import org.springframework.data.mongodb.core.aggregation.GroupOperation;
 import org.springframework.data.mongodb.core.query.Criteria;
 
 import javax.validation.constraints.NotNull;
@@ -56,24 +56,9 @@ public class PortalProductSearchBO extends MallPage {
     private List<Long> categoryIdList;
 
     /**
-     * 是否积分排序【true：顺序  false：倒叙】
+     * 排序BO
      */
-    private Boolean integralSort;
-
-    /**
-     * 是否销量排序【true：顺序  false：倒叙】
-     */
-    private Boolean saleNumberSort;
-
-    /**
-     * 是否按照时间排序【true：顺序  false：倒叙】
-     */
-    private Boolean timeSort;
-
-    /**
-     * 是否按照销售价排序【true：顺序  false：倒叙】
-     */
-    private Boolean priceSort;
+    private SearchSortBO searchSortBO;
 
     public AggregationOperation buildQueryCriteriaAggregation() {
         Criteria criteria = new Criteria();
@@ -110,17 +95,27 @@ public class PortalProductSearchBO extends MallPage {
 
     public AggregationOperation buildSortAggregation(boolean integralChannel) {
         List<Sort.Order> sortFieldList = new ArrayList<>();
-        if (this.integralSort != null && integralChannel) {
-            sortFieldList.add(this.integralSort ? Sort.Order.asc("minFixIntegral") : Sort.Order.desc("minFixIntegral"));
-        }
-        if (this.saleNumberSort != null) {
-            sortFieldList.add(this.saleNumberSort ? Sort.Order.asc("spuSaleNumber") : Sort.Order.desc("spuSaleNumber"));
-        }
-        if (this.timeSort != null) {
-            sortFieldList.add(this.timeSort ? Sort.Order.asc("upTime") : Sort.Order.desc("upTime"));
-        }
-        if (this.priceSort != null) {
-            sortFieldList.add(this.priceSort ? Sort.Order.asc("minFixPrice") : Sort.Order.desc("minFixPrice"));
+        if (this.searchSortBO != null) {
+            switch (this.searchSortBO.getSortType()) {
+                case INTEGRAL:
+                    sortFieldList.add(this.searchSortBO.getSort() ? Sort.Order.asc("minFixIntegral") : Sort.Order.desc("minFixIntegral"));
+                    break;
+                case SALE_NUMBER:
+                    sortFieldList.add(this.searchSortBO.getSort() ? Sort.Order.asc("spuSaleNumber") : Sort.Order.desc("spuSaleNumber"));
+                    break;
+                case TIME:
+                    sortFieldList.add(this.searchSortBO.getSort() ? Sort.Order.asc("upTime") : Sort.Order.desc("upTime"));
+                    break;
+                case PRICE:
+                    if (integralChannel) {
+                        sortFieldList.add(this.searchSortBO.getSort() ? Sort.Order.asc("minFixPrice") : Sort.Order.desc("minFixPrice"));
+                    } else {
+                        sortFieldList.add(this.searchSortBO.getSort() ? Sort.Order.asc("salePrice") : Sort.Order.desc("salePrice"));
+                    }
+                    break;
+                default:
+                    throw new ApiException("数据异常");
+            }
         }
         if (sortFieldList.isEmpty()) {
             if (integralChannel) {
@@ -133,8 +128,8 @@ public class PortalProductSearchBO extends MallPage {
         return Aggregation.sort(Sort.by(sortFieldList));
     }
 
-    public AggregationOperation buildGroup(boolean integralChannel) {
-        GroupOperation groupOperation = Aggregation.group("channelId", "spuId")
+    public AggregationOperation buildGroup() {
+        return Aggregation.group("channelId", "spuId")
                 .first("spuId").as("spuId")
                 .first("skuId").as("skuId")
                 .first("smsId").as("smsId")
@@ -142,13 +137,10 @@ public class PortalProductSearchBO extends MallPage {
                 .first("spuTitle").as("spuTitle")
                 .first("spuSubTitle").as("spuSubTitle")
                 .first("salePrice").as("salePrice")
-                .first("suggestSalesPrice").as("suggestSalesPrice");
-        if (integralChannel) {
-            groupOperation.first("minFixPrice").as("minFixPrice")
-                    .first("minFixIntegral").as("minFixIntegral");
-        }
-        groupOperation.count().as("count");
-        return groupOperation;
+                .first("suggestSalesPrice").as("suggestSalesPrice")
+                .first("minFixPrice").as("minFixPrice")
+                .first("minFixIntegral").as("minFixIntegral")
+                .count().as("count");
     }
 
 }
