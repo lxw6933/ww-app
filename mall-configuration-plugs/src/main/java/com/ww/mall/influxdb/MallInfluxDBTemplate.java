@@ -1,5 +1,6 @@
 package com.ww.mall.influxdb;
 
+import cn.hutool.core.map.MapUtil;
 import com.influxdb.client.InfluxDBClient;
 import com.influxdb.client.domain.WritePrecision;
 import com.influxdb.client.write.Point;
@@ -10,6 +11,7 @@ import org.springframework.stereotype.Component;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
 /**
  * @author ww
@@ -25,11 +27,19 @@ public class MallInfluxDBTemplate {
         this.influxDBClient = influxDBClient;
     }
 
-    public void writeData(String measurement, String field, double value, String tagKey, String tagValue) {
-        Point point = Point.measurement(measurement)
-                .addTag(tagKey, tagValue)
-                .addField(field, value)
-                .time(Instant.now(), WritePrecision.NS);
+    public Point buildPoint(String measurement, Map<String, String> tagMap, Map<String, Object> fieldValueMap) {
+        Point point = Point.measurement(measurement).time(Instant.now(), WritePrecision.NS);
+        if (MapUtil.isNotEmpty(tagMap)) {
+            point = point.addTags(tagMap);
+        }
+        if (MapUtil.isNotEmpty(fieldValueMap)) {
+            point = point.addFields(fieldValueMap);
+        }
+        return point;
+    }
+
+    public void writeData(String measurement, Map<String, String> tagMap, Map<String, Object> fieldValueMap) {
+        Point point = this.buildPoint(measurement, tagMap, fieldValueMap);
         influxDBClient.getWriteApiBlocking().writePoint(point);
     }
 
