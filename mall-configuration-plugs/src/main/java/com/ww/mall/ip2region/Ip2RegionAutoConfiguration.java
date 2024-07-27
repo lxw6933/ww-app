@@ -21,7 +21,7 @@ import java.io.InputStream;
 @Configuration
 @EnableConfigurationProperties(Ip2RegionProperties.class)
 @ConditionalOnProperty(prefix = Ip2RegionProperties.PREFIX, name = "enabled", havingValue = "true", matchIfMissing = true)
-public class Ip2RegionConfiguration {
+public class Ip2RegionAutoConfiguration {
 
     @Bean
     public Ip2RegionProperties ip2RegionProperties() {

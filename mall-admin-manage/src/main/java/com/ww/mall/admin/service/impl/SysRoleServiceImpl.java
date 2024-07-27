@@ -11,7 +11,7 @@ import com.ww.mall.admin.view.vo.SysRoleVO;
 import com.ww.mall.common.common.MallAdminUser;
 import com.ww.mall.common.enums.SysPlatformType;
 import com.ww.mall.common.exception.ApiException;
-import com.ww.mall.redis.annotation.MallResubmission;
+import com.ww.mall.annotation.plugs.redis.MallResubmission;
 import com.ww.mall.web.cmmon.MallPageResult;
 import com.ww.mall.web.utils.AuthorizationContext;
 import com.ww.mall.web.view.form.IdForm;

@@ -3,7 +3,7 @@ package com.ww.mall.sensitive.aspect;
 import com.github.houbb.sensitive.word.bs.SensitiveWordBs;
 import com.ww.mall.common.exception.ApiException;
 import com.ww.mall.redis.aspect.MallAbstractAspect;
-import com.ww.mall.sensitive.annotation.MallSensitiveWordHandler;
+import com.ww.mall.annotation.plugs.sensitive.MallSensitiveWordHandler;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.aspectj.lang.ProceedingJoinPoint;
@@ -31,7 +31,7 @@ public class SensitiveWordAspect extends MallAbstractAspect {
     @Resource
     private SensitiveWordBs sensitiveWordBs;
 
-    @Around("@annotation(com.ww.mall.sensitive.annotation.MallSensitiveWordHandler)")
+    @Around("@annotation(com.ww.mall.annotation.plugs.sensitive.MallSensitiveWordHandler)")
     public Object mallSensitiveWordAdvice(ProceedingJoinPoint joinPoint) throws Throwable {
         MethodSignature signature = (MethodSignature) joinPoint.getSignature();
         Method method = signature.getMethod();

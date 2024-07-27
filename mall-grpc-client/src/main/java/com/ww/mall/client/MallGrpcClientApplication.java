@@ -1,8 +1,8 @@
 package com.ww.mall.client;
 
-import com.ww.mall.mongodb.EnableMallMongodb;
-import com.ww.mall.netty.annotation.EnableMallWebSocket;
-import com.ww.mall.rabbitmq.EnableMallRabbitmq;
+import com.ww.mall.annotation.enable.EnableMallMongodb;
+import com.ww.mall.annotation.enable.EnableMallWebSocket;
+import com.ww.mall.annotation.enable.EnableMallRabbitmq;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.cloud.client.discovery.EnableDiscoveryClient;

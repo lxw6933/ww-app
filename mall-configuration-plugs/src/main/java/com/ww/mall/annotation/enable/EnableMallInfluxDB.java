@@ -1,5 +1,6 @@
-package com.ww.mall.mongodb;
+package com.ww.mall.annotation.enable;
 
+import com.ww.mall.influxdb.InfluxDBAutoConfiguration;
 import org.springframework.context.annotation.Import;
 
 import java.lang.annotation.ElementType;
@@ -9,11 +10,11 @@ import java.lang.annotation.Target;
 
 /**
  * @author ww
- * @create 2023-07-15- 16:15
+ * @create 2024-07-27- 09:37
  * @description:
  */
 @Target({ElementType.TYPE})
 @Retention(RetentionPolicy.RUNTIME)
-@Import({MallMongodbAutoConfiguration.class})
-public @interface EnableMallMongodb {
+@Import({InfluxDBAutoConfiguration.class})
+public @interface EnableMallInfluxDB {
 }

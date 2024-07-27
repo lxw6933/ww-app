@@ -1,8 +1,8 @@
 package com.ww.mall.search;
 
-import com.ww.mall.es.EnableMallElasticsearch;
-import com.ww.mall.mongodb.EnableMallMongodb;
-import com.ww.mall.redis.EnableMallRedis;
+import com.ww.mall.annotation.enable.EnableMallElasticsearch;
+import com.ww.mall.annotation.enable.EnableMallMongodb;
+import com.ww.mall.annotation.enable.EnableMallRedis;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.boot.autoconfigure.jdbc.DataSourceAutoConfiguration;

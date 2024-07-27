@@ -1,5 +1,6 @@
-package com.ww.mall.rabbitmq;
+package com.ww.mall.annotation.enable;
 
+import com.ww.mall.rabbitmq.MallRabbitmqAutoConfiguration;
 import com.ww.mall.rabbitmq.bind.MallBindingConfiguration;
 import com.ww.mall.rabbitmq.exchange.MallExchangeConfiguration;
 import com.ww.mall.rabbitmq.queue.MallQueueConfiguration;

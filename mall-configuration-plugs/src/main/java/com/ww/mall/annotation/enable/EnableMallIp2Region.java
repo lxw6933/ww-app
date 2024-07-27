@@ -1,5 +1,6 @@
-package com.ww.mall.xxljob;
+package com.ww.mall.annotation.enable;
 
+import com.ww.mall.ip2region.Ip2RegionAutoConfiguration;
 import org.springframework.context.annotation.Import;
 
 import java.lang.annotation.ElementType;
@@ -9,11 +10,11 @@ import java.lang.annotation.Target;
 
 /**
  * @author ww
- * @create 2023-07-15- 15:18
+ * @create 2024-06-01 19:26
  * @description:
  */
 @Target({ElementType.TYPE})
 @Retention(RetentionPolicy.RUNTIME)
-@Import({MallXxlJobAutoConfiguration.class})
-public @interface EnableMallXxlJob {
+@Import({Ip2RegionAutoConfiguration.class})
+public @interface EnableMallIp2Region {
 }

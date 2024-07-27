@@ -1,4 +1,4 @@
-package com.ww.mall.excel.annotation;
+package com.ww.mall.annotation.plugs.excel;
 
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;

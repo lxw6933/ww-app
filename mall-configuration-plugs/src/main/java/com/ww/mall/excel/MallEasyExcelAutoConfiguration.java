@@ -12,7 +12,7 @@ import org.springframework.context.annotation.Configuration;
  */
 @Slf4j
 @Configuration
-public class MallEasyExcelConfiguration {
+public class MallEasyExcelAutoConfiguration {
 
     @Bean
     public ExcelManager excelManager() {

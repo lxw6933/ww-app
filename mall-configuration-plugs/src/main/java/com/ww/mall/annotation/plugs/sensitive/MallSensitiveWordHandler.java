@@ -1,4 +1,4 @@
-package com.ww.mall.sensitive.annotation;
+package com.ww.mall.annotation.plugs.sensitive;
 
 import com.ww.mall.common.enums.SensitiveWordHandlerType;
 

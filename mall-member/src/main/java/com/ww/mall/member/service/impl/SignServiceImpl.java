@@ -7,7 +7,7 @@ import com.ww.mall.common.common.MallClientUser;
 import com.ww.mall.common.enums.CodeEnum;
 import com.ww.mall.common.exception.ApiException;
 import com.ww.mall.member.service.SignService;
-import com.ww.mall.redis.annotation.MallDistributedLock;
+import com.ww.mall.annotation.plugs.redis.MallDistributedLock;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;

@@ -19,7 +19,7 @@ public class MallRateLimitAspect extends MallAbstractAspect {
     @Autowired
     private RedisTemplate<String, String> redisTemplate;
 
-    @Around("@annotation(com.ww.mall.redis.annotation.MallRateLimit)")
+    @Around("@annotation(com.ww.mall.annotation.plugs.redis.MallRateLimit)")
     public Object mallRateLimitAdvice(ProceedingJoinPoint joinPoint) throws Throwable {
 
         return joinPoint.proceed();

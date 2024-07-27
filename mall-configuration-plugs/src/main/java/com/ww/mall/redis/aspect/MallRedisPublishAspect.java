@@ -2,7 +2,7 @@ package com.ww.mall.redis.aspect;
 
 import com.alibaba.fastjson.JSON;
 import com.ww.mall.redis.MallRedisTemplate;
-import com.ww.mall.redis.annotation.MallRedisPublishMsg;
+import com.ww.mall.annotation.plugs.redis.MallRedisPublishMsg;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.aspectj.lang.ProceedingJoinPoint;
@@ -37,7 +37,7 @@ public class MallRedisPublishAspect extends MallAbstractAspect{
     @Resource
     private ThreadPoolExecutor defaultThreadPoolExecutor;
 
-    @Around("@annotation(com.ww.mall.redis.annotation.MallRedisPublishMsg)")
+    @Around("@annotation(com.ww.mall.annotation.plugs.redis.MallRedisPublishMsg)")
     public Object mallRedisPublishAdvise(ProceedingJoinPoint joinPoint) throws Throwable {
         Object proceed = joinPoint.proceed();
         CompletableFuture.runAsync(() -> {

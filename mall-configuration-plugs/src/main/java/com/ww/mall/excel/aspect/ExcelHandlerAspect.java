@@ -19,7 +19,7 @@ import java.time.Duration;
 @Component
 public class ExcelHandlerAspect extends MallAbstractAspect {
 
-    @Around("@annotation(com.ww.mall.excel.annotation.ExcelExportTimer)")
+    @Around("@annotation(com.ww.mall.annotation.plugs.excel.ExcelExportTimer)")
     public Object exportExcel(ProceedingJoinPoint joinPoint) {
         long startTime = System.nanoTime();
         log.info("开始导出：{}", joinPoint.getSignature().getName());
@@ -33,7 +33,7 @@ public class ExcelHandlerAspect extends MallAbstractAspect {
         }
     }
 
-    @Around("@annotation(com.ww.mall.excel.annotation.ExcelImportTimer)")
+    @Around("@annotation(com.ww.mall.annotation.plugs.excel.ExcelImportTimer)")
     public Object importExcel(ProceedingJoinPoint joinPoint) {
         long startTime = System.nanoTime();
         log.info("开始导入：{}", joinPoint.getSignature().getName());

@@ -19,7 +19,7 @@ import com.ww.mall.coupon.eunms.*;
 import com.ww.mall.coupon.service.CouponService;
 import com.ww.mall.coupon.view.bo.CouponPageBO;
 import com.ww.mall.coupon.view.vo.CouponPageVO;
-import com.ww.mall.redis.annotation.MallDistributedLock;
+import com.ww.mall.annotation.plugs.redis.MallDistributedLock;
 import com.ww.mall.web.cmmon.MallPageResult;
 import com.ww.mall.web.utils.AuthorizationContext;
 import com.ww.mall.common.utils.IdUtil;

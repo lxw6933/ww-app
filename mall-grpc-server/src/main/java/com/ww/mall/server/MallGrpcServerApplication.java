@@ -1,6 +1,6 @@
 package com.ww.mall.server;
 
-import com.ww.mall.sensitive.annotation.EnableMallSensitiveWord;
+import com.ww.mall.annotation.enable.EnableMallSensitiveWord;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.cloud.client.discovery.EnableDiscoveryClient;

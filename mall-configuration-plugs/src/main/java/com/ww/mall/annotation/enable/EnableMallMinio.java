@@ -1,6 +1,6 @@
-package com.ww.mall.ip2region.annotation;
+package com.ww.mall.annotation.enable;
 
-import com.ww.mall.ip2region.Ip2RegionConfiguration;
+import com.ww.mall.minio.MinioAutoConfiguration;
 import org.springframework.context.annotation.Import;
 
 import java.lang.annotation.ElementType;
@@ -8,13 +8,8 @@ import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
-/**
- * @author ww
- * @create 2024-06-01 19:26
- * @description:
- */
 @Target({ElementType.TYPE})
 @Retention(RetentionPolicy.RUNTIME)
-@Import({Ip2RegionConfiguration.class})
-public @interface EnableMallIp2Region {
+@Import({MinioAutoConfiguration.class})
+public @interface EnableMallMinio {
 }

@@ -1,10 +1,9 @@
 package com.ww.mall.auth;
 
-import com.ww.mall.redis.EnableMallRedis;
+import com.ww.mall.annotation.enable.EnableMallRedis;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.cloud.client.discovery.EnableDiscoveryClient;
-import org.springframework.cloud.context.config.annotation.RefreshScope;
 
 @EnableMallRedis
 @EnableDiscoveryClient

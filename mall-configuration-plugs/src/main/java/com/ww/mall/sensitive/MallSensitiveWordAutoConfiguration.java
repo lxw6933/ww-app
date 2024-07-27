@@ -9,7 +9,6 @@ import com.github.houbb.sensitive.word.support.tag.WordTags;
 import com.ww.mall.sensitive.aspect.SensitiveWordAspect;
 import jdk.nashorn.internal.ir.debug.ObjectSizeCalculator;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.DisposableBean;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -20,9 +19,9 @@ import org.springframework.context.annotation.Configuration;
  * @description:
  */
 @Slf4j
-@Configuration
+@Configuration(proxyBeanMethods = false)
 @EnableConfigurationProperties(MallSensitiveWordProperties.class)
-public class MallSensitiveWordConfiguration implements DisposableBean {
+public class MallSensitiveWordAutoConfiguration {
 
     @Bean
     public MallCustomWordDeny mallCustomWordDeny() {
@@ -82,11 +81,6 @@ public class MallSensitiveWordConfiguration implements DisposableBean {
     @Bean
     public SensitiveWordAspect sensitiveWordAspect() {
         return new SensitiveWordAspect();
-    }
-
-    @Override
-    public void destroy() {
-        sensitiveWordBs(mallCustomWordDeny(), mallCustomWordAllow()).destroy();
     }
 
 }

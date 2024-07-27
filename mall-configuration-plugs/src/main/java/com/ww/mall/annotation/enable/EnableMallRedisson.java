@@ -1,6 +1,6 @@
-package com.ww.mall.sensitive.annotation;
+package com.ww.mall.annotation.enable;
 
-import com.ww.mall.sensitive.MallSensitiveWordConfiguration;
+import com.ww.mall.redis.MallRedissonAutoConfig;
 import org.springframework.context.annotation.Import;
 
 import java.lang.annotation.ElementType;
@@ -10,11 +10,12 @@ import java.lang.annotation.Target;
 
 /**
  * @author ww
- * @create 2024-05-24- 18:05
+ * @create 2023-07-25- 15:15
  * @description:
  */
 @Target({ElementType.TYPE})
 @Retention(RetentionPolicy.RUNTIME)
-@Import({MallSensitiveWordConfiguration.class})
-public @interface EnableMallSensitiveWord {
+@Import({MallRedissonAutoConfig.class})
+public @interface EnableMallRedisson {
+
 }

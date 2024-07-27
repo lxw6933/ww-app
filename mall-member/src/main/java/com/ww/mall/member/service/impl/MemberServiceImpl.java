@@ -8,7 +8,7 @@ import com.ww.mall.member.service.MemberService;
 import com.ww.mall.rabbitmq.MallPublisher;
 import com.ww.mall.rabbitmq.exchange.ExchangeConstant;
 import com.ww.mall.rabbitmq.routekey.RouteKeyConstant;
-import com.ww.mall.redis.annotation.MallResubmission;
+import com.ww.mall.annotation.plugs.redis.MallResubmission;
 import com.ww.mall.web.view.dto.MemberDTO;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.BeanUtils;

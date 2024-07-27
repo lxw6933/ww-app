@@ -15,16 +15,12 @@ import io.netty.handler.stream.ChunkedWriteHandler;
 import io.netty.handler.timeout.IdleStateHandler;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
-import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
 import javax.annotation.PostConstruct;
 import javax.annotation.PreDestroy;
 import javax.annotation.Resource;
-import java.net.InetSocketAddress;
 import java.util.concurrent.TimeUnit;
-
-import static io.netty.handler.codec.http.HttpHeaders.Names.WEBSOCKET_PROTOCOL;
 
 /**
  * @author ww
@@ -34,7 +30,7 @@ import static io.netty.handler.codec.http.HttpHeaders.Names.WEBSOCKET_PROTOCOL;
 @Slf4j
 @Configuration
 @EnableConfigurationProperties({MallNettyProperties.class})
-public class MallWebSocketServerConfig {
+public class MallWebSocketServerAutoConfiguration {
 
     @Resource
     private MallNettyProperties mallNettyProperties;

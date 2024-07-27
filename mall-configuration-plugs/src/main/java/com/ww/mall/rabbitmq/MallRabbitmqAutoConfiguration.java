@@ -3,7 +3,7 @@ package com.ww.mall.rabbitmq;
 import cn.hutool.extra.spring.SpringUtil;
 import com.ww.mall.common.constant.Constant;
 import com.ww.mall.common.exception.ApiException;
-import com.ww.mall.mongodb.EnableMallMongodb;
+import com.ww.mall.annotation.enable.EnableMallMongodb;
 import com.ww.mall.rabbitmq.enums.MqMsgStatus;
 import com.ww.mall.rabbitmq.repository.BaseMqLog;
 import com.ww.mall.rabbitmq.repository.MqLogRepository;

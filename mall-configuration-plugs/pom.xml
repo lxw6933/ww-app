@@ -102,6 +102,12 @@
             <artifactId>ip2region</artifactId>
             <optional>true</optional>
         </dependency>
+        <!-- influxdb -->
+        <dependency>
+            <groupId>com.influxdb</groupId>
+            <artifactId>influxdb-client-java</artifactId>
+            <optional>true</optional>
+        </dependency>
     </dependencies>
 
 </project>

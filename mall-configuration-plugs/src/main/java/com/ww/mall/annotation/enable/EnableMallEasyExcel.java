@@ -1,6 +1,6 @@
-package com.ww.mall.excel.annotation;
+package com.ww.mall.annotation.enable;
 
-import com.ww.mall.excel.MallEasyExcelConfiguration;
+import com.ww.mall.excel.MallEasyExcelAutoConfiguration;
 import org.springframework.context.annotation.Import;
 
 import java.lang.annotation.ElementType;
@@ -15,6 +15,6 @@ import java.lang.annotation.Target;
  */
 @Target({ElementType.TYPE})
 @Retention(RetentionPolicy.RUNTIME)
-@Import({MallEasyExcelConfiguration.class})
+@Import({MallEasyExcelAutoConfiguration.class})
 public @interface EnableMallEasyExcel {
 }

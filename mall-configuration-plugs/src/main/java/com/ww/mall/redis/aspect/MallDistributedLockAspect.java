@@ -3,7 +3,7 @@ package com.ww.mall.redis.aspect;
 import com.ww.mall.common.constant.Constant;
 import com.ww.mall.common.enums.CodeEnum;
 import com.ww.mall.common.exception.ApiException;
-import com.ww.mall.redis.annotation.MallDistributedLock;
+import com.ww.mall.annotation.plugs.redis.MallDistributedLock;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.aspectj.lang.ProceedingJoinPoint;
@@ -33,7 +33,7 @@ public class MallDistributedLockAspect extends MallAbstractAspect {
 
     private static final String LOCK_PREFIX = "mall:lock";
 
-    @Around("@annotation(com.ww.mall.redis.annotation.MallDistributedLock)")
+    @Around("@annotation(com.ww.mall.annotation.plugs.redis.MallDistributedLock)")
     public Object mallDistributedLockAdvise(ProceedingJoinPoint joinPoint) throws Throwable {
         MethodSignature signature = (MethodSignature) joinPoint.getSignature();
         String classDeclaringTypeName = signature.getDeclaringTypeName();

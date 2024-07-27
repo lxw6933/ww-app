@@ -3,7 +3,7 @@ package com.ww.mall.redis.aspect;
 import cn.hutool.core.codec.Base64;
 import cn.hutool.core.util.ArrayUtil;
 import com.ww.mall.common.exception.ApiException;
-import com.ww.mall.redis.annotation.MallResubmission;
+import com.ww.mall.annotation.plugs.redis.MallResubmission;
 import org.aspectj.lang.ProceedingJoinPoint;
 import org.aspectj.lang.annotation.Around;
 import org.aspectj.lang.annotation.Aspect;
@@ -30,7 +30,7 @@ public class MallResubmissionAspect extends MallAbstractAspect {
     @Autowired
     private RedisTemplate<String, String> redisTemplate;
 
-    @Around("@annotation(com.ww.mall.redis.annotation.MallResubmission)")
+    @Around("@annotation(com.ww.mall.annotation.plugs.redis.MallResubmission)")
     public Object mallResubmissionAdvice(ProceedingJoinPoint joinPoint) throws Throwable {
         MethodSignature signature = (MethodSignature) joinPoint.getSignature();
         Method method = signature.getMethod();

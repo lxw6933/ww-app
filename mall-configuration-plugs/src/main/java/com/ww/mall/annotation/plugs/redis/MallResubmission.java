@@ -1,4 +1,4 @@
-package com.ww.mall.redis.annotation;
+package com.ww.mall.annotation.plugs.redis;
 
 import org.springframework.stereotype.Component;
 
