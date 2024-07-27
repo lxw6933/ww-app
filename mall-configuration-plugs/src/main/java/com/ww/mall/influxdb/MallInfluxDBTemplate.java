@@ -33,6 +33,10 @@ public class MallInfluxDBTemplate {
         influxDBClient.getWriteApiBlocking().writePoint(point);
     }
 
+    public void writeBatchData(List<Point> points) {
+        influxDBClient.makeWriteApi().writePoints(points);
+    }
+
     public List<FluxRecord> queryData(String fluxQuery) {
         List<FluxTable> tables = influxDBClient.getQueryApi().query(fluxQuery);
         List<FluxRecord> records = new ArrayList<>();
