@@ -6,8 +6,11 @@ import com.influxdb.client.domain.WritePrecision;
 import com.influxdb.client.write.Point;
 import com.influxdb.query.FluxRecord;
 import com.influxdb.query.FluxTable;
+import com.ww.mall.common.exception.ApiException;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 
+import java.lang.reflect.Field;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
@@ -18,6 +21,7 @@ import java.util.Map;
  * @create 2024-07-27- 09:33
  * @description:
  */
+@Slf4j
 @Component
 public class MallInfluxDBTemplate {
 
@@ -47,13 +51,28 @@ public class MallInfluxDBTemplate {
         influxDBClient.makeWriteApi().writePoints(points);
     }
 
-    public List<FluxRecord> queryData(String fluxQuery) {
+    public <T> List<T> queryData(String fluxQuery, Class<T> clazz) {
         List<FluxTable> tables = influxDBClient.getQueryApi().query(fluxQuery);
-        List<FluxRecord> records = new ArrayList<>();
-        for (FluxTable table : tables) {
-            records.addAll(table.getRecords());
+        List<T> resultList = new ArrayList<>();
+        try {
+            for (FluxTable table : tables) {
+                for (FluxRecord record : table.getRecords()) {
+                    T obj = clazz.getDeclaredConstructor().newInstance();
+                    for (Field field : clazz.getDeclaredFields()) {
+                        field.setAccessible(true);
+                        Object value = record.getValueByKey(field.getName());
+                        if (value != null) {
+                            field.set(obj, value);
+                        }
+                    }
+                    resultList.add(obj);
+                }
+            }
+        } catch (Exception e) {
+            log.error("influxdb数据处理异常", e);
+            throw new ApiException("数据处理异常");
         }
-        return records;
+        return resultList;
     }
 
     public void close() {
