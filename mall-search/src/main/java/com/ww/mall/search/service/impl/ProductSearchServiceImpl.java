@@ -36,9 +36,9 @@ public class ProductSearchServiceImpl implements ProductSearchService {
         String collectionName = "v2_product_search";
         boolean integralChannel = true;
         // query condition
-        AggregationOperation matchAggregation = portalProductSearchBO.buildQueryCriteriaAggregation();
+        AggregationOperation matchAggregation = Aggregation.match(portalProductSearchBO.buildQueryCriteria());
         // sort condition
-        AggregationOperation sortAggregation = portalProductSearchBO.buildSortAggregation(integralChannel);
+        AggregationOperation sortAggregation = Aggregation.sort(portalProductSearchBO.buildSort(integralChannel));
         // group condition
         AggregationOperation groupAggregation = portalProductSearchBO.buildGroup();
         // page condition

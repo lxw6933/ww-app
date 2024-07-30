@@ -60,7 +60,7 @@ public class PortalProductSearchBO extends MallPage {
      */
     private SearchSortBO searchSortBO;
 
-    public AggregationOperation buildQueryCriteriaAggregation() {
+    public Criteria buildQueryCriteria() {
         Criteria criteria = new Criteria();
         criteria.and("channelId").is(this.channelId)
                 .and("skuStatus").is(1)
@@ -90,10 +90,10 @@ public class PortalProductSearchBO extends MallPage {
                 criteria.and("categoryId").is(this.categoryIdList.get(0));
             }
         }
-        return Aggregation.match(criteria);
+        return criteria;
     }
 
-    public AggregationOperation buildSortAggregation(boolean integralChannel) {
+    public Sort buildSort(boolean integralChannel) {
         List<Sort.Order> sortFieldList = new ArrayList<>();
         if (this.searchSortBO != null) {
             boolean asc = Boolean.TRUE.equals(this.searchSortBO.getSort());
@@ -126,7 +126,7 @@ public class PortalProductSearchBO extends MallPage {
             sortFieldList.add(Sort.Order.desc("spuSaleNumber"));
             sortFieldList.add(Sort.Order.desc("upTime"));
         }
-        return Aggregation.sort(Sort.by(sortFieldList));
+        return Sort.by(sortFieldList);
     }
 
     public AggregationOperation buildGroup() {
