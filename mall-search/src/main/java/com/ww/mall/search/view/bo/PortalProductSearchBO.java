@@ -67,7 +67,7 @@ public class PortalProductSearchBO extends MallPage {
         if (this.merchantId != null) {
             criteria.and("merchantId").is(this.merchantId);
         }
-        if (this.searchRangeBO != null && CollectionUtil.isNotEmpty(this.searchRangeBO.getIdList())) {
+        if (this.searchRangeBO != null && CollectionUtil.isNotEmpty(this.searchRangeBO.getIdList()) && this.searchRangeBO.getRangeType() != null) {
             switch (this.searchRangeBO.getRangeType()) {
                 case SMS:
                     criteria.and("smsId").in(this.searchRangeBO.getIdList());
