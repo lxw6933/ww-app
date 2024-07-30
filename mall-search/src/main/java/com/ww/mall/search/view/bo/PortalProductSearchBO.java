@@ -1,6 +1,6 @@
 package com.ww.mall.search.view.bo;
 
-import cn.hutool.core.collection.CollUtil;
+import cn.hutool.core.collection.CollectionUtil;
 import com.ww.mall.common.exception.ApiException;
 import com.ww.mall.web.cmmon.MallPage;
 import lombok.Data;
@@ -41,19 +41,9 @@ public class PortalProductSearchBO extends MallPage {
     private Long channelId;
 
     /**
-     * 搜索指定spu范围【活动商品、优惠券适用商品等】
+     * 适用范围BO
      */
-    private List<Long> specifySpuIdList;
-
-    /**
-     * 搜索指定sms范围【活动商品、优惠券适用商品等】
-     */
-    private List<Long> specifySmsIdList;
-
-    /**
-     * 搜索指定category范围【活动商品、优惠券适用商品等】
-     */
-    private List<Long> categoryIdList;
+    private SearchRangeBO searchRangeBO;
 
     /**
      * 排序BO
@@ -77,17 +67,21 @@ public class PortalProductSearchBO extends MallPage {
         if (this.merchantId != null) {
             criteria.and("merchantId").is(this.merchantId);
         }
-        if (CollUtil.isNotEmpty(this.specifySpuIdList)) {
-            criteria.and("spuId").in(this.specifySpuIdList);
-        }
-        if (CollUtil.isNotEmpty(this.specifySmsIdList)) {
-            criteria.and("smsId").in(this.specifySmsIdList);
-        }
-        if (CollUtil.isNotEmpty(this.categoryIdList)) {
-            if (this.categoryIdList.size() > 1) {
-                criteria.and("categoryId").in(this.categoryIdList);
-            } else {
-                criteria.and("categoryId").is(this.categoryIdList.get(0));
+        if (this.searchRangeBO != null && CollectionUtil.isNotEmpty(this.searchRangeBO.getIdList())) {
+            switch (this.searchRangeBO.getRangeType()) {
+                case SMS:
+                    criteria.and("smsId").in(this.searchRangeBO.getIdList());
+                    break;
+                case SPU:
+                    criteria.and("spuId").in(this.searchRangeBO.getIdList());
+                    break;
+                case BRAND:
+                    criteria.and("brandId").in(this.searchRangeBO.getIdList());
+                    break;
+                case CATEGORY:
+                    criteria.and("categoryId").in(this.searchRangeBO.getIdList());
+                    break;
+                default:
             }
         }
         return criteria;
