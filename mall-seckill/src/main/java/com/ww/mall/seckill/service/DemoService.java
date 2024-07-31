@@ -1,6 +1,7 @@
 package com.ww.mall.seckill.service;
 
 import com.ww.mall.seckill.view.bo.SensitiveWordBO;
+import com.ww.mall.web.view.bo.MemberLoginBO;
 import org.springframework.web.multipart.MultipartFile;
 
 import javax.servlet.http.HttpServletRequest;
@@ -12,6 +13,8 @@ import javax.servlet.http.HttpServletResponse;
  * @description:
  */
 public interface DemoService {
+
+    void testEncryptReqData(MemberLoginBO memberLoginBO);
 
     void testInsertMongo();
 

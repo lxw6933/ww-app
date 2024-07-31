@@ -5,6 +5,7 @@ import com.ww.mall.seckill.grpc.GrpcClientService;
 import com.ww.mall.seckill.service.DemoService;
 import com.ww.mall.seckill.view.bo.SensitiveWordBO;
 import com.ww.mall.seckill.view.bo.UserInfoVO;
+import com.ww.mall.web.view.bo.MemberLoginBO;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
@@ -26,6 +27,13 @@ public class DemoController {
 
     @Autowired
     private DemoService demoService;
+
+    @PostMapping("testEncryptReqData")
+    public void testEncryptReqData(MemberLoginBO memberLoginBO) {
+        // 请求参数1【text】：encryptStr
+        // 请求参数2【json】：encryptStr:""
+        demoService.testEncryptReqData(memberLoginBO);
+    }
 
     @GetMapping("testInsertMongo")
     public void testInsertMongo() {

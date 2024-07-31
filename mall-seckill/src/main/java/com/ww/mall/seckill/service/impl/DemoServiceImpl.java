@@ -29,6 +29,7 @@ import com.ww.mall.seckill.service.DemoService;
 import com.ww.mall.seckill.view.bo.SensitiveWordBO;
 import com.ww.mall.annotation.plugs.sensitive.MallSensitiveWordHandler;
 import com.ww.mall.web.feign.ThirdServerFeignService;
+import com.ww.mall.web.view.bo.MemberLoginBO;
 import lombok.extern.slf4j.Slf4j;
 import org.redisson.api.RBloomFilter;
 import org.redisson.api.RedissonClient;
@@ -91,6 +92,11 @@ public class DemoServiceImpl implements DemoService {
         mallRedisTemplate.initHashStock("skuHashStock", 10);
         mallRedisTemplate.setHashStock("stock1", 10, 2, 2);
         mallRedisTemplate.setHashStock("stock2", 10, 7, 2);
+    }
+
+    @Override
+    public void testEncryptReqData(MemberLoginBO memberLoginBO) {
+        System.out.println("请求参数：" + memberLoginBO);
     }
 
     @Override
