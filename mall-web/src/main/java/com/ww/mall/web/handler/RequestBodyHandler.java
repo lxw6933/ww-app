@@ -18,6 +18,7 @@ import org.springframework.util.StreamUtils;
 import org.springframework.web.bind.annotation.ControllerAdvice;
 import org.springframework.web.servlet.mvc.method.annotation.RequestBodyAdviceAdapter;
 
+import javax.annotation.PostConstruct;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
@@ -37,6 +38,11 @@ public class RequestBodyHandler extends RequestBodyAdviceAdapter {
 
     @Autowired
     private SecretProperties secretProperties;
+
+    @PostConstruct
+    public void init() {
+        log.info("初始化RequestBodyHandler成功...");
+    }
 
     @Override
     public boolean supports(MethodParameter methodParameter, Type targetType, Class<? extends HttpMessageConverter<?>> converterType) {

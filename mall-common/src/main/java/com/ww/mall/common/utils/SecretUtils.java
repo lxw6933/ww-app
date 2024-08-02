@@ -1,5 +1,7 @@
 package com.ww.mall.common.utils;
 
+import com.alibaba.fastjson.JSON;
+import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 
@@ -60,15 +62,25 @@ public class SecretUtils {
 
     public static void main(String[] args) {
         try {
+            A a = new A();
+            a.setVerifyCode("123456");
+            a.setMobile("15970191157");
+
             String secretKey = "ww6933@sina.com.";
-            String content = "加密解密";
+            String content = JSON.toJSONString(a);
             String s1 = aesEncrypt(content, secretKey);
-            log.info(s1);
+            System.out.println(s1);
             String s = aesDecrypt(s1, secretKey);
-            log.info(s);
+            System.out.println(s);
         } catch (Exception e) {
             e.printStackTrace();
         }
+    }
+
+    @Data
+    static class A {
+        private String verifyCode;
+        private String mobile;
     }
 
 }

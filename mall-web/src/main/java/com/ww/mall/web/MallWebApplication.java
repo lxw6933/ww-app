@@ -80,13 +80,11 @@ public class MallWebApplication {
 
     @Bean
     public RequestBodyHandler requestBodyHandler() {
-        log.info("初始化RequestBodyHandler成功...");
         return new RequestBodyHandler();
     }
 
     @Bean
     public ResponseBodyHandler responseBodyHandler() {
-        log.info("初始化ResponseBodyHandler成功...");
         return new ResponseBodyHandler();
     }
 

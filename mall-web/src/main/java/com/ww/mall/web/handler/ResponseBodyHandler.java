@@ -18,6 +18,7 @@ import org.springframework.util.AntPathMatcher;
 import org.springframework.web.bind.annotation.ControllerAdvice;
 import org.springframework.web.servlet.mvc.method.annotation.ResponseBodyAdvice;
 
+import javax.annotation.PostConstruct;
 import java.util.Arrays;
 import java.util.List;
 
@@ -40,6 +41,11 @@ public class ResponseBodyHandler implements ResponseBodyAdvice<Object> {
     private SecretProperties secretProperties;
 
     private final AntPathMatcher pathMatcher = new AntPathMatcher();
+
+    @PostConstruct
+    public void init() {
+        log.info("初始化ResponseBodyHandler成功...");
+    }
 
     @Override
     public boolean supports(MethodParameter returnType, Class converterType) {

@@ -29,7 +29,7 @@ public class DemoController {
     private DemoService demoService;
 
     @PostMapping("testEncryptReqData")
-    public void testEncryptReqData(MemberLoginBO memberLoginBO) {
+    public void testEncryptReqData(@RequestBody MemberLoginBO memberLoginBO) {
         // 请求参数1【text】：encryptStr
         // 请求参数2【json】：encryptStr:""
         demoService.testEncryptReqData(memberLoginBO);
