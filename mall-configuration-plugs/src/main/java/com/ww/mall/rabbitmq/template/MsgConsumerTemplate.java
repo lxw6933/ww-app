@@ -29,14 +29,14 @@ public abstract class MsgConsumerTemplate<T> {
     public final void consumer(Message message, T msg, Channel channel) throws IOException {
         MessageProperties properties = message.getMessageProperties();
         String traceId = properties.getHeader(Constant.TRACE_ID);
+        boolean msgMode = properties.getHeader(Constant.MALL_MSG_MODE);
         MDC.put(Constant.TRACE_ID, traceId);
         log.info("消费消息【{}】", msg);
         long tag = properties.getDeliveryTag();
         // 获取消息的id
         String correlationId = properties.getCorrelationId();
         // 消费前置处理
-        boolean flag = preMsgConsumer(correlationId, tag, channel);
-        if (!flag) {
+        if (msgMode && !preMsgConsumer(correlationId, tag, channel)) {
             return;
         }
         try {
@@ -44,19 +44,21 @@ public abstract class MsgConsumerTemplate<T> {
             boolean serverFlag = serverHandler(msg);
             if (serverFlag) {
                 // 消息成功消费处理
-                successMsgHandler(channel, tag, correlationId);
+                successMsgHandler(channel, tag, correlationId, msgMode);
             }
         } catch (Exception e) {
             // 异常消费处理
-            exceptionMsgHandler(correlationId, tag, channel, e);
+            exceptionMsgHandler(correlationId, tag, channel, msgMode, e);
         }
     }
 
-    void successMsgHandler(Channel channel, long tag, String correlationId) throws IOException {
+    void successMsgHandler(Channel channel, long tag, String correlationId, boolean msgMode) throws IOException {
         // 消费确认
         channel.basicAck(tag, false);
         log.info("【tag：{}】【消息：{}】消费完成", tag, correlationId);
-        mqLogRepository.update(correlationId, MqMsgStatus.CONSUMED_SUCCESS);
+        if (msgMode) {
+            mqLogRepository.update(correlationId, MqMsgStatus.CONSUMED_SUCCESS);
+        }
     }
 
     boolean preMsgConsumer(String correlationId, long tag, Channel channel) throws IOException {
@@ -80,12 +82,16 @@ public abstract class MsgConsumerTemplate<T> {
      */
     public abstract boolean serverHandler(T msg);
 
-    void exceptionMsgHandler(String correlationId, long tag, Channel channel, Exception e) throws IOException {
+    void exceptionMsgHandler(String correlationId, long tag, Channel channel, boolean msgMode, Exception e) throws IOException {
         log.error("【tag：{}】【消息：{}】消费异常", tag, correlationId, e);
-        BaseMqLog mqMsgLog = getMqMsgById(correlationId);
-        mqLogRepository.update(correlationId, MqMsgStatus.CONSUMED_FAIL);
-        // 重试三次，如果还未消费成功，则改变状态
-        channel.basicNack(tag, false, mqMsgLog.getTryCount() <= MSG_TRY_COUNT);
+        if (msgMode) {
+            BaseMqLog mqMsgLog = getMqMsgById(correlationId);
+            mqLogRepository.update(correlationId, MqMsgStatus.CONSUMED_FAIL);
+            // 重试三次，如果还未消费成功，则改变状态
+            channel.basicNack(tag, false, mqMsgLog.getTryCount() <= MSG_TRY_COUNT);
+        } else {
+            channel.basicNack(tag, false, false);
+        }
     }
 
     private BaseMqLog getMqMsgById(String correlationId) {

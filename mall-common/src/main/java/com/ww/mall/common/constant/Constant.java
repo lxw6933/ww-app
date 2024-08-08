@@ -32,6 +32,7 @@ public class Constant {
     public static final Integer TEMP_USER_COOKIE_TIMEOUT = 30 * 24 * 60 * 60;
 
     public static final String TRACE_ID = "traceId";
+    public static final String MALL_MSG_MODE= "msgMode";
 
     public static final String ENCRYPT_HEADER = "mall-encrypt";
 

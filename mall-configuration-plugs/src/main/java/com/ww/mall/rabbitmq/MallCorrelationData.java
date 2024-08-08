@@ -34,6 +34,12 @@ public class MallCorrelationData<T> extends CorrelationData {
      */
     private String traceId;
 
+    /**
+     * true：无任何处理【消费自行保证业务幂等】
+     * false：mongodb msg
+     */
+    private boolean msgMode;
+
     public MallCorrelationData() {
         this.traceId = MDC.get(Constant.TRACE_ID);
     }

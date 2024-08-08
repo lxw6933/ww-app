@@ -80,9 +80,10 @@ public class MallRabbitmqAutoConfiguration {
             MDC.put(Constant.TRACE_ID, mallCorrelationData.getTraceId());
             if (!ack) {
                 log.error("消息发送到Exchange失败, {}, cause: {}", correlationData, cause);
-                mqLogRepository.update(mallCorrelationData.getId(), MqMsgStatus.DELIVER_FAIL);
+                if (((MallCorrelationData<?>) correlationData).isMsgMode()) {
+                    mqLogRepository.update(mallCorrelationData.getId(), MqMsgStatus.DELIVER_FAIL);
+                }
             }
-//            log.info("消息【{}】成功抵达broker", correlationData.getId());
         });
 
         /**
@@ -107,7 +108,9 @@ public class MallRabbitmqAutoConfiguration {
                     returned.getReplyText(),
                     returned.getExchange(),
                     returned.getRoutingKey());
-            mqLogRepository.update(returned.getMessage().getMessageProperties().getCorrelationId(), MqMsgStatus.DELIVER_FAIL);
+            if (returned.getMessage().getMessageProperties().getHeader(Constant.MALL_MSG_MODE)) {
+                mqLogRepository.update(returned.getMessage().getMessageProperties().getCorrelationId(), MqMsgStatus.DELIVER_FAIL);
+            }
         });
         return rabbitTemplate;
     }
@@ -126,9 +129,11 @@ public class MallRabbitmqAutoConfiguration {
                     String correlationId = ((CorrelationData) correlation).getId();
                     messageProperties.setCorrelationId(correlationId);
                 }
-                if (correlation instanceof  MallCorrelationData) {
+                if (correlation instanceof MallCorrelationData) {
                     String traceId = ((MallCorrelationData<?>) correlation).getTraceId();
+                    boolean msgMode = ((MallCorrelationData<?>) correlation).isMsgMode();
                     messageProperties.setHeader(Constant.TRACE_ID, traceId);
+                    messageProperties.setHeader(Constant.MALL_MSG_MODE, msgMode);
                 }
                 return message;
             }
