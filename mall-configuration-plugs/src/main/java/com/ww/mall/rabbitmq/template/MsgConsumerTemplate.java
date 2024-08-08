@@ -44,7 +44,7 @@ public abstract class MsgConsumerTemplate<T> {
             boolean serverFlag = serverHandler(msg);
             if (serverFlag) {
                 // 消息成功消费处理
-                successMsgHandler(channel, tag, correlationId, msgMode);
+                successMsgHandler(correlationId, tag, channel, msgMode);
             }
         } catch (Exception e) {
             // 异常消费处理
@@ -52,7 +52,7 @@ public abstract class MsgConsumerTemplate<T> {
         }
     }
 
-    void successMsgHandler(Channel channel, long tag, String correlationId, boolean msgMode) throws IOException {
+    void successMsgHandler(String correlationId, long tag, Channel channel, boolean msgMode) throws IOException {
         // 消费确认
         channel.basicAck(tag, false);
         log.info("【tag：{}】【消息：{}】消费完成", tag, correlationId);
