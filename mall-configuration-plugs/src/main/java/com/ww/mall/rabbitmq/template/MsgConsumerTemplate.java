@@ -45,6 +45,8 @@ public abstract class MsgConsumerTemplate<T> {
             if (serverFlag) {
                 // 消息成功消费处理
                 successMsgHandler(correlationId, tag, channel, msgMode);
+            } else {
+                exceptionMsgHandler(correlationId, tag, channel, msgMode, null);
             }
         } catch (Exception e) {
             // 异常消费处理
