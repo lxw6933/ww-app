@@ -85,7 +85,11 @@ public abstract class MsgConsumerTemplate<T> {
     public abstract boolean serverHandler(T msg);
 
     void exceptionMsgHandler(String correlationId, long tag, Channel channel, boolean msgMode, Exception e) throws IOException {
-        log.error("【tag：{}】【消息：{}】消费异常", tag, correlationId, e);
+        if (e == null) {
+            log.error("【tag：{}】【消息：{}】消费失败", tag, correlationId);
+        } else {
+            log.error("【tag：{}】【消息：{}】消费异常", tag, correlationId, e);
+        }
         if (msgMode) {
             BaseMqLog mqMsgLog = getMqMsgById(correlationId);
             mqLogRepository.update(correlationId, MqMsgStatus.CONSUMED_FAIL);
