@@ -31,14 +31,25 @@ public class MallPublisher {
     private final MqLogRepository<String, BaseMqLog> mqLogRepository = SpringUtil.getBean(MqLogRepository.class);
 
     public <T> void publishMsg(String exchange, String routeKey, T msg) {
+        this.publishMsg(exchange, routeKey, msg, true);
+    }
+
+    public <T> void publishSimpleMsg(String exchange, String routeKey, T msg) {
+        this.publishMsg(exchange, routeKey, msg, false);
+    }
+
+    private <T> void publishMsg(String exchange, String routeKey, T msg, boolean msgMode) {
         // 自定义消息id
         MallCorrelationData<T> msgData = new MallCorrelationData<>();
         msgData.setExchange(exchange);
         msgData.setMessage(msg);
         msgData.setRoutingKey(routeKey);
         msgData.setId(UUID.randomUUID().toString().replaceAll("-", ""));
-        // 保存消息
-        mqLogRepository.save(msgData, MqMsgStatus.DELIVER_SUCCESS);
+        msgData.setMsgMode(msgMode);
+        if (msgMode) {
+            // 保存消息
+            mqLogRepository.save(msgData, MqMsgStatus.DELIVER_SUCCESS);
+        }
         // 发送用户对象信息到broker
         rabbitTemplate.convertAndSend(exchange, routeKey, msg, correlationIdProcessor, msgData);
     }
