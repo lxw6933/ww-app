@@ -34,6 +34,10 @@ spring:
       date: yyyy-MM-dd HH:mm:ss
 
 management:
+  metrics:
+    export:
+      prometheus:
+        enabled: true
   endpoints:
     web:
       exposure:
@@ -41,6 +45,8 @@ management:
   endpoint:
     health:
       show-details: always
+    prometheus:
+      enabled: true
 
 feign:
   # 开启sentinel feign支持【调用方（调用服务方）的熔断保护、被调用方（服务提供方）的降级保护】
