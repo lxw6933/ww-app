@@ -17,7 +17,7 @@ import org.springframework.cloud.client.discovery.EnableDiscoveryClient;
 @EnableMallEasyExcel
 @EnableMallSensitiveWord
 @EnableMallMinio
-@EnableMallXxlJob
+//@EnableMallXxlJob
 @EnableMallRedis
 @EnableMallRedisson
 @EnableMallMongodb
