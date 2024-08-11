@@ -1,14 +1,6 @@
 package com.ww.mall.seckill;
 
-import com.ww.mall.annotation.enable.EnableMallEasyExcel;
-import com.ww.mall.annotation.enable.EnableMallIp2Region;
-import com.ww.mall.annotation.enable.EnableMallMinio;
-import com.ww.mall.annotation.enable.EnableMallMongodb;
-import com.ww.mall.annotation.enable.EnableMallRabbitmq;
-import com.ww.mall.annotation.enable.EnableMallRedis;
-import com.ww.mall.annotation.enable.EnableMallRedisson;
-import com.ww.mall.annotation.enable.EnableMallSensitiveWord;
-import com.ww.mall.annotation.enable.EnableMallXxlJob;
+import com.ww.mall.annotation.enable.*;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.cloud.client.discovery.EnableDiscoveryClient;
