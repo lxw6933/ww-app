@@ -22,4 +22,9 @@ public class SentinelNacosDataSourceAutoConfiguration {
         return new SentinelNacosDataSourceHandler(sentinelProperties);
     }
 
+    @Bean
+    public SentinelClusterConfiguration sentinelClusterConfiguration() {
+        return new SentinelClusterConfiguration();
+    }
+
 }
