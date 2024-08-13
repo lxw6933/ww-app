@@ -28,7 +28,7 @@ import java.util.Set;
 /**
  * @author ww
  * @create 2024-08-13- 15:02
- * @description:
+ * @description: sentinel cluster Embedded mode
  */
 @Slf4j
 @Configuration
@@ -84,32 +84,37 @@ public class SentinelClusterConfiguration {
      * 客户端与服务端通讯的配置：请求超时时间
      */
     private void initClientConfigProperty() {
-        ReadableDataSource<String, ClusterClientConfig> clientConfigDs = new NacosDataSource<>(
+        ReadableDataSource<String, ClusterClientConfig> clientConfigDataSource = new NacosDataSource<>(
                 this.buildProperties(),
                 SENTINEL_CLUSTER_GROUP,
                 sentinelClusterClientConfig,
                 source -> JSON.parseObject(source, new TypeReference<ClusterClientConfig>() {
                 })
         );
-        ClusterClientConfigManager.registerClientConfigProperty(clientConfigDs.getProperty());
+        log.info("【sentinel cluster】刷新客户端与服务端通讯的配置,请求超时时间：{}", clientConfigDataSource.getProperty());
+        ClusterClientConfigManager.registerClientConfigProperty(clientConfigDataSource.getProperty());
     }
 
     /**
      * 配置token server的连接地址
      */
     private void initClientServerAssignProperty() {
-        ReadableDataSource<String, ClusterClientAssignConfig> clientAssignDs = new NacosDataSource<>(
+        ReadableDataSource<String, ClusterClientAssignConfig> clientAssignConfigDataSource = new NacosDataSource<>(
                 this.buildProperties(),
                 SENTINEL_CLUSTER_GROUP,
                 sentinelClusterTokenServerConfig,
                 source -> JSON.parseObject(source, new TypeReference<ClusterClientAssignConfig>() {
                 })
         );
-        ClusterClientConfigManager.registerServerAssignProperty(clientAssignDs.getProperty());
+        log.info("【sentinel cluster】刷新客户端链接服务端的链接地址：{}", clientAssignConfigDataSource.getProperty());
+        ClusterClientConfigManager.registerServerAssignProperty(clientAssignConfigDataSource.getProperty());
     }
 
+    /**
+     * Alone mode use
+     */
     public void initClusterRole() {
-        ClusterStateManager.applyState(ClusterStateManager.CLUSTER_SERVER);
+        ClusterStateManager.applyState(ClusterStateManager.CLUSTER_CLIENT);
     }
 
     /**
@@ -118,23 +123,25 @@ public class SentinelClusterConfiguration {
     public void registerClusterRuleSupplier(){
         // 注册流控规则
         ClusterFlowRuleManager.setPropertySupplier(namespace -> {
-            ReadableDataSource<String, List<FlowRule>> ds = new NacosDataSource<>(
+            ReadableDataSource<String, List<FlowRule>> flowRuleDataSource = new NacosDataSource<>(
                     this.buildProperties(),
                     SENTINEL_GROUP,
                     namespace + FLOW_POSTFIX,
                     source -> JSON.parseObject(source, new TypeReference<List<FlowRule>>() {})
             );
-            return ds.getProperty();
+            log.info("【sentinel cluster】刷新cluster flowRule：{}", flowRuleDataSource.getProperty());
+            return flowRuleDataSource.getProperty();
         });
         // 注册热点流控规则
         ClusterParamFlowRuleManager.setPropertySupplier(namespace -> {
-            ReadableDataSource<String, List<ParamFlowRule>> ds = new NacosDataSource<>(
+            ReadableDataSource<String, List<ParamFlowRule>> paramFlowRuleDataSource = new NacosDataSource<>(
                     this.buildProperties(),
                     SENTINEL_GROUP,
                     namespace + PARAM_FLOW_POSTFIX,
                     source -> JSON.parseObject(source, new TypeReference<List<ParamFlowRule>>() {})
             );
-            return ds.getProperty();
+            log.info("【sentinel cluster】刷新cluster paramFlowRule：{}", paramFlowRuleDataSource.getProperty());
+            return paramFlowRuleDataSource.getProperty();
         });
     }
 
@@ -142,26 +149,28 @@ public class SentinelClusterConfiguration {
      * 注册namespace集合
      */
     public void registerServerNamespaceDatasource(){
-        ReadableDataSource<String, Set<String>> namespaceDs = new NacosDataSource<>(
+        ReadableDataSource<String, Set<String>> namespaceSetDataSource = new NacosDataSource<>(
                 this.buildProperties(),
                 SENTINEL_CLUSTER_GROUP,
                 sentinelNamespaceSet,
                 source -> JSON.parseObject(source, new TypeReference<Set<String>>() {})
         );
-        ClusterServerConfigManager.registerNamespaceSetProperty(namespaceDs.getProperty());
+        log.info("【sentinel cluster】刷新namespace集合：{}", namespaceSetDataSource.getProperty());
+        ClusterServerConfigManager.registerNamespaceSetProperty(namespaceSetDataSource.getProperty());
     }
 
     /**
      * 注册服务端传输配置
      */
     public void registerServerTransportDataSource(){
-        ReadableDataSource<String, ServerTransportConfig> transportConfigDs = new NacosDataSource<>(
+        ReadableDataSource<String, ServerTransportConfig> transportConfigDataSource = new NacosDataSource<>(
                 this.buildProperties(),
                 SENTINEL_CLUSTER_GROUP,
                 serverTransportConfig,
                 source -> JSON.parseObject(source, new TypeReference<ServerTransportConfig>() {})
         );
-        ClusterServerConfigManager.registerServerTransportProperty(transportConfigDs.getProperty());
+        log.info("【sentinel cluster】刷新服务端传输配置：{}", transportConfigDataSource.getProperty());
+        ClusterServerConfigManager.registerServerTransportProperty(transportConfigDataSource.getProperty());
     }
 
     /**
