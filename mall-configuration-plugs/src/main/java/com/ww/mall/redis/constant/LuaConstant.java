@@ -62,11 +62,6 @@ public class LuaConstant {
             "end\n" +
             "local lockResult = redis.call('HINCRBYFLOAT', hashKey, 'lockStock', -number)\n" +
             "local useResult = redis.call('HINCRBYFLOAT', hashKey, 'useStock', number)\n" +
-            "if setResult1 == 0 and setResult2 == 0 then\n" +
-            "   redis.call('HSET', hashKey, 'lockStock', oldLockValue)\n" +
-            "   redis.call('HSET', hashKey, 'useStock', oldUseValue)\n" +
-            "   return -2\n" +
-            "end\n" +
             "return 1";
     public static final byte[] USE_STOCK_HASH_LUA_BYTE = USE_STOCK_HASH_LUA.getBytes();
 
