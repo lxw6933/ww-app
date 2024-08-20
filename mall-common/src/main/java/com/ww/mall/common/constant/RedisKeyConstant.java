@@ -17,7 +17,8 @@ public class RedisKeyConstant {
 
     public static final String SMS_CODE_CACHE_PREFIX = "sms:code:";
 
-    public static final String SPU_SALE_DATA_PREFIX = "mall:spuSales:";
+    public static final String SPU_SALE_DATA = "spu:sales:";
+    public static final String SPU_CREDIT_SCORE = "spu:score:";
 
     public static final String SECKILL_PATH_PREFIX = "mall-seckill:seckill:path:";
     public static final String SECKILL_CODE_PREFIX = "mall-seckill:seckill:captcha:";

@@ -25,7 +25,7 @@ import java.util.concurrent.atomic.LongAdder;
 @Slf4j
 @Component
 @ConditionalOnBean(RedisTemplate.class)
-public class SalesStatisticsService implements DisposableBean {
+public class SpuSalesStatisticsService implements DisposableBean {
 
     private final static Map<String, LongAdder> salesMap = new ConcurrentHashMap<>();
     private final ScheduledExecutorService salesDataSyncScheduler = Executors.newScheduledThreadPool(1);
@@ -33,7 +33,7 @@ public class SalesStatisticsService implements DisposableBean {
     @Autowired
     private RedisTemplate<String, String> redisTemplate;
 
-    public SalesStatisticsService() {
+    public SpuSalesStatisticsService() {
         log.info("销量统计业务初始化...");
         // 开启定时任务
         salesDataSyncScheduler.scheduleAtFixedRate(this::syncSaleDataToRedis, 0, 1, TimeUnit.HOURS);
@@ -59,7 +59,7 @@ public class SalesStatisticsService implements DisposableBean {
         salesMap.forEach((key, longAddr) -> {
             if (longAddr.sum() > 0) {
                 log.info("【{}】销量数据同步到redis, 销量【{}】", key, longAddr.sum());
-                redisTemplate.opsForValue().increment(RedisKeyConstant.SPU_SALE_DATA_PREFIX + key, longAddr.sumThenReset());
+                redisTemplate.opsForValue().increment(RedisKeyConstant.SPU_SALE_DATA + key, longAddr.sumThenReset());
             }
         });
     }
