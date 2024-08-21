@@ -9,7 +9,6 @@ WORKDIR /app
 # 将jar包添加到容器中并更名
 COPY mall-seckill.jar /app/mall-seckill.jar
 # run
-ENTRYPOINT ["java $JAVA_OPTS -jar /app/mall-seckill.jar"]
-CMD echo "server success start finsh..."
+ENTRYPOINT ["java", "-jar", "/app/mall-seckill.jar"]
 # 暴露jar服务端口
-EXPOSE 17001
+EXPOSE 17000
