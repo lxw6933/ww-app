@@ -91,13 +91,13 @@ public class PortalProductSearchBO extends MallPage {
         }
         if (this.searchScopeBO != null && this.searchScopeBO.support()) {
             switch (this.searchScopeBO.getScopeType()) {
-                case PRICE:
+                case INTEGRAL:
                     criteria.andOperator(
                             Criteria.where("integral").gte(this.searchScopeBO.getMin()),
                             Criteria.where("integral").lte(this.searchScopeBO.getMax())
                     );
                     break;
-                case INTEGRAL:
+                case PRICE:
                     criteria.andOperator(
                             Criteria.where("salePrice").gte(this.searchScopeBO.getMin()),
                             Criteria.where("salePrice").lte(this.searchScopeBO.getMax())
