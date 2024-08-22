@@ -8,11 +8,11 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.redisson.api.RMap;
 import org.redisson.api.RedissonClient;
-import org.springframework.beans.factory.DisposableBean;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnBean;
 import org.springframework.stereotype.Component;
 
+import javax.annotation.PreDestroy;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
@@ -28,7 +28,7 @@ import java.util.concurrent.TimeUnit;
 @Slf4j
 @Component
 @ConditionalOnBean(RedissonClient.class)
-public class SpuCreditScoreStatisticsService implements DisposableBean {
+public class SpuCreditScoreStatisticsService {
 
     private final static Map<String, CreditScore> creditScoreMap = new ConcurrentHashMap<>();
     private final ScheduledExecutorService commentDataSyncScheduler = Executors.newScheduledThreadPool(1);
@@ -88,7 +88,7 @@ public class SpuCreditScoreStatisticsService implements DisposableBean {
         });
     }
 
-    @Override
+    @PreDestroy
     public void destroy() {
         commentDataSyncScheduler.shutdown();
         syncCommentDataToRedis();

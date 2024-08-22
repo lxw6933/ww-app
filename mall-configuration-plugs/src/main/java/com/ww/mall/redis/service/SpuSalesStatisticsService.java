@@ -4,12 +4,12 @@ import com.ww.mall.common.constant.Constant;
 import com.ww.mall.common.constant.RedisKeyConstant;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
-import org.springframework.beans.factory.DisposableBean;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnBean;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Component;
 
+import javax.annotation.PreDestroy;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Executors;
@@ -25,7 +25,7 @@ import java.util.concurrent.atomic.LongAdder;
 @Slf4j
 @Component
 @ConditionalOnBean(RedisTemplate.class)
-public class SpuSalesStatisticsService implements DisposableBean {
+public class SpuSalesStatisticsService {
 
     private final static Map<String, LongAdder> salesMap = new ConcurrentHashMap<>();
     private final ScheduledExecutorService salesDataSyncScheduler = Executors.newScheduledThreadPool(1);
@@ -64,7 +64,7 @@ public class SpuSalesStatisticsService implements DisposableBean {
         });
     }
 
-    @Override
+    @PreDestroy
     public void destroy() {
         salesDataSyncScheduler.shutdown();
         syncSaleDataToRedis();
