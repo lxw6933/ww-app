@@ -1,5 +1,6 @@
 package com.ww.mall.search.view.bo;
 
+import cn.hutool.core.collection.CollectionUtil;
 import lombok.Data;
 
 import java.util.List;
@@ -10,7 +11,7 @@ import java.util.List;
  * @description:
  */
 @Data
-public class SearchRangeBO {
+public class SearchRangeBO implements BaseSearch {
 
     /**
      * 范围类型
@@ -21,6 +22,11 @@ public class SearchRangeBO {
      * id集合
      */
     private List<Long> idList;
+
+    @Override
+    public boolean support() {
+        return CollectionUtil.isNotEmpty(this.idList) && this.rangeType != null;
+    }
 
     enum RangeType {
         SPU,

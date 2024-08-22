@@ -8,7 +8,7 @@ import lombok.Data;
  * @description:
  */
 @Data
-public class SearchSortBO {
+public class SearchSortBO implements BaseSearch {
 
     /**
      * 排序类型
@@ -19,6 +19,11 @@ public class SearchSortBO {
      * true：顺序  false：倒叙
      */
     private Boolean sort;
+
+    @Override
+    public boolean support() {
+        return this.getSortType()!= null && this.sort != null;
+    }
 
     enum SortType {
         INTEGRAL,

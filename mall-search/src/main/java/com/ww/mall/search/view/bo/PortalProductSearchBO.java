@@ -1,6 +1,5 @@
 package com.ww.mall.search.view.bo;
 
-import cn.hutool.core.collection.CollectionUtil;
 import com.ww.mall.common.exception.ApiException;
 import com.ww.mall.web.cmmon.MallPage;
 import lombok.Data;
@@ -50,6 +49,11 @@ public class PortalProductSearchBO extends MallPage {
      */
     private SearchSortBO searchSortBO;
 
+    /**
+     * 区间BO
+     */
+    private SearchScopeBO searchScopeBO;
+
     public Criteria buildQueryCriteria() {
         Criteria criteria = new Criteria();
         criteria.and("channelId").is(this.channelId)
@@ -68,7 +72,7 @@ public class PortalProductSearchBO extends MallPage {
         if (this.merchantId != null) {
             criteria.and("merchantId").is(this.merchantId);
         }
-        if (this.searchRangeBO != null && CollectionUtil.isNotEmpty(this.searchRangeBO.getIdList()) && this.searchRangeBO.getRangeType() != null) {
+        if (this.searchRangeBO != null && this.searchRangeBO.support()) {
             switch (this.searchRangeBO.getRangeType()) {
                 case SMS:
                     criteria.and("smsId").in(this.searchRangeBO.getIdList());
@@ -85,12 +89,29 @@ public class PortalProductSearchBO extends MallPage {
                 default:
             }
         }
+        if (this.searchScopeBO != null && this.searchScopeBO.support()) {
+            switch (this.searchScopeBO.getScopeType()) {
+                case PRICE:
+                    criteria.andOperator(
+                            Criteria.where("integral").gte(this.searchScopeBO.getMin()),
+                            Criteria.where("integral").lte(this.searchScopeBO.getMax())
+                    );
+                    break;
+                case INTEGRAL:
+                    criteria.andOperator(
+                            Criteria.where("salePrice").gte(this.searchScopeBO.getMin()),
+                            Criteria.where("salePrice").lte(this.searchScopeBO.getMax())
+                    );
+                    break;
+                default:
+            }
+        }
         return criteria;
     }
 
     public Sort buildSort(boolean integralChannel) {
         List<Sort.Order> sortFieldList = new ArrayList<>();
-        if (this.searchSortBO != null) {
+        if (this.searchSortBO != null && this.searchSortBO.support()) {
             boolean asc = Boolean.TRUE.equals(this.searchSortBO.getSort());
             switch (this.searchSortBO.getSortType()) {
                 case INTEGRAL:
