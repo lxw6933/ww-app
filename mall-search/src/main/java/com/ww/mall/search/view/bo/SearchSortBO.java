@@ -22,7 +22,7 @@ public class SearchSortBO implements BaseSearch {
 
     @Override
     public boolean support() {
-        return this.getSortType()!= null && this.sort != null;
+        return this.sortType!= null && this.sort != null;
     }
 
     enum SortType {
