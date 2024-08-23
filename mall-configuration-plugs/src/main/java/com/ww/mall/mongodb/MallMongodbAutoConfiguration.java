@@ -27,6 +27,12 @@ import org.springframework.data.mongodb.core.mapping.MongoMappingContext;
 @EnableConfigurationProperties(MongoProperties.class)
 public class MallMongodbAutoConfiguration {
 
+    @Bean
+    public BaseDocListener baseDocListener() {
+        log.info("初始化mongodb baseDoc listener...");
+        return new BaseDocListener();
+    }
+
     @Bean("mongoTransactionManager")
     public MongoTransactionManager transactionManager(MongoDatabaseFactory factory) {
         // 单机MongoDB无法执行涉及到事务的操作。为了使用事务，你需要设置一个 MongoDB 副本集
