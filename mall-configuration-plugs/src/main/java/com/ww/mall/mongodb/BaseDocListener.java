@@ -1,8 +1,10 @@
 package com.ww.mall.mongodb;
 
 import cn.hutool.core.date.DatePattern;
+import org.bson.Document;
 import org.jetbrains.annotations.NotNull;
 import org.springframework.data.mongodb.core.mapping.event.AbstractMongoEventListener;
+import org.springframework.data.mongodb.core.mapping.event.BeforeConvertEvent;
 import org.springframework.data.mongodb.core.mapping.event.BeforeSaveEvent;
 import org.springframework.stereotype.Component;
 
@@ -20,14 +22,21 @@ public class BaseDocListener extends AbstractMongoEventListener<BaseDoc> {
     private static final DateTimeFormatter dateFormatter = DateTimeFormatter.ofPattern(DatePattern.NORM_DATETIME_PATTERN);
 
     @Override
-    public void onBeforeSave(@NotNull BeforeSaveEvent<BaseDoc> event) {
-        super.onBeforeSave(event);
+    public void onBeforeConvert(@NotNull BeforeConvertEvent<BaseDoc> event) {
         LocalDateTime now = LocalDateTime.now();
         BaseDoc baseDoc = event.getSource();
         if (baseDoc.getCreateTime() == null) {
             baseDoc.setCreateTime(dateFormatter.format(now));
         }
-        baseDoc.setUpdateTime(dateFormatter.format(now));
+    }
+
+    @Override
+    public void onBeforeSave(@NotNull BeforeSaveEvent<BaseDoc> event) {
+        LocalDateTime now = LocalDateTime.now();
+        Document document = event.getDocument();
+        if (document != null) {
+            document.put("updateTime", dateFormatter.format(now));
+        }
     }
 
 }
