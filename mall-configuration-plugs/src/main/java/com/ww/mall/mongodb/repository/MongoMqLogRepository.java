@@ -1,7 +1,5 @@
 package com.ww.mall.mongodb.repository;
 
-import cn.hutool.core.date.DatePattern;
-import cn.hutool.core.date.DateUtil;
 import com.alibaba.fastjson.JSON;
 import com.ww.mall.rabbitmq.MallCorrelationData;
 import com.ww.mall.rabbitmq.enums.MqMsgStatus;
@@ -13,7 +11,6 @@ import org.springframework.data.mongodb.core.query.Update;
 import org.springframework.stereotype.Component;
 
 import javax.annotation.Resource;
-import java.util.Date;
 
 /**
  * @author ww
@@ -34,8 +31,6 @@ public class MongoMqLogRepository implements MqLogRepository<String, MqMsgLogEnt
         mqLog.setMessage(JSON.toJSONString(mallCorrelationData.getMessage()));
         mqLog.setMsgId(mallCorrelationData.getId());
         mqLog.setTryCount(0);
-        mqLog.setCreateTime(DateUtil.format(new Date(), DatePattern.NORM_DATETIME_PATTERN));
-        mqLog.setUpdateTime(DateUtil.format(new Date(), DatePattern.NORM_DATETIME_PATTERN));
         mqLog.setStatus(status);
         mongoTemplate.save(mqLog);
         return true;
@@ -45,7 +40,6 @@ public class MongoMqLogRepository implements MqLogRepository<String, MqMsgLogEnt
     public boolean update(String correlationId, MqMsgStatus status) {
         Criteria criteria = Criteria.where("msgId").is(correlationId);
         Update update = new Update();
-        update.set("updateTime", DateUtil.format(new Date(), DatePattern.NORM_DATETIME_PATTERN));
         update.set("status", status);
         if (MqMsgStatus.CONSUMED_FAIL == status) {
             update.inc("tryCount", 1);
