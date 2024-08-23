@@ -1,7 +1,9 @@
 package com.ww.mall.rabbitmq.repository;
 
+import com.ww.mall.mongodb.BaseDoc;
 import com.ww.mall.rabbitmq.enums.MqMsgStatus;
 import lombok.Data;
+import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
 
 import java.util.Date;
@@ -13,7 +15,8 @@ import java.util.Date;
  */
 @Data
 @NoArgsConstructor
-public class BaseMqLog {
+@EqualsAndHashCode(callSuper = true)
+public class BaseMqLog extends BaseDoc {
 
     /**
      * ack消息id
@@ -49,11 +52,5 @@ public class BaseMqLog {
      * 下一次重试时间
      */
     private Date nextTryTime;
-
-    /** 创建时间 */
-    private String createTime;
-
-    /** 修改时间 */
-    private String updateTime;
 
 }

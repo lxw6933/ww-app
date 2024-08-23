@@ -16,9 +16,6 @@ import org.springframework.data.mongodb.core.mapping.Document;
 @EqualsAndHashCode(callSuper = true)
 public class MqMsgLogEntity extends BaseMqLog {
 
-    @Id
-    private String id;
-
     /**
      * 是否删除（0：否，1：是）
      */
