@@ -51,7 +51,7 @@ public class SpuCreditScoreStatisticsService {
      * @param channelId 渠道id
      * @param score     信用分
      */
-    public void recordSpuCreditScore(Long spuId, Long channelId, int score) {
+    public void recordSpuCreditScore(Long spuId, Long channelId, double score) {
         if (spuId == null || channelId == null) {
             return;
         }
