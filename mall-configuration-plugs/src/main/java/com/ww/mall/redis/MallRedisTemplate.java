@@ -69,6 +69,13 @@ public class MallRedisTemplate {
     @PostConstruct
     public void init() {
         // 预加载的lua脚本
+        preloadLuaScript();
+    }
+
+    /**
+     * 预加载lua script，redis服务重启，需重新加载脚本，否则报错NOSCRIPT
+     */
+    private void preloadLuaScript() {
         decrementStockSha1 = redisTemplate.execute((RedisCallback<String>) connection -> connection.scriptLoad(LuaConstant.DECREMENT_STOCK_LUA_BYTE));
         lockHashStockSha1 = redisTemplate.execute((RedisCallback<String>) connection -> connection.scriptLoad(LuaConstant.LOCK_STOCK_HASH_LUA_BYTE));
         useHashStockSha1 = redisTemplate.execute((RedisCallback<String>) connection -> connection.scriptLoad(LuaConstant.USE_STOCK_HASH_LUA_BYTE));
