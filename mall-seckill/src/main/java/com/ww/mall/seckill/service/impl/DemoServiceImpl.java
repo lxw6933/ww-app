@@ -99,7 +99,7 @@ public class DemoServiceImpl implements DemoService {
         for (int i = 0; i < 100000; i++) {
             codes.add(i + Constant.SPLIT);
         }
-        int num = issueCodeService.addRedeemCodes(codes);
+        int num = issueCodeService.addRedeemCodes("test", codes);
         log.info("新增兑换码数量：{}", num);
     }
 
@@ -108,7 +108,7 @@ public class DemoServiceImpl implements DemoService {
 
     @Override
     public RedeemCodeResult issueCode(String outOrderCode, int quantity) {
-        return issueCodeService.distributeCodes(outOrderCode, quantity);
+        return issueCodeService.distributeCodes("test", outOrderCode, quantity);
     }
 
     @Override

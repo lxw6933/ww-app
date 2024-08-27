@@ -26,7 +26,7 @@ public class IssueCodeService {
 
     private static final String OUT_ORDER_CODE_BLOOM_FILTER = "bf:outOrderCode";
     private static final String OUT_ORDER_CODE_SET = "set:outOrderCode";
-    private static final String CONVERT_CODE_LIST = "list:convertCodes";
+    private static final String CONVERT_CODE_LIST = "list:convertCodes:";
 
     private static final int CODE_NUM_THRESHOLD = 100;
     private static final String SUCCESS = "SUCCESS";
@@ -142,11 +142,12 @@ public class IssueCodeService {
     /**
      * 发放兑换码
      *
+     * @param actCode 活动编码
      * @param outOrderCode 外部订单号
      * @param quantity 需要发放的兑换码数量
      * @return List<String> 已发放的兑换码列表
      */
-    public RedeemCodeResult distributeCodes(String outOrderCode, int quantity) {
+    public RedeemCodeResult distributeCodes(String actCode, String outOrderCode, int quantity) {
         if (this.checkOutOrderCode(outOrderCode)) {
             log.info("outOrderCode {} has already been processed", outOrderCode);
             // return before codes result
@@ -154,7 +155,7 @@ public class IssueCodeService {
         }
 
         RScript scriptExecutor = redissonClient.getScript();
-        List<Object> keys = Collections.singletonList(CONVERT_CODE_LIST);
+        List<Object> keys = Collections.singletonList(CONVERT_CODE_LIST + actCode);
         List<Object> args = Collections.singletonList(String.valueOf(quantity));
         List<String> result = scriptExecutor.evalSha(RScript.Mode.READ_WRITE, issueScriptSha1, RScript.ReturnType.MULTI, keys, args);
         log.info("outOrderCode【{}】issue result：{}", outOrderCode, result);
@@ -186,12 +187,13 @@ public class IssueCodeService {
     /**
      * 补充兑换码
      *
+     * @param actCode 活动编码
      * @param newCodes 新码集合
      * @return 数量
      */
-    public int addRedeemCodes(List<String> newCodes) {
+    public int addRedeemCodes(String actCode, List<String> newCodes) {
         RScript scriptExecutor = redissonClient.getScript();
-        List<Object> keys = Collections.singletonList(CONVERT_CODE_LIST);
+        List<Object> keys = Collections.singletonList(CONVERT_CODE_LIST + actCode);
         return scriptExecutor.evalSha(RScript.Mode.READ_WRITE, addScriptSha1, RScript.ReturnType.INTEGER, keys, newCodes);
     }
 
