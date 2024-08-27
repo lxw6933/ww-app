@@ -24,6 +24,8 @@ import java.util.List;
 @Component
 public class IssueCodeService {
 
+    private static final String REDIS_SCRIPT_SHA1_KEY = "script:sha1:";
+
     private static final String OUT_ORDER_CODE_BLOOM_FILTER = "bf:outOrderCode";
     private static final String OUT_ORDER_CODE_SET = "set:outOrderCode";
     private static final String CONVERT_CODE_LIST = "list:convertCodes:";
@@ -32,6 +34,7 @@ public class IssueCodeService {
     private static final String SUCCESS = "SUCCESS";
     private static final String CODE_NOT_ENOUGH = "CODE_NOT_ENOUGH";
 
+    private static final String issueScriptName = "issueCodes";
     private static final String issueScript = "local redeemCodeList = KEYS[1]\n" +
             "local quantity = tonumber(ARGV[1])\n" +
             "local codes = {}\n" +
@@ -50,6 +53,7 @@ public class IssueCodeService {
             "local remaining = redis.call('LLEN', redeemCodeList)\n" +
             "return { 'SUCCESS', unpack(codes), remaining }";
 
+    private static final String addScriptName = "addCodes";
     private static final String addScript = "local listKey = KEYS[1] \n" +
             "for i, code in ipairs(ARGV) do \n" +
             "    redis.call('RPUSH', listKey, code) \n" +
@@ -70,10 +74,33 @@ public class IssueCodeService {
 
     private static final double DEFAULT_FALSE_PROBABILITY = 0.01;
 
-    public void preLoadScript() {
+    /**
+     * 预加载lua脚本【解决集群重复预加载】
+     *
+     * @param scriptName 脚本名称
+     * @param script 脚本
+     * @return 脚本sha1
+     */
+    private String preLoadScript(String scriptName, String script) {
         RScript scriptExecutor = redissonClient.getScript();
-        issueScriptSha1 = scriptExecutor.scriptLoad(issueScript);
-        addScriptSha1 = scriptExecutor.scriptLoad(addScript);
+        // 从 Redis 中获取已存在的 SHA1
+        String sha1Key = REDIS_SCRIPT_SHA1_KEY + scriptName;
+        Object scriptSha1 = redissonClient.getBucket(sha1Key).get();
+
+        if (scriptSha1 != null && !scriptSha1.toString().isEmpty()) {
+            // 验证 SHA1 是否依然有效
+            List<Boolean> existingScripts = scriptExecutor.scriptExists(scriptSha1.toString());
+            if (existingScripts.get(0)) {
+                // 如果有效，直接使用这个 SHA1
+                log.info("{} script already loaded with SHA1: {}", scriptName, scriptSha1);
+                return scriptSha1.toString();
+            }
+        }
+        // 如果 SHA1 无效或不存在，重新加载脚本
+        scriptSha1 = scriptExecutor.scriptLoad(script);
+        redissonClient.getBucket(sha1Key).set(scriptSha1);
+        log.info("{} script loaded with SHA1: {}", scriptName, scriptSha1);
+        return scriptSha1.toString();
     }
 
     @PostConstruct
@@ -86,7 +113,8 @@ public class IssueCodeService {
             log.info("{} BloomFilter already exists. Skipping initialization", OUT_ORDER_CODE_BLOOM_FILTER);
         }
         // 预加载脚本
-        preLoadScript();
+        issueScriptSha1 = preLoadScript(issueScriptName, issueScript);
+        addScriptSha1 = preLoadScript(addScriptName, addScript);
     }
 
     private void add(String value) {
