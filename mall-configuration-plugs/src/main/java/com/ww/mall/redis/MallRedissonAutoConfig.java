@@ -1,6 +1,7 @@
 package com.ww.mall.redis;
 
 import com.ww.mall.redis.aspect.MallDistributedLockAspect;
+import com.ww.mall.redis.codec.RedissonCodec;
 import lombok.extern.slf4j.Slf4j;
 import org.redisson.Redisson;
 import org.redisson.api.RedissonClient;
@@ -53,6 +54,8 @@ public class MallRedissonAutoConfig {
         config.useSingleServer()
                 .setAddress(url)
                 .setPassword(password);
+        // 序列化
+        config.setCodec(new RedissonCodec());
         // 集群配置
 //        String[] urls = redisNodes.split(",");
 //        String[] nodes = new String[urls.length];
