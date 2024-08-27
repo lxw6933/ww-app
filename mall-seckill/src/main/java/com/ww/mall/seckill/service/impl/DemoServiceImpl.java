@@ -7,6 +7,7 @@ import com.github.houbb.sensitive.word.bs.SensitiveWordBs;
 import com.ww.mall.annotation.plugs.excel.ExcelExportTimer;
 import com.ww.mall.annotation.plugs.excel.ExcelImportTimer;
 import com.ww.mall.annotation.plugs.sensitive.MallSensitiveWordHandler;
+import com.ww.mall.common.constant.Constant;
 import com.ww.mall.common.constant.RedisChannelConstant;
 import com.ww.mall.common.enums.SensitiveWordHandlerType;
 import com.ww.mall.common.exception.ApiException;
@@ -93,6 +94,12 @@ public class DemoServiceImpl implements DemoService {
         mallRedisTemplate.initHashStock("skuHashStock", 10);
         mallRedisTemplate.setHashStock("stock1", 10, 2, 2);
         mallRedisTemplate.setHashStock("stock2", 10, 7, 2);
+
+        List<String> codes = new ArrayList<>();
+        for (int i = 0; i < 100000; i++) {
+            codes.add(i + Constant.SPLIT);
+        }
+        issueCodeService.addRedeemCodes(codes);
     }
 
     @Autowired
