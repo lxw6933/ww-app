@@ -3,7 +3,10 @@ package com.ww.mall.redis.service.outorderno;
 import com.ww.mall.common.exception.ApiException;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
-import org.redisson.api.*;
+import org.redisson.api.RBloomFilter;
+import org.redisson.api.RScript;
+import org.redisson.api.RSet;
+import org.redisson.api.RedissonClient;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
@@ -115,7 +118,7 @@ public class IssueCodeService {
      */
     private boolean checkOutOrderCode(String outOrderCode) {
         if (StringUtils.isEmpty(outOrderCode)) {
-            return false;
+            throw new IllegalArgumentException("外部订单号不能为空");
         }
         if (outOrderCode.length() > 64) {
             throw new IllegalArgumentException("外部订单号长度不能超过64");
