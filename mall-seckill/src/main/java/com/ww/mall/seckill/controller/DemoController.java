@@ -1,6 +1,7 @@
 package com.ww.mall.seckill.controller;
 
 import com.github.houbb.sensitive.word.bs.SensitiveWordBs;
+import com.ww.mall.redis.service.outorderno.RedeemCodeResult;
 import com.ww.mall.seckill.grpc.GrpcClientService;
 import com.ww.mall.seckill.service.DemoService;
 import com.ww.mall.seckill.view.bo.SensitiveWordBO;
@@ -27,6 +28,11 @@ public class DemoController {
 
     @Autowired
     private DemoService demoService;
+
+    @GetMapping("/issueCode")
+    public RedeemCodeResult issueCode(@RequestParam String outOrderCode, @RequestParam int quantity) {
+        return demoService.issueCode(outOrderCode, quantity);
+    }
 
     @PostMapping("testEncryptReqData")
     public void testEncryptReqData(@RequestBody MemberLoginBO memberLoginBO) {

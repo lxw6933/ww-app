@@ -1,18 +1,18 @@
 package com.ww.mall.seckill.service.impl;
-import java.util.Date;
 
 import cn.hutool.core.date.DatePattern;
 import cn.hutool.core.date.DateUtil;
 import com.alibaba.fastjson.JSON;
 import com.github.houbb.sensitive.word.bs.SensitiveWordBs;
+import com.ww.mall.annotation.plugs.excel.ExcelExportTimer;
+import com.ww.mall.annotation.plugs.excel.ExcelImportTimer;
+import com.ww.mall.annotation.plugs.sensitive.MallSensitiveWordHandler;
 import com.ww.mall.common.constant.RedisChannelConstant;
 import com.ww.mall.common.enums.SensitiveWordHandlerType;
 import com.ww.mall.common.exception.ApiException;
 import com.ww.mall.common.utils.IdUtil;
 import com.ww.mall.common.utils.IpUtil;
 import com.ww.mall.excel.ExcelManager;
-import com.ww.mall.annotation.plugs.excel.ExcelExportTimer;
-import com.ww.mall.annotation.plugs.excel.ExcelImportTimer;
 import com.ww.mall.excel.vo.ExcelResultVO;
 import com.ww.mall.ip2region.Ip2regionSearcher;
 import com.ww.mall.ip2region.IpInfo;
@@ -21,13 +21,14 @@ import com.ww.mall.rabbitmq.exchange.ExchangeConstant;
 import com.ww.mall.rabbitmq.queue.QueueConstant;
 import com.ww.mall.rabbitmq.routekey.RouteKeyConstant;
 import com.ww.mall.redis.MallRedisTemplate;
+import com.ww.mall.redis.service.outorderno.IssueCodeService;
+import com.ww.mall.redis.service.outorderno.RedeemCodeResult;
 import com.ww.mall.seckill.entity.Demo;
 import com.ww.mall.seckill.listener.DemoImportListener;
 import com.ww.mall.seckill.model.DemoModel;
 import com.ww.mall.seckill.node.executor.DemoFlowExecutor;
 import com.ww.mall.seckill.service.DemoService;
 import com.ww.mall.seckill.view.bo.SensitiveWordBO;
-import com.ww.mall.annotation.plugs.sensitive.MallSensitiveWordHandler;
 import com.ww.mall.web.feign.ThirdServerFeignService;
 import com.ww.mall.web.view.bo.MemberLoginBO;
 import lombok.extern.slf4j.Slf4j;
@@ -92,6 +93,14 @@ public class DemoServiceImpl implements DemoService {
         mallRedisTemplate.initHashStock("skuHashStock", 10);
         mallRedisTemplate.setHashStock("stock1", 10, 2, 2);
         mallRedisTemplate.setHashStock("stock2", 10, 7, 2);
+    }
+
+    @Autowired
+    private IssueCodeService issueCodeService;
+
+    @Override
+    public RedeemCodeResult issueCode(String outOrderCode, int quantity) {
+        return issueCodeService.distributeCodes(outOrderCode, quantity);
     }
 
     @Override

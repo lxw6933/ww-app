@@ -80,18 +80,18 @@ public class IssueCodeService {
         preLoadScript();
     }
 
-    public void add(String value) {
+    private void add(String value) {
         bloomFilter.add(value);
         log.info("added value: {} to BloomFilter {}", value, OUT_ORDER_CODE_BLOOM_FILTER);
     }
 
-    public boolean mightContain(String value) {
+    private boolean mightContain(String value) {
         boolean result = bloomFilter.contains(value);
         log.info("checked value: {} in BloomFilter {}, result: {}", value, OUT_ORDER_CODE_BLOOM_FILTER, result);
         return result;
     }
 
-    public void deleteBloomFilter() {
+    private void deleteBloomFilter() {
         bloomFilter.delete();
         log.info("{} BloomFilter deleted", OUT_ORDER_CODE_BLOOM_FILTER);
     }
@@ -107,7 +107,7 @@ public class IssueCodeService {
      * @param outOrderCode 外部订单号
      * @return boolean
      */
-    public boolean checkOutOrderCode(String outOrderCode) {
+    private boolean checkOutOrderCode(String outOrderCode) {
         if (StringUtils.isEmpty(outOrderCode)) {
             return false;
         }

@@ -1,5 +1,6 @@
 package com.ww.mall.seckill.service;
 
+import com.ww.mall.redis.service.outorderno.RedeemCodeResult;
 import com.ww.mall.seckill.view.bo.SensitiveWordBO;
 import com.ww.mall.web.view.bo.MemberLoginBO;
 import org.springframework.web.multipart.MultipartFile;
@@ -13,6 +14,8 @@ import javax.servlet.http.HttpServletResponse;
  * @description:
  */
 public interface DemoService {
+
+    RedeemCodeResult issueCode(String outOrderCode, int quantity);
 
     void testEncryptReqData(MemberLoginBO memberLoginBO);
 
