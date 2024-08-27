@@ -128,11 +128,6 @@ public class IssueCodeService {
         return result;
     }
 
-    private void deleteBloomFilter() {
-        bloomFilter.delete();
-        log.info("{} BloomFilter deleted", OUT_ORDER_CODE_BLOOM_FILTER);
-    }
-
     private String getShardKey(String outOrderCode) {
         int shardId = Math.abs(outOrderCode.hashCode()) % SHARD_NUM;
         return OUT_ORDER_CODE_SET + shardId;
