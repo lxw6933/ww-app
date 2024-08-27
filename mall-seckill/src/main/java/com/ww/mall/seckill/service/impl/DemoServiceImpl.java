@@ -99,7 +99,8 @@ public class DemoServiceImpl implements DemoService {
         for (int i = 0; i < 100000; i++) {
             codes.add(i + Constant.SPLIT);
         }
-        issueCodeService.addRedeemCodes(codes);
+        int num = issueCodeService.addRedeemCodes(codes);
+        log.info("新增兑换码数量：{}", num);
     }
 
     @Autowired

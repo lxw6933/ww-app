@@ -26,10 +26,35 @@ public class IssueCodeService {
     private static final String CONVERT_CODE_LIST = "list:convertCodes";
 
     private static final int CODE_NUM_THRESHOLD = 100;
-    private static final String CODE_NOT_ENOUGH = "CODE_NOT_ENOUGH";
     private static final String SUCCESS = "SUCCESS";
+    private static final String CODE_NOT_ENOUGH = "CODE_NOT_ENOUGH";
+
+    private static final String issueScript = "local redeemCodeList = KEYS[1]\n" +
+            "local quantity = tonumber(ARGV[1])\n" +
+            "local codes = {}\n" +
+            "local available = redis.call('LLEN', redeemCodeList)\n" +
+            "if available < quantity then\n" +
+            "    return { 'ERROR_NOT_ENOUGH_CODES' }\n" +
+            "end\n" +
+            "for i = 1, quantity do\n" +
+            "    local code = redis.call('LPOP', redeemCodeList)\n" +
+            "    if code then\n" +
+            "        table.insert(codes, code)\n" +
+            "    else\n" +
+            "        break\n" +
+            "    end\n" +
+            "end\n" +
+            "local remaining = redis.call('LLEN', redeemCodeList)\n" +
+            "return { 'SUCCESS', unpack(codes), remaining }";
+
+    private static final String addScript = "local listKey = KEYS[1] \n" +
+            "for i, code in ipairs(ARGV) do \n" +
+            "    redis.call('RPUSH', listKey, code) \n" +
+            "end \n" +
+            "return redis.call('LLEN', listKey)";
 
     private String issueScriptSha1;
+    private String addScriptSha1;
 
     @Autowired
     private RedissonClient redissonClient;
@@ -43,25 +68,9 @@ public class IssueCodeService {
     private static final double DEFAULT_FALSE_PROBABILITY = 0.01;
 
     public void preLoadScript() {
-        String issueScript = "local redeemCodeList = KEYS[1]\n" +
-                "local quantity = tonumber(ARGV[1])\n" +
-                "local codes = {}\n" +
-                "local available = redis.call('LLEN', redeemCodeList)\n" +
-                "if available < quantity then\n" +
-                "    return { 'ERROR_NOT_ENOUGH_CODES' }\n" +
-                "end\n" +
-                "for i = 1, quantity do\n" +
-                "    local code = redis.call('LPOP', redeemCodeList)\n" +
-                "    if code then\n" +
-                "        table.insert(codes, code)\n" +
-                "    else\n" +
-                "        break\n" +
-                "    end\n" +
-                "end\n" +
-                "local remaining = redis.call('LLEN', redeemCodeList)\n" +
-                "return { 'SUCCESS', unpack(codes), remaining }";
         RScript scriptExecutor = redissonClient.getScript();
         issueScriptSha1 = scriptExecutor.scriptLoad(issueScript);
+        addScriptSha1 = scriptExecutor.scriptLoad(addScript);
     }
 
     @PostConstruct
@@ -175,10 +184,24 @@ public class IssueCodeService {
      * 补充兑换码
      *
      * @param newCodes 新码集合
+     * @return 数量
      */
-    public void addRedeemCodes(List<String> newCodes) {
-        RList<String> redeemCodeList = redissonClient.getList(CONVERT_CODE_LIST);
-        redeemCodeList.addAll(newCodes);
+    public int addRedeemCodes(List<String> newCodes) {
+        RScript scriptExecutor = redissonClient.getScript();
+        List<Object> keys = Collections.singletonList(CONVERT_CODE_LIST);
+        return scriptExecutor.evalSha(RScript.Mode.READ_WRITE, addScriptSha1, RScript.ReturnType.INTEGER, keys, newCodes);
     }
 
 }
+
+
+
+
+
+
+
+
+
+
+
+
