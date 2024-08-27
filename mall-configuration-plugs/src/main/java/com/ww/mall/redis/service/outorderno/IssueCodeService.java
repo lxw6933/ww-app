@@ -3,10 +3,7 @@ package com.ww.mall.redis.service.outorderno;
 import com.ww.mall.common.exception.ApiException;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
-import org.redisson.api.RBloomFilter;
-import org.redisson.api.RScript;
-import org.redisson.api.RSet;
-import org.redisson.api.RedissonClient;
+import org.redisson.api.*;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
@@ -172,6 +169,16 @@ public class IssueCodeService {
         }
         log.info("distributed {} codes【{}】for outOrderCode {}.", quantity, redeemCodes, outOrderCode);
         return new RedeemCodeResult(status, redeemCodes, remaining);
+    }
+
+    /**
+     * 补充兑换码
+     *
+     * @param newCodes 新码集合
+     */
+    public void addRedeemCodes(List<String> newCodes) {
+        RList<String> redeemCodeList = redissonClient.getList(CONVERT_CODE_LIST);
+        redeemCodeList.addAll(newCodes);
     }
 
 }
