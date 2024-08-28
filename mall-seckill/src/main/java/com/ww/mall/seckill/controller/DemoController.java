@@ -1,7 +1,6 @@
 package com.ww.mall.seckill.controller;
 
 import com.github.houbb.sensitive.word.bs.SensitiveWordBs;
-import com.ww.mall.redis.service.outorderno.RedeemCodeResult;
 import com.ww.mall.seckill.grpc.GrpcClientService;
 import com.ww.mall.seckill.service.DemoService;
 import com.ww.mall.seckill.view.bo.SensitiveWordBO;
@@ -15,6 +14,7 @@ import org.springframework.web.multipart.MultipartFile;
 import javax.annotation.Resource;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
+import java.util.List;
 
 /**
  * @author ww
@@ -30,7 +30,7 @@ public class DemoController {
     private DemoService demoService;
 
     @GetMapping("/issueCode")
-    public RedeemCodeResult issueCode(@RequestParam String outOrderCode, @RequestParam int quantity) {
+    public List<String> issueCode(@RequestParam String outOrderCode, @RequestParam int quantity) {
         return demoService.issueCode(outOrderCode, quantity);
     }
 

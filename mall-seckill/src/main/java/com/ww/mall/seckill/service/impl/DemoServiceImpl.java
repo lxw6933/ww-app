@@ -23,7 +23,6 @@ import com.ww.mall.rabbitmq.queue.QueueConstant;
 import com.ww.mall.rabbitmq.routekey.RouteKeyConstant;
 import com.ww.mall.redis.MallRedisTemplate;
 import com.ww.mall.redis.service.outorderno.IssueCodeService;
-import com.ww.mall.redis.service.outorderno.RedeemCodeResult;
 import com.ww.mall.seckill.entity.Demo;
 import com.ww.mall.seckill.listener.DemoImportListener;
 import com.ww.mall.seckill.model.DemoModel;
@@ -107,7 +106,7 @@ public class DemoServiceImpl implements DemoService {
     private IssueCodeService issueCodeService;
 
     @Override
-    public RedeemCodeResult issueCode(String outOrderCode, int quantity) {
+    public List<String> issueCode(String outOrderCode, int quantity) {
         return issueCodeService.distributeCodes("test", outOrderCode, quantity);
     }
 

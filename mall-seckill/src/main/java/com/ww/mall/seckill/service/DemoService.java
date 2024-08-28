@@ -1,12 +1,12 @@
 package com.ww.mall.seckill.service;
 
-import com.ww.mall.redis.service.outorderno.RedeemCodeResult;
 import com.ww.mall.seckill.view.bo.SensitiveWordBO;
 import com.ww.mall.web.view.bo.MemberLoginBO;
 import org.springframework.web.multipart.MultipartFile;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
+import java.util.List;
 
 /**
  * @author ww
@@ -15,7 +15,7 @@ import javax.servlet.http.HttpServletResponse;
  */
 public interface DemoService {
 
-    RedeemCodeResult issueCode(String outOrderCode, int quantity);
+    List<String> issueCode(String outOrderCode, int quantity);
 
     void testEncryptReqData(MemberLoginBO memberLoginBO);
 

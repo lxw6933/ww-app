@@ -8,7 +8,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import javax.annotation.PostConstruct;
-import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
@@ -28,27 +27,21 @@ public class IssueCodeService {
     private static final String CONVERT_CODE_LIST = "list:convertCodes:";
 
     private static final int CODE_NUM_THRESHOLD = 100;
-    private static final String SUCCESS = "SUCCESS";
-    private static final String CODE_NOT_ENOUGH = "CODE_NOT_ENOUGH";
 
     private static final String issueScriptName = "issueCodes";
     private static final String issueScript = "local redeemCodeList = KEYS[1]\n" +
             "local quantity = tonumber(ARGV[1])\n" +
-            "local codes = {}\n" +
             "local available = redis.call('LLEN', redeemCodeList)\n" +
-            "if available < quantity then\n" +
-            "    return { 'ERROR_NOT_ENOUGH_CODES' }\n" +
-            "end\n" +
-            "for i = 1, quantity do\n" +
-            "    local code = redis.call('LPOP', redeemCodeList)\n" +
-            "    if code then\n" +
-            "        table.insert(codes, code)\n" +
-            "    else\n" +
-            "        break\n" +
+            "local codes = {}\n" +
+            "if available >= quantity then\n" +
+            "    for i = 1, quantity do\n" +
+            "        local code = redis.call('LPOP', redeemCodeList)\n" +
+            "        if code then\n" +
+            "            table.insert(codes, code)\n" +
+            "        end\n" +
             "    end\n" +
             "end\n" +
-            "local remaining = redis.call('LLEN', redeemCodeList)\n" +
-            "return { 'SUCCESS', unpack(codes), remaining }";
+            "return codes";
 
     private static final String addScriptName = "addCodes";
     private static final String addScript = "local listKey = KEYS[1] \n" +
@@ -167,7 +160,7 @@ public class IssueCodeService {
      * @param quantity 需要发放的兑换码数量
      * @return List<String> 已发放的兑换码列表
      */
-    public RedeemCodeResult distributeCodes(String actCode, String outOrderCode, int quantity) {
+    public List<String> distributeCodes(String actCode, String outOrderCode, int quantity) {
         if (this.checkOutOrderCode(outOrderCode)) {
             log.info("outOrderCode {} has already been processed", outOrderCode);
             // return before codes result
@@ -179,28 +172,11 @@ public class IssueCodeService {
         List<String> result = scriptExecutor.evalSha(RScript.Mode.READ_WRITE, issueScriptSha1, RScript.ReturnType.MULTI, keys, quantity);
         log.info("outOrderCode【{}】issue result：{}", outOrderCode, result);
         // result valid
-        if (result == null || result.size() < 2) {
-            throw new RuntimeException("issue script result: " + result);
-        }
-
-        String status = result.get(0);
-        if (CODE_NOT_ENOUGH.equals(status)) {
+        if (result.isEmpty()) {
             throw new ApiException("兑换码数量不足，请稍后再试");
+        } else {
+            return result;
         }
-        if (!SUCCESS.equals(status)) {
-            throw new ApiException("兑换码发放失败，请稍后再试");
-        }
-
-        List<String> redeemCodes = new ArrayList<>();
-        for (int i = 1; i < result.size() - 1; i++) {
-            redeemCodes.add(result.get(i));
-        }
-        int remaining = (int) Long.parseLong(result.get(result.size() - 1));
-        if (remaining < CODE_NUM_THRESHOLD) {
-            // TODO 通知兑换码服务补充兑换码
-        }
-        log.info("distributed {} codes【{}】for outOrderCode {}.", quantity, redeemCodes, outOrderCode);
-        return new RedeemCodeResult(status, redeemCodes, remaining);
     }
 
     /**
