@@ -109,6 +109,9 @@ public class DemoServiceImpl implements DemoService {
 
     @Override
     public List<String> issueCode(String outOrderCode, int quantity) {
+        if ("1".equals(outOrderCode)) {
+            outOrderCode = IdUtil.generatorIdStr();
+        }
         return issueCodeService.distributeCodes("test", outOrderCode, quantity);
     }
 
