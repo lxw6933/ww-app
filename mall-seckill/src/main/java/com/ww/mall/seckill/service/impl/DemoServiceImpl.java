@@ -98,8 +98,10 @@ public class DemoServiceImpl implements DemoService {
         for (int i = 0; i < 100000; i++) {
             codes.add(i + Constant.SPLIT);
         }
-        int num = issueCodeService.addRedeemCodes("test", codes);
-        log.info("新增兑换码数量：{}", num);
+        long start = System.currentTimeMillis();
+        issueCodeService.addRedeemCodes("test", codes);
+        long end = System.currentTimeMillis();
+        log.info("耗时：{}", (end - start) / 1000);
     }
 
     @Autowired
