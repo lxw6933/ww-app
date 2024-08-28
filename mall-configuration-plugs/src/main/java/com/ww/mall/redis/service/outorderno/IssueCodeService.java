@@ -3,10 +3,7 @@ package com.ww.mall.redis.service.outorderno;
 import com.ww.mall.common.exception.ApiException;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
-import org.redisson.api.RBloomFilter;
-import org.redisson.api.RScript;
-import org.redisson.api.RSet;
-import org.redisson.api.RedissonClient;
+import org.redisson.api.*;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
@@ -190,11 +187,12 @@ public class IssueCodeService {
      * @return 数量
      */
     public int addRedeemCodes(String actCode, List<String> newCodes) {
-//        RList<Object> list = redissonClient.getList(CONVERT_CODE_LIST + actCode);
-//        list.addAll(newCodes);
-        RScript scriptExecutor = redissonClient.getScript();
-        List<Object> keys = Collections.singletonList(CONVERT_CODE_LIST + actCode);
-        return scriptExecutor.<Long>evalSha(RScript.Mode.READ_WRITE, addScriptSha1, RScript.ReturnType.INTEGER, keys, newCodes).intValue();
+        RList<Object> list = redissonClient.getList(CONVERT_CODE_LIST + actCode);
+        list.addAll(newCodes);
+        return 1;
+//        RScript scriptExecutor = redissonClient.getScript();
+//        List<Object> keys = Collections.singletonList(CONVERT_CODE_LIST + actCode);
+//        return scriptExecutor.<Long>evalSha(RScript.Mode.READ_WRITE, addScriptSha1, RScript.ReturnType.INTEGER, keys, newCodes).intValue();
     }
 
 }
