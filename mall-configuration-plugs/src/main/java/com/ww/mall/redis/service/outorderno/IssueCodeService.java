@@ -164,6 +164,7 @@ public class IssueCodeService {
         log.info("outOrderCode【{}】issue result：{}", outOrderCode, result);
         // result valid
         if (result.isEmpty()) {
+            // TODO 异步通知服务补充兑换码数量
             throw new ApiException("兑换码数量不足，请稍后再试");
         } else {
             return result;
