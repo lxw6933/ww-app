@@ -3,7 +3,10 @@ package com.ww.mall.redis.service.outorderno;
 import com.ww.mall.common.exception.ApiException;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
-import org.redisson.api.*;
+import org.redisson.api.RBloomFilter;
+import org.redisson.api.RScript;
+import org.redisson.api.RSet;
+import org.redisson.api.RedissonClient;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
@@ -44,11 +47,11 @@ public class IssueCodeService {
             "return codes";
 
     private static final String addScriptName = "addCodes";
-    private static final String addScript = "local listKey = KEYS[1] \n" +
-            "for i, code in ipairs(ARGV) do \n" +
-            "    redis.call('RPUSH', listKey, code) \n" +
-            "end \n" +
-            "return redis.call('LLEN', listKey)";
+    private static final String addScript = "local redeemCodeList = KEYS[1]\n" +
+            "if #ARGV > 0 then\n" +
+            "    redis.call('RPUSH', redeemCodeList, unpack(ARGV))\n" +
+            "end\n" +
+            "return redis.call('LLEN', redeemCodeList)";
 
     private String issueScriptSha1;
     private String addScriptSha1;
@@ -187,12 +190,11 @@ public class IssueCodeService {
      * @return 数量
      */
     public int addRedeemCodes(String actCode, List<String> newCodes) {
-        RList<Object> list = redissonClient.getList(CONVERT_CODE_LIST + actCode);
-        list.addAll(newCodes);
-//        RScript scriptExecutor = redissonClient.getScript();
-//        List<Object> keys = Collections.singletonList(CONVERT_CODE_LIST + actCode);
-//        Long result = scriptExecutor.evalSha(RScript.Mode.READ_WRITE, addScriptSha1, RScript.ReturnType.INTEGER, keys, newCodes);
-        return 1;
+//        RList<Object> list = redissonClient.getList(CONVERT_CODE_LIST + actCode);
+//        list.addAll(newCodes);
+        RScript scriptExecutor = redissonClient.getScript();
+        List<Object> keys = Collections.singletonList(CONVERT_CODE_LIST + actCode);
+        return scriptExecutor.<Long>evalSha(RScript.Mode.READ_WRITE, addScriptSha1, RScript.ReturnType.INTEGER, keys, newCodes).intValue();
     }
 
 }
