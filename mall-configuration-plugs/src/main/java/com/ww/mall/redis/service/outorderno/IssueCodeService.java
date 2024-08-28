@@ -43,15 +43,7 @@ public class IssueCodeService {
             "end\n" +
             "return codes";
 
-    private static final String addScriptName = "addCodes";
-    private static final String addScript = "local redeemCodeList = KEYS[1]\n" +
-            "if #ARGV > 0 then\n" +
-            "    redis.call('RPUSH', redeemCodeList, unpack(ARGV))\n" +
-            "end\n" +
-            "return redis.call('LLEN', redeemCodeList)";
-
     private String issueScriptSha1;
-    private String addScriptSha1;
 
     @Autowired
     private RedissonClient redissonClient;
@@ -104,7 +96,6 @@ public class IssueCodeService {
         }
         // 预加载脚本
         issueScriptSha1 = preLoadScript(issueScriptName, issueScript);
-        addScriptSha1 = preLoadScript(addScriptName, addScript);
     }
 
     private void add(String value) {
@@ -186,13 +177,9 @@ public class IssueCodeService {
      * @param newCodes 新码集合
      * @return 数量
      */
-    public int addRedeemCodes(String actCode, List<String> newCodes) {
+    public boolean addRedeemCodes(String actCode, List<String> newCodes) {
         RList<Object> list = redissonClient.getList(CONVERT_CODE_LIST + actCode);
-        list.addAll(newCodes);
-        return 1;
-//        RScript scriptExecutor = redissonClient.getScript();
-//        List<Object> keys = Collections.singletonList(CONVERT_CODE_LIST + actCode);
-//        return scriptExecutor.<Long>evalSha(RScript.Mode.READ_WRITE, addScriptSha1, RScript.ReturnType.INTEGER, keys, newCodes).intValue();
+        return list.addAll(newCodes);
     }
 
 }
