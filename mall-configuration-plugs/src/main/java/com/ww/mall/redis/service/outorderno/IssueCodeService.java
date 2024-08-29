@@ -72,7 +72,7 @@ public class IssueCodeService {
 
     public void addRecordToQueue(IssueCodeRecord issueCodeRecord) {
         recordQueue.offer(issueCodeRecord);
-        log.info("【ISSUE RESULT】add issue code record to queue: {}", issueCodeRecord);
+        log.info("【入队】outOrderCode【{}】codes【{}】", issueCodeRecord.getOutOrderCode(), issueCodeRecord.getCodes());
     }
 
     public void batchSaveIssueResult() {
@@ -84,7 +84,7 @@ public class IssueCodeService {
             for (int i = 0; i < BATCH_SIZE; i++) {
                 IssueCodeRecord issueCodeRecord = recordQueue.poll();
                 if (issueCodeRecord != null) {
-                    log.info("【ISSUE RESULT】queue poll outOrderCode【{}】codes【{}】to batch inserted", issueCodeRecord.getOutOrderCode(), issueCodeRecord.getCodes());
+                    log.info("【出队】outOrderCode【{}】codes【{}】", issueCodeRecord.getOutOrderCode(), issueCodeRecord.getCodes());
                     targetList.add(issueCodeRecord);
                 } else {
                     break;
@@ -93,10 +93,10 @@ public class IssueCodeService {
             if (!targetList.isEmpty()) {
                 try {
                     mongoTemplate.insert(targetList, IssueCodeRecord.class);
-                    log.info("【ISSUE RESULT】batch inserted【{}】issue code record", targetList.size());
+                    log.info("【批量入库 数量: {}】", targetList.size());
                 } catch (Exception e) {
-                    log.error("【ISSUE RESULT】failed to batch insert record to MongoDB", e);
-                    targetList.forEach(errorRecord -> log.error("【ISSUE RESULT SAVE ERROR】outOrderCode：【{}】 codes：【{}】", errorRecord.getOutOrderCode(), errorRecord.getCodes()));
+                    log.error("【批量入库异常】", e);
+                    targetList.forEach(errorRecord -> log.error("【批量入库异常】outOrderCode【{}】codes【{}】", errorRecord.getOutOrderCode(), errorRecord.getCodes()));
                 }
             }
         }
@@ -105,7 +105,7 @@ public class IssueCodeService {
     public void checkQueueOverFlow() {
         int queueSize = recordQueue.size();
         if (queueSize > CODE_RESULT_THREAD_POOL_SIZE * BATCH_SIZE) {
-            log.info("【ISSUE RESULT】size too much ... {}", queueSize);
+            log.info("【本地队列溢出，总数量：{}】", queueSize);
             int batchesToProcess = queueSize / BATCH_SIZE;
             for (int i = 0; i < batchesToProcess; i++) {
                 codeResultExecutor.submit(this::batchSaveIssueResult);
@@ -114,9 +114,9 @@ public class IssueCodeService {
     }
 
     @PreDestroy
-    public void onShutdown() {
-        log.info("【ISSUE RESULT】server close handler remaining issue codes result");
+    public void destroy() {
         int queueSize = recordQueue.size();
+        log.info("【服务关闭，处理队列剩余发放结果，剩余数量：{}】", queueSize);
         int batchesToProcess = queueSize / BATCH_SIZE;
         for (int i = 0; i < batchesToProcess; i++) {
             codeResultExecutor.submit(this::batchSaveIssueResult);
@@ -142,14 +142,12 @@ public class IssueCodeService {
             List<Boolean> existingScripts = scriptExecutor.scriptExists(scriptSha1.toString());
             if (existingScripts.get(0)) {
                 // 如果有效，直接使用这个 SHA1
-                log.info("{} script already loaded with SHA1: {}", scriptName, scriptSha1);
                 return scriptSha1.toString();
             }
         }
         // 如果 SHA1 无效或不存在，重新加载脚本
         scriptSha1 = scriptExecutor.scriptLoad(script);
         redissonClient.getBucket(sha1Key).set(scriptSha1);
-        log.info("{} script loaded with SHA1: {}", scriptName, scriptSha1);
         return scriptSha1.toString();
     }
 
@@ -161,9 +159,6 @@ public class IssueCodeService {
         bloomFilter = redissonClient.getBloomFilter(OUT_ORDER_CODE_BLOOM_FILTER);
         if (!bloomFilter.isExists()) {
             bloomFilter.tryInit(DEFAULT_INIT_SIZE, DEFAULT_FALSE_PROBABILITY);
-            log.info("{} BloomFilter initialized with expected insertions: {} and false positive rate: {}", OUT_ORDER_CODE_BLOOM_FILTER, DEFAULT_INIT_SIZE, DEFAULT_FALSE_PROBABILITY);
-        } else {
-            log.info("{} BloomFilter already exists. Skipping initialization", OUT_ORDER_CODE_BLOOM_FILTER);
         }
         // 预加载脚本
         issueScriptSha1 = preLoadScript(issueScriptName, issueScript);
@@ -172,23 +167,11 @@ public class IssueCodeService {
     /**
      * 添加外部单号到过滤器
      *
-     * @param value 外部单号
+     * @param outOrderCode 外部单号
      */
-    private void add(String value) {
-        bloomFilter.add(value);
-        log.info("added value: {} to BloomFilter {}", value, OUT_ORDER_CODE_BLOOM_FILTER);
-    }
-
-    /**
-     * 判断外部单号是否可能存在过滤器中
-     *
-     * @param value 外部单号
-     * @return boolean
-     */
-    private boolean mightContain(String value) {
-        boolean result = bloomFilter.contains(value);
-        log.info("checked value: {} in BloomFilter {}, result: {}", value, OUT_ORDER_CODE_BLOOM_FILTER, result);
-        return result;
+    private void add(String outOrderCode) {
+        bloomFilter.add(outOrderCode);
+        log.info("【{}】to BloomFilter", outOrderCode);
     }
 
     /**
@@ -219,14 +202,14 @@ public class IssueCodeService {
             // get outOrderCode set shard key
             String shardKey = this.getShardKey(outOrderCode);
             RSet<String> outOrderCodeSet = redissonClient.getSet(shardKey);
-            if (!this.mightContain(outOrderCode)) {
+            if (!bloomFilter.contains(outOrderCode)) {
                 // not exists bloomFilter add to bloomFilter
                 this.add(outOrderCode);
             }
             // check in Set and add if not exists
             return !outOrderCodeSet.add(outOrderCode);
         } catch (Exception e) {
-            log.error("outOrderCode {} check exception", outOrderCode, e);
+            log.error("【{}】校验异常", outOrderCode, e);
             throw e;
         }
     }
@@ -240,8 +223,9 @@ public class IssueCodeService {
      * @return List<String> 已发放的兑换码列表
      */
     public List<String> distributeCodes(String actCode, String outOrderCode, int quantity) {
+        log.info("【{}】发放数量【{}】活动【{}】", outOrderCode, quantity, actCode);
         if (this.checkOutOrderCode(outOrderCode)) {
-            log.info("outOrderCode {} has already been processed", outOrderCode);
+            log.info("【{}】重复使用", outOrderCode);
             // return before codes result
             throw new ApiException("当前单号已发放过兑换码，请勿重复使用");
         }
@@ -249,7 +233,7 @@ public class IssueCodeService {
         RScript scriptExecutor = redissonClient.getScript();
         List<Object> keys = Collections.singletonList(CONVERT_CODE_LIST + actCode);
         List<String> result = scriptExecutor.evalSha(RScript.Mode.READ_WRITE, issueScriptSha1, RScript.ReturnType.MULTI, keys, quantity);
-        log.info("outOrderCode【{}】issue result：{}", outOrderCode, result);
+        log.info("【{}】发放结果：{}", outOrderCode, result);
         // result valid
         if (result.isEmpty()) {
             // TODO 异步通知服务补充兑换码数量
