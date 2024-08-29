@@ -10,8 +10,11 @@ import org.springframework.data.mongodb.core.MongoTemplate;
 import org.springframework.stereotype.Component;
 
 import javax.annotation.PostConstruct;
+import javax.annotation.PreDestroy;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.concurrent.*;
 
 /**
  * @author ww
@@ -32,6 +35,7 @@ public class IssueCodeService {
     private static final String OUT_ORDER_CODE_SET = "set:outOrderCode";
     private static final String CONVERT_CODE_LIST = "list:convertCodes:";
 
+    // list code 数量阈值
     private static final int CODE_NUM_THRESHOLD = 100;
 
     private static final String issueScriptName = "issueCodes";
@@ -57,6 +61,68 @@ public class IssueCodeService {
     private static final int DEFAULT_INIT_SIZE = 100000000;
 
     private static final double DEFAULT_FALSE_PROBABILITY = 0.01;
+
+    // 批量入库的数量阈值
+    private static final int BATCH_SIZE = 1000;
+
+    private static final int CODE_RESULT_THREAD_POOL_SIZE = 10;
+    private static final ConcurrentLinkedQueue<IssueCodeRecord> recordQueue = new ConcurrentLinkedQueue<>();
+    private final ScheduledExecutorService codeResultScheduler = Executors.newScheduledThreadPool(1);
+    private final ExecutorService codeResultExecutor = Executors.newFixedThreadPool(CODE_RESULT_THREAD_POOL_SIZE);
+
+    public void addRecordToQueue(IssueCodeRecord issueCodeRecord) {
+        recordQueue.offer(issueCodeRecord);
+        log.info("【ISSUE RESULT】add issue code record to queue: {}", issueCodeRecord);
+    }
+
+    public void batchSaveIssueResult() {
+        while (!recordQueue.isEmpty()) {
+            // 检查队列元素是否突发流量
+            this.checkQueueOverFlow();
+
+            List<IssueCodeRecord> targetList = new ArrayList<>(BATCH_SIZE);
+            for (int i = 0; i < BATCH_SIZE; i++) {
+                IssueCodeRecord issueCodeRecord = recordQueue.poll();
+                if (issueCodeRecord != null) {
+                    log.error("【ISSUE RESULT】queue poll outOrderCode【{}】codes【{}】to batch inserted", issueCodeRecord.getOutOrderCode(), issueCodeRecord.getCodes());
+                    targetList.add(issueCodeRecord);
+                } else {
+                    break;
+                }
+            }
+            if (!targetList.isEmpty()) {
+                try {
+                    mongoTemplate.insert(targetList, IssueCodeRecord.class);
+                    log.info("【ISSUE RESULT】batch inserted【{}】issue code record", targetList.size());
+                } catch (Exception e) {
+                    log.error("【ISSUE RESULT】failed to batch insert record to MongoDB", e);
+                    targetList.forEach(errorRecord -> log.error("【ISSUE RESULT SAVE ERROR】outOrderCode：【{}】 codes：【{}】", errorRecord.getOutOrderCode(), errorRecord.getCodes()));
+                }
+            }
+        }
+    }
+
+    public void checkQueueOverFlow() {
+        int queueSize = recordQueue.size();
+        if (queueSize > CODE_RESULT_THREAD_POOL_SIZE * BATCH_SIZE) {
+            log.info("【ISSUE RESULT】size too much ... {}", queueSize);
+            int batchesToProcess = queueSize / BATCH_SIZE;
+            for (int i = 0; i < batchesToProcess; i++) {
+                codeResultExecutor.submit(this::batchSaveIssueResult);
+            }
+        }
+    }
+
+    @PreDestroy
+    public void onShutdown() {
+        log.info("【ISSUE RESULT】server close handler remaining issue codes result");
+        int queueSize = recordQueue.size();
+        int batchesToProcess = queueSize / BATCH_SIZE;
+        for (int i = 0; i < batchesToProcess; i++) {
+            codeResultExecutor.submit(this::batchSaveIssueResult);
+        }
+        codeResultExecutor.shutdown();
+    }
 
     /**
      * 预加载lua脚本【解决集群重复预加载】
@@ -89,6 +155,9 @@ public class IssueCodeService {
 
     @PostConstruct
     public void init() {
+        // 开启定时任务批量处理发放结果
+        codeResultScheduler.scheduleAtFixedRate(this::batchSaveIssueResult, 0, 1, TimeUnit.MINUTES);
+        // 初始化外部单号过滤器
         bloomFilter = redissonClient.getBloomFilter(OUT_ORDER_CODE_BLOOM_FILTER);
         if (!bloomFilter.isExists()) {
             bloomFilter.tryInit(DEFAULT_INIT_SIZE, DEFAULT_FALSE_PROBABILITY);
@@ -100,17 +169,34 @@ public class IssueCodeService {
         issueScriptSha1 = preLoadScript(issueScriptName, issueScript);
     }
 
+    /**
+     * 添加外部单号到过滤器
+     *
+     * @param value 外部单号
+     */
     private void add(String value) {
         bloomFilter.add(value);
         log.info("added value: {} to BloomFilter {}", value, OUT_ORDER_CODE_BLOOM_FILTER);
     }
 
+    /**
+     * 判断外部单号是否可能存在过滤器中
+     *
+     * @param value 外部单号
+     * @return boolean
+     */
     private boolean mightContain(String value) {
         boolean result = bloomFilter.contains(value);
         log.info("checked value: {} in BloomFilter {}, result: {}", value, OUT_ORDER_CODE_BLOOM_FILTER, result);
         return result;
     }
 
+    /**
+     * 获取set分区key
+     *
+     * @param outOrderCode 外部单号
+     * @return set分区key
+     */
     private String getShardKey(String outOrderCode) {
         int shardId = Math.abs(outOrderCode.hashCode()) % SHARD_NUM;
         return OUT_ORDER_CODE_SET + shardId;
@@ -172,7 +258,7 @@ public class IssueCodeService {
             IssueCodeRecord issueCodeRecord = new IssueCodeRecord();
             issueCodeRecord.setOutOrderCode(outOrderCode);
             issueCodeRecord.setCodes(result);
-            mongoTemplate.save(issueCodeRecord);
+            addRecordToQueue(issueCodeRecord);
             return result;
         }
     }
