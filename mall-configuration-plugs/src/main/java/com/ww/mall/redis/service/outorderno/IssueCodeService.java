@@ -5,6 +5,8 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.redisson.api.*;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.DependsOn;
+import org.springframework.data.mongodb.core.MongoTemplate;
 import org.springframework.stereotype.Component;
 
 import javax.annotation.PostConstruct;
@@ -18,7 +20,11 @@ import java.util.List;
  */
 @Slf4j
 @Component
+@DependsOn("mongoTemplate")
 public class IssueCodeService {
+
+    @Autowired
+    private MongoTemplate mongoTemplate;
 
     private static final String REDIS_SCRIPT_SHA1_KEY = "script:sha1:";
 
@@ -33,15 +39,11 @@ public class IssueCodeService {
             "local quantity = tonumber(ARGV[1])\n" +
             "local available = redis.call('LLEN', redeemCodeList)\n" +
             "local codes = {}\n" +
-            "if available >= quantity then\n" +
-            "    for i = 1, quantity do\n" +
-            "        local code = redis.call('LPOP', redeemCodeList)\n" +
-            "        if code then\n" +
-            "            table.insert(codes, code)\n" +
-            "        end\n" +
-            "    end\n" +
+            "if available < quantity then\n" +
+            "    return {}\n" +
             "end\n" +
-            "return codes";
+            "return redis.call('LRANGE', redeemCodeList, 0, quantity - 1)\n" +
+            "redis.call('LTRIM', redeemCodeList, quantity, -1)";
 
     private String issueScriptSha1;
 
@@ -167,6 +169,10 @@ public class IssueCodeService {
             // TODO 异步通知服务补充兑换码数量
             throw new ApiException("兑换码数量不足，请稍后再试");
         } else {
+            IssueCodeRecord issueCodeRecord = new IssueCodeRecord();
+            issueCodeRecord.setOutOrderCode(outOrderCode);
+            issueCodeRecord.setCodes(result);
+            mongoTemplate.save(issueCodeRecord);
             return result;
         }
     }
