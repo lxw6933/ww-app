@@ -57,7 +57,7 @@ public class SpuCreditScoreStatisticsService {
         }
         log.info("本地缓存渠道【{}】商品【{}】评分信用分【{}】", spuId, channelId, score);
         String spuKey = StringUtils.joinWith(RedisKeyConstant.SPLIT_KEY, channelId, spuId);
-        creditScoreMap.computeIfAbsent(spuKey, k -> new CreditScore(score)).addScore(score);
+        creditScoreMap.computeIfAbsent(spuKey, k -> new CreditScore()).addScore(score);
     }
 
     /**
@@ -98,6 +98,11 @@ public class SpuCreditScoreStatisticsService {
     private static class CreditScore {
         int count;
         double totalScore;
+
+        public CreditScore() {
+            this.count = 0;
+            this.totalScore = 0;
+        }
 
         public CreditScore(double score) {
             this.count = 1;
