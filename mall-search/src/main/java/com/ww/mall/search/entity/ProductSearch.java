@@ -59,12 +59,12 @@ public class ProductSearch {
     /**
      * sku销售价
      */
-    private BigDecimal salePrice;
+    private Double salePrice;
 
     /**
      * 建议销售价
      */
-    private BigDecimal suggestSalesPrice;
+    private Double suggestSalesPrice;
 
     /**
      * 最低固定积分【多个价格积分，取最低积分】【固定积分+现金商城使用】【纯鸡粉维护】
@@ -74,7 +74,7 @@ public class ProductSearch {
     /**
      * 最低固定金额【多个价格积分，取最低金额】【固定积分+现金商城使用】【纯鸡粉维护】
      */
-    private BigDecimal minFixPrice;
+    private Double minFixPrice;
 
     /**
      * spu上架时间
