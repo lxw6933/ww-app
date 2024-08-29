@@ -84,7 +84,7 @@ public class IssueCodeService {
             for (int i = 0; i < BATCH_SIZE; i++) {
                 IssueCodeRecord issueCodeRecord = recordQueue.poll();
                 if (issueCodeRecord != null) {
-                    log.error("【ISSUE RESULT】queue poll outOrderCode【{}】codes【{}】to batch inserted", issueCodeRecord.getOutOrderCode(), issueCodeRecord.getCodes());
+                    log.info("【ISSUE RESULT】queue poll outOrderCode【{}】codes【{}】to batch inserted", issueCodeRecord.getOutOrderCode(), issueCodeRecord.getCodes());
                     targetList.add(issueCodeRecord);
                 } else {
                     break;
