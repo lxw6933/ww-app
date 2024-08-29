@@ -67,8 +67,8 @@ public class IssueCodeService {
 
     private static final int CODE_RESULT_THREAD_POOL_SIZE = 10;
     private static final ConcurrentLinkedQueue<IssueCodeRecord> recordQueue = new ConcurrentLinkedQueue<>();
-    private final ScheduledExecutorService codeResultScheduler = Executors.newScheduledThreadPool(1);
-    private final ExecutorService codeResultExecutor = Executors.newFixedThreadPool(CODE_RESULT_THREAD_POOL_SIZE);
+    private static final ScheduledExecutorService codeResultScheduler = Executors.newScheduledThreadPool(1);
+    private static final ExecutorService codeResultExecutor = Executors.newFixedThreadPool(CODE_RESULT_THREAD_POOL_SIZE);
 
     public void addRecordToQueue(IssueCodeRecord issueCodeRecord) {
         recordQueue.offer(issueCodeRecord);
@@ -128,7 +128,7 @@ public class IssueCodeService {
      * 预加载lua脚本【解决集群重复预加载】
      *
      * @param scriptName 脚本名称
-     * @param script 脚本
+     * @param script     脚本
      * @return 脚本sha1
      */
     private String preLoadScript(String scriptName, String script) {
@@ -234,9 +234,9 @@ public class IssueCodeService {
     /**
      * 发放兑换码
      *
-     * @param actCode 活动编码
+     * @param actCode      活动编码
      * @param outOrderCode 外部订单号
-     * @param quantity 需要发放的兑换码数量
+     * @param quantity     需要发放的兑换码数量
      * @return List<String> 已发放的兑换码列表
      */
     public List<String> distributeCodes(String actCode, String outOrderCode, int quantity) {
@@ -266,7 +266,7 @@ public class IssueCodeService {
     /**
      * 补充兑换码
      *
-     * @param actCode 活动编码
+     * @param actCode  活动编码
      * @param newCodes 新码集合
      * @return 数量
      */
