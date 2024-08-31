@@ -1,6 +1,9 @@
-package com.ww.mall.redis.service.outorderno;
+package com.ww.mall.redis.service.codes;
 
+import cn.hutool.core.date.DateUtil;
 import com.ww.mall.common.exception.ApiException;
+import com.ww.mall.redis.service.codes.disruptor.DisruptorCodeComponent;
+import com.ww.mall.redis.service.codes.queue.CodeCurrentQueueComponent;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.redisson.api.*;
@@ -11,10 +14,10 @@ import org.springframework.stereotype.Component;
 
 import javax.annotation.PostConstruct;
 import javax.annotation.PreDestroy;
-import java.util.ArrayList;
+import javax.annotation.Resource;
 import java.util.Collections;
+import java.util.Date;
 import java.util.List;
-import java.util.concurrent.*;
 
 /**
  * @author ww
@@ -23,11 +26,15 @@ import java.util.concurrent.*;
  */
 @Slf4j
 @Component
-@DependsOn("mongoTemplate")
+@DependsOn({"mongoTemplate"})
 public class IssueCodeService {
 
-    @Autowired
+    @Resource
     private MongoTemplate mongoTemplate;
+
+    private static DisruptorCodeComponent disruptorCodeComponent;
+
+    private static CodeCurrentQueueComponent codeCurrentQueueComponent;
 
     private static final String REDIS_SCRIPT_SHA1_KEY = "script:sha1:";
 
@@ -62,66 +69,15 @@ public class IssueCodeService {
 
     private static final double DEFAULT_FALSE_PROBABILITY = 0.01;
 
-    // 批量入库的数量阈值
-    private static final int BATCH_SIZE = 1000;
-
-    private static final int CODE_RESULT_THREAD_POOL_SIZE = 10;
-    private static final ConcurrentLinkedQueue<IssueCodeRecord> recordQueue = new ConcurrentLinkedQueue<>();
-    private static final ScheduledExecutorService codeResultScheduler = Executors.newScheduledThreadPool(1);
-    private static final ExecutorService codeResultExecutor = Executors.newFixedThreadPool(CODE_RESULT_THREAD_POOL_SIZE);
-
     public void addRecordToQueue(IssueCodeRecord issueCodeRecord) {
-        recordQueue.offer(issueCodeRecord);
-        log.info("【入队】outOrderCode【{}】codes【{}】", issueCodeRecord.getOutOrderCode(), issueCodeRecord.getCodes());
-    }
-
-    public void batchSaveIssueResult() {
-        while (!recordQueue.isEmpty()) {
-            // 检查队列元素是否突发流量
-            this.checkQueueOverFlow();
-
-            List<IssueCodeRecord> targetList = new ArrayList<>(BATCH_SIZE);
-            for (int i = 0; i < BATCH_SIZE; i++) {
-                IssueCodeRecord issueCodeRecord = recordQueue.poll();
-                if (issueCodeRecord != null) {
-                    log.info("【出队】outOrderCode【{}】codes【{}】", issueCodeRecord.getOutOrderCode(), issueCodeRecord.getCodes());
-                    targetList.add(issueCodeRecord);
-                } else {
-                    break;
-                }
-            }
-            if (!targetList.isEmpty()) {
-                try {
-                    mongoTemplate.insert(targetList, IssueCodeRecord.class);
-                    log.info("【批量入库 数量: {}】", targetList.size());
-                } catch (Exception e) {
-                    log.error("【批量入库异常】", e);
-                    targetList.forEach(errorRecord -> log.error("【批量入库异常】outOrderCode【{}】codes【{}】", errorRecord.getOutOrderCode(), errorRecord.getCodes()));
-                }
-            }
-        }
-    }
-
-    public void checkQueueOverFlow() {
-        int queueSize = recordQueue.size();
-        if (queueSize > CODE_RESULT_THREAD_POOL_SIZE * BATCH_SIZE) {
-            log.info("【本地队列溢出，总数量：{}】", queueSize);
-            int batchesToProcess = queueSize / BATCH_SIZE;
-            for (int i = 0; i < batchesToProcess; i++) {
-                codeResultExecutor.submit(this::batchSaveIssueResult);
-            }
-        }
+        codeCurrentQueueComponent.addRecordToQueue(issueCodeRecord);
+//        disruptorCodeComponent.publishEvent(issueCodeRecord);
     }
 
     @PreDestroy
     public void destroy() {
-        int queueSize = recordQueue.size();
-        log.info("【服务关闭，处理队列剩余发放结果，剩余数量：{}】", queueSize);
-        int batchesToProcess = queueSize / BATCH_SIZE;
-        for (int i = 0; i < batchesToProcess; i++) {
-            codeResultExecutor.submit(this::batchSaveIssueResult);
-        }
-        codeResultExecutor.shutdown();
+//        disruptorCodeComponent.destroy();
+        codeCurrentQueueComponent.destroy();
     }
 
     /**
@@ -153,8 +109,10 @@ public class IssueCodeService {
 
     @PostConstruct
     public void init() {
+        codeCurrentQueueComponent = new CodeCurrentQueueComponent(mongoTemplate);
+//        disruptorCodeComponent = new DisruptorCodeComponent(mongoTemplate);
         // 开启定时任务批量处理发放结果
-        codeResultScheduler.scheduleAtFixedRate(this::batchSaveIssueResult, 0, 1, TimeUnit.MINUTES);
+//        codeResultScheduler.scheduleAtFixedRate(this::batchSaveIssueResult, 0, 1, TimeUnit.MINUTES);
         // 初始化外部单号过滤器
         bloomFilter = redissonClient.getBloomFilter(OUT_ORDER_CODE_BLOOM_FILTER);
         if (!bloomFilter.isExists()) {
@@ -242,6 +200,7 @@ public class IssueCodeService {
             IssueCodeRecord issueCodeRecord = new IssueCodeRecord();
             issueCodeRecord.setOutOrderCode(outOrderCode);
             issueCodeRecord.setCodes(result);
+            issueCodeRecord.setIssueTime(DateUtil.formatDateTime(new Date()));
             addRecordToQueue(issueCodeRecord);
             return result;
         }

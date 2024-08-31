@@ -22,7 +22,7 @@ import com.ww.mall.rabbitmq.exchange.ExchangeConstant;
 import com.ww.mall.rabbitmq.queue.QueueConstant;
 import com.ww.mall.rabbitmq.routekey.RouteKeyConstant;
 import com.ww.mall.redis.MallRedisTemplate;
-import com.ww.mall.redis.service.outorderno.IssueCodeService;
+import com.ww.mall.redis.service.codes.IssueCodeService;
 import com.ww.mall.seckill.entity.Demo;
 import com.ww.mall.seckill.listener.DemoImportListener;
 import com.ww.mall.seckill.model.DemoModel;

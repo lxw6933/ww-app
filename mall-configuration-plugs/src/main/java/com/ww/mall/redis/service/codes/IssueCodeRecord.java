@@ -1,4 +1,4 @@
-package com.ww.mall.redis.service.outorderno;
+package com.ww.mall.redis.service.codes;
 
 import com.ww.mall.mongodb.BaseDoc;
 import lombok.AllArgsConstructor;
@@ -24,5 +24,7 @@ public class IssueCodeRecord extends BaseDoc {
     private String outOrderCode;
 
     private List<String> codes;
+
+    private String issueTime;
 
 }
