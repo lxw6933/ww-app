@@ -2,12 +2,12 @@ package com.ww.mall.redis.service.codes;
 
 import cn.hutool.core.date.DateUtil;
 import com.ww.mall.common.exception.ApiException;
-import com.ww.mall.redis.service.codes.disruptor.DisruptorCodeComponent;
+import com.ww.mall.redis.service.UniqueService;
 import com.ww.mall.redis.service.codes.queue.CodeCurrentQueueComponent;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.commons.lang3.StringUtils;
-import org.redisson.api.*;
-import org.springframework.beans.factory.annotation.Autowired;
+import org.redisson.api.RList;
+import org.redisson.api.RScript;
+import org.redisson.api.RedissonClient;
 import org.springframework.context.annotation.DependsOn;
 import org.springframework.data.mongodb.core.MongoTemplate;
 import org.springframework.stereotype.Component;
@@ -32,14 +32,16 @@ public class IssueCodeService {
     @Resource
     private MongoTemplate mongoTemplate;
 
-    private static DisruptorCodeComponent disruptorCodeComponent;
+    @Resource
+    private RedissonClient redissonClient;
+
+    private UniqueService uniqueService;
 
     private static CodeCurrentQueueComponent codeCurrentQueueComponent;
 
     private static final String REDIS_SCRIPT_SHA1_KEY = "script:sha1:";
 
-    private static final String OUT_ORDER_CODE_BLOOM_FILTER = "bf:outOrderCode";
-    private static final String OUT_ORDER_CODE_SET = "set:outOrderCode";
+    private static final String OUT_ORDER_CODE_BLOOM_FILTER = "outOrderCode";
     private static final String CONVERT_CODE_LIST = "list:convertCodes:";
 
     // list code 数量阈值
@@ -58,26 +60,13 @@ public class IssueCodeService {
 
     private String issueScriptSha1;
 
-    @Autowired
-    private RedissonClient redissonClient;
-
-    private RBloomFilter<String> bloomFilter;
-
-    private static final int SHARD_NUM = 10000;
-
-    private static final int DEFAULT_INIT_SIZE = 100000000;
-
-    private static final double DEFAULT_FALSE_PROBABILITY = 0.01;
-
+    /**
+     * 入队
+     *
+     * @param issueCodeRecord 发放结果记录
+     */
     public void addRecordToQueue(IssueCodeRecord issueCodeRecord) {
         codeCurrentQueueComponent.addRecordToQueue(issueCodeRecord);
-//        disruptorCodeComponent.publishEvent(issueCodeRecord);
-    }
-
-    @PreDestroy
-    public void destroy() {
-//        disruptorCodeComponent.destroy();
-        codeCurrentQueueComponent.destroy();
     }
 
     /**
@@ -89,19 +78,15 @@ public class IssueCodeService {
      */
     private String preLoadScript(String scriptName, String script) {
         RScript scriptExecutor = redissonClient.getScript();
-        // 从 Redis 中获取已存在的 SHA1
         String sha1Key = REDIS_SCRIPT_SHA1_KEY + scriptName;
         Object scriptSha1 = redissonClient.getBucket(sha1Key).get();
 
         if (scriptSha1 != null && !scriptSha1.toString().isEmpty()) {
-            // 验证 SHA1 是否依然有效
             List<Boolean> existingScripts = scriptExecutor.scriptExists(scriptSha1.toString());
             if (existingScripts.get(0)) {
-                // 如果有效，直接使用这个 SHA1
                 return scriptSha1.toString();
             }
         }
-        // 如果 SHA1 无效或不存在，重新加载脚本
         scriptSha1 = scriptExecutor.scriptLoad(script);
         redissonClient.getBucket(sha1Key).set(scriptSha1);
         return scriptSha1.toString();
@@ -109,57 +94,12 @@ public class IssueCodeService {
 
     @PostConstruct
     public void init() {
+        // init outOrderCode uniqueService
+        uniqueService = new UniqueService(redissonClient, OUT_ORDER_CODE_BLOOM_FILTER);
+        // init code result queueComponent
         codeCurrentQueueComponent = new CodeCurrentQueueComponent(mongoTemplate);
-//        disruptorCodeComponent = new DisruptorCodeComponent(mongoTemplate);
-        // 开启定时任务批量处理发放结果
-//        codeResultScheduler.scheduleAtFixedRate(this::batchSaveIssueResult, 0, 1, TimeUnit.MINUTES);
-        // 初始化外部单号过滤器
-        bloomFilter = redissonClient.getBloomFilter(OUT_ORDER_CODE_BLOOM_FILTER);
-        if (!bloomFilter.isExists()) {
-            bloomFilter.tryInit(DEFAULT_INIT_SIZE, DEFAULT_FALSE_PROBABILITY);
-        }
-        // 预加载脚本
+        // preload lua script
         issueScriptSha1 = preLoadScript(issueScriptName, issueScript);
-    }
-
-    /**
-     * 获取set分区key
-     *
-     * @param outOrderCode 外部单号
-     * @return set分区key
-     */
-    private String getShardKey(String outOrderCode) {
-        int shardId = Math.abs(outOrderCode.hashCode()) % SHARD_NUM;
-        return OUT_ORDER_CODE_SET + shardId;
-    }
-
-    /**
-     * 外部订单号是否重复
-     *
-     * @param outOrderCode 外部订单号
-     * @return boolean
-     */
-    private boolean checkOutOrderCode(String outOrderCode) {
-        if (StringUtils.isEmpty(outOrderCode)) {
-            throw new IllegalArgumentException("外部订单号不能为空");
-        }
-        if (outOrderCode.length() > 64) {
-            throw new IllegalArgumentException("外部订单号长度不能超过64");
-        }
-        try {
-            // get outOrderCode set shard key
-            String shardKey = this.getShardKey(outOrderCode);
-            RSet<String> outOrderCodeSet = redissonClient.getSet(shardKey);
-            if (!bloomFilter.contains(outOrderCode)) {
-                // not exists bloomFilter add to bloomFilter
-                bloomFilter.add(outOrderCode);
-            }
-            // check in Set and add if not exists
-            return !outOrderCodeSet.add(outOrderCode);
-        } catch (Exception e) {
-            log.error("【{}】校验异常", outOrderCode, e);
-            throw e;
-        }
     }
 
     /**
@@ -171,7 +111,7 @@ public class IssueCodeService {
      * @return List<String> 已发放的兑换码列表
      */
     public List<String> distributeCodes(String actCode, String outOrderCode, int quantity) {
-        if (this.checkOutOrderCode(outOrderCode)) {
+        if (uniqueService.checkOutOrderCode(outOrderCode)) {
             log.warn("【{}】重复使用", outOrderCode);
             // return before codes result
             throw new ApiException("当前单号已发放过兑换码，请勿重复使用");
@@ -186,11 +126,7 @@ public class IssueCodeService {
             // TODO 异步通知服务补充兑换码数量
             throw new ApiException("兑换码数量不足，请稍后再试");
         } else {
-            IssueCodeRecord issueCodeRecord = new IssueCodeRecord();
-            issueCodeRecord.setOutOrderCode(outOrderCode);
-            issueCodeRecord.setCodes(result);
-            issueCodeRecord.setIssueTime(DateUtil.formatDateTime(new Date()));
-            addRecordToQueue(issueCodeRecord);
+            addRecordToQueue(new IssueCodeRecord(outOrderCode, result, DateUtil.formatDateTime(new Date())));
             return result;
         }
     }
@@ -205,6 +141,11 @@ public class IssueCodeService {
     public boolean addRedeemCodes(String actCode, List<String> newCodes) {
         RList<Object> list = redissonClient.getList(CONVERT_CODE_LIST + actCode);
         return list.addAll(newCodes);
+    }
+
+    @PreDestroy
+    public void destroy() {
+        codeCurrentQueueComponent.destroy();
     }
 
 }
