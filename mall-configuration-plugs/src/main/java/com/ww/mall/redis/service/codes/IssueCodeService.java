@@ -123,16 +123,6 @@ public class IssueCodeService {
     }
 
     /**
-     * 添加外部单号到过滤器
-     *
-     * @param outOrderCode 外部单号
-     */
-    private void add(String outOrderCode) {
-        bloomFilter.add(outOrderCode);
-        log.info("【{}】to BloomFilter", outOrderCode);
-    }
-
-    /**
      * 获取set分区key
      *
      * @param outOrderCode 外部单号
@@ -162,7 +152,7 @@ public class IssueCodeService {
             RSet<String> outOrderCodeSet = redissonClient.getSet(shardKey);
             if (!bloomFilter.contains(outOrderCode)) {
                 // not exists bloomFilter add to bloomFilter
-                this.add(outOrderCode);
+                bloomFilter.add(outOrderCode);
             }
             // check in Set and add if not exists
             return !outOrderCodeSet.add(outOrderCode);
@@ -181,9 +171,8 @@ public class IssueCodeService {
      * @return List<String> 已发放的兑换码列表
      */
     public List<String> distributeCodes(String actCode, String outOrderCode, int quantity) {
-        log.info("【{}】发放数量【{}】活动【{}】", outOrderCode, quantity, actCode);
         if (this.checkOutOrderCode(outOrderCode)) {
-            log.info("【{}】重复使用", outOrderCode);
+            log.warn("【{}】重复使用", outOrderCode);
             // return before codes result
             throw new ApiException("当前单号已发放过兑换码，请勿重复使用");
         }
