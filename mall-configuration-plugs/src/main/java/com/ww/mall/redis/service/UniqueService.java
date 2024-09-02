@@ -2,7 +2,6 @@ package com.ww.mall.redis.service;
 
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
-import org.redisson.api.RBloomFilter;
 import org.redisson.api.RSet;
 import org.redisson.api.RedissonClient;
 
@@ -14,45 +13,24 @@ import org.redisson.api.RedissonClient;
 @Slf4j
 public class UniqueService {
 
-    private final RedissonClient redissonClient;
-
-    private final RBloomFilter<String> bloomFilter;
-
-    private final long size;
-
-    private final double falseProbability;
+    private final String KEY;
 
     private final int shardNum;
 
-    private static final String BLOOM_FILTER_PREFIX = "bf:unique:";
     private static final String SET_PREFIX= "set:unique:";
-    private final String KEY;
 
+    private final RedissonClient redissonClient;
 
-    public UniqueService(RedissonClient redissonClient, String bloomFilterKey) {
-        this.size = 100000000;
-        this.falseProbability = 0.01;
-        this.shardNum = (int) (size / 10000);
-        this.KEY = bloomFilterKey;
+    public UniqueService(RedissonClient redissonClient, String uniqueKey) {
+        this.KEY = uniqueKey;
+        this.shardNum = 10000;
         this.redissonClient = redissonClient;
-        // init bloomFilter
-        bloomFilter = redissonClient.getBloomFilter(BLOOM_FILTER_PREFIX + KEY);
-        if (!bloomFilter.isExists()) {
-            bloomFilter.tryInit(size, falseProbability);
-        }
     }
 
-    public UniqueService(RedissonClient redissonClient, String bloomFilterKey, long expectedInsertions, double falseProbability) {
-        this.size = expectedInsertions;
-        this.falseProbability = falseProbability;
-        this.shardNum = (int) (size / 10000);
-        this.KEY = bloomFilterKey;
+    public UniqueService(RedissonClient redissonClient, String uniqueKey, int initSize) {
+        this.KEY = uniqueKey;
+        this.shardNum = initSize / 10000;
         this.redissonClient = redissonClient;
-        // init bloomFilter
-        bloomFilter = redissonClient.getBloomFilter(BLOOM_FILTER_PREFIX + KEY);
-        if (!bloomFilter.isExists()) {
-            bloomFilter.tryInit(expectedInsertions, falseProbability);
-        }
     }
 
     /**
@@ -83,16 +61,20 @@ public class UniqueService {
             // get outOrderCode set shard key
             String shardKey = this.getShardKey(target);
             RSet<String> outOrderCodeSet = redissonClient.getSet(shardKey);
-            if (!bloomFilter.contains(target)) {
-                // not exists bloomFilter add to bloomFilter
-                bloomFilter.add(target);
-            }
             // check in Set and add if not exists
             return !outOrderCodeSet.add(target);
         } catch (Exception e) {
             log.error("【{}】校验异常", target, e);
             throw e;
         }
+    }
+
+    public boolean removeTargetFormSet(String target) {
+        // get outOrderCode set shard key
+        String shardKey = this.getShardKey(target);
+        RSet<String> outOrderCodeSet = redissonClient.getSet(shardKey);
+        // check in Set and add if not exists
+        return !outOrderCodeSet.remove(target);
     }
 
 }

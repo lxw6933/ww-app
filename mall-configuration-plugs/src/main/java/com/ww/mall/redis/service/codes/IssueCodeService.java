@@ -41,7 +41,7 @@ public class IssueCodeService {
 
     private static final String REDIS_SCRIPT_SHA1_KEY = "script:sha1:";
 
-    private static final String OUT_ORDER_CODE_BLOOM_FILTER = "outOrderCode";
+    private static final String OUT_ORDER_CODE_KEY = "outOrderCode";
     private static final String CONVERT_CODE_LIST = "list:convertCodes:";
 
     // list code 数量阈值
@@ -95,7 +95,7 @@ public class IssueCodeService {
     @PostConstruct
     public void init() {
         // init outOrderCode uniqueService
-        uniqueService = new UniqueService(redissonClient, OUT_ORDER_CODE_BLOOM_FILTER);
+        uniqueService = new UniqueService(redissonClient, OUT_ORDER_CODE_KEY);
         // init code result queueComponent
         codeCurrentQueueComponent = new CodeCurrentQueueComponent(mongoTemplate);
         // preload lua script
@@ -123,6 +123,9 @@ public class IssueCodeService {
         log.info("【{}】发放结果：{}", outOrderCode, result);
         // result valid
         if (result.isEmpty()) {
+            if (uniqueService.removeTargetFormSet(outOrderCode)) {
+                log.warn("外部单号【{}】移除失败", outOrderCode);
+            }
             // TODO 异步通知服务补充兑换码数量
             throw new ApiException("兑换码数量不足，请稍后再试");
         } else {
