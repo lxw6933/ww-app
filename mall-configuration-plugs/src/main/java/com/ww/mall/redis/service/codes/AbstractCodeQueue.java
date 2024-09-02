@@ -18,7 +18,9 @@ public abstract class AbstractCodeQueue {
 
     public final AtomicBoolean running = new AtomicBoolean(false);
 
-    public static final int BATCH_SIZE = 1000;
+    public static final int BATCH_NUMBER = 1000;
+
+    private static final int CODE_NUMBER_THRESHOLD = 100;
 
     public static final int CODE_RESULT_THREAD_POOL_SIZE = 10;
 
@@ -38,7 +40,7 @@ public abstract class AbstractCodeQueue {
     public void addRecordToQueue(IssueCodeRecord issueCodeRecord) {
         recordQueue.offer(issueCodeRecord);
         log.info("【入队】outOrderCode【{}】codes【{}】", issueCodeRecord.getOutOrderCode(), issueCodeRecord.getCodes());
-        if (!running.get() && recordQueue.size() > BATCH_SIZE) {
+        if (!running.get() && recordQueue.size() > BATCH_NUMBER) {
             recordQueueHandler();
         }
     }
@@ -55,7 +57,7 @@ public abstract class AbstractCodeQueue {
         try {
             List<IssueCodeRecord> codeRecordList = new ArrayList<>();
             // 队列不为空 and 批处理数据<批处理数量
-            while (!recordQueue.isEmpty() && codeRecordList.size() < BATCH_SIZE) {
+            while (!recordQueue.isEmpty() && codeRecordList.size() < BATCH_NUMBER) {
                 IssueCodeRecord record = recordQueue.poll();
                 if (record != null) {
                     codeRecordList.add(record);
@@ -97,7 +99,7 @@ public abstract class AbstractCodeQueue {
             log.info("【未入库的发放结果】{}", record);
             if (record != null) {
                 remainingRecordList.add(record);
-                if (remainingRecordList.size() > BATCH_SIZE) {
+                if (remainingRecordList.size() > BATCH_NUMBER) {
                     codeResultExecutor.submit(() -> batchSaveIssueResult(new ArrayList<>(remainingRecordList)));
                     remainingRecordList.clear();
                 }

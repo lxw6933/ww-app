@@ -44,9 +44,6 @@ public class IssueCodeService {
     private static final String OUT_ORDER_CODE_KEY = "outOrderCode";
     private static final String CONVERT_CODE_LIST = "list:convertCodes:";
 
-    // list code 数量阈值
-    private static final int CODE_NUM_THRESHOLD = 100;
-
     private static final String issueScriptName = "issueCodes";
     private static final String issueScript = "local redeemCodeList = KEYS[1]\n" +
             "local quantity = tonumber(ARGV[1])\n" +
