@@ -69,12 +69,18 @@ public class UniqueService {
         }
     }
 
+    /**
+     * 回滚target
+     *
+     * @param target 目标对象
+     * @return boolean
+     */
     public boolean removeTargetFormSet(String target) {
         // get outOrderCode set shard key
         String shardKey = this.getShardKey(target);
         RSet<String> outOrderCodeSet = redissonClient.getSet(shardKey);
         // check in Set and add if not exists
-        return !outOrderCodeSet.remove(target);
+        return outOrderCodeSet.remove(target);
     }
 
 }

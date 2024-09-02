@@ -123,7 +123,7 @@ public class IssueCodeService {
         log.info("【{}】发放结果：{}", outOrderCode, result);
         // result valid
         if (result.isEmpty()) {
-            if (uniqueService.removeTargetFormSet(outOrderCode)) {
+            if (!uniqueService.removeTargetFormSet(outOrderCode)) {
                 log.warn("外部单号【{}】移除失败", outOrderCode);
             }
             // TODO 异步通知服务补充兑换码数量
