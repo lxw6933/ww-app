@@ -71,7 +71,6 @@
         <ip2region.version>2.7.0</ip2region.version>
         <!-- jdk11 use 3.x -->
         <!--<caffeine.version>3.1.8</caffeine.version>-->
-        <disruptor.version>3.4.2</disruptor.version>
         <caffeine.version>2.9.0</caffeine.version>
         <xxlJob.version>2.4.0</xxlJob.version>
         <liteflow.version>2.12.0</liteflow.version>
@@ -199,12 +198,6 @@
                 <groupId>com.github.ben-manes.caffeine</groupId>
                 <artifactId>caffeine</artifactId>
                 <version>${caffeine.version}</version>
-            </dependency>
-            <!-- disruptor -->
-            <dependency>
-                <groupId>com.lmax</groupId>
-                <artifactId>disruptor</artifactId>
-                <version>${disruptor.version}</version>
             </dependency>
             <!-- xxl-job -->
             <dependency>
