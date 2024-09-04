@@ -57,7 +57,7 @@ public class MallControllerAop {
                 .filter(e -> !(e instanceof MultipartFile || e instanceof HttpServletRequest || e instanceof HttpServletResponse || e instanceof BindingResult))
                 .collect(Collectors.toList());
         String params = JSONUtil.toJsonStr(targetArgs);
-        log.info("IP:【{}】请求进入 [{}#{}] 请求参数为: {}", ip, className, methodName, params);
+        log.info("IP:【{}】请求 [{}#{}] 请求参数: {}", ip, className, methodName, params);
     }
 
     /**
@@ -71,7 +71,7 @@ public class MallControllerAop {
         String className = joinPoint.getTarget().getClass().getName();
         String methodName = joinPoint.getSignature().getName();
         String resultJson = JSONUtil.toJsonStr(result);
-        log.info("请求返回 [{}#{}] 响应参数为: {}", className, methodName, resultJson);
+        log.info("请求 [{}#{}] 响应参数: {}", className, methodName, resultJson);
     }
 
     /**
