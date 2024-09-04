@@ -6,10 +6,16 @@ import lombok.extern.slf4j.Slf4j;
 import org.aspectj.lang.JoinPoint;
 import org.aspectj.lang.annotation.*;
 import org.springframework.stereotype.Component;
+import org.springframework.validation.BindingResult;
 import org.springframework.web.context.request.RequestContextHolder;
 import org.springframework.web.context.request.ServletRequestAttributes;
+import org.springframework.web.multipart.MultipartFile;
 
 import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+import java.util.Arrays;
+import java.util.List;
+import java.util.stream.Collectors;
 
 /**
  * @author ww
@@ -25,7 +31,8 @@ public class MallControllerAop {
      * 控制器切点
      */
     @Pointcut(value = "execution(* com.ww.mall.*.controller..*.*(..))")
-    public void controllerPointcut() {}
+    public void controllerPointcut() {
+    }
 
     /**
      * 前置织入
@@ -45,7 +52,11 @@ public class MallControllerAop {
         String className = joinPoint.getTarget().getClass().getName();
         String methodName = joinPoint.getSignature().getName();
         Object[] args = joinPoint.getArgs();
-        String params = JSONUtil.toJsonStr(args);
+        // 过滤掉不需要转json的参数
+        List<Object> targetArgs = Arrays.stream(args)
+                .filter(e -> !(e instanceof MultipartFile || e instanceof HttpServletRequest || e instanceof HttpServletResponse || e instanceof BindingResult))
+                .collect(Collectors.toList());
+        String params = JSONUtil.toJsonStr(targetArgs);
         log.info("IP:【{}】请求进入 [{}#{}] 请求参数为: {}", ip, className, methodName, params);
     }
 
