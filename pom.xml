@@ -41,6 +41,8 @@
         <module>mall-grpc-client</module>
         <!-- 开发平台 -->
         <module>mall-open-platform</module>
+        <!-- 消息平台 -->
+        <module>mall-message</module>
     </modules>
 
     <properties>
