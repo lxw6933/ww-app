@@ -18,18 +18,16 @@ import com.ww.mall.admin.view.query.SysUserPageQuery;
 import com.ww.mall.admin.view.vo.SysMenuVO;
 import com.ww.mall.admin.view.vo.SysRoleVO;
 import com.ww.mall.admin.view.vo.SysUserVO;
+import com.ww.mall.annotation.plugs.redis.MallResubmission;
 import com.ww.mall.common.common.MallAdminUser;
 import com.ww.mall.common.constant.Constant;
-import com.ww.mall.common.enums.SysPlatformType;
 import com.ww.mall.common.exception.ApiException;
-import com.ww.mall.annotation.plugs.redis.MallResubmission;
 import com.ww.mall.web.cmmon.MallPageResult;
 import com.ww.mall.web.cmmon.MallPlusPageResult;
 import com.ww.mall.web.utils.AuthorizationContext;
 import com.ww.mall.web.view.form.IdForm;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.CollectionUtils;
-import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.BeanUtils;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -51,32 +49,8 @@ public class SysUserServiceImpl extends BaseService<SysUserMapper, SysUser> impl
 
     @Override
     public MallPageResult<SysUserVO> page(SysUserPageQuery query) {
-        // 1：BOSS平台用户能看到所有平台用户 2：其他平台用户只能看到【当前平台dataId】、【当前渠道dataId】的用户数据
-        MallAdminUser adminUser = AuthorizationContext.getAdminUser();
-        QueryWrapper<SysUser> queryWrapper = new QueryWrapper<>();
-        if (StringUtils.isNotEmpty(query.getUsername())) {
-            queryWrapper.like("username", query.getUsername());
-        }
-        if (query.getValid() != null) {
-            queryWrapper.eq("valid", query.getValid());
-        }
-        if (query.getStatus() != null) {
-            queryWrapper.eq("status", query.getStatus());
-        }
-        queryWrapper.eq("platform", adminUser.getPlatform());
-        if (adminUser.getPlatform() != SysPlatformType.BOSS) {
-            // 查看当前用户角色是否拥有dataId的权限
-            List<Long> roleDataList = df.getSysRoleMapper().queryRoleOfAllData(adminUser.getRoleId(), adminUser.getPlatform());
-            if (!roleDataList.contains(query.getDataId())) {
-                throw new ApiException("权限不足");
-            }
-            // 查询当前dataId下所有的roleId
-            List<Long> dataRoleIdList = df.getSysRoleMapper().queryDataIdOfAllRoleId(query.getDataId(), adminUser.getPlatform());
-            // 查询dataId下的所有用户id
-            queryWrapper.in("role_id", dataRoleIdList);
-        }
         IPage<SysUser> page = new Page<>(query.getPageNum(), query.getPageSize());
-        this.page(page, queryWrapper);
+        this.page(page, query.getQueryWrapper());
         return new MallPlusPageResult<>(page, sysUser -> {
             SysUserVO vo = new SysUserVO();
             BeanUtils.copyProperties(sysUser, vo);
@@ -88,19 +62,12 @@ public class SysUserServiceImpl extends BaseService<SysUserMapper, SysUser> impl
     @Transactional
     @MallResubmission
     public boolean save(SysUserForm form) {
-        MallAdminUser adminUser = AuthorizationContext.getAdminUser();
-        if (adminUser.getPlatform() == SysPlatformType.BOSS) {
-
-        } else {
-
-        }
         // 保证同一平台下username不重复
         List<SysUser> userList = this.list(new QueryWrapper<SysUser>()
                 .eq("username", form.getUsername())
-                .eq("platform", form.getPlatform())
         );
         if (CollectionUtils.isNotEmpty(userList)) {
-            throw new ApiException("新增用户的账号已存在！不能添加重复账号用户");
+            throw new ApiException("账号已存在");
         }
         SysUser newSysUser = new SysUser();
         BeanUtils.copyProperties(form, newSysUser);

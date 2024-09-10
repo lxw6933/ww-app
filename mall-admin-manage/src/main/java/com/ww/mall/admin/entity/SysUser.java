@@ -1,7 +1,6 @@
 package com.ww.mall.admin.entity;
 
 import com.baomidou.mybatisplus.annotation.TableName;
-import com.ww.mall.common.enums.SysPlatformType;
 import com.ww.mall.web.cmmon.BaseEntity;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
@@ -15,11 +14,6 @@ import lombok.EqualsAndHashCode;
 @TableName("sys_user")
 @EqualsAndHashCode(callSuper = true)
 public class SysUser extends BaseEntity {
-
-    /**
-     * 平台
-     */
-    private SysPlatformType platform;
 
     /**
      * 用户名（账号名称）
@@ -47,11 +41,6 @@ public class SysUser extends BaseEntity {
     private String headPicture;
 
     /**
-     * 性别
-     */
-    private Integer sex;
-
-    /**
      * 邮箱
      */
     private String email;
@@ -75,10 +64,5 @@ public class SysUser extends BaseEntity {
      * 是否有效
      */
     private Boolean valid;
-
-    /**
-     * 角色id
-     */
-    private Long roleId;
 
 }

@@ -1,7 +1,6 @@
 package com.ww.mall.admin.entity;
 
 import com.baomidou.mybatisplus.annotation.TableName;
-import com.ww.mall.common.enums.SysPlatformType;
 import lombok.Data;
 
 /**
@@ -22,10 +21,5 @@ public class SysRoleData {
      * 权限数据id【渠道id，商家id】
      */
     private Long dataId;
-
-    /**
-     * 平台类型
-     */
-    private SysPlatformType platform;
 
 }

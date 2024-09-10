@@ -1,6 +1,5 @@
 package com.ww.mall.admin.view.form;
 
-import com.ww.mall.common.enums.SysPlatformType;
 import com.ww.mall.common.valid.group.UpdateGroup;
 import lombok.Data;
 
@@ -34,10 +33,5 @@ public class SysRoleForm {
      * 备注
      */
     private String remark;
-
-    /**
-     * 平台
-     */
-    private SysPlatformType platform;
 
 }

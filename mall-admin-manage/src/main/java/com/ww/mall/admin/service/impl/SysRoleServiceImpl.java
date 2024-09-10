@@ -8,10 +8,9 @@ import com.ww.mall.admin.service.SysRoleService;
 import com.ww.mall.admin.view.form.SysRoleForm;
 import com.ww.mall.admin.view.query.SysRolePageQuery;
 import com.ww.mall.admin.view.vo.SysRoleVO;
-import com.ww.mall.common.common.MallAdminUser;
-import com.ww.mall.common.enums.SysPlatformType;
-import com.ww.mall.common.exception.ApiException;
 import com.ww.mall.annotation.plugs.redis.MallResubmission;
+import com.ww.mall.common.common.MallAdminUser;
+import com.ww.mall.common.exception.ApiException;
 import com.ww.mall.web.cmmon.MallPageResult;
 import com.ww.mall.web.utils.AuthorizationContext;
 import com.ww.mall.web.view.form.IdForm;
@@ -35,18 +34,9 @@ public class SysRoleServiceImpl extends BaseService<SysRoleMapper, SysRole> impl
     @Override
     public SysRoleVO info(Long id) {
         MallAdminUser adminUser = AuthorizationContext.getAdminUser();
-        SysRole sysRole;
-        if (adminUser.getPlatform() == SysPlatformType.BOSS) {
-            // BOSS账号可以查看所有角色信息
-            sysRole = this.getById(id);
-        } else {
-            // 非BOSS账号，只能查看当前平台的角色
-            sysRole = this.getOne(new QueryWrapper<SysRole>()
-                    .eq("id", id)
-                    .eq("platform_id", adminUser.getRoleId())
-                    .eq("platform", adminUser.getPlatform())
-            );
-        }
+        SysRole sysRole = this.getOne(new QueryWrapper<SysRole>()
+                .eq("id", id)
+                .eq("platform_id", adminUser.getRoleId()));
         if (sysRole == null) {
             throw new ApiException("角色信息不存在");
         }
@@ -59,26 +49,9 @@ public class SysRoleServiceImpl extends BaseService<SysRoleMapper, SysRole> impl
     @Transactional
     @MallResubmission
     public boolean save(SysRoleForm form) {
-        MallAdminUser adminUser = AuthorizationContext.getAdminUser();
-
-        if (adminUser.getPlatform() == SysPlatformType.BOSS) {
-            // 校验角色编号在同一平台下唯一
-            SysRole exist = sf.getSysRoleService().getOne(new QueryWrapper<SysRole>()
-                    .eq("role_no", form.getRoleNo())
-                    .eq("platform", adminUser.getPlatform())
-            );
-            // BOSS账号可以添加所有平台的角色
-            SysRole sysRole = new SysRole();
-            BeanUtils.copyProperties(form, sysRole);
-        } else {
-            // 校验角色编号在同一平台下唯一
-            SysRole exist = sf.getSysRoleService().getOne(new QueryWrapper<SysRole>()
-                    .eq("role_no", form.getRoleNo())
-                    .eq("platform_id", adminUser.getRoleId())
-                    .eq("platform", adminUser.getPlatform())
-            );
-            // 非BOSS账号，只能添加当前平台的角色
-        }
+        SysRole sysRole = new SysRole();
+        BeanUtils.copyProperties(form, sysRole);
+        this.save(sysRole);
         return true;
     }
 
@@ -93,19 +66,7 @@ public class SysRoleServiceImpl extends BaseService<SysRoleMapper, SysRole> impl
     @Transactional
     @MallResubmission
     public boolean delete(IdForm form) {
-        MallAdminUser adminUser = AuthorizationContext.getAdminUser();
-        boolean success;
-        if (adminUser.getPlatform() == SysPlatformType.BOSS) {
-            // BOSS账号可以删除任意平台角色
-            success = this.removeById(form.getId());
-        } else {
-            // 非BOSS账号，只能删除当前平台的角色
-            success = this.remove(new QueryWrapper<SysRole>()
-                    .eq("id", form.getId())
-                    .eq("platform_id", adminUser.getRoleId())
-                    .eq("platform", adminUser.getPlatform())
-            );
-        }
+        boolean success = this.removeById(form.getId());
         if (success) {
             // 删除sys_user_role相关记录
             df.getSysRoleMapper().deleteRoleOfUser(form.getId());

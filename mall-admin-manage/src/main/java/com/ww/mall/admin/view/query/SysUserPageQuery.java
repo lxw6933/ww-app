@@ -1,8 +1,11 @@
 package com.ww.mall.admin.view.query;
 
+import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
+import com.ww.mall.admin.entity.SysUser;
 import com.ww.mall.web.cmmon.MallPage;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
+import org.apache.commons.lang3.StringUtils;
 
 /**
  * @author ww
@@ -19,6 +22,18 @@ public class SysUserPageQuery extends MallPage {
 
     private Boolean valid;
 
-    private Long dataId;
+    public QueryWrapper<SysUser> getQueryWrapper() {
+        QueryWrapper<SysUser> queryWrapper = new QueryWrapper<>();
+        if (StringUtils.isNotEmpty(this.username)) {
+            queryWrapper.like("username", this.username);
+        }
+        if (this.valid != null) {
+            queryWrapper.eq("valid", this.valid);
+        }
+        if (this.status != null) {
+            queryWrapper.eq("status", this.status);
+        }
+        return queryWrapper;
+    }
 
 }

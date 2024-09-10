@@ -1,11 +1,9 @@
 package com.ww.mall.admin.view.form;
 
-import com.ww.mall.common.enums.SysPlatformType;
 import com.ww.mall.common.valid.group.UpdateGroup;
 import lombok.Data;
 
 import javax.validation.constraints.NotNull;
-import java.util.List;
 
 /**
  * @author ww
@@ -55,11 +53,6 @@ public class SysUserForm {
      * 备注
      */
     private String remark;
-
-    /**
-     * 平台
-     */
-    private SysPlatformType platform;
 
     /**
      * 角色id集合

@@ -1,7 +1,6 @@
 package com.ww.mall.admin.view.vo;
 
 import com.ww.mall.admin.enums.SysMenuType;
-import com.ww.mall.common.enums.SysPlatformType;
 import lombok.Data;
 
 /**
@@ -13,11 +12,6 @@ import lombok.Data;
 public class SysMenuVO {
 
     private Long id;
-
-    /**
-     * 平台
-     */
-    private SysPlatformType platform;
 
     /**
      * 菜单类型

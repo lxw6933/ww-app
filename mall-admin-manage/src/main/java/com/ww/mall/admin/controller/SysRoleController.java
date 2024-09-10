@@ -10,7 +10,7 @@ import org.springframework.web.bind.annotation.RestController;
  */
 @RestController
 @RequestMapping("/sysRole")
-public class SysRoleControllerMall extends MallAbstractController {
+public class SysRoleController extends MallAbstractController {
 
 }
 

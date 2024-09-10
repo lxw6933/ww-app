@@ -1,7 +1,6 @@
 package com.ww.mall.admin.view.form;
 
 import com.ww.mall.admin.enums.SysMenuType;
-import com.ww.mall.common.enums.SysPlatformType;
 import com.ww.mall.common.valid.group.UpdateGroup;
 import lombok.Data;
 
@@ -20,11 +19,6 @@ public class SysMenuForm {
      */
     @NotNull(groups = {UpdateGroup.class}, message = "id不能为空")
     private Long id;
-
-    /**
-     * 平台
-     */
-    private SysPlatformType platform;
 
     /**
      * 菜单类型

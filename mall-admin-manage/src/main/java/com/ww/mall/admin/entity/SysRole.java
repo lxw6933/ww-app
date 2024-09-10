@@ -1,7 +1,6 @@
 package com.ww.mall.admin.entity;
 
 import com.baomidou.mybatisplus.annotation.TableName;
-import com.ww.mall.common.enums.SysPlatformType;
 import com.ww.mall.web.cmmon.BaseEntity;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
@@ -15,11 +14,6 @@ import lombok.EqualsAndHashCode;
 @TableName("sys_role")
 @EqualsAndHashCode(callSuper = true)
 public class SysRole extends BaseEntity {
-
-    /**
-     * 平台
-     */
-    private SysPlatformType platform;
 
     /**
      * 角色名称

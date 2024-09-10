@@ -2,7 +2,6 @@ package com.ww.mall.admin.entity;
 
 import com.baomidou.mybatisplus.annotation.TableName;
 import com.ww.mall.admin.enums.SysMenuType;
-import com.ww.mall.common.enums.SysPlatformType;
 import com.ww.mall.web.cmmon.BaseEntity;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
@@ -16,11 +15,6 @@ import lombok.EqualsAndHashCode;
 @TableName("sys_menu")
 @EqualsAndHashCode(callSuper = true)
 public class SysMenu extends BaseEntity {
-
-    /**
-     * 平台
-     */
-    private SysPlatformType platform;
 
     /**
      * 菜单类型

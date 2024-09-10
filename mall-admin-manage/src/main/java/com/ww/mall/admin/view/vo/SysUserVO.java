@@ -1,6 +1,5 @@
 package com.ww.mall.admin.view.vo;
 
-import com.ww.mall.common.enums.SysPlatformType;
 import lombok.Data;
 
 import java.util.Date;
@@ -14,11 +13,6 @@ import java.util.Date;
 public class SysUserVO {
 
     private Long id;
-
-    /**
-     * 平台
-     */
-    private SysPlatformType platform;
 
     /**
      * 用户名（账号名称）
@@ -64,11 +58,6 @@ public class SysUserVO {
      * 是否有效
      */
     private Boolean valid;
-
-    /**
-     * 平台id
-     */
-    private Long roleId;
 
     /**
      * 创建时间
