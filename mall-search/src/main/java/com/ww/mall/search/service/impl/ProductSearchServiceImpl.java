@@ -68,9 +68,7 @@ public class ProductSearchServiceImpl implements ProductSearchService {
                 log.error("搜索商品数据异常", e);
             }
         });
-        return null;
-        // 未引入mybatis-plus
-//        return new MallPageResult<>(new MallPage(portalProductSearchBO.getPageNum(), portalProductSearchBO.getPageSize()), resultVOList, total);
+        return new MallPageResult<>(portalProductSearchBO.getPageNum(), portalProductSearchBO.getPageSize(), total, resultVOList);
     }
 
     private PortalProductSearchVO searchResultDataHandler(ProductSearch productSearch) {

@@ -21,6 +21,7 @@ import com.ww.mall.coupon.view.bo.CouponPageBO;
 import com.ww.mall.coupon.view.vo.CouponPageVO;
 import com.ww.mall.annotation.plugs.redis.MallDistributedLock;
 import com.ww.mall.web.cmmon.MallPageResult;
+import com.ww.mall.web.cmmon.MallPlusPageResult;
 import com.ww.mall.web.utils.AuthorizationContext;
 import com.ww.mall.common.utils.IdUtil;
 import lombok.extern.slf4j.Slf4j;
@@ -130,7 +131,7 @@ public class CouponServiceImpl extends ServiceImpl<CouponMapper, Coupon> impleme
         }
         IPage<Coupon> page = new Page<>(couponPageBO.getPageNum(), couponPageBO.getPageSize());
         this.page(page, couponQueryWrapper);
-        return new MallPageResult<>(page, coupon -> {
+        return new MallPlusPageResult<>(page, coupon -> {
             CouponPageVO couponPageVO = new CouponPageVO();
             BeanUtils.copyProperties(coupon, couponPageVO);
             Query query = new Query();

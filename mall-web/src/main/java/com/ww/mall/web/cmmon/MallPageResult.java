@@ -1,6 +1,5 @@
 package com.ww.mall.web.cmmon;
 
-import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.ww.mall.common.exception.ApiException;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
@@ -14,7 +13,6 @@ import java.util.stream.Collectors;
  * @create 2023-07-19- 13:48
  * @description:
  */
-
 @Data
 @EqualsAndHashCode(callSuper = true)
 public class MallPageResult<T> extends MallPage {
@@ -34,24 +32,24 @@ public class MallPageResult<T> extends MallPage {
      */
     private Integer totalCount;
 
-    public MallPageResult(IPage<T> page) {
-        super((int) page.getCurrent(), (int) page.getSize());
-        this.totalCount = (int) page.getTotal();
-        this.totalPage = (int) page.getPages();
-        this.result = page.getRecords();
+    public MallPageResult(int pageNum, int pageSize, int totalCount, List<T> result) {
+        super(pageNum, pageSize);
+        this.totalCount = totalCount;
+        this.result = result;
+        this.totalPage = totalCount % getPageSize() == 0 ? totalCount / getPageSize() : totalCount / getPageSize() + 1;
     }
 
-    public <P> MallPageResult(IPage<P> page, Function<P, T> convert) {
-        super((int) page.getCurrent(), (int) page.getSize());
+    public <P> MallPageResult(int pageNum, int pageSize, int totalCount, List<P> result, Function<P, T> convert) {
+        super(pageNum, pageSize);
         if (convert == null) {
             throw new ApiException("数据转换器不能为空");
         }
-        this.totalCount = (int) page.getTotal();
-        this.totalPage = (int) page.getPages();
-        this.result = page.getRecords().stream().map(convert).collect(Collectors.toList());
+        this.totalCount = totalCount;
+        this.result = result.stream().map(convert).collect(Collectors.toList());
+        this.totalPage = totalCount % getPageSize() == 0 ? totalCount / getPageSize() : totalCount / getPageSize() + 1;
     }
 
-    public MallPageResult(MallPage page, List<T> result, Integer totalCount) {
+    public MallPageResult(MallPage page, List<T> result, int totalCount) {
         super(page.getPageNum(), page.getPageSize());
         this.totalCount = totalCount;
         this.result = result;

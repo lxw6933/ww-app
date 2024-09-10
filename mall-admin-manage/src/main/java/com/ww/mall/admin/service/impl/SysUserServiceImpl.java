@@ -24,6 +24,7 @@ import com.ww.mall.common.enums.SysPlatformType;
 import com.ww.mall.common.exception.ApiException;
 import com.ww.mall.annotation.plugs.redis.MallResubmission;
 import com.ww.mall.web.cmmon.MallPageResult;
+import com.ww.mall.web.cmmon.MallPlusPageResult;
 import com.ww.mall.web.utils.AuthorizationContext;
 import com.ww.mall.web.view.form.IdForm;
 import lombok.extern.slf4j.Slf4j;
@@ -76,7 +77,7 @@ public class SysUserServiceImpl extends BaseService<SysUserMapper, SysUser> impl
         }
         IPage<SysUser> page = new Page<>(query.getPageNum(), query.getPageSize());
         this.page(page, queryWrapper);
-        return new MallPageResult<>(page, sysUser -> {
+        return new MallPlusPageResult<>(page, sysUser -> {
             SysUserVO vo = new SysUserVO();
             BeanUtils.copyProperties(sysUser, vo);
             return vo;

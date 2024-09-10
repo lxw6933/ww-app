@@ -11,6 +11,7 @@ import com.ww.mall.member.service.MemberService;
 import com.ww.mall.member.view.vo.MemberVO;
 import com.ww.mall.web.cmmon.MallPage;
 import com.ww.mall.web.cmmon.MallPageResult;
+import com.ww.mall.web.cmmon.MallPlusPageResult;
 import com.ww.mall.web.utils.AuthorizationContext;
 import com.ww.mall.common.utils.IdUtil;
 import com.ww.mall.web.view.dto.MemberDTO;
@@ -58,7 +59,7 @@ public class MemberController {
         }
         IPage<Member> page = new Page<>(mallPage.getPageNum(), mallPage.getPageSize());
         memberService.page(page);
-        return new MallPageResult<>(page, result -> {
+        return new MallPlusPageResult<>(page, result -> {
             MemberVO memberVO = new MemberVO();
             BeanUtils.copyProperties(result, memberVO);
             return memberVO;
