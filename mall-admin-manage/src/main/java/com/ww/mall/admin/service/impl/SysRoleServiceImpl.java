@@ -1,6 +1,5 @@
 package com.ww.mall.admin.service.impl;
 
-import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.ww.mall.admin.dao.SysRoleMapper;
 import com.ww.mall.admin.entity.SysRole;
 import com.ww.mall.admin.service.BaseService;
@@ -9,10 +8,8 @@ import com.ww.mall.admin.view.form.SysRoleForm;
 import com.ww.mall.admin.view.query.SysRolePageQuery;
 import com.ww.mall.admin.view.vo.SysRoleVO;
 import com.ww.mall.annotation.plugs.redis.MallResubmission;
-import com.ww.mall.common.common.MallAdminUser;
 import com.ww.mall.common.exception.ApiException;
 import com.ww.mall.web.cmmon.MallPageResult;
-import com.ww.mall.web.utils.AuthorizationContext;
 import com.ww.mall.web.view.form.IdForm;
 import org.springframework.beans.BeanUtils;
 import org.springframework.stereotype.Service;
@@ -33,10 +30,7 @@ public class SysRoleServiceImpl extends BaseService<SysRoleMapper, SysRole> impl
 
     @Override
     public SysRoleVO info(Long id) {
-        MallAdminUser adminUser = AuthorizationContext.getAdminUser();
-        SysRole sysRole = this.getOne(new QueryWrapper<SysRole>()
-                .eq("id", id)
-                .eq("platform_id", adminUser.getRoleId()));
+        SysRole sysRole = this.getById(id);
         if (sysRole == null) {
             throw new ApiException("角色信息不存在");
         }

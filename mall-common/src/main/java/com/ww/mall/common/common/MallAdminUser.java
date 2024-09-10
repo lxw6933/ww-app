@@ -1,6 +1,5 @@
 package com.ww.mall.common.common;
 
-import com.ww.mall.common.enums.SysPlatformType;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 
@@ -32,15 +31,5 @@ public class MallAdminUser extends MallBaseUser {
      * 头像
      */
     private String headPicture;
-
-    /**
-     * 所属平台
-     */
-    private SysPlatformType platform;
-
-    /**
-     * 平台id
-     */
-    private Long roleId;
 
 }
