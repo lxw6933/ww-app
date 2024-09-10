@@ -9,8 +9,8 @@ import lombok.Data;
  * @description:
  */
 @Data
-@TableName("sys_role_data")
-public class SysRoleData {
+@TableName("sys_user_role")
+public class SysRoleUser {
 
     /**
      * 角色id
@@ -18,8 +18,8 @@ public class SysRoleData {
     private Long roleId;
 
     /**
-     * 权限数据id【渠道id，商家id】
+     * 用户id
      */
-    private Long dataId;
+    private Long userId;
 
 }
