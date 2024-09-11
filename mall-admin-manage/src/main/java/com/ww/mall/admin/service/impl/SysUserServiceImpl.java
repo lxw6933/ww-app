@@ -64,13 +64,8 @@ public class SysUserServiceImpl extends BaseService<SysUserMapper, SysUser> impl
     @Transactional
     @MallResubmission
     public boolean save(SysUserForm form) {
-        // 保证同一平台下username不重复
-        List<SysUser> userList = this.list(new QueryWrapper<SysUser>()
-                .eq("username", form.getUsername())
-        );
-        if (CollectionUtils.isNotEmpty(userList)) {
-            throw new ApiException("账号已存在");
-        }
+        SysUser sysUser = this.getOne(new QueryWrapper<SysUser>().eq("username", form.getUsername()));
+        Assert.isNull(sysUser, () -> new ApiException("账号已存在"));
         SysUser newSysUser = new SysUser();
         BeanUtils.copyProperties(form, newSysUser);
         String salt = PasswordUtil.generateSalt();
@@ -78,7 +73,6 @@ public class SysUserServiceImpl extends BaseService<SysUserMapper, SysUser> impl
         newSysUser.setSalt(salt);
         newSysUser.setValid(true);
         newSysUser.setStatus(true);
-        // 保存新用户
         return this.save(newSysUser);
     }
 
@@ -87,9 +81,8 @@ public class SysUserServiceImpl extends BaseService<SysUserMapper, SysUser> impl
     @MallResubmission
     public boolean update(SysUserForm form) {
         SysUser sysUser = this.getById(form.getId());
-        if (sysUser == null) {
-            throw new ApiException("用户不存在");
-        }
+        Assert.notNull(sysUser, () -> new ApiException("信息不存在"));
+
         if (Objects.equals(Constant.SUPER_ADMIN_MANAGER_ID, form.getId())) {
             throw new ApiException("禁止修改超管账号的信息");
         }
@@ -103,9 +96,7 @@ public class SysUserServiceImpl extends BaseService<SysUserMapper, SysUser> impl
     public SysUserVO info(Long userId) {
         SysUserVO sysUserVO = new SysUserVO();
         SysUser sysUser = this.getById(userId);
-        if (sysUser == null) {
-            throw new ApiException("用户不存在");
-        }
+        Assert.notNull(sysUser, () -> new ApiException("信息不存在"));
         BeanUtils.copyProperties(sysUser, sysUserVO);
         return sysUserVO;
     }

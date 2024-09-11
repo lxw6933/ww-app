@@ -1,5 +1,6 @@
 package com.ww.mall.admin.service.impl;
 
+import cn.hutool.core.lang.Assert;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.ww.mall.admin.dao.SysRoleMapper;
@@ -40,9 +41,7 @@ public class SysRoleServiceImpl extends BaseService<SysRoleMapper, SysRole> impl
     @Override
     public SysRoleVO info(Long id) {
         SysRole sysRole = this.getById(id);
-        if (sysRole == null) {
-            throw new ApiException("角色信息不存在");
-        }
+        Assert.notNull(sysRole, () -> new ApiException("信息不存在"));
         SysRoleVO vo = new SysRoleVO();
         BeanUtils.copyProperties(sysRole, vo);
         return vo;

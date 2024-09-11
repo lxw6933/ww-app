@@ -1,5 +1,6 @@
 package com.ww.mall.admin.service.impl;
 
+import cn.hutool.core.lang.Assert;
 import cn.hutool.core.lang.tree.Tree;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.ww.mall.admin.dao.SysMenuMapper;
@@ -35,9 +36,7 @@ public class SysMenuServiceImpl extends BaseService<SysMenuMapper, SysMenu> impl
     @Override
     public SysMenuVO info(Long id) {
         SysMenu sysMenu = this.getById(id);
-        if (sysMenu == null) {
-            throw new ApiException("信息不存在");
-        }
+        Assert.notNull(sysMenu, () -> new ApiException("信息不存在"));
         SysMenuVO vo = new SysMenuVO();
         BeanUtils.copyProperties(sysMenu, vo);
         return vo;
@@ -53,9 +52,7 @@ public class SysMenuServiceImpl extends BaseService<SysMenuMapper, SysMenu> impl
     @Override
     public boolean update(SysMenuForm form) {
         SysMenu sysMenu = this.getById(form.getId());
-        if (sysMenu == null) {
-            throw new ApiException("信息不存在");
-        }
+        Assert.notNull(sysMenu, () -> new ApiException("信息不存在"));
         BeanUtils.copyProperties(form, sysMenu);
         return this.updateById(sysMenu);
     }
