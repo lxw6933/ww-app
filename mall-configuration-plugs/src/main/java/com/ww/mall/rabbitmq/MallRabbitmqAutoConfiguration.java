@@ -4,6 +4,8 @@ import cn.hutool.extra.spring.SpringUtil;
 import com.ww.mall.common.constant.Constant;
 import com.ww.mall.common.exception.ApiException;
 import com.ww.mall.annotation.enable.EnableMallMongodb;
+import com.ww.mall.mongodb.repository.MongoMqLogRepository;
+import com.ww.mall.mongodb.repository.MqMsgLogEntity;
 import com.ww.mall.rabbitmq.enums.MqMsgStatus;
 import com.ww.mall.rabbitmq.repository.BaseMqLog;
 import com.ww.mall.rabbitmq.repository.MqLogRepository;
@@ -148,6 +150,12 @@ public class MallRabbitmqAutoConfiguration {
     @Bean
     public MallPublisher mallPublisher() {
         return new MallPublisher();
+    }
+
+    @Bean
+    public MqLogRepository<String, MqMsgLogEntity> mongoMqLogRepository() {
+        log.info("初始化消息日志mongo持久化");
+        return new MongoMqLogRepository();
     }
 
 }

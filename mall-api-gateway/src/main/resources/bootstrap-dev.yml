@@ -87,11 +87,11 @@ spring:
             - RewritePath=/api(?<segment>/?.*), $\{segment}
         # 后台管理服务路由
         - id: admin_route
-          uri: lb://mall-admin
+          uri: lb://mall-admin-manage
           predicates:
-            - Path=/ww/admin/**
+            - Path=/api/mall-admin-manage/**
           filters:
-            - RewritePath=/ww/admin/?(?<segment>.*), /$\{segment}
+            - RewritePath=/api(?<segment>/?.*), $\{segment}
 
 management:
   endpoints:

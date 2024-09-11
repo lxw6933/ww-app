@@ -1,9 +1,6 @@
 package com.ww.mall.mongodb;
 
 import com.ww.mall.mongodb.handler.CommonStockHandler;
-import com.ww.mall.mongodb.repository.MongoMqLogRepository;
-import com.ww.mall.mongodb.repository.MqMsgLogEntity;
-import com.ww.mall.rabbitmq.repository.MqLogRepository;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
 import org.springframework.boot.autoconfigure.mongo.MongoProperties;
@@ -47,12 +44,6 @@ public class MallMongodbAutoConfiguration {
         // 去除写入mongodb时的_class字段
         converter.setTypeMapper(new DefaultMongoTypeMapper(null));
         return converter;
-    }
-
-    @Bean
-    public MqLogRepository<String, MqMsgLogEntity> mongoMqLogRepository() {
-        log.info("初始化消息日志mongo持久化");
-        return new MongoMqLogRepository();
     }
 
     @Bean
