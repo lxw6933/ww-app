@@ -17,7 +17,7 @@
     </resultMap>
 
     <delete id="deleteRoleOfUser">
-        delete from sys_user_role where role_id = #{roelId}
+        delete from sys_role_user where role_id = #{roelId}
     </delete>
 
     <delete id="deleteRoleOfMenu">

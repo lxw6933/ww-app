@@ -4,6 +4,7 @@ import com.ww.mall.common.valid.group.UpdateGroup;
 import lombok.Data;
 
 import javax.validation.constraints.NotNull;
+import java.util.List;
 
 /**
  * @author ww
@@ -57,6 +58,6 @@ public class SysUserForm {
     /**
      * 角色id集合
      */
-    private Long roleId;
+    private List<Long> roleIds;
 
 }

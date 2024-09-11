@@ -4,19 +4,16 @@
 
     <resultMap type="com.ww.mall.admin.entity.SysUser" id="SysUserMap">
         <result property="id" column="id" jdbcType="INTEGER"/>
-        <result property="platform" column="platform" jdbcType="VARCHAR"/>
         <result property="username" column="username" jdbcType="VARCHAR"/>
         <result property="nickname" column="nickname" jdbcType="VARCHAR"/>
         <result property="password" column="password" jdbcType="VARCHAR"/>
         <result property="salt" column="salt" jdbcType="VARCHAR"/>
         <result property="headPicture" column="head_picture" jdbcType="VARCHAR"/>
-        <result property="sex" column="sex" jdbcType="INTEGER"/>
         <result property="email" column="email" jdbcType="VARCHAR"/>
         <result property="phone" column="phone" jdbcType="VARCHAR"/>
         <result property="remark" column="remark" jdbcType="VARCHAR"/>
         <result property="status" column="status" jdbcType="INTEGER"/>
         <result property="valid" column="valid" jdbcType="INTEGER"/>
-        <result property="roleId" column="role_id" jdbcType="INTEGER"/>
         <result property="version" column="version" jdbcType="INTEGER"/>
         <result property="creatorId" column="creator_id" jdbcType="INTEGER"/>
         <result property="updaterId" column="updater_id" jdbcType="INTEGER"/>
@@ -32,14 +29,14 @@
     </select>
 
     <insert id="addUserOfRoleInfo">
-        insert into sys_user_role (user_id, role_id) values
+        insert into sys_role_user (user_id, role_id) values
         <foreach collection="roleIds" separator="," item="item">
             (#{userId}, #{item})
         </foreach>
     </insert>
 
     <delete id="deleteUserOfRole">
-        delete from sys_user_role where user_id = #{userId}
+        delete from sys_role_user where user_id = #{userId}
     </delete>
 
 </mapper>

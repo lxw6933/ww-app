@@ -70,7 +70,7 @@ public class SysRoleServiceImpl extends BaseService<SysRoleMapper, SysRole> impl
     public boolean delete(IdForm form) {
         boolean success = this.removeById(form.getId());
         if (success) {
-            // 删除sys_user_role相关记录
+            // 删除sys_role_user相关记录
             df.getSysRoleMapper().deleteRoleOfUser(form.getId());
             // 删除sys_role_menu相关记录
             df.getSysRoleMapper().deleteRoleOfMenu(form.getId());

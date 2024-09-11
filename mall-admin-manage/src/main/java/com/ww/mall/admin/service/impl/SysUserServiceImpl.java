@@ -14,6 +14,7 @@ import com.ww.mall.admin.service.SysUserService;
 import com.ww.mall.admin.utils.PasswordUtil;
 import com.ww.mall.admin.view.form.ModifyPasswordForm;
 import com.ww.mall.admin.view.form.SysUserForm;
+import com.ww.mall.admin.view.form.UserAndRoleForm;
 import com.ww.mall.web.view.bo.SysUserLoginBO;
 import com.ww.mall.admin.view.query.SysUserPageQuery;
 import com.ww.mall.admin.view.vo.SysMenuVO;
@@ -73,7 +74,11 @@ public class SysUserServiceImpl extends BaseService<SysUserMapper, SysUser> impl
         newSysUser.setSalt(salt);
         newSysUser.setValid(true);
         newSysUser.setStatus(true);
-        return this.save(newSysUser);
+        this.save(newSysUser);
+        if (CollectionUtils.isNotEmpty(form.getRoleIds())) {
+            saveUserRoles(sysUser.getId(), form.getRoleIds());
+        }
+        return true;
     }
 
     @Override
@@ -89,7 +94,36 @@ public class SysUserServiceImpl extends BaseService<SysUserMapper, SysUser> impl
         // 账号不能更新
         form.setUsername(sysUser.getUsername());
         BeanUtils.copyProperties(form, sysUser);
-        return super.updateById(sysUser);
+        this.updateById(sysUser);
+        // 判断角色是否变化
+        List<SysRoleVO> userRoles = queryUserOfRole(sysUser.getId());
+        if (CollectionUtils.isEmpty(userRoles)) {
+            if (CollectionUtils.isNotEmpty(form.getRoleIds())) {
+                saveUserRoles(sysUser.getId(), form.getRoleIds());
+            }
+        } else {
+            if (!CollectionUtils.isEqualCollection(form.getRoleIds(), userRoles)) {
+                // 删除之前所有的关联信息，新增目前的关联信息
+                df.getSysUserMapper().deleteUserOfRole(sysUser.getId());
+                if (CollectionUtils.isNotEmpty(form.getRoleIds())) {
+                    saveUserRoles(sysUser.getId(), form.getRoleIds());
+                }
+            }
+        }
+        return true;
+    }
+
+    /**
+     * 维护用户角色关联信息
+     *
+     * @param sysUserId 用户id
+     * @param roleIds 角色id集合
+     */
+    private void saveUserRoles(Long sysUserId, List<Long> roleIds) {
+        UserAndRoleForm roleForm = new UserAndRoleForm();
+        roleForm.setUserId(sysUserId);
+        roleForm.setRoleIds(roleIds);
+        df.getSysUserMapper().addUserOfRoleInfo(roleForm);
     }
 
     @Override
