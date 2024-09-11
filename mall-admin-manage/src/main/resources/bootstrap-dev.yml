@@ -31,7 +31,7 @@ ip2region:
 mybatis-plus:
   mapper-locations: classpath:mapper/*Mapper.xml
   configuration:
-    map-underscore-to-camel-case: false
+    map-underscore-to-camel-case: true
   global-config:
     db-config:
       id-type: auto
