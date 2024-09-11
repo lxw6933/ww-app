@@ -4,7 +4,6 @@
 
     <resultMap type="com.ww.mall.admin.entity.SysRole" id="SysRoleMap">
         <result property="id" column="id" jdbcType="INTEGER"/>
-        <result property="platform" column="platform" jdbcType="VARCHAR"/>
         <result property="name" column="name" jdbcType="VARCHAR"/>
         <result property="roleNo" column="role_no" jdbcType="VARCHAR"/>
         <result property="remark" column="remark" jdbcType="VARCHAR"/>
