@@ -27,7 +27,7 @@ import java.util.List;
  * @create 2024-05-20 14:02:20
  * @description:
  */
-@Service("sysRoleService")
+@Service
 public class SysRoleServiceImpl extends BaseService<SysRoleMapper, SysRole> implements SysRoleService {
 
     @Override
