@@ -2,8 +2,9 @@ package com.ww.mall.admin.dao;
 
 import com.baomidou.mybatisplus.core.mapper.BaseMapper;
 import com.ww.mall.admin.entity.SysRole;
-import com.ww.mall.common.enums.SysPlatformType;
+import com.ww.mall.admin.view.form.RoleAndMenuForm;
 import org.apache.ibatis.annotations.Mapper;
+import org.apache.ibatis.annotations.Select;
 
 import java.util.List;
 
@@ -15,37 +16,29 @@ import java.util.List;
 @Mapper
 public interface SysRoleMapper extends BaseMapper<SysRole> {
 
+
     /**
-     * 查询角色下拥有的所有dataId
+     * 插入角色权限中间表
+     *
+     * @param form 角色权限表单
+     */
+    void insertRoleAndPermission(RoleAndMenuForm form);
+
+    /**
+     * 删除角色权限中间表记录
      *
      * @param roleId 角色id
-     * @param platform 平台类型
-     * @return List
      */
-    List<Long> queryRoleOfAllData(Long roleId, SysPlatformType platform);
+    void removeRoleAndPermission(Long roleId);
 
     /**
-     * 查询dataId下所有的角色
+     * 通过角色id查询角色下所有的权限
      *
-     * @param dataId dataId
-     * @param platform platform
-     * @return List
+     * @param roleId 角色id
+     * @return List<Long>
      */
-    List<Long> queryDataIdOfAllRoleId(Long dataId, SysPlatformType platform);
-
-    /**
-     * 删除角色下所有用户关联信息
-     *
-     * @param roleId roleId
-     */
-    void deleteRoleOfUser(Long roleId);
-
-    /**
-     * 删除角色下所有菜单关联信息
-     *
-     * @param roleId roleId
-     */
-    void deleteRoleOfMenu(Long roleId);
+    @Select("select menu_id from sys_role_menu where role_id = #{roleId}")
+    List<Long> findMenuIdsByRoleId(Long roleId);
 
 }
 

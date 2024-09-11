@@ -4,6 +4,7 @@ import com.ww.mall.common.valid.group.UpdateGroup;
 import lombok.Data;
 
 import javax.validation.constraints.NotNull;
+import java.util.List;
 
 /**
  * @author ww
@@ -33,5 +34,10 @@ public class SysRoleForm {
      * 备注
      */
     private String remark;
+
+    /**
+     * 权限id集合
+     */
+    private List<Long> permissionIds;
 
 }

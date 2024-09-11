@@ -15,7 +15,6 @@ import com.ww.mall.admin.utils.PasswordUtil;
 import com.ww.mall.admin.view.form.ModifyPasswordForm;
 import com.ww.mall.admin.view.form.SysUserForm;
 import com.ww.mall.admin.view.form.UserAndRoleForm;
-import com.ww.mall.web.view.bo.SysUserLoginBO;
 import com.ww.mall.admin.view.query.SysUserPageQuery;
 import com.ww.mall.admin.view.vo.SysMenuVO;
 import com.ww.mall.admin.view.vo.SysRoleVO;
@@ -27,6 +26,7 @@ import com.ww.mall.common.exception.ApiException;
 import com.ww.mall.web.cmmon.MallPageResult;
 import com.ww.mall.web.cmmon.MallPlusPageResult;
 import com.ww.mall.web.utils.AuthorizationContext;
+import com.ww.mall.web.view.bo.SysUserLoginBO;
 import com.ww.mall.web.view.dto.SysUserDTO;
 import com.ww.mall.web.view.form.IdForm;
 import lombok.extern.slf4j.Slf4j;
@@ -39,7 +39,6 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
-import java.util.stream.Collectors;
 
 /**
  * @author ww
@@ -75,9 +74,7 @@ public class SysUserServiceImpl extends BaseService<SysUserMapper, SysUser> impl
         newSysUser.setValid(true);
         newSysUser.setStatus(true);
         this.save(newSysUser);
-        if (CollectionUtils.isNotEmpty(form.getRoleIds())) {
-            saveUserRoles(sysUser.getId(), form.getRoleIds());
-        }
+        saveUserRoles(sysUser.getId(), form.getRoleIds());
         return true;
     }
 
@@ -96,18 +93,14 @@ public class SysUserServiceImpl extends BaseService<SysUserMapper, SysUser> impl
         BeanUtils.copyProperties(form, sysUser);
         this.updateById(sysUser);
         // 判断角色是否变化
-        List<SysRoleVO> userRoles = queryUserOfRole(sysUser.getId());
-        if (CollectionUtils.isEmpty(userRoles)) {
-            if (CollectionUtils.isNotEmpty(form.getRoleIds())) {
-                saveUserRoles(sysUser.getId(), form.getRoleIds());
-            }
+        List<Long> userRoleIds = df.getSysUserMapper().findRoleIdsByUserId(sysUser.getId());
+        if (CollectionUtils.isEmpty(userRoleIds)) {
+            saveUserRoles(sysUser.getId(), form.getRoleIds());
         } else {
-            if (!CollectionUtils.isEqualCollection(form.getRoleIds(), userRoles)) {
+            if (!CollectionUtils.isEqualCollection(form.getRoleIds(), userRoleIds)) {
                 // 删除之前所有的关联信息，新增目前的关联信息
                 df.getSysUserMapper().deleteUserOfRole(sysUser.getId());
-                if (CollectionUtils.isNotEmpty(form.getRoleIds())) {
-                    saveUserRoles(sysUser.getId(), form.getRoleIds());
-                }
+                saveUserRoles(sysUser.getId(), form.getRoleIds());
             }
         }
         return true;
@@ -120,10 +113,12 @@ public class SysUserServiceImpl extends BaseService<SysUserMapper, SysUser> impl
      * @param roleIds 角色id集合
      */
     private void saveUserRoles(Long sysUserId, List<Long> roleIds) {
-        UserAndRoleForm roleForm = new UserAndRoleForm();
-        roleForm.setUserId(sysUserId);
-        roleForm.setRoleIds(roleIds);
-        df.getSysUserMapper().addUserOfRoleInfo(roleForm);
+        if (CollectionUtils.isNotEmpty(roleIds)) {
+            UserAndRoleForm data = new UserAndRoleForm();
+            data.setUserId(sysUserId);
+            data.setRoleIds(roleIds);
+            df.getSysUserMapper().addUserOfRoleInfo(data);
+        }
     }
 
     @Override
@@ -230,8 +225,7 @@ public class SysUserServiceImpl extends BaseService<SysUserMapper, SysUser> impl
 
     @Override
     public List<SysMenuVO> queryUserOfMenu(Long userId) {
-        List<SysRoleVO> userRoleList = this.queryUserOfRole(userId);
-        List<Long> userRoleIdList = userRoleList.stream().map(SysRoleVO::getId).collect(Collectors.toList());
+        List<Long> userRoleIdList = df.getSysUserMapper().findRoleIdsByUserId(userId);
         if (CollectionUtils.isEmpty(userRoleIdList)) {
             return Collections.emptyList();
         }
