@@ -1,5 +1,7 @@
 package com.ww.mall.admin.service.impl;
 
+import com.baomidou.mybatisplus.core.metadata.IPage;
+import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.ww.mall.admin.dao.SysRoleMapper;
 import com.ww.mall.admin.entity.SysRole;
 import com.ww.mall.admin.service.BaseService;
@@ -10,6 +12,7 @@ import com.ww.mall.admin.view.vo.SysRoleVO;
 import com.ww.mall.annotation.plugs.redis.MallResubmission;
 import com.ww.mall.common.exception.ApiException;
 import com.ww.mall.web.cmmon.MallPageResult;
+import com.ww.mall.web.cmmon.MallPlusPageResult;
 import com.ww.mall.web.view.form.IdForm;
 import org.springframework.beans.BeanUtils;
 import org.springframework.stereotype.Service;
@@ -25,7 +28,13 @@ public class SysRoleServiceImpl extends BaseService<SysRoleMapper, SysRole> impl
 
     @Override
     public MallPageResult<SysRoleVO> page(SysRolePageQuery query) {
-        return null;
+        IPage<SysRole> page = new Page<>(query.getPageNum(), query.getPageSize());
+        this.page(page, query.getQueryWrapper());
+        return new MallPlusPageResult<>(page, sysRole -> {
+            SysRoleVO vo = new SysRoleVO();
+            BeanUtils.copyProperties(sysRole, vo);
+            return vo;
+        });
     }
 
     @Override

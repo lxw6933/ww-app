@@ -1,5 +1,6 @@
 package com.ww.mall.admin.controller;
 
+import cn.hutool.core.lang.tree.Tree;
 import com.ww.mall.admin.view.form.SysMenuForm;
 import com.ww.mall.admin.view.vo.SysMenuVO;
 import com.ww.mall.common.valid.group.DeleteGroup;
@@ -7,6 +8,8 @@ import com.ww.mall.common.valid.group.UpdateGroup;
 import com.ww.mall.web.view.form.IdForm;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
+
+import java.util.List;
 
 /**
  * @author ww
@@ -16,6 +19,11 @@ import org.springframework.web.bind.annotation.*;
 @RestController
 @RequestMapping("/sysMenu")
 public class SysMenuController extends MallAbstractController {
+
+    @GetMapping("/menuTree")
+    public List<Tree<Long>> menuTree() {
+        return sf.getSysMenuService().tree();
+    }
 
     @GetMapping("/info/{menuId}")
     public SysMenuVO info(@PathVariable("menuId") Long menuId) {
