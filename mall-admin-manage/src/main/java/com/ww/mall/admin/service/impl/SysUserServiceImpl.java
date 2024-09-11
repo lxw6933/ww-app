@@ -196,7 +196,7 @@ public class SysUserServiceImpl extends BaseService<SysUserMapper, SysUser> impl
 
     @Override
     public SysUserVO info(String username, String password) {
-        SysUser sysUser = sf.getSysUserService().getOne(new QueryWrapper<SysUser>().eq("username", username));
+        SysUser sysUser = this.getOne(new QueryWrapper<SysUser>().eq("username", username));
         Assert.notNull(sysUser, () -> new ApiException("用户账号不存在"));
         Assert.isTrue(sysUser.getStatus(), () -> new ApiException("账号状态异常"));
         Assert.isTrue(sysUser.getValid(), () -> new ApiException("账号无效"));
