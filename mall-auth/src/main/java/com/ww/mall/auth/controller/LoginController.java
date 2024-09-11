@@ -3,12 +3,12 @@ package com.ww.mall.auth.controller;
 import com.ww.mall.auth.serivce.LoginService;
 import com.ww.mall.auth.view.vo.LoginVO;
 import com.ww.mall.web.view.bo.MemberLoginBO;
+import com.ww.mall.web.view.bo.SysUserLoginBO;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
-import javax.servlet.http.HttpServletRequest;
 import javax.validation.constraints.Pattern;
 
 /**
@@ -25,9 +25,14 @@ public class LoginController {
     @Autowired
     private LoginService loginService;
 
-    @PostMapping("/loginByVerityCode")
-    public LoginVO loginByVerityCode(@RequestBody @Validated MemberLoginBO memberLoginBO, HttpServletRequest request) {
-        return loginService.loginByVerityCode(memberLoginBO, request);
+    @PostMapping("/adminLogin")
+    public LoginVO adminLogin(@RequestBody @Validated SysUserLoginBO sysUserLoginBO) {
+        return loginService.adminLogin(sysUserLoginBO);
+    }
+
+    @PostMapping("/clientMobileLogin")
+    public LoginVO clientMobileLogin(@RequestBody @Validated MemberLoginBO memberLoginBO) {
+        return loginService.clientMobileLogin(memberLoginBO);
     }
 
     @GetMapping("/sendCode")

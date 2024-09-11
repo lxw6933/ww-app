@@ -10,11 +10,13 @@ import com.ww.mall.common.constant.RedisKeyConstant;
 import com.ww.mall.common.enums.CodeEnum;
 import com.ww.mall.common.enums.UserType;
 import com.ww.mall.common.exception.ApiException;
+import com.ww.mall.web.feign.AdminFeignService;
 import com.ww.mall.web.feign.MemberFeignService;
 import com.ww.mall.web.feign.ThirdServerFeignService;
-import com.ww.mall.common.utils.IpUtil;
 import com.ww.mall.web.view.bo.MemberLoginBO;
+import com.ww.mall.web.view.bo.SysUserLoginBO;
 import com.ww.mall.web.view.dto.MemberDTO;
+import com.ww.mall.web.view.dto.SysUserDTO;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.time.DateUtils;
@@ -22,7 +24,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
 
-import javax.servlet.http.HttpServletRequest;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
@@ -49,10 +50,38 @@ public class LoginServiceImpl implements LoginService {
     @Autowired
     private MemberFeignService memberFeignService;
 
+    @Autowired
+    private AdminFeignService adminFeignService;
+
     @Override
-    public LoginVO loginByVerityCode(MemberLoginBO memberLoginBO, HttpServletRequest request) {
-        String requestIp = IpUtil.getRealIp(request);
-        log.info("登录请求ip：【{}】 请求参数：【{}】", requestIp, memberLoginBO);
+    public LoginVO adminLogin(SysUserLoginBO sysUserLoginBO) {
+        // 获取登录用户信息
+        Result<SysUserDTO> result = adminFeignService.login(sysUserLoginBO);
+        if (Boolean.TRUE.equals(result.isSuccess()) && CodeEnum.SUCCESS.getCode().equals(result.getCode())) {
+            SysUserDTO sysUserDTO = result.getValue();
+            // 生成jwt token
+            Date tokenEffectTime = new Date();
+            Date tokenExpTime = DateUtils.addHours(tokenEffectTime, jwtProperties.getExpire());
+            Map<String, Object> map = new HashMap<>();
+            map.put("memberId", sysUserDTO.getId());
+            map.put("mobile", sysUserDTO.getMobile());
+            map.put("exp", tokenExpTime.getTime());
+            map.put("nbf", tokenEffectTime.getTime());
+            map.put("iss", jwtProperties.getIss());
+            map.put("userType", UserType.ADMIN);
+            String token = JWTUtil.createToken(map, jwtProperties.getSecret().getBytes());
+            LoginVO loginVO = new LoginVO();
+            loginVO.setToken(token);
+            loginVO.setTokenExpTime(tokenExpTime.getTime());
+            return loginVO;
+        } else {
+            log.error("远程调用mall-admin-manage服务失败：{}", result);
+            throw new ApiException(CodeEnum.SYSTEM_ERROR.getCode(), CodeEnum.SYSTEM_ERROR.getMessage());
+        }
+    }
+
+    @Override
+    public LoginVO clientMobileLogin(MemberLoginBO memberLoginBO) {
         String mobile = memberLoginBO.getMobile();
         String mobileCode = redisTemplate.opsForValue().get(RedisKeyConstant.SMS_CODE_CACHE_PREFIX + mobile);
         mobileCode = StringUtils.isNotEmpty(mobileCode) ? mobileCode.split("_")[0] : null;

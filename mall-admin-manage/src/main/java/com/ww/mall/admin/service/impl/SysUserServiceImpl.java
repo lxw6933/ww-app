@@ -14,6 +14,7 @@ import com.ww.mall.admin.service.SysUserService;
 import com.ww.mall.admin.utils.PasswordUtil;
 import com.ww.mall.admin.view.form.ModifyPasswordForm;
 import com.ww.mall.admin.view.form.SysUserForm;
+import com.ww.mall.web.view.bo.SysUserLoginBO;
 import com.ww.mall.admin.view.query.SysUserPageQuery;
 import com.ww.mall.admin.view.vo.SysMenuVO;
 import com.ww.mall.admin.view.vo.SysRoleVO;
@@ -25,6 +26,7 @@ import com.ww.mall.common.exception.ApiException;
 import com.ww.mall.web.cmmon.MallPageResult;
 import com.ww.mall.web.cmmon.MallPlusPageResult;
 import com.ww.mall.web.utils.AuthorizationContext;
+import com.ww.mall.web.view.dto.SysUserDTO;
 import com.ww.mall.web.view.form.IdForm;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.CollectionUtils;
@@ -145,11 +147,11 @@ public class SysUserServiceImpl extends BaseService<SysUserMapper, SysUser> impl
     @MallResubmission
     public boolean modifyPassword(ModifyPasswordForm modifyPasswordForm) {
         MallAdminUser adminUser = AuthorizationContext.getAdminUser();
-        Assert.isFalse(modifyPasswordForm.getNewPassword().equals(modifyPasswordForm.getConfirmNewPassword()), () -> new ApiException("新密码前后两次不一致"));
+        Assert.isTrue(modifyPasswordForm.getNewPassword().equals(modifyPasswordForm.getConfirmNewPassword()), () -> new ApiException("新密码前后两次不一致"));
         // 校验旧密码是否一致
         SysUser sysUser = this.getById(adminUser.getUserId());
         boolean checkPassword = PasswordUtil.checkPassword(modifyPasswordForm.getOldPassword(), sysUser.getSalt() + sysUser.getPassword());
-        Assert.isFalse(checkPassword, () -> new ApiException("旧密码错误"));
+        Assert.isTrue(checkPassword, () -> new ApiException("旧密码错误"));
         // 更新密码
         String salt = PasswordUtil.generateSalt();
         String newPassword = PasswordUtil.generatePassword(modifyPasswordForm.getNewPassword(), salt);
@@ -174,7 +176,15 @@ public class SysUserServiceImpl extends BaseService<SysUserMapper, SysUser> impl
 
     @Override
     public SysUserVO info(String username, String password) {
-        return null;
+        SysUser sysUser = sf.getSysUserService().getOne(new QueryWrapper<SysUser>().eq("username", username));
+        Assert.notNull(sysUser, () -> new ApiException("用户账号不存在"));
+        Assert.isTrue(sysUser.getStatus(), () -> new ApiException("账号状态异常"));
+        Assert.isTrue(sysUser.getValid(), () -> new ApiException("账号无效"));
+        boolean checkPassword = PasswordUtil.checkPassword(password, sysUser.getSalt() + sysUser.getPassword());
+        Assert.isTrue(checkPassword, () -> new ApiException("密码错误"));
+        SysUserVO sysUserVO = new SysUserVO();
+        BeanUtils.copyProperties(sysUser, sysUserVO);
+        return sysUserVO;
     }
 
     @Override
@@ -212,6 +222,15 @@ public class SysUserServiceImpl extends BaseService<SysUserMapper, SysUser> impl
             userMenuVOList.add(vo);
         });
         return userMenuVOList;
+    }
+
+    @Override
+    public SysUserDTO login(SysUserLoginBO form) {
+        SysUserVO sysUserVO = sf.getSysUserService().info(form.getUsername(), form.getPassword());
+        SysUserDTO sysUserDTO = new SysUserDTO();
+        sysUserDTO.setId(sysUserVO.getId());
+        sysUserDTO.setMobile(sysUserVO.getPhone());
+        return sysUserDTO;
     }
 
 }

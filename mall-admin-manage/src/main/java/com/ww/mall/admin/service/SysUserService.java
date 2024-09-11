@@ -4,11 +4,13 @@ import com.baomidou.mybatisplus.extension.service.IService;
 import com.ww.mall.admin.entity.SysUser;
 import com.ww.mall.admin.view.form.ModifyPasswordForm;
 import com.ww.mall.admin.view.form.SysUserForm;
+import com.ww.mall.web.view.bo.SysUserLoginBO;
 import com.ww.mall.admin.view.query.SysUserPageQuery;
 import com.ww.mall.admin.view.vo.SysMenuVO;
 import com.ww.mall.admin.view.vo.SysRoleVO;
 import com.ww.mall.admin.view.vo.SysUserVO;
 import com.ww.mall.web.cmmon.MallPageResult;
+import com.ww.mall.web.view.dto.SysUserDTO;
 import com.ww.mall.web.view.form.IdForm;
 
 import java.util.List;
@@ -109,5 +111,12 @@ public interface SysUserService extends IService<SysUser> {
      */
     List<SysMenuVO> queryUserOfMenu(Long userId);
 
+    /**
+     * 后台登录
+     *
+     * @param form 登录form
+     * @return SysUserDTO
+     */
+    SysUserDTO login(SysUserLoginBO form);
 }
 

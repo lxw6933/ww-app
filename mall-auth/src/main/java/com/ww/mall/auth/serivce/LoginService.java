@@ -1,9 +1,8 @@
 package com.ww.mall.auth.serivce;
 
-import com.ww.mall.web.view.bo.MemberLoginBO;
 import com.ww.mall.auth.view.vo.LoginVO;
-
-import javax.servlet.http.HttpServletRequest;
+import com.ww.mall.web.view.bo.MemberLoginBO;
+import com.ww.mall.web.view.bo.SysUserLoginBO;
 
 /**
  * @author ww
@@ -13,13 +12,20 @@ import javax.servlet.http.HttpServletRequest;
 public interface LoginService {
 
     /**
+     * 后台登录
+     *
+     * @param sysUserLoginBO bo
+     * @return LoginVO
+     */
+    LoginVO adminLogin(SysUserLoginBO sysUserLoginBO);
+
+    /**
      * 验证码登录
      *
      * @param memberLoginBO bo
-     * @param request request
      * @return LoginVO
      */
-    LoginVO loginByVerityCode(MemberLoginBO memberLoginBO, HttpServletRequest request);
+    LoginVO clientMobileLogin(MemberLoginBO memberLoginBO);
 
     /**
      * 发送验证码
@@ -27,4 +33,5 @@ public interface LoginService {
      * @param mobile 手机号
      */
     void sendCode(String mobile);
+
 }
