@@ -2,8 +2,11 @@ package com.ww.mall.gateway.filters;
 
 import cn.hutool.core.util.IdUtil;
 import com.ww.mall.common.constant.Constant;
+import com.ww.mall.gateway.enums.GatewayResultEnum;
+import com.ww.mall.gateway.properties.MallGatewayProperties;
 import com.ww.mall.gateway.properties.ServerGrayProperties;
 import com.ww.mall.gateway.utils.GatewayIpUtil;
+import com.ww.mall.gateway.utils.WebFluxResultUtils;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.CollectionUtils;
@@ -11,6 +14,7 @@ import org.slf4j.MDC;
 import org.springframework.cloud.gateway.filter.GatewayFilterChain;
 import org.springframework.cloud.gateway.filter.GlobalFilter;
 import org.springframework.core.Ordered;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.server.reactive.ServerHttpRequest;
 import org.springframework.stereotype.Component;
 import org.springframework.web.server.ServerWebExchange;
@@ -33,12 +37,18 @@ public class IpFilter implements GlobalFilter, Ordered {
      */
     private final ServerGrayProperties serverGrayProperties;
 
+    private final MallGatewayProperties mallGatewayProperties;
+
     @Override
     public Mono<Void> filter(ServerWebExchange exchange, GatewayFilterChain chain) {
         String traceId = IdUtil.objectId();
         // 2.将traceId设置到slf4j中，日志打印模板配置打印traceId
         MDC.put(Constant.TRACE_ID, traceId);
         String userRealIp = GatewayIpUtil.getIpAddress(exchange.getRequest());
+        // ip黑名单校验
+        if (CollectionUtils.isNotEmpty(mallGatewayProperties.getBlackIpList()) && mallGatewayProperties.getBlackIpList().contains(userRealIp)) {
+            return WebFluxResultUtils.result(exchange, GatewayResultEnum.IP_LIMITED, HttpStatus.FORBIDDEN);
+        }
         // 是否开启灰度
         Boolean enableGray = serverGrayProperties.getEnable();
         // 获取配置的灰度版本

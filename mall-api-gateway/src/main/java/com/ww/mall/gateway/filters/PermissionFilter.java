@@ -10,9 +10,11 @@ import com.ww.mall.common.common.MallClientUser;
 import com.ww.mall.common.constant.Constant;
 import com.ww.mall.common.enums.UserType;
 import com.ww.mall.gateway.enums.GatewayResultEnum;
+import com.ww.mall.gateway.properties.MallGatewayProperties;
 import com.ww.mall.gateway.utils.WebFluxResultUtils;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.cloud.context.config.annotation.RefreshScope;
 import org.springframework.cloud.gateway.filter.GatewayFilterChain;
@@ -22,6 +24,8 @@ import org.springframework.core.annotation.Order;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.server.reactive.ServerHttpRequest;
 import org.springframework.stereotype.Component;
+import org.springframework.util.AntPathMatcher;
+import org.springframework.util.PathMatcher;
 import org.springframework.web.server.ServerWebExchange;
 import reactor.core.publisher.Mono;
 
@@ -38,15 +42,34 @@ import java.util.Date;
 @RefreshScope
 public class PermissionFilter implements GlobalFilter, Ordered {
 
+    private final PathMatcher matcher = new AntPathMatcher();
+
     @Value("${jwt.secret}")
     public String jwtSecret = Constant.SECRET_KEY;
+
+    @Autowired
+    private MallGatewayProperties mallGatewayProperties;
 
     @Override
     public Mono<Void> filter(ServerWebExchange exchange, GatewayFilterChain chain) {
         ServerHttpRequest request = exchange.getRequest();
         String token = request.getHeaders().getFirst(Constant.USER_TOKEN);
         String tokenInfo = null;
-        if (token != null) {
+
+        boolean isWhite = false;
+        if (token == null) {
+            // 接口白名单校验
+            String urlPath = request.getURI().getPath();
+            for (String path : mallGatewayProperties.getWhiteUriList()) {
+                if (matcher.match(path, urlPath)) {
+                    isWhite = true;
+                    break;
+                }
+            }
+            if (!isWhite) {
+                return WebFluxResultUtils.result(exchange, GatewayResultEnum.NO_PERMISSION, HttpStatus.FORBIDDEN);
+            }
+        } else {
             try {
                 // 校验token
                 boolean verify = JWTUtil.verify(token, jwtSecret.getBytes());
