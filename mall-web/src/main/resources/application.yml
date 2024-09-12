@@ -2,6 +2,9 @@
 server:
   shutdown: graceful
 spring:
+  main:
+    # 开启循环依赖
+    allow-circular-references: true
   lifecycle:
     # 设置缓冲期，最大等待时间，默认：30秒
     timeout-per-shutdown-phase: 60s
