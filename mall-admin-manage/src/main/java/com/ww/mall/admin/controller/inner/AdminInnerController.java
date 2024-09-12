@@ -14,7 +14,7 @@ import org.springframework.web.bind.annotation.*;
 @RequestMapping("/admin/inner")
 public class AdminInnerController extends MallAbstractController {
 
-    @GetMapping("/login")
+    @PostMapping("/login")
     public SysUserDTO login(@RequestBody SysUserLoginBO sysUserLoginBO) {
         return sf.getSysUserService().login(sysUserLoginBO);
     }

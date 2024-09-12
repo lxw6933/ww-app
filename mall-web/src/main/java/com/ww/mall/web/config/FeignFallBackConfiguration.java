@@ -1,5 +1,6 @@
 package com.ww.mall.web.config;
 
+import com.ww.mall.web.feign.inner.AdminFeignServiceFallBack;
 import com.ww.mall.web.feign.inner.MemberFeignServiceFallBack;
 import com.ww.mall.web.feign.inner.ThirdServerFeignServiceFallBack;
 import org.springframework.context.annotation.Bean;
@@ -12,6 +13,11 @@ import org.springframework.context.annotation.Configuration;
  **/
 @Configuration
 public class FeignFallBackConfiguration {
+
+    @Bean
+    public AdminFeignServiceFallBack adminFeignServiceFallBack() {
+        return new AdminFeignServiceFallBack();
+    }
 
     @Bean
     public MemberFeignServiceFallBack memberFeignServiceFallBack() {

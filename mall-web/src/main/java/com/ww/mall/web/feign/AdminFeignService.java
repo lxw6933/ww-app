@@ -6,6 +6,7 @@ import com.ww.mall.web.view.bo.SysUserLoginBO;
 import com.ww.mall.web.view.dto.SysUserDTO;
 import org.springframework.cloud.openfeign.FeignClient;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 
 /**
@@ -22,7 +23,7 @@ public interface AdminFeignService {
      * @param sysUserLoginBO bo
      * @return SysUserDTO
      */
-    @GetMapping("/mall-admin-manage/admin/inner/login")
+    @PostMapping("/mall-admin-manage/admin/inner/login")
     Result<SysUserDTO> login(@RequestBody SysUserLoginBO sysUserLoginBO);
 
 }

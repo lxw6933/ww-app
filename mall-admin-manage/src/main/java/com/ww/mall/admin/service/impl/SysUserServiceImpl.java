@@ -74,7 +74,7 @@ public class SysUserServiceImpl extends BaseService<SysUserMapper, SysUser> impl
         newSysUser.setValid(true);
         newSysUser.setStatus(true);
         this.save(newSysUser);
-        saveUserRoles(sysUser.getId(), form.getRoleIds());
+        saveUserRoles(newSysUser.getId(), form.getRoleIds());
         return true;
     }
 
@@ -245,7 +245,7 @@ public class SysUserServiceImpl extends BaseService<SysUserMapper, SysUser> impl
 
     @Override
     public SysUserDTO login(SysUserLoginBO form) {
-        SysUserVO sysUserVO = sf.getSysUserService().info(form.getUsername(), form.getPassword());
+        SysUserVO sysUserVO = this.info(form.getUsername(), form.getPassword());
         SysUserDTO sysUserDTO = new SysUserDTO();
         sysUserDTO.setId(sysUserVO.getId());
         sysUserDTO.setMobile(sysUserVO.getPhone());
