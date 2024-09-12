@@ -21,7 +21,7 @@ import org.springframework.web.bind.annotation.*;
 public class SysUserController extends MallAbstractController {
 
     @GetMapping("/page")
-    public MallPageResult<SysUserVO> page(@RequestBody SysUserPageQuery query) {
+    public MallPageResult<SysUserVO> page(SysUserPageQuery query) {
         return sf.getSysUserService().page(query);
     }
 

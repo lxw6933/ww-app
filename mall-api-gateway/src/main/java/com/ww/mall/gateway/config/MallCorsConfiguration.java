@@ -22,7 +22,7 @@ public class MallCorsConfiguration {
         // 允许任何请求头
         corsConfiguration.addAllowedHeader("*");
         // 允许任何来源
-        corsConfiguration.addAllowedOrigin("*");
+        corsConfiguration.addAllowedOrigin("http://localhost:5173");
         // 允许任何方式POST GET等
         corsConfiguration.addAllowedMethod("*");
         // 允许携带cookie

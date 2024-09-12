@@ -10,7 +10,7 @@ import lombok.Getter;
 @Getter
 public enum CodeEnum {
 
-    SUCCESS("0","成功"),
+    SUCCESS("200","成功"),
     FAIL("-1", "失败"),
     SYSTEM_ERROR("-99", "服务器繁忙，请联系客服人员"),
     LIMIT_ERROR("-2", "当前访问人数过多，请稍候再试"),
