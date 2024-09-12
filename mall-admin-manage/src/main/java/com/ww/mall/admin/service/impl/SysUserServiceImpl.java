@@ -252,5 +252,11 @@ public class SysUserServiceImpl extends BaseService<SysUserMapper, SysUser> impl
         return sysUserDTO;
     }
 
+    @Override
+    public SysUserVO selfInfo() {
+        MallAdminUser adminUser = AuthorizationContext.getAdminUser();
+        return this.info(adminUser.getUserId());
+    }
+
 }
 

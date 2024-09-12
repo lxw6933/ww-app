@@ -118,5 +118,12 @@ public interface SysUserService extends IService<SysUser> {
      * @return SysUserDTO
      */
     SysUserDTO login(SysUserLoginBO form);
+
+    /**
+     * 获取登录者信息
+     *
+     * @return SysUserVO
+     */
+    SysUserVO selfInfo();
 }
 

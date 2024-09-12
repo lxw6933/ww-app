@@ -25,6 +25,11 @@ public class SysUserController extends MallAbstractController {
         return sf.getSysUserService().page(query);
     }
 
+    @GetMapping("/selfInfo")
+    public SysUserVO selfInfo() {
+        return sf.getSysUserService().selfInfo();
+    }
+
     @GetMapping("/info/{userId}")
     public SysUserVO info(@PathVariable("userId") Long userId) {
         return sf.getSysUserService().info(userId);
