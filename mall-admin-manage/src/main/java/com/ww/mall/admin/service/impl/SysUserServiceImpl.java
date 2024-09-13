@@ -16,6 +16,7 @@ import com.ww.mall.admin.view.form.ModifyPasswordForm;
 import com.ww.mall.admin.view.form.SysUserForm;
 import com.ww.mall.admin.view.form.UserAndRoleForm;
 import com.ww.mall.admin.view.query.SysUserPageQuery;
+import com.ww.mall.admin.view.vo.CurrentSysUserInfoVO;
 import com.ww.mall.admin.view.vo.SysMenuVO;
 import com.ww.mall.admin.view.vo.SysRoleVO;
 import com.ww.mall.admin.view.vo.SysUserVO;
@@ -249,13 +250,20 @@ public class SysUserServiceImpl extends BaseService<SysUserMapper, SysUser> impl
         SysUserDTO sysUserDTO = new SysUserDTO();
         sysUserDTO.setId(sysUserVO.getId());
         sysUserDTO.setMobile(sysUserVO.getPhone());
+        sysUserDTO.setUsername(sysUserVO.getUsername());
+        sysUserDTO.setNickname(sysUserVO.getNickname());
+        sysUserDTO.setHeadPicture(sysUserVO.getHeadPicture());
         return sysUserDTO;
     }
 
     @Override
-    public SysUserVO selfInfo() {
+    public CurrentSysUserInfoVO selfInfo() {
         MallAdminUser adminUser = AuthorizationContext.getAdminUser();
-        return this.info(adminUser.getUserId());
+        SysUserVO sysUserVO = this.info(adminUser.getUserId());
+        CurrentSysUserInfoVO currentSysUserInfoVO = new CurrentSysUserInfoVO();
+        BeanUtils.copyProperties(sysUserVO, currentSysUserInfoVO);
+        currentSysUserInfoVO.setUserId(adminUser.getUserId());
+        return currentSysUserInfoVO;
     }
 
 }

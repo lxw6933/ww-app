@@ -3,6 +3,7 @@ package com.ww.mall.admin.controller;
 import com.ww.mall.admin.view.form.ModifyPasswordForm;
 import com.ww.mall.admin.view.form.SysUserForm;
 import com.ww.mall.admin.view.query.SysUserPageQuery;
+import com.ww.mall.admin.view.vo.CurrentSysUserInfoVO;
 import com.ww.mall.admin.view.vo.SysUserVO;
 import com.ww.mall.common.valid.group.DeleteGroup;
 import com.ww.mall.common.valid.group.UpdateGroup;
@@ -26,7 +27,7 @@ public class SysUserController extends MallAbstractController {
     }
 
     @GetMapping("/selfInfo")
-    public SysUserVO selfInfo() {
+    public CurrentSysUserInfoVO selfInfo() {
         return sf.getSysUserService().selfInfo();
     }
 

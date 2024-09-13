@@ -4,9 +4,6 @@ import cn.hutool.core.date.DateUtil;
 import cn.hutool.json.JSONObject;
 import cn.hutool.jwt.JWT;
 import cn.hutool.jwt.JWTUtil;
-import com.alibaba.fastjson.JSON;
-import com.ww.mall.common.common.MallAdminUser;
-import com.ww.mall.common.common.MallClientUser;
 import com.ww.mall.common.constant.Constant;
 import com.ww.mall.common.enums.UserType;
 import com.ww.mall.gateway.enums.GatewayResultEnum;
@@ -53,7 +50,7 @@ public class PermissionFilter implements GlobalFilter, Ordered {
     @Override
     public Mono<Void> filter(ServerWebExchange exchange, GatewayFilterChain chain) {
         ServerHttpRequest request = exchange.getRequest();
-        String token = request.getHeaders().getFirst(Constant.USER_TOKEN);
+        String token = request.getHeaders().getFirst(Constant.USER_TOKEN_KEY);
         String tokenInfo = null;
 
         boolean isWhite = false;
@@ -86,12 +83,8 @@ public class PermissionFilter implements GlobalFilter, Ordered {
                 }
                 switch (claimsJson.get("userType", UserType.class)) {
                     case ADMIN:
-                        MallAdminUser adminToken = claimsJson.toBean(MallAdminUser.class);
-                        tokenInfo = JSON.toJSONString(adminToken);
-                        break;
                     case CLIENT:
-                        MallClientUser clientToken = claimsJson.toBean(MallClientUser.class);
-                        tokenInfo = JSON.toJSONString(clientToken);
+                        tokenInfo = claimsJson.toString();
                         break;
                     case OTHER:
                         log.error("token用户类型为其他，系统暂不支持");

@@ -1,18 +1,18 @@
-package com.ww.mall.web.view.dto;
+package com.ww.mall.admin.view.vo;
 
 import lombok.Data;
 
 /**
  * @author ww
- * @create 2024-09-11- 09:26
+ * @create 2024-09-12 21:12
  * @description:
  */
 @Data
-public class SysUserDTO {
-
-    private Long id;
-
-    private String mobile;
+public class CurrentSysUserInfoVO {
+    /**
+     * 用户id
+     */
+    private Long userId;
 
     /**
      * 用户名（账号名称）

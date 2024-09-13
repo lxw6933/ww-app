@@ -4,6 +4,7 @@ import com.baomidou.mybatisplus.extension.service.IService;
 import com.ww.mall.admin.entity.SysUser;
 import com.ww.mall.admin.view.form.ModifyPasswordForm;
 import com.ww.mall.admin.view.form.SysUserForm;
+import com.ww.mall.admin.view.vo.CurrentSysUserInfoVO;
 import com.ww.mall.web.view.bo.SysUserLoginBO;
 import com.ww.mall.admin.view.query.SysUserPageQuery;
 import com.ww.mall.admin.view.vo.SysMenuVO;
@@ -124,6 +125,6 @@ public interface SysUserService extends IService<SysUser> {
      *
      * @return SysUserVO
      */
-    SysUserVO selfInfo();
+    CurrentSysUserInfoVO selfInfo();
 }
 

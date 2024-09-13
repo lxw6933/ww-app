@@ -1,6 +1,5 @@
 package com.ww.mall.web.interceptor.grpc.client;
 
-import cn.hutool.jwt.JWTUtil;
 import com.ww.mall.common.constant.Constant;
 import io.grpc.*;
 import lombok.extern.slf4j.Slf4j;
@@ -20,7 +19,7 @@ public class GrpcAuthInterceptor implements ServerInterceptor {
     public <ReqT, RespT> ServerCall.Listener<ReqT> interceptCall(ServerCall<ReqT, RespT> serverCall,
                                                                  Metadata metadata,
                                                                  ServerCallHandler<ReqT, RespT> serverCallHandler) {
-        String token = metadata.get(Metadata.Key.of(Constant.USER_TOKEN, Metadata.ASCII_STRING_MARSHALLER));
+        String token = metadata.get(Metadata.Key.of(Constant.USER_TOKEN_KEY, Metadata.ASCII_STRING_MARSHALLER));
 
         if (StringUtils.isBlank(token)) {
             serverCall.close(Status.UNAUTHENTICATED, null);

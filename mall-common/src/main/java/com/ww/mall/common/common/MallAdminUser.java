@@ -15,21 +15,6 @@ public class MallAdminUser extends MallBaseUser {
     /**
      * 用户id
      */
-    private Long userId;
-
-    /**
-     * 用户名（账号名称）
-     */
-    private String username;
-
-    /**
-     * 用户昵称（姓名）
-     */
-    private String nickname;
-
-    /**
-     * 头像
-     */
-    private String headPicture;
+    private Long userId;;
 
 }

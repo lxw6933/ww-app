@@ -30,11 +30,6 @@ public class SysUserVO {
     private String headPicture;
 
     /**
-     * 性别
-     */
-    private Integer sex;
-
-    /**
      * 邮箱
      */
     private String email;
