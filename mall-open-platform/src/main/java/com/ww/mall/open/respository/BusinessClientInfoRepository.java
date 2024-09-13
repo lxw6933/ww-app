@@ -1,8 +1,8 @@
 package com.ww.mall.open.respository;
 
 import com.ww.mall.open.entity.BusinessClientInfo;
-import com.ww.mall.web.cmmon.MallPage;
-import com.ww.mall.web.cmmon.MallPageResult;
+import com.ww.mall.common.common.MallPage;
+import com.ww.mall.common.common.MallPageResult;
 
 /**
  * @author ww

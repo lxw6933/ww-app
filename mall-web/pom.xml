@@ -28,12 +28,6 @@
             <groupId>net.devh</groupId>
             <artifactId>grpc-client-spring-boot-starter</artifactId>
         </dependency>
-        <!-- common -->
-        <dependency>
-            <groupId>com.ww.mall</groupId>
-            <artifactId>mall-common</artifactId>
-            <version>${ww.mall.version}</version>
-        </dependency>
         <!-- 插件配置 -->
         <dependency>
             <groupId>com.ww.mall</groupId>
@@ -100,21 +94,6 @@
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-validation</artifactId>
-        </dependency>
-        <!-- mybatis-plus -->
-        <dependency>
-            <groupId>com.baomidou</groupId>
-            <artifactId>mybatis-plus-boot-starter</artifactId>
-        </dependency>
-        <!-- mysql connect -->
-        <dependency>
-            <groupId>mysql</groupId>
-            <artifactId>mysql-connector-java</artifactId>
-        </dependency>
-        <!-- druid -->
-        <dependency>
-            <groupId>com.alibaba</groupId>
-            <artifactId>druid-spring-boot-starter</artifactId>
         </dependency>
         <!-- retry -->
         <dependency>

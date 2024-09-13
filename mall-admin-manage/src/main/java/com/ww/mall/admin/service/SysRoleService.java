@@ -5,7 +5,7 @@ import com.ww.mall.admin.entity.SysRole;
 import com.ww.mall.admin.view.form.SysRoleForm;
 import com.ww.mall.admin.view.query.SysRolePageQuery;
 import com.ww.mall.admin.view.vo.SysRoleVO;
-import com.ww.mall.web.cmmon.MallPageResult;
+import com.ww.mall.common.common.MallPageResult;
 
 /**
  * @author ww

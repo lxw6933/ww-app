@@ -1,4 +1,4 @@
-package com.ww.mall.web.cmmon;
+package com.ww.mall.common.common;
 
 import lombok.AllArgsConstructor;
 import lombok.Data;

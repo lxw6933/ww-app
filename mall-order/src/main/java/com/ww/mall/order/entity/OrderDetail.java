@@ -4,7 +4,7 @@ import com.baomidou.mybatisplus.annotation.TableName;
 import com.ww.mall.order.enums.ActivityType;
 import com.ww.mall.order.enums.RechargeAccountType;
 import com.ww.mall.order.enums.RechargeType;
-import com.ww.mall.web.cmmon.BaseEntity;
+import com.ww.mall.mybatisplus.BaseEntity;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 

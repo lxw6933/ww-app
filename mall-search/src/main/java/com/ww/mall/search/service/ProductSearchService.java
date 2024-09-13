@@ -2,7 +2,7 @@ package com.ww.mall.search.service;
 
 import com.ww.mall.search.view.bo.PortalProductSearchBO;
 import com.ww.mall.search.view.vo.PortalProductSearchVO;
-import com.ww.mall.web.cmmon.MallPageResult;
+import com.ww.mall.common.common.MallPageResult;
 
 /**
  * @author ww

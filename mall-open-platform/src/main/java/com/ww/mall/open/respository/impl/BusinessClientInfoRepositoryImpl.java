@@ -4,8 +4,8 @@ import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.ww.mall.open.entity.BusinessClientInfo;
 import com.ww.mall.open.infrastructure.BusinessClientInfoMapper;
 import com.ww.mall.open.respository.BusinessClientInfoRepository;
-import com.ww.mall.web.cmmon.MallPage;
-import com.ww.mall.web.cmmon.MallPageResult;
+import com.ww.mall.common.common.MallPage;
+import com.ww.mall.common.common.MallPageResult;
 
 /**
  * @author ww

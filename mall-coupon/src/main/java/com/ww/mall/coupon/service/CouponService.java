@@ -4,8 +4,7 @@ import com.baomidou.mybatisplus.extension.service.IService;
 import com.ww.mall.coupon.entity.Coupon;
 import com.ww.mall.coupon.view.bo.CouponPageBO;
 import com.ww.mall.coupon.view.vo.CouponPageVO;
-import com.ww.mall.web.cmmon.MallPage;
-import com.ww.mall.web.cmmon.MallPageResult;
+import com.ww.mall.common.common.MallPageResult;
 
 /**
  * @author ww

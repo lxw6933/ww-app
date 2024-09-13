@@ -1,6 +1,7 @@
-package com.ww.mall.web.cmmon;
+package com.ww.mall.mybatisplus;
 
 import com.baomidou.mybatisplus.core.metadata.IPage;
+import com.ww.mall.common.common.MallPageResult;
 
 import java.util.function.Function;
 

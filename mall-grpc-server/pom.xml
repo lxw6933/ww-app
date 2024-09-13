@@ -18,18 +18,6 @@
             <version>${ww.mall.version}</version>
             <exclusions>
                 <exclusion>
-                    <groupId>com.baomidou</groupId>
-                    <artifactId>mybatis-plus-boot-starter</artifactId>
-                </exclusion>
-                <exclusion>
-                    <groupId>mysql</groupId>
-                    <artifactId>mysql-connector-java</artifactId>
-                </exclusion>
-                <exclusion>
-                    <groupId>com.alibaba</groupId>
-                    <artifactId>druid-spring-boot-starter</artifactId>
-                </exclusion>
-                <exclusion>
                     <artifactId>caffeine</artifactId>
                     <groupId>com.github.ben-manes.caffeine</groupId>
                 </exclusion>

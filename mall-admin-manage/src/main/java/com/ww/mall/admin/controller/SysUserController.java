@@ -7,7 +7,7 @@ import com.ww.mall.admin.view.vo.CurrentSysUserInfoVO;
 import com.ww.mall.admin.view.vo.SysUserVO;
 import com.ww.mall.common.valid.group.DeleteGroup;
 import com.ww.mall.common.valid.group.UpdateGroup;
-import com.ww.mall.web.cmmon.MallPageResult;
+import com.ww.mall.common.common.MallPageResult;
 import com.ww.mall.web.view.form.IdForm;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;

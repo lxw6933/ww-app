@@ -16,7 +16,6 @@
             <groupId>com.ww.mall</groupId>
             <artifactId>mall-common</artifactId>
             <version>${ww.mall.version}</version>
-            <optional>true</optional>
         </dependency>
         <!-- redis -->
         <dependency>
@@ -106,6 +105,24 @@
         <dependency>
             <groupId>com.influxdb</groupId>
             <artifactId>influxdb-client-java</artifactId>
+            <optional>true</optional>
+        </dependency>
+        <!-- mybatis-plus -->
+        <dependency>
+            <groupId>com.baomidou</groupId>
+            <artifactId>mybatis-plus-boot-starter</artifactId>
+            <optional>true</optional>
+        </dependency>
+        <!-- mysql connect -->
+        <dependency>
+            <groupId>mysql</groupId>
+            <artifactId>mysql-connector-java</artifactId>
+            <optional>true</optional>
+        </dependency>
+        <!-- druid -->
+        <dependency>
+            <groupId>com.alibaba</groupId>
+            <artifactId>druid-spring-boot-starter</artifactId>
             <optional>true</optional>
         </dependency>
     </dependencies>

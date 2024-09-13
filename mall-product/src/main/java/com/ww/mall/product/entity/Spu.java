@@ -3,7 +3,7 @@ package com.ww.mall.product.entity;
 import com.baomidou.mybatisplus.annotation.TableName;
 import com.ww.mall.product.enums.SpuStatus;
 import com.ww.mall.product.enums.SpuType;
-import com.ww.mall.web.cmmon.BaseEntity;
+import com.ww.mall.mybatisplus.BaseEntity;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 

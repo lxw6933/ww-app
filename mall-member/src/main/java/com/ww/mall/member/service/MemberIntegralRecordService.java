@@ -1,8 +1,8 @@
 package com.ww.mall.member.service;
 
 import com.ww.mall.member.entity.mongo.MemberIntegralRecord;
-import com.ww.mall.web.cmmon.MallPage;
-import com.ww.mall.web.cmmon.MallPageResult;
+import com.ww.mall.common.common.MallPage;
+import com.ww.mall.common.common.MallPageResult;
 import com.ww.mall.web.view.bo.AddMemberIntegralBO;
 
 /**

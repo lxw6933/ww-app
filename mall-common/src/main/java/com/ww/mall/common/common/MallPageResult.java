@@ -1,4 +1,4 @@
-package com.ww.mall.web.cmmon;
+package com.ww.mall.common.common;
 
 import com.ww.mall.common.exception.ApiException;
 import lombok.Data;

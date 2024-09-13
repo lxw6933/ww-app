@@ -5,7 +5,7 @@ import com.ww.mall.order.enums.OrderSourceType;
 import com.ww.mall.order.enums.OrderStatus;
 import com.ww.mall.order.enums.OrderType;
 import com.ww.mall.order.enums.PayType;
-import com.ww.mall.web.cmmon.BaseEntity;
+import com.ww.mall.mybatisplus.BaseEntity;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 

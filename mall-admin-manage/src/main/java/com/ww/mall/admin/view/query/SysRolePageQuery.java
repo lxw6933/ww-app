@@ -2,8 +2,7 @@ package com.ww.mall.admin.view.query;
 
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.ww.mall.admin.entity.SysRole;
-import com.ww.mall.admin.entity.SysUser;
-import com.ww.mall.web.cmmon.MallPage;
+import com.ww.mall.common.common.MallPage;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import org.apache.commons.lang3.StringUtils;

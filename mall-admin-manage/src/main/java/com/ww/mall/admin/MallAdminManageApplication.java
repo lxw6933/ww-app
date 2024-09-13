@@ -1,6 +1,7 @@
 package com.ww.mall.admin;
 
 import com.ww.mall.annotation.enable.EnableMallMongodb;
+import com.ww.mall.annotation.enable.EnableMallMybatisPlus;
 import com.ww.mall.annotation.enable.EnableMallRedis;
 import com.ww.mall.annotation.enable.EnableMallRedisson;
 import org.springframework.boot.SpringApplication;
@@ -10,6 +11,7 @@ import org.springframework.cloud.client.discovery.EnableDiscoveryClient;
 @EnableMallRedis
 @EnableMallMongodb
 @EnableMallRedisson
+@EnableMallMybatisPlus
 @EnableDiscoveryClient
 @SpringBootApplication
 public class MallAdminManageApplication {

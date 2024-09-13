@@ -10,7 +10,7 @@ import com.ww.mall.admin.view.query.SysUserPageQuery;
 import com.ww.mall.admin.view.vo.SysMenuVO;
 import com.ww.mall.admin.view.vo.SysRoleVO;
 import com.ww.mall.admin.view.vo.SysUserVO;
-import com.ww.mall.web.cmmon.MallPageResult;
+import com.ww.mall.common.common.MallPageResult;
 import com.ww.mall.web.view.dto.SysUserDTO;
 import com.ww.mall.web.view.form.IdForm;
 

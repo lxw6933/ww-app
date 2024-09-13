@@ -4,7 +4,7 @@ import com.ww.mall.search.entity.Product;
 import com.ww.mall.search.service.ProductSearchService;
 import com.ww.mall.search.view.bo.PortalProductSearchBO;
 import com.ww.mall.search.view.vo.PortalProductSearchVO;
-import com.ww.mall.web.cmmon.MallPageResult;
+import com.ww.mall.common.common.MallPageResult;
 import org.elasticsearch.index.query.BoolQueryBuilder;
 import org.elasticsearch.index.query.QueryBuilders;
 import org.elasticsearch.search.fetch.subphase.highlight.HighlightBuilder;

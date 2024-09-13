@@ -1,7 +1,7 @@
 package com.ww.mall.search.view.bo;
 
 import com.ww.mall.common.exception.ApiException;
-import com.ww.mall.web.cmmon.MallPage;
+import com.ww.mall.common.common.MallPage;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import org.apache.commons.lang3.StringUtils;

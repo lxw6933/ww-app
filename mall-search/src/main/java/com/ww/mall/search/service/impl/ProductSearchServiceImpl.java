@@ -4,7 +4,7 @@ import com.ww.mall.search.entity.ProductSearch;
 import com.ww.mall.search.service.ProductSearchService;
 import com.ww.mall.search.view.bo.PortalProductSearchBO;
 import com.ww.mall.search.view.vo.PortalProductSearchVO;
-import com.ww.mall.web.cmmon.MallPageResult;
+import com.ww.mall.common.common.MallPageResult;
 import lombok.extern.slf4j.Slf4j;
 import org.bson.Document;
 import org.springframework.beans.BeanUtils;
