@@ -4,7 +4,8 @@ import cn.hutool.core.util.RandomUtil;
 import cn.hutool.jwt.JWTUtil;
 import com.ww.mall.auth.config.JwtProperties;
 import com.ww.mall.auth.serivce.LoginService;
-import com.ww.mall.auth.view.vo.LoginVO;
+import com.ww.mall.auth.view.vo.AdminLoginResultVO;
+import com.ww.mall.auth.view.vo.LoginResultVO;
 import com.ww.mall.common.common.Result;
 import com.ww.mall.common.constant.RedisKeyConstant;
 import com.ww.mall.common.enums.CodeEnum;
@@ -54,7 +55,7 @@ public class LoginServiceImpl implements LoginService {
     private AdminFeignService adminFeignService;
 
     @Override
-    public LoginVO adminLogin(SysUserLoginBO sysUserLoginBO) {
+    public AdminLoginResultVO adminLogin(SysUserLoginBO sysUserLoginBO) {
         // 获取登录用户信息
         Result<SysUserDTO> result = adminFeignService.login(sysUserLoginBO);
         if (Boolean.TRUE.equals(result.isSuccess()) && CodeEnum.SUCCESS.getCode().equals(result.getCode())) {
@@ -69,10 +70,14 @@ public class LoginServiceImpl implements LoginService {
             map.put("iss", jwtProperties.getIss());
             map.put("userType", UserType.ADMIN);
             String token = JWTUtil.createToken(map, jwtProperties.getSecret().getBytes());
-            LoginVO loginVO = new LoginVO();
-            loginVO.setToken(token);
-            loginVO.setTokenExpTime(tokenExpTime.getTime());
-            return loginVO;
+            AdminLoginResultVO loginResultVO = new AdminLoginResultVO();
+            loginResultVO.setAccessToken(token);
+            loginResultVO.setAccessTokenExpTime(tokenExpTime.getTime());
+            loginResultVO.setUsername(sysUserDTO.getUsername());
+            loginResultVO.setRealName(sysUserDTO.getNickname());
+            loginResultVO.setUserId(sysUserDTO.getId());
+            loginResultVO.setHeadPicture(sysUserDTO.getHeadPicture());
+            return loginResultVO;
         } else {
             log.error("远程调用mall-admin-manage服务失败：{}", result);
             throw new ApiException(CodeEnum.SYSTEM_ERROR.getCode(), CodeEnum.SYSTEM_ERROR.getMessage());
@@ -80,7 +85,7 @@ public class LoginServiceImpl implements LoginService {
     }
 
     @Override
-    public LoginVO clientMobileLogin(MemberLoginBO memberLoginBO) {
+    public LoginResultVO clientMobileLogin(MemberLoginBO memberLoginBO) {
         String mobile = memberLoginBO.getMobile();
         String mobileCode = redisTemplate.opsForValue().get(RedisKeyConstant.SMS_CODE_CACHE_PREFIX + mobile);
         mobileCode = StringUtils.isNotEmpty(mobileCode) ? mobileCode.split("_")[0] : null;
@@ -101,10 +106,10 @@ public class LoginServiceImpl implements LoginService {
                 map.put("iss", jwtProperties.getIss());
                 map.put("userType", UserType.CLIENT);
                 String token = JWTUtil.createToken(map, jwtProperties.getSecret().getBytes());
-                LoginVO loginVO = new LoginVO();
-                loginVO.setToken(token);
-                loginVO.setTokenExpTime(tokenExpTime.getTime());
-                return loginVO;
+                LoginResultVO loginResultVO = new LoginResultVO();
+                loginResultVO.setAccessToken(token);
+                loginResultVO.setAccessTokenExpTime(tokenExpTime.getTime());
+                return loginResultVO;
             } else {
                 log.error("远程调用mall-member服务失败：{}", memberResult);
                 throw new ApiException(CodeEnum.SYSTEM_ERROR.getCode(), CodeEnum.SYSTEM_ERROR.getMessage());

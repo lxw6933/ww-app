@@ -1,7 +1,8 @@
 package com.ww.mall.auth.controller;
 
 import com.ww.mall.auth.serivce.LoginService;
-import com.ww.mall.auth.view.vo.LoginVO;
+import com.ww.mall.auth.view.vo.AdminLoginResultVO;
+import com.ww.mall.auth.view.vo.LoginResultVO;
 import com.ww.mall.web.view.bo.MemberLoginBO;
 import com.ww.mall.web.view.bo.SysUserLoginBO;
 import lombok.extern.slf4j.Slf4j;
@@ -17,7 +18,6 @@ import javax.validation.constraints.Pattern;
  * @create: 2023/7/16 12:40
  **/
 @Slf4j
-@Validated
 @RestController
 @RequestMapping("/login")
 public class LoginController {
@@ -26,12 +26,12 @@ public class LoginController {
     private LoginService loginService;
 
     @PostMapping("/adminLogin")
-    public LoginVO adminLogin(@RequestBody @Validated SysUserLoginBO sysUserLoginBO) {
+    public AdminLoginResultVO adminLogin(@RequestBody @Validated SysUserLoginBO sysUserLoginBO) {
         return loginService.adminLogin(sysUserLoginBO);
     }
 
     @PostMapping("/clientMobileLogin")
-    public LoginVO clientMobileLogin(@RequestBody @Validated MemberLoginBO memberLoginBO) {
+    public LoginResultVO clientMobileLogin(@RequestBody @Validated MemberLoginBO memberLoginBO) {
         return loginService.clientMobileLogin(memberLoginBO);
     }
 
