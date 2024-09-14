@@ -266,5 +266,16 @@ public class SysUserServiceImpl extends BaseService<SysUserMapper, SysUser> impl
         return currentSysUserInfoVO;
     }
 
+    @Override
+    public boolean modifyStatus(Long userId) {
+        if (Objects.equals(Constant.SUPER_ADMIN_MANAGER_ID, userId)) {
+            throw new ApiException("禁止修改超管账号的信息");
+        }
+        SysUser sysUser = this.getById(userId);
+        Assert.notNull(sysUser, () -> new ApiException("用户信息异常"));
+        sysUser.setStatus(!sysUser.getStatus());
+        return this.updateById(sysUser);
+    }
+
 }
 

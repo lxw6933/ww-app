@@ -56,6 +56,11 @@ public class SysUserController extends MallAbstractController {
         return sf.getSysUserService().modifyPassword(form);
     }
 
+    @PostMapping("/modifyStatus/{userId}")
+    public boolean modifyStatus(@PathVariable("userId") Long userId) {
+        return sf.getSysUserService().modifyStatus(userId);
+    }
+
     @PostMapping("/resetPassword/{userId}")
     public boolean resetPassword(@PathVariable("userId") Long userId) {
         return sf.getSysUserService().resetPassword(userId);

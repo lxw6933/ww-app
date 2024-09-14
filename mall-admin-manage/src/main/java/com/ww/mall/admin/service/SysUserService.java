@@ -126,5 +126,13 @@ public interface SysUserService extends IService<SysUser> {
      * @return SysUserVO
      */
     CurrentSysUserInfoVO selfInfo();
+
+    /**
+     * 修改用户状态信息
+     *
+     * @param userId 用户id
+     * @return boolean
+     */
+    boolean modifyStatus(Long userId);
 }
 
