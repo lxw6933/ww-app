@@ -17,9 +17,9 @@ import lombok.EqualsAndHashCode;
 public class SysMenu extends BaseEntity {
 
     /**
-     * 菜单类型
+     * 父级编号
      */
-    private SysMenuType type;
+    private Long pid;
 
     /**
      * 菜单名称
@@ -27,9 +27,9 @@ public class SysMenu extends BaseEntity {
     private String name;
 
     /**
-     * 父级编号
+     * 菜单类型
      */
-    private Long pid;
+    private SysMenuType type;
 
     /**
      * URL地址
@@ -42,14 +42,14 @@ public class SysMenu extends BaseEntity {
     private String icon;
 
     /**
+     * 权限标识
+     */
+    private String permission;
+
+    /**
      * 排序
      */
     private Integer sort;
-
-    /**
-     * 备注
-     */
-    private String remark;
 
     /**
      * 是否有效

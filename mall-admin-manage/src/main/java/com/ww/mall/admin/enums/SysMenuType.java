@@ -16,7 +16,8 @@ public enum SysMenuType {
 
     LEVEL_1_MENU("一级菜单"),
     LEVEL_2_MENU("二级菜单"),
-    BUTTON("按钮");
+    BUTTON("功能按钮"),
+    ROUTE_PAGE("路由页面");
 
     private String menuTypeName;
 
