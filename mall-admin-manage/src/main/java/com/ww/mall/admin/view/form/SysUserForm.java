@@ -28,12 +28,12 @@ public class SysUserForm {
     /**
      * 用户昵称
      */
-    private String nickname;
+    private String realName;
 
     /**
      * 头像
      */
-    private String headPicture;
+    private String avatar;
 
     /**
      * 邮箱
