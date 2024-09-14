@@ -51,17 +51,17 @@ public class SysUserController extends MallAbstractController {
         return sf.getSysUserService().selfInfo();
     }
 
-    @PostMapping("/modifyPassword")
+    @PostMapping("/user/modifyPassword")
     public boolean modifyPassword(@RequestBody @Validated ModifyPasswordForm form) {
         return sf.getSysUserService().modifyPassword(form);
     }
 
-    @GetMapping("/modifyStatus/{userId}")
+    @GetMapping("/user/modifyStatus/{userId}")
     public boolean modifyStatus(@PathVariable("userId") Long userId) {
         return sf.getSysUserService().modifyStatus(userId);
     }
 
-    @GetMapping("/resetPassword/{userId}")
+    @GetMapping("/user/resetPassword/{userId}")
     public boolean resetPassword(@PathVariable("userId") Long userId) {
         return sf.getSysUserService().resetPassword(userId);
     }
