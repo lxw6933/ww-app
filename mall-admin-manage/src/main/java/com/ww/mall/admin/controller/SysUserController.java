@@ -5,9 +5,9 @@ import com.ww.mall.admin.view.form.SysUserForm;
 import com.ww.mall.admin.view.query.SysUserPageQuery;
 import com.ww.mall.admin.view.vo.CurrentSysUserInfoVO;
 import com.ww.mall.admin.view.vo.SysUserVO;
+import com.ww.mall.common.common.MallPageResult;
 import com.ww.mall.common.valid.group.DeleteGroup;
 import com.ww.mall.common.valid.group.UpdateGroup;
-import com.ww.mall.common.common.MallPageResult;
 import com.ww.mall.web.view.form.IdForm;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
@@ -26,29 +26,29 @@ public class SysUserController extends MallAbstractController {
         return sf.getSysUserService().page(query);
     }
 
-    @GetMapping("/selfInfo")
-    public CurrentSysUserInfoVO selfInfo() {
-        return sf.getSysUserService().selfInfo();
-    }
-
-    @GetMapping("/info/{userId}")
-    public SysUserVO info(@PathVariable("userId") Long userId) {
+    @GetMapping("/user")
+    public SysUserVO info(@RequestParam("userId") Long userId) {
         return sf.getSysUserService().info(userId);
     }
 
-    @PostMapping("/save")
+    @PostMapping("/user")
     public boolean save(@RequestBody @Validated SysUserForm form) {
         return sf.getSysUserService().save(form);
     }
 
-    @PostMapping("/update")
+    @PutMapping("/user")
     public boolean update(@RequestBody @Validated({UpdateGroup.class}) SysUserForm form) {
         return sf.getSysUserService().update(form);
     }
 
-    @PostMapping("/delete")
+    @DeleteMapping("/user")
     public boolean delete(@RequestBody @Validated({DeleteGroup.class}) IdForm form) {
         return sf.getSysUserService().delete(form);
+    }
+
+    @GetMapping("/user/self")
+    public CurrentSysUserInfoVO selfInfo() {
+        return sf.getSysUserService().selfInfo();
     }
 
     @PostMapping("/modifyPassword")
@@ -56,12 +56,12 @@ public class SysUserController extends MallAbstractController {
         return sf.getSysUserService().modifyPassword(form);
     }
 
-    @PostMapping("/modifyStatus/{userId}")
+    @GetMapping("/modifyStatus/{userId}")
     public boolean modifyStatus(@PathVariable("userId") Long userId) {
         return sf.getSysUserService().modifyStatus(userId);
     }
 
-    @PostMapping("/resetPassword/{userId}")
+    @GetMapping("/resetPassword/{userId}")
     public boolean resetPassword(@PathVariable("userId") Long userId) {
         return sf.getSysUserService().resetPassword(userId);
     }

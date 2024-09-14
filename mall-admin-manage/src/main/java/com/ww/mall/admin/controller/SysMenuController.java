@@ -20,27 +20,27 @@ import java.util.List;
 @RequestMapping("/sysMenu")
 public class SysMenuController extends MallAbstractController {
 
-    @GetMapping("/menuTree")
+    @GetMapping("/menu/tree")
     public List<Tree<Long>> menuTree() {
         return sf.getSysMenuService().tree();
     }
 
-    @GetMapping("/info/{menuId}")
-    public SysMenuVO info(@PathVariable("menuId") Long menuId) {
+    @GetMapping("/menu")
+    public SysMenuVO info(@RequestParam("menuId") Long menuId) {
         return sf.getSysMenuService().info(menuId);
     }
 
-    @PostMapping("/save")
+    @PostMapping("/menu")
     public boolean save(@RequestBody @Validated SysMenuForm form) {
         return sf.getSysMenuService().save(form);
     }
 
-    @PostMapping("/update")
+    @PutMapping("/menu")
     public boolean update(@RequestBody @Validated({UpdateGroup.class}) SysMenuForm form) {
         return sf.getSysMenuService().update(form);
     }
 
-    @PostMapping("/delete")
+    @DeleteMapping("/menu")
     public boolean delete(@RequestBody @Validated({DeleteGroup.class}) IdForm form) {
         return sf.getSysMenuService().delete(form);
     }
