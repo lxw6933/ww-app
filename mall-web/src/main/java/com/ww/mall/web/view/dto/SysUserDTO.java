@@ -22,10 +22,10 @@ public class SysUserDTO {
     /**
      * 用户昵称（姓名）
      */
-    private String nickname;
+    private String realName;
 
     /**
      * 头像
      */
-    private String headPicture;
+    private String avatar;
 }

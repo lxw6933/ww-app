@@ -251,8 +251,8 @@ public class SysUserServiceImpl extends BaseService<SysUserMapper, SysUser> impl
         sysUserDTO.setId(sysUserVO.getId());
         sysUserDTO.setMobile(sysUserVO.getPhone());
         sysUserDTO.setUsername(sysUserVO.getUsername());
-        sysUserDTO.setNickname(sysUserVO.getNickname());
-        sysUserDTO.setHeadPicture(sysUserVO.getHeadPicture());
+        sysUserDTO.setRealName(sysUserVO.getRealName());
+        sysUserDTO.setAvatar(sysUserVO.getAvatar());
         return sysUserDTO;
     }
 

@@ -23,7 +23,7 @@ public class SysUser extends BaseEntity {
     /**
      * 用户昵称（姓名）
      */
-    private String nickname;
+    private String realName;
 
     /**
      * 密码
@@ -38,7 +38,7 @@ public class SysUser extends BaseEntity {
     /**
      * 头像
      */
-    private String headPicture;
+    private String avatar;
 
     /**
      * 邮箱

@@ -30,6 +30,6 @@ public class AdminLoginResultVO extends LoginResultVO {
     /**
      * 头像
      */
-    private String headPicture;
+    private String avatar;
 
 }

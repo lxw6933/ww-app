@@ -74,9 +74,9 @@ public class LoginServiceImpl implements LoginService {
             loginResultVO.setAccessToken(token);
             loginResultVO.setAccessTokenExpTime(tokenExpTime.getTime());
             loginResultVO.setUsername(sysUserDTO.getUsername());
-            loginResultVO.setRealName(sysUserDTO.getNickname());
+            loginResultVO.setRealName(sysUserDTO.getRealName());
             loginResultVO.setUserId(sysUserDTO.getId());
-            loginResultVO.setHeadPicture(sysUserDTO.getHeadPicture());
+            loginResultVO.setAvatar(sysUserDTO.getAvatar());
             return loginResultVO;
         } else {
             log.error("远程调用mall-admin-manage服务失败：{}", result);
