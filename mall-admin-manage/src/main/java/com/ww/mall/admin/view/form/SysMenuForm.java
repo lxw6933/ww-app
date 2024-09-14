@@ -51,8 +51,8 @@ public class SysMenuForm {
     private Integer sort;
 
     /**
-     * 备注
+     * 权限标识
      */
-    private String remark;
+    private String permission;
 
 }

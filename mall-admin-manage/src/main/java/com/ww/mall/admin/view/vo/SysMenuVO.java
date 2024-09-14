@@ -44,9 +44,9 @@ public class SysMenuVO {
     private Integer sort;
 
     /**
-     * 备注
+     * 权限标识
      */
-    private String remark;
+    private String permission;
 
     /**
      * 是否有效
