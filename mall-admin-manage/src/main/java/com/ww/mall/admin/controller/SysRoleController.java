@@ -17,7 +17,7 @@ import org.springframework.web.bind.annotation.*;
 @RequestMapping("/sysRole")
 public class SysRoleController extends MallAbstractController {
 
-    @GetMapping("/page")
+    @GetMapping("/role/page")
     public MallPageResult<SysRoleVO> page(SysRolePageQuery query) {
         return sf.getSysRoleService().page(query);
     }
