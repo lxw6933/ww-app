@@ -1,6 +1,9 @@
 package com.ww.mall.admin.view.vo;
 
+import cn.hutool.core.lang.tree.Tree;
 import lombok.Data;
+
+import java.util.List;
 
 /**
  * @author ww
@@ -28,4 +31,9 @@ public class CurrentSysUserInfoVO {
      * 头像
      */
     private String avatar;
+
+    /**
+     * 用户权限集合
+     */
+    private List<Tree<Long>> menuTreeList;
 }

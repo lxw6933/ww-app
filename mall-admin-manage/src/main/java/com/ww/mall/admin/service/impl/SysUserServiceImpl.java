@@ -1,6 +1,7 @@
 package com.ww.mall.admin.service.impl;
 
 import cn.hutool.core.lang.Assert;
+import cn.hutool.core.lang.tree.Tree;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.update.UpdateWrapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
@@ -16,10 +17,7 @@ import com.ww.mall.admin.view.form.ModifyPasswordForm;
 import com.ww.mall.admin.view.form.SysUserForm;
 import com.ww.mall.admin.view.form.UserAndRoleForm;
 import com.ww.mall.admin.view.query.SysUserPageQuery;
-import com.ww.mall.admin.view.vo.CurrentSysUserInfoVO;
-import com.ww.mall.admin.view.vo.SysMenuVO;
-import com.ww.mall.admin.view.vo.SysRoleVO;
-import com.ww.mall.admin.view.vo.SysUserVO;
+import com.ww.mall.admin.view.vo.*;
 import com.ww.mall.annotation.plugs.redis.MallResubmission;
 import com.ww.mall.common.common.MallAdminUser;
 import com.ww.mall.common.constant.Constant;
@@ -225,23 +223,27 @@ public class SysUserServiceImpl extends BaseService<SysUserMapper, SysUser> impl
     }
 
     @Override
-    public List<SysMenuVO> queryUserOfMenu(Long userId) {
-        List<Long> userRoleIdList = df.getSysUserMapper().findRoleIdsByUserId(userId);
-        if (CollectionUtils.isEmpty(userRoleIdList)) {
-            return Collections.emptyList();
+    public List<Tree<Long>> queryUserOfMenu(Long userId) {
+        List<SysMenu> menuList;
+        if (Objects.equals(Constant.SUPER_ADMIN_MANAGER_ID, userId)) {
+            menuList = sf.getSysMenuService().list(new QueryWrapper<SysMenu>()
+                    .eq("valid", true)
+            );
+        } else {
+            List<Long> userRoleIdList = df.getSysUserMapper().findRoleIdsByUserId(userId);
+            if (CollectionUtils.isEmpty(userRoleIdList)) {
+                return Collections.emptyList();
+            }
+            List<Long> userMenuIdList = df.getSysUserMapper().findMenuIdsByRoleIds(userRoleIdList);
+            if (CollectionUtils.isEmpty(userMenuIdList)) {
+                return Collections.emptyList();
+            }
+            menuList = sf.getSysMenuService().list(new QueryWrapper<SysMenu>()
+                    .eq("valid", true)
+                    .in("id", userMenuIdList)
+            );
         }
-        List<Long> userMenuIdList = df.getSysUserMapper().findMenuIdsByRoleIds(userRoleIdList);
-        if (CollectionUtils.isEmpty(userMenuIdList)) {
-            return Collections.emptyList();
-        }
-        List<SysMenu> userMenuList = sf.getSysMenuService().listByIds(userMenuIdList);
-        List<SysMenuVO> userMenuVOList = new ArrayList<>();
-        userMenuList.forEach(target -> {
-            SysMenuVO vo = new SysMenuVO();
-            BeanUtils.copyProperties(target, vo);
-            userMenuVOList.add(vo);
-        });
-        return userMenuVOList;
+        return SysMenuTreeNodeVO.menuTree(menuList);
     }
 
     @Override
@@ -263,6 +265,9 @@ public class SysUserServiceImpl extends BaseService<SysUserMapper, SysUser> impl
         CurrentSysUserInfoVO currentSysUserInfoVO = new CurrentSysUserInfoVO();
         BeanUtils.copyProperties(sysUserVO, currentSysUserInfoVO);
         currentSysUserInfoVO.setUserId(adminUser.getUserId());
+        // 用户权限信息
+        List<Tree<Long>> userMenuTreeList = this.queryUserOfMenu(adminUser.getUserId());
+        currentSysUserInfoVO.setMenuTreeList(userMenuTreeList);
         return currentSysUserInfoVO;
     }
 

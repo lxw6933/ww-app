@@ -1,16 +1,16 @@
 package com.ww.mall.admin.service;
 
+import cn.hutool.core.lang.tree.Tree;
 import com.baomidou.mybatisplus.extension.service.IService;
 import com.ww.mall.admin.entity.SysUser;
 import com.ww.mall.admin.view.form.ModifyPasswordForm;
 import com.ww.mall.admin.view.form.SysUserForm;
-import com.ww.mall.admin.view.vo.CurrentSysUserInfoVO;
-import com.ww.mall.web.view.bo.SysUserLoginBO;
 import com.ww.mall.admin.view.query.SysUserPageQuery;
-import com.ww.mall.admin.view.vo.SysMenuVO;
+import com.ww.mall.admin.view.vo.CurrentSysUserInfoVO;
 import com.ww.mall.admin.view.vo.SysRoleVO;
 import com.ww.mall.admin.view.vo.SysUserVO;
 import com.ww.mall.common.common.MallPageResult;
+import com.ww.mall.web.view.bo.SysUserLoginBO;
 import com.ww.mall.web.view.dto.SysUserDTO;
 import com.ww.mall.web.view.form.IdForm;
 
@@ -108,9 +108,9 @@ public interface SysUserService extends IService<SysUser> {
      * 查询用户拥有的所有权限
      *
      * @param userId userId
-     * @return List<SysMenuVO>
+     * @return List<Tree<Long>>
      */
-    List<SysMenuVO> queryUserOfMenu(Long userId);
+    List<Tree<Long>> queryUserOfMenu(Long userId);
 
     /**
      * 后台登录
