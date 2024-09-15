@@ -56,4 +56,9 @@ public class SysMenu extends BaseEntity {
      */
     private Boolean valid;
 
+    public SysMenu() {
+        this.pid = 0L;
+        this.valid = true;
+    }
+
 }

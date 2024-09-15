@@ -3,7 +3,9 @@ package com.ww.mall.admin.service;
 import cn.hutool.core.lang.tree.Tree;
 import com.baomidou.mybatisplus.extension.service.IService;
 import com.ww.mall.admin.entity.SysMenu;
+import com.ww.mall.admin.enums.SysMenuType;
 import com.ww.mall.admin.view.form.SysMenuForm;
+import com.ww.mall.admin.view.vo.SysMenuParentVO;
 import com.ww.mall.admin.view.vo.SysMenuVO;
 import com.ww.mall.web.view.form.IdForm;
 
@@ -49,5 +51,12 @@ public interface SysMenuService extends IService<SysMenu> {
      */
     boolean delete(IdForm idForm);
 
+    /**
+     * 获取菜单类型下的上一级父级菜单
+     *
+     * @param menuType 菜单类型
+     * @return SysMenuParentVO
+     */
+    List<SysMenuParentVO> allParent(SysMenuType menuType);
 }
 

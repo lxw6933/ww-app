@@ -37,11 +37,17 @@ public class SysMenuTreeNodeVO extends TreeNode<Long> {
      */
     private String icon;
 
-    public SysMenuTreeNodeVO(Long id, Long pid, String name, Integer sort, SysMenuType type, String url, String icon) {
+    /**
+     * 权限标识
+     */
+    private String permission;
+
+    public SysMenuTreeNodeVO(Long id, Long pid, String name, Integer sort, SysMenuType type, String url, String icon, String permission) {
         super(id, pid, name, sort);
         this.type = type;
         this.url = url;
         this.icon = icon;
+        this.permission = permission;
     }
 
     public static List<Tree<Long>> menuTree(List<SysMenu> sysMenuList) {
@@ -50,7 +56,7 @@ public class SysMenuTreeNodeVO extends TreeNode<Long> {
         }
         List<SysMenuTreeNodeVO> nodeList = CollUtil.newArrayList();
         sysMenuList.forEach(menu -> {
-            SysMenuTreeNodeVO node = new SysMenuTreeNodeVO(menu.getId(), menu.getPid(), menu.getName(), menu.getSort(), menu.getType(), menu.getUrl(), menu.getIcon());
+            SysMenuTreeNodeVO node = new SysMenuTreeNodeVO(menu.getId(), menu.getPid(), menu.getName(), menu.getSort(), menu.getType(), menu.getUrl(), menu.getIcon(), menu.getPermission());
             nodeList.add(node);
         });
         TreeNodeConfig treeNodeConfig = new TreeNodeConfig();
@@ -67,6 +73,7 @@ public class SysMenuTreeNodeVO extends TreeNode<Long> {
                     tree.putExtra("type", treeNode.getType());
                     tree.putExtra("url", treeNode.getUrl());
                     tree.putExtra("icon", treeNode.getIcon());
+                    tree.putExtra("permission", treeNode.getPermission());
                 }
         );
     }

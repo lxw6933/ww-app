@@ -1,7 +1,9 @@
 package com.ww.mall.admin.controller;
 
 import cn.hutool.core.lang.tree.Tree;
+import com.ww.mall.admin.enums.SysMenuType;
 import com.ww.mall.admin.view.form.SysMenuForm;
+import com.ww.mall.admin.view.vo.SysMenuParentVO;
 import com.ww.mall.admin.view.vo.SysMenuVO;
 import com.ww.mall.common.valid.group.DeleteGroup;
 import com.ww.mall.common.valid.group.UpdateGroup;
@@ -28,6 +30,11 @@ public class SysMenuController extends MallAbstractController {
     @GetMapping("/menu")
     public SysMenuVO info(@RequestParam("menuId") Long menuId) {
         return sf.getSysMenuService().info(menuId);
+    }
+
+    @GetMapping("/menu/allParent")
+    public List<SysMenuParentVO> allParent(@RequestParam("type") SysMenuType type) {
+        return sf.getSysMenuService().allParent(type);
     }
 
     @PostMapping("/menu")

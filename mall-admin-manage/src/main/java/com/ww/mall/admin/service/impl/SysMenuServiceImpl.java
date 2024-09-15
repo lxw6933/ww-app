@@ -5,9 +5,11 @@ import cn.hutool.core.lang.tree.Tree;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.ww.mall.admin.dao.SysMenuMapper;
 import com.ww.mall.admin.entity.SysMenu;
+import com.ww.mall.admin.enums.SysMenuType;
 import com.ww.mall.admin.service.BaseService;
 import com.ww.mall.admin.service.SysMenuService;
 import com.ww.mall.admin.view.form.SysMenuForm;
+import com.ww.mall.admin.view.vo.SysMenuParentVO;
 import com.ww.mall.admin.view.vo.SysMenuTreeNodeVO;
 import com.ww.mall.admin.view.vo.SysMenuVO;
 import com.ww.mall.common.exception.ApiException;
@@ -15,6 +17,7 @@ import com.ww.mall.web.view.form.IdForm;
 import org.springframework.beans.BeanUtils;
 import org.springframework.stereotype.Service;
 
+import java.util.ArrayList;
 import java.util.List;
 
 /**
@@ -60,6 +63,32 @@ public class SysMenuServiceImpl extends BaseService<SysMenuMapper, SysMenu> impl
     @Override
     public boolean delete(IdForm idForm) {
         return this.removeById(idForm.getId());
+    }
+
+    @Override
+    public List<SysMenuParentVO> allParent(SysMenuType menuType) {
+        List<SysMenu> allParentMenu = new ArrayList<>();
+        switch (menuType) {
+            case LEVEL_1_MENU:
+                break;
+            case LEVEL_2_MENU:
+                allParentMenu = sf.getSysMenuService().list(new QueryWrapper<SysMenu>().eq("type", SysMenuType.LEVEL_1_MENU));
+                break;
+            case BUTTON:
+            case ROUTE_PAGE:
+            case ROUTE_BUTTON:
+            default:
+                allParentMenu = sf.getSysMenuService().list(new QueryWrapper<SysMenu>().eq("type", SysMenuType.LEVEL_2_MENU));
+        }
+        List<SysMenuParentVO> result = new ArrayList<>();
+        allParentMenu.forEach(res -> {
+            SysMenuParentVO vo = new SysMenuParentVO();
+            vo.setId(res.getId());
+            vo.setType(res.getType());
+            vo.setName(res.getName());
+            result.add(vo);
+        });
+        return result;
     }
 }
 
