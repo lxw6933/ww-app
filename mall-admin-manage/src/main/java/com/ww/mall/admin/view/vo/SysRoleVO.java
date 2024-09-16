@@ -1,7 +1,9 @@
 package com.ww.mall.admin.view.vo;
 
-import com.ww.mall.common.enums.SysPlatformType;
 import lombok.Data;
+
+import java.util.Date;
+import java.util.List;
 
 /**
  * @author ww
@@ -14,11 +16,6 @@ public class SysRoleVO {
     private Long id;
 
     /**
-     * 平台  角色类型
-     */
-    private SysPlatformType platform;
-
-    /**
      * 角色名称
      */
     private String name;
@@ -29,6 +26,11 @@ public class SysRoleVO {
     private String roleNo;
 
     /**
+     * 状态
+     */
+    private Boolean status;
+
+    /**
      * 备注
      */
     private String remark;
@@ -37,5 +39,15 @@ public class SysRoleVO {
      * 是否有效
      */
     private Boolean valid;
+
+    /**
+     * 创建时间
+     */
+    private Date createTime;
+
+    /**
+     * 角色菜单id集合
+     */
+    private List<Long> permissionIds;
 
 }

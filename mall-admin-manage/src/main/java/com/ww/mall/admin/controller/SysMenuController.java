@@ -48,7 +48,7 @@ public class SysMenuController extends MallAbstractController {
     }
 
     @DeleteMapping("/menu")
-    public boolean delete(@RequestBody @Validated({DeleteGroup.class}) IdForm form) {
+    public boolean delete(@Validated({DeleteGroup.class}) IdForm form) {
         return sf.getSysMenuService().delete(form);
     }
 

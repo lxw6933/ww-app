@@ -4,8 +4,12 @@ import com.baomidou.mybatisplus.extension.service.IService;
 import com.ww.mall.admin.entity.SysRole;
 import com.ww.mall.admin.view.form.SysRoleForm;
 import com.ww.mall.admin.view.query.SysRolePageQuery;
+import com.ww.mall.admin.view.vo.SysRoleSelectVO;
 import com.ww.mall.admin.view.vo.SysRoleVO;
 import com.ww.mall.common.common.MallPageResult;
+import com.ww.mall.web.view.form.IdForm;
+
+import java.util.List;
 
 /**
  * @author ww
@@ -45,6 +49,27 @@ public interface SysRoleService extends IService<SysRole> {
      * @return SysRoleVO
      */
     boolean update(SysRoleForm form);
+
+    /**
+     * 删除
+     * @param idForm idForm
+     */
+    boolean delete(IdForm idForm);
+
+    /**
+     * 修改状态
+     *
+     * @param roleId 角色id
+     * @return boolean
+     */
+    boolean modifyStatus(Long roleId);
+
+    /**
+     * 获取所有角色列表
+     *
+     * @return List<RoleSelectVO>
+     */
+    List<SysRoleSelectVO> getAllRole();
 
 }
 

@@ -10,16 +10,19 @@ import com.ww.mall.admin.service.SysRoleService;
 import com.ww.mall.admin.view.form.RoleAndMenuForm;
 import com.ww.mall.admin.view.form.SysRoleForm;
 import com.ww.mall.admin.view.query.SysRolePageQuery;
+import com.ww.mall.admin.view.vo.SysRoleSelectVO;
 import com.ww.mall.admin.view.vo.SysRoleVO;
 import com.ww.mall.annotation.plugs.redis.MallResubmission;
 import com.ww.mall.common.exception.ApiException;
 import com.ww.mall.common.common.MallPageResult;
 import com.ww.mall.mybatisplus.MallPlusPageResult;
+import com.ww.mall.web.view.form.IdForm;
 import org.apache.commons.collections4.CollectionUtils;
 import org.springframework.beans.BeanUtils;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.ArrayList;
 import java.util.List;
 
 /**
@@ -47,6 +50,8 @@ public class SysRoleServiceImpl extends BaseService<SysRoleMapper, SysRole> impl
         Assert.notNull(sysRole, () -> new ApiException("信息不存在"));
         SysRoleVO vo = new SysRoleVO();
         BeanUtils.copyProperties(sysRole, vo);
+        List<Long> roleMenuIds = df.getSysRoleMapper().findMenuIdsByRoleId(id);
+        vo.setPermissionIds(roleMenuIds);
         return vo;
     }
 
@@ -56,6 +61,7 @@ public class SysRoleServiceImpl extends BaseService<SysRoleMapper, SysRole> impl
     public boolean save(SysRoleForm form) {
         SysRole sysRole = new SysRole();
         BeanUtils.copyProperties(form, sysRole);
+        sysRole.setStatus(true);
         this.save(sysRole);
         saveRolePermissions(sysRole.getId(), form.getPermissionIds());
         return true;
@@ -82,6 +88,34 @@ public class SysRoleServiceImpl extends BaseService<SysRoleMapper, SysRole> impl
             }
         }
         return true;
+    }
+
+    @Override
+    @MallResubmission
+    public boolean delete(IdForm idForm) {
+        return this.removeById(idForm.getId());
+    }
+
+    @Override
+    @MallResubmission(expire = 1)
+    public boolean modifyStatus(Long roleId) {
+        SysRole sysRole = this.getById(roleId);
+        Assert.notNull(sysRole, () -> new ApiException("角色信息异常"));
+        sysRole.setStatus(!sysRole.getStatus());
+        return this.updateById(sysRole);
+    }
+
+    @Override
+    public List<SysRoleSelectVO> getAllRole() {
+        List<SysRole> allRoles = this.list();
+        List<SysRoleSelectVO> roleSelectList = new ArrayList<>();
+        allRoles.forEach(role -> {
+            SysRoleSelectVO vo = new SysRoleSelectVO();
+            vo.setId(role.getId());
+            vo.setName(role.getName());
+            roleSelectList.add(vo);
+        });
+        return roleSelectList;
     }
 
     /**

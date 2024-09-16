@@ -126,11 +126,14 @@ public class SysUserServiceImpl extends BaseService<SysUserMapper, SysUser> impl
         SysUser sysUser = this.getById(userId);
         Assert.notNull(sysUser, () -> new ApiException("信息不存在"));
         BeanUtils.copyProperties(sysUser, sysUserVO);
+        // 查询用户角色信息
+        List<Long> userRoleIds = df.getSysUserMapper().findRoleIdsByUserId(userId);
+        sysUserVO.setRoleIds(userRoleIds);
         return sysUserVO;
     }
 
     @Override
-    @MallResubmission
+    @MallResubmission(expire = 1)
     public boolean modifySysUserStatus(Long userId, boolean status) {
         MallAdminUser adminUser = AuthorizationContext.getAdminUser();
         if (Objects.equals(adminUser.getUserId(), userId)) {
@@ -182,7 +185,7 @@ public class SysUserServiceImpl extends BaseService<SysUserMapper, SysUser> impl
     }
 
     @Override
-    @MallResubmission
+    @MallResubmission(expire = 1)
     public boolean resetPassword(Long userId) {
         String salt = PasswordUtil.generateSalt();
         String password = PasswordUtil.resetPassword(salt);
@@ -207,16 +210,17 @@ public class SysUserServiceImpl extends BaseService<SysUserMapper, SysUser> impl
     }
 
     @Override
-    public List<SysRoleVO> queryUserOfRole(Long userId) {
+    public List<SysRoleSelectVO> queryUserOfRole(Long userId) {
         List<Long> userRoleIdList = df.getSysUserMapper().findRoleIdsByUserId(userId);
         if (CollectionUtils.isEmpty(userRoleIdList)) {
             return Collections.emptyList();
         }
         List<SysRole> userRoleList = sf.getSysRoleService().listByIds(userRoleIdList);
-        List<SysRoleVO> userRoleVOList = new ArrayList<>();
-        userRoleList.forEach(target -> {
-            SysRoleVO vo = new SysRoleVO();
-            BeanUtils.copyProperties(target, vo);
+        List<SysRoleSelectVO> userRoleVOList = new ArrayList<>();
+        userRoleList.forEach(role -> {
+            SysRoleSelectVO vo = new SysRoleSelectVO();
+            vo.setId(role.getId());
+            vo.setName(role.getName());
             userRoleVOList.add(vo);
         });
         return userRoleVOList;
@@ -247,6 +251,7 @@ public class SysUserServiceImpl extends BaseService<SysUserMapper, SysUser> impl
     }
 
     @Override
+    @MallResubmission
     public SysUserDTO login(SysUserLoginBO form) {
         SysUserVO sysUserVO = this.info(form.getUsername(), form.getPassword());
         SysUserDTO sysUserDTO = new SysUserDTO();
@@ -272,6 +277,7 @@ public class SysUserServiceImpl extends BaseService<SysUserMapper, SysUser> impl
     }
 
     @Override
+    @MallResubmission
     public boolean modifyStatus(Long userId) {
         if (Objects.equals(Constant.SUPER_ADMIN_MANAGER_ID, userId)) {
             throw new ApiException("禁止修改超管账号的信息");

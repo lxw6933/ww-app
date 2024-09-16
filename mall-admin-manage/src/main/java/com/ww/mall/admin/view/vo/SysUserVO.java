@@ -3,6 +3,7 @@ package com.ww.mall.admin.view.vo;
 import lombok.Data;
 
 import java.util.Date;
+import java.util.List;
 
 /**
  * @author ww
@@ -58,5 +59,10 @@ public class SysUserVO {
      * 创建时间
      */
     private Date createTime;
+
+    /**
+     * 用户角色id集合
+     */
+    private List<Long> roleIds;
 
 }

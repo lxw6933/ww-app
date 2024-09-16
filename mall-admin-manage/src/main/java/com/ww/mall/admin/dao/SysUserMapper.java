@@ -22,7 +22,7 @@ public interface SysUserMapper extends BaseMapper<SysUser> {
      * @param userId userId
      * @return roleIdList
      */
-    @Select("select role_id from sys_role_user where user_id = #{userId} and status = true")
+    @Select("select role_id from sys_role_user where user_id = #{userId}")
     List<Long> findRoleIdsByUserId(Long userId);
 
     /**

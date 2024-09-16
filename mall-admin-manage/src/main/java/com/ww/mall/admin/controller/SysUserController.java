@@ -42,7 +42,7 @@ public class SysUserController extends MallAbstractController {
     }
 
     @DeleteMapping("/user")
-    public boolean delete(@RequestBody @Validated({DeleteGroup.class}) IdForm form) {
+    public boolean delete(@Validated({DeleteGroup.class}) IdForm form) {
         return sf.getSysUserService().delete(form);
     }
 

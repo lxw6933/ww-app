@@ -7,6 +7,7 @@ import com.ww.mall.admin.view.form.ModifyPasswordForm;
 import com.ww.mall.admin.view.form.SysUserForm;
 import com.ww.mall.admin.view.query.SysUserPageQuery;
 import com.ww.mall.admin.view.vo.CurrentSysUserInfoVO;
+import com.ww.mall.admin.view.vo.SysRoleSelectVO;
 import com.ww.mall.admin.view.vo.SysRoleVO;
 import com.ww.mall.admin.view.vo.SysUserVO;
 import com.ww.mall.common.common.MallPageResult;
@@ -102,7 +103,7 @@ public interface SysUserService extends IService<SysUser> {
      * @param userId userId
      * @return List<SysRoleVO>
      */
-    List<SysRoleVO> queryUserOfRole(Long userId);
+    List<SysRoleSelectVO> queryUserOfRole(Long userId);
 
     /**
      * 查询用户拥有的所有权限
