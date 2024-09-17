@@ -18,10 +18,15 @@ public class SysRolePageQuery extends MallPage {
 
     private String name;
 
+    private Boolean status;
+
     public QueryWrapper<SysRole> getQueryWrapper() {
         QueryWrapper<SysRole> queryWrapper = new QueryWrapper<>();
         if (StringUtils.isNotEmpty(this.name)) {
             queryWrapper.like("name", this.name);
+        }
+        if (status != null) {
+            queryWrapper.eq("status", this.status);
         }
         return queryWrapper;
     }
