@@ -14,19 +14,21 @@ import org.springframework.web.cors.reactive.UrlBasedCorsConfigurationSource;
 @Configuration
 public class MallCorsConfiguration {
 
+    private static final Long MAX_AGE = 3600L;
+
     @Bean
     public CorsWebFilter corsWebFilter(){
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
         CorsConfiguration corsConfiguration = new CorsConfiguration();
         // 配置跨域
         // 允许任何请求头
-        corsConfiguration.addAllowedHeader("*");
+        corsConfiguration.addAllowedHeader(CorsConfiguration.ALL);
         // 允许任何来源
-        corsConfiguration.addAllowedOrigin("http://localhost:5173");
+        corsConfiguration.addAllowedOrigin(CorsConfiguration.ALL);
         // 允许任何方式POST GET等
-        corsConfiguration.addAllowedMethod("*");
-        // 允许携带cookie
-        corsConfiguration.setAllowCredentials(true);
+        corsConfiguration.addAllowedMethod(CorsConfiguration.ALL);
+        // 最大年龄
+        corsConfiguration.setMaxAge(MAX_AGE);
 
         source.registerCorsConfiguration("/**",corsConfiguration);
         return new CorsWebFilter(source);
