@@ -8,7 +8,7 @@ import com.ww.mall.auth.view.vo.AdminLoginResultVO;
 import com.ww.mall.auth.view.vo.LoginResultVO;
 import com.ww.mall.common.common.Result;
 import com.ww.mall.common.constant.RedisKeyConstant;
-import com.ww.mall.common.enums.CodeEnum;
+import com.ww.mall.common.enums.GlobalResCodeConstants;
 import com.ww.mall.common.enums.UserType;
 import com.ww.mall.common.exception.ApiException;
 import com.ww.mall.web.feign.AdminFeignService;
@@ -58,30 +58,26 @@ public class LoginServiceImpl implements LoginService {
     public AdminLoginResultVO adminLogin(SysUserLoginBO sysUserLoginBO) {
         // 获取登录用户信息
         Result<SysUserDTO> result = adminFeignService.login(sysUserLoginBO);
-        if (Boolean.TRUE.equals(result.isSuccess()) && CodeEnum.SUCCESS.getCode().equals(result.getCode())) {
-            SysUserDTO sysUserDTO = result.getValue();
-            // 生成jwt token
-            Date tokenEffectTime = new Date();
-            Date tokenExpTime = DateUtils.addHours(tokenEffectTime, jwtProperties.getExpire());
-            Map<String, Object> map = new HashMap<>();
-            map.put("userId", sysUserDTO.getId());
-            map.put("exp", tokenExpTime.getTime());
-            map.put("nbf", tokenEffectTime.getTime());
-            map.put("iss", jwtProperties.getIss());
-            map.put("userType", UserType.ADMIN);
-            String token = JWTUtil.createToken(map, jwtProperties.getSecret().getBytes());
-            AdminLoginResultVO loginResultVO = new AdminLoginResultVO();
-            loginResultVO.setAccessToken(token);
-            loginResultVO.setAccessTokenExpTime(tokenExpTime.getTime());
-            loginResultVO.setUsername(sysUserDTO.getUsername());
-            loginResultVO.setRealName(sysUserDTO.getRealName());
-            loginResultVO.setUserId(sysUserDTO.getId());
-            loginResultVO.setAvatar(sysUserDTO.getAvatar());
-            return loginResultVO;
-        } else {
-            log.error("远程调用mall-admin-manage服务失败：{}", result);
-            throw new ApiException(CodeEnum.SYSTEM_ERROR.getCode(), CodeEnum.SYSTEM_ERROR.getMessage());
-        }
+        result.checkError();
+        SysUserDTO sysUserDTO = result.getData();
+        // 生成jwt token
+        Date tokenEffectTime = new Date();
+        Date tokenExpTime = DateUtils.addHours(tokenEffectTime, jwtProperties.getExpire());
+        Map<String, Object> map = new HashMap<>();
+        map.put("userId", sysUserDTO.getId());
+        map.put("exp", tokenExpTime.getTime());
+        map.put("nbf", tokenEffectTime.getTime());
+        map.put("iss", jwtProperties.getIss());
+        map.put("userType", UserType.ADMIN);
+        String token = JWTUtil.createToken(map, jwtProperties.getSecret().getBytes());
+        AdminLoginResultVO loginResultVO = new AdminLoginResultVO();
+        loginResultVO.setAccessToken(token);
+        loginResultVO.setAccessTokenExpTime(tokenExpTime.getTime());
+        loginResultVO.setUsername(sysUserDTO.getUsername());
+        loginResultVO.setRealName(sysUserDTO.getRealName());
+        loginResultVO.setUserId(sysUserDTO.getId());
+        loginResultVO.setAvatar(sysUserDTO.getAvatar());
+        return loginResultVO;
     }
 
     @Override
@@ -92,31 +88,27 @@ public class LoginServiceImpl implements LoginService {
         if (memberLoginBO.getVerifyCode().equals(mobileCode)) {
             // 获取登录用户信息
             Result<MemberDTO> memberResult = memberFeignService.getMemberByMobile(mobile);
-            if (Boolean.TRUE.equals(memberResult.isSuccess()) && CodeEnum.SUCCESS.getCode().equals(memberResult.getCode())) {
-                MemberDTO member = memberResult.getValue();
-                // 生成jwt token
-                Date tokenEffectTime = new Date();
-                Date tokenExpTime = DateUtils.addHours(tokenEffectTime, jwtProperties.getExpire());
-                Map<String, Object> map = new HashMap<>();
-                map.put("memberId", member.getId());
-                map.put("channelId", member.getChannelId());
-                map.put("mobile", member.getMobile());
-                map.put("exp", tokenExpTime.getTime());
-                map.put("nbf", tokenEffectTime.getTime());
-                map.put("iss", jwtProperties.getIss());
-                map.put("userType", UserType.CLIENT);
-                String token = JWTUtil.createToken(map, jwtProperties.getSecret().getBytes());
-                LoginResultVO loginResultVO = new LoginResultVO();
-                loginResultVO.setAccessToken(token);
-                loginResultVO.setAccessTokenExpTime(tokenExpTime.getTime());
-                return loginResultVO;
-            } else {
-                log.error("远程调用mall-member服务失败：{}", memberResult);
-                throw new ApiException(CodeEnum.SYSTEM_ERROR.getCode(), CodeEnum.SYSTEM_ERROR.getMessage());
-            }
+            memberResult.checkError();
+            MemberDTO member = memberResult.getData();
+            // 生成jwt token
+            Date tokenEffectTime = new Date();
+            Date tokenExpTime = DateUtils.addHours(tokenEffectTime, jwtProperties.getExpire());
+            Map<String, Object> map = new HashMap<>();
+            map.put("memberId", member.getId());
+            map.put("channelId", member.getChannelId());
+            map.put("mobile", member.getMobile());
+            map.put("exp", tokenExpTime.getTime());
+            map.put("nbf", tokenEffectTime.getTime());
+            map.put("iss", jwtProperties.getIss());
+            map.put("userType", UserType.CLIENT);
+            String token = JWTUtil.createToken(map, jwtProperties.getSecret().getBytes());
+            LoginResultVO loginResultVO = new LoginResultVO();
+            loginResultVO.setAccessToken(token);
+            loginResultVO.setAccessTokenExpTime(tokenExpTime.getTime());
+            return loginResultVO;
         } else {
             log.error("验证码错误");
-            throw new ApiException(CodeEnum.CODE_ERROR.getCode(), CodeEnum.CODE_ERROR.getMessage());
+            throw new ApiException(GlobalResCodeConstants.CODE_ERROR);
         }
     }
 
@@ -128,7 +120,7 @@ public class LoginServiceImpl implements LoginService {
             long mobileCodeTime = Long.parseLong(mobileCode.split("_")[1]);
             if (System.currentTimeMillis() - mobileCodeTime < 60000) {
                 // 验证码一分钟内不能重发
-                throw new ApiException(CodeEnum.SMS_CODE_EXCEPTION.getCode(), CodeEnum.SMS_CODE_EXCEPTION.getMessage());
+                throw new ApiException(GlobalResCodeConstants.TOO_MANY_REQUESTS);
             }
         }
         // 生成新的验证码
@@ -140,14 +132,11 @@ public class LoginServiceImpl implements LoginService {
                 .set(RedisKeyConstant.SMS_CODE_CACHE_PREFIX + mobile, newCodeTime, 3, TimeUnit.MINUTES);
         // 发送验证码短信
         Result<Boolean> sendSmsResult = thirdServerFeignService.sendSms(mobile, newCode);
-        if (Boolean.TRUE.equals(sendSmsResult.isSuccess())) {
-            if (Boolean.TRUE.equals(sendSmsResult.getValue())) {
-                log.info("发送短信验证码成功");
-            } else {
-                throw new ApiException("发送短信验证码失败");
-            }
+        sendSmsResult.checkError();
+        if (Boolean.TRUE.equals(sendSmsResult.getData())) {
+            log.info("发送短信验证码成功");
         } else {
-            throw new ApiException("调用发送短信接口失败");
+            throw new ApiException("发送短信验证码失败");
         }
     }
 }

@@ -1,7 +1,7 @@
 package com.ww.mall.web.feign.inner;
 
 import com.ww.mall.common.common.Result;
-import com.ww.mall.common.enums.CodeEnum;
+import com.ww.mall.common.enums.GlobalResCodeConstants;
 import com.ww.mall.web.feign.ThirdServerFeignService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.cloud.openfeign.FallbackFactory;
@@ -21,7 +21,7 @@ public class ThirdServerFeignServiceFallBack implements FallbackFactory<ThirdSer
         return new ThirdServerFeignService() {
             @Override
             public Result<Boolean> sendSms(String mobile, String code) {
-                return new Result<>(CodeEnum.LIMIT_ERROR.getCode(), CodeEnum.LIMIT_ERROR.getMessage());
+                return Result.error(GlobalResCodeConstants.LIMIT_REQUEST);
             }
         };
     }

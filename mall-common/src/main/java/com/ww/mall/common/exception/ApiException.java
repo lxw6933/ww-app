@@ -1,41 +1,42 @@
 package com.ww.mall.common.exception;
 
-import com.ww.mall.common.enums.CodeEnum;
+import com.ww.mall.common.common.ResCode;
+import com.ww.mall.common.enums.GlobalResCodeConstants;
+import lombok.Data;
+import lombok.EqualsAndHashCode;
+import lombok.Getter;
+import lombok.Setter;
 
 /**
  * @author ww
  * @create 2023-07-15- 10:18
  * @description: 接口异常类
  */
+@Data
+@EqualsAndHashCode(callSuper = true)
 public class ApiException extends RuntimeException {
 
-    private String code;
+    @Setter
+    @Getter
+    private Integer code;
+
+    private String message;
+
+    public ApiException() {}
 
     public ApiException(String message) {
-        super(message);
-        this.code = CodeEnum.SYSTEM_ERROR.getCode();
+        this.code = GlobalResCodeConstants.SYSTEM_ERROR.getCode();
+        this.message = message;
     }
 
-    public ApiException(String code, String message) {
-        this(message);
+    public ApiException(Integer code, String message) {
         this.code = code;
+        this.message = message;
     }
 
-    public ApiException(Throwable throwable) {
-        super(throwable);
-        this.code = CodeEnum.SYSTEM_ERROR.getCode();
+    public ApiException(ResCode resCode) {
+        this.code = resCode.getCode();
+        this.message = resCode.getMsg();
     }
 
-    public ApiException(String message, Throwable throwable) {
-        super(message, throwable);
-        this.code = CodeEnum.SYSTEM_ERROR.getCode();
-    }
-
-    public String getCode() {
-        return this.code;
-    }
-
-    public void setCode(String code) {
-        this.code = code;
-    }
 }

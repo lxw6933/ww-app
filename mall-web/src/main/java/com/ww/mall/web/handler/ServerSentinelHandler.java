@@ -10,12 +10,14 @@ import com.alibaba.csp.sentinel.slots.system.SystemBlockException;
 import com.alibaba.fastjson.JSON;
 import com.alibaba.nacos.common.http.param.MediaType;
 import com.ww.mall.common.common.Result;
-import com.ww.mall.common.enums.CodeEnum;
+import com.ww.mall.common.enums.GlobalResCodeConstants;
 import lombok.extern.slf4j.Slf4j;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.nio.charset.StandardCharsets;
+
+import static com.ww.mall.common.common.Result.error;
 
 /**
  * @description: 所有服务限流回调
@@ -30,22 +32,22 @@ public class ServerSentinelHandler implements BlockExceptionHandler {
         Result<Object> result;
         if (e instanceof FlowException) {
             log.error("服务请求：【{}】接口限流：{}", request.getRequestURL(), e.getMessage());
-            result = new Result<>(CodeEnum.FLOW_EXCEPTION.getCode(), CodeEnum.FLOW_EXCEPTION.getMessage());
+            result = error(GlobalResCodeConstants.FLOW_EXCEPTION);
         } else if (e instanceof DegradeException) {
             log.error("服务请求：【{}】接口降级：{}", request.getRequestURL(), e.getMessage());
-            result = new Result<>(CodeEnum.DEGRADE_EXCEPTION.getCode(), CodeEnum.DEGRADE_EXCEPTION.getMessage());
+            result = error(GlobalResCodeConstants.DEGRADE_EXCEPTION);
         } else if (e instanceof ParamFlowException) {
             log.error("服务请求：【{}】参数限流：{}", request.getRequestURL(), e.getMessage());
-            result = new Result<>(CodeEnum.PARMA_FLOW_EXCEPTION.getCode(), CodeEnum.PARMA_FLOW_EXCEPTION.getMessage());
+            result = error(GlobalResCodeConstants.PARMA_FLOW_EXCEPTION);
         } else if (e instanceof SystemBlockException) {
             log.error("服务请求：【{}】系统限流：{}", request.getRequestURL(), e.getMessage());
-            result = new Result<>(CodeEnum.SYSTEM_BLOCK_EXCEPTION.getCode(), CodeEnum.SYSTEM_BLOCK_EXCEPTION.getMessage());
+            result = error(GlobalResCodeConstants.SYSTEM_BLOCK_EXCEPTION);
         } else if (e instanceof AuthorityException) {
             log.error("服务请求：【{}】权限控制：{}", request.getRequestURL(), e.getMessage());
-            result = new Result<>(CodeEnum.AUTH_LIMIT_EXCEPTION.getCode(), CodeEnum.AUTH_LIMIT_EXCEPTION.getMessage());
+            result = error(GlobalResCodeConstants.AUTH_LIMIT_EXCEPTION);
         } else {
             log.error("服务请求：【{}】未知异常：{}", request.getRequestURL(), e.getMessage());
-            result = new Result<>(CodeEnum.SYSTEM_ERROR.getCode(), CodeEnum.SYSTEM_ERROR.getMessage());
+            result = error(GlobalResCodeConstants.UNKNOWN);
         }
         response.setCharacterEncoding(StandardCharsets.UTF_8.name());
         response.setContentType(MediaType.APPLICATION_JSON);

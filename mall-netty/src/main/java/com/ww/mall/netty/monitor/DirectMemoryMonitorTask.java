@@ -1,6 +1,7 @@
 package com.ww.mall.netty.monitor;
 
 import cn.hutool.core.util.ReflectUtil;
+import com.ww.mall.common.enums.GlobalResCodeConstants;
 import com.ww.mall.common.exception.ApiException;
 import io.netty.util.internal.PlatformDependent;
 import lombok.extern.slf4j.Slf4j;
@@ -33,7 +34,7 @@ public class DirectMemoryMonitorTask {
             directMemory = (AtomicLong) field.get(PlatformDependent.class);
         } catch (IllegalAccessException e) {
             log.error("获取redirect memory异常: {}", e.getMessage());
-            throw new ApiException(e);
+            throw new ApiException(GlobalResCodeConstants.SYSTEM_ERROR);
         }
     }
 

@@ -1,5 +1,6 @@
 package com.ww.mall.netty.serializer;
 
+import com.ww.mall.common.enums.GlobalResCodeConstants;
 import com.ww.mall.common.exception.ApiException;
 import com.ww.mall.netty.enums.SerializerTypeEnum;
 import org.springframework.stereotype.Component;
@@ -27,7 +28,7 @@ public class JdkSerializer implements MallSerializer {
             oos.writeObject(object);
             return bos.toByteArray();
         } catch (Exception e) {
-            throw new ApiException(e);
+            throw new ApiException(GlobalResCodeConstants.SYSTEM_ERROR);
         }
     }
 
@@ -37,7 +38,7 @@ public class JdkSerializer implements MallSerializer {
             ObjectInputStream ois = new ObjectInputStream(new ByteArrayInputStream(bytes));
             return (T) ois.readObject();
         } catch (Exception e) {
-            throw new ApiException(e);
+            throw new ApiException(GlobalResCodeConstants.SYSTEM_ERROR);
         }
     }
 }

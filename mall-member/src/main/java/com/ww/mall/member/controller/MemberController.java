@@ -4,7 +4,7 @@ import cn.hutool.core.util.RandomUtil;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.ww.mall.common.common.MallClientUser;
-import com.ww.mall.common.enums.CodeEnum;
+import com.ww.mall.common.enums.GlobalResCodeConstants;
 import com.ww.mall.common.exception.ApiException;
 import com.ww.mall.member.entity.Member;
 import com.ww.mall.member.service.MemberService;
@@ -55,7 +55,7 @@ public class MemberController {
     public MallPageResult<MemberVO> pageList(MallPage mallPage) {
         MallClientUser clientUser = AuthorizationContext.getClientUser();
         if (clientUser == null) {
-            throw new ApiException(CodeEnum.ILLEGAL_REQUEST.getCode(), CodeEnum.ILLEGAL_REQUEST.getMessage());
+            throw new ApiException(GlobalResCodeConstants.ILLEGAL_REQUEST);
         }
         IPage<Member> page = new Page<>(mallPage.getPageNum(), mallPage.getPageSize());
         memberService.page(page);

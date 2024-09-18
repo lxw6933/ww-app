@@ -5,8 +5,8 @@ import cn.hutool.json.JSONObject;
 import cn.hutool.jwt.JWT;
 import cn.hutool.jwt.JWTUtil;
 import com.ww.mall.common.constant.Constant;
+import com.ww.mall.common.enums.GlobalResCodeConstants;
 import com.ww.mall.common.enums.UserType;
-import com.ww.mall.gateway.enums.GatewayResultEnum;
 import com.ww.mall.gateway.properties.MallGatewayProperties;
 import com.ww.mall.gateway.utils.WebFluxResultUtils;
 import lombok.extern.slf4j.Slf4j;
@@ -64,7 +64,7 @@ public class PermissionFilter implements GlobalFilter, Ordered {
                 }
             }
             if (!isWhite) {
-                return WebFluxResultUtils.result(exchange, GatewayResultEnum.NO_PERMISSION, HttpStatus.FORBIDDEN);
+                return WebFluxResultUtils.result(exchange, GlobalResCodeConstants.FORBIDDEN, HttpStatus.FORBIDDEN);
             }
         } else {
             try {
@@ -72,14 +72,14 @@ public class PermissionFilter implements GlobalFilter, Ordered {
                 boolean verify = JWTUtil.verify(token, jwtSecret.getBytes());
                 if (!verify) {
                     log.error("token校验失败");
-                    return WebFluxResultUtils.result(exchange, GatewayResultEnum.SIGN_IS_NOT_PASS, HttpStatus.UNAUTHORIZED);
+                    return WebFluxResultUtils.result(exchange, GlobalResCodeConstants.TOKEN_ERROR, HttpStatus.UNAUTHORIZED);
                 }
                 // 解析token
                 JWT jwt = JWTUtil.parseToken(token);
                 JSONObject claimsJson = jwt.getPayload().getClaimsJson();
                 if (DateUtil.date().after(new Date(claimsJson.get("exp", Long.class)))) {
                     // 已过期
-                    return WebFluxResultUtils.result(exchange, GatewayResultEnum.SING_TIME_IS_TIMEOUT, HttpStatus.UNAUTHORIZED);
+                    return WebFluxResultUtils.result(exchange, GlobalResCodeConstants.TOKEN_TIMEOUT, HttpStatus.UNAUTHORIZED);
                 }
                 switch (claimsJson.get("userType", UserType.class)) {
                     case ADMIN:
@@ -88,14 +88,14 @@ public class PermissionFilter implements GlobalFilter, Ordered {
                         break;
                     case OTHER:
                         log.error("token用户类型为其他，系统暂不支持");
-                        return WebFluxResultUtils.result(exchange, GatewayResultEnum.SIGN_IS_NOT_PASS, HttpStatus.UNAUTHORIZED);
+                        return WebFluxResultUtils.result(exchange, GlobalResCodeConstants.UNAUTHORIZED, HttpStatus.UNAUTHORIZED);
                     default:
                         log.error("token用户类型异常");
-                        return WebFluxResultUtils.result(exchange, GatewayResultEnum.SIGN_IS_NOT_PASS, HttpStatus.UNAUTHORIZED);
+                        return WebFluxResultUtils.result(exchange, GlobalResCodeConstants.UNAUTHORIZED, HttpStatus.UNAUTHORIZED);
                 }
             } catch (Exception e) {
                 log.error("token解码失败");
-                return WebFluxResultUtils.result(exchange, GatewayResultEnum.SIGN_IS_NOT_PASS, HttpStatus.UNAUTHORIZED);
+                return WebFluxResultUtils.result(exchange, GlobalResCodeConstants.TOKEN_ERROR, HttpStatus.UNAUTHORIZED);
             }
         }
         ServerHttpRequest.Builder requestBuilder = exchange.getRequest().mutate()

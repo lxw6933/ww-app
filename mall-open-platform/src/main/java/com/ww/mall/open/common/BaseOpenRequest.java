@@ -4,7 +4,7 @@ import cn.hutool.core.date.DatePattern;
 import cn.hutool.core.date.DateUtil;
 import cn.hutool.core.lang.Assert;
 import com.alibaba.fastjson.JSON;
-import com.ww.mall.common.enums.CodeEnum;
+import com.ww.mall.common.enums.GlobalResCodeConstants;
 import com.ww.mall.common.exception.ApiException;
 import com.ww.mall.common.utils.DigitalSignatureUtil;
 import com.ww.mall.common.utils.IdUtil;
@@ -66,7 +66,7 @@ public class BaseOpenRequest<T> {
         String reqData = this.sysCode + this.appCode + this.methodCode + this.transId + JSON.toJSON(data);
         log.info("请求reqData：【{}】商户【{}】生成sign：【{}】", reqData, this.sysCode, this.sign);
         boolean success = DigitalSignatureUtil.verifySignature(reqData, this.sign, Base64.decodeBase64(publicKey));
-        Assert.isTrue(success, () -> new ApiException(CodeEnum.SIGN_EXCEPTION.getCode(), CodeEnum.SIGN_EXCEPTION.getMessage()));
+        Assert.isTrue(success, () -> new ApiException(GlobalResCodeConstants.SIGN_ERROR));
     }
 
     public static void main(String[] args) {

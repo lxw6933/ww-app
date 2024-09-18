@@ -2,6 +2,7 @@ package com.ww.mall.redis.aspect;
 
 import cn.hutool.core.codec.Base64;
 import cn.hutool.core.util.ArrayUtil;
+import com.ww.mall.common.enums.GlobalResCodeConstants;
 import com.ww.mall.common.exception.ApiException;
 import com.ww.mall.annotation.plugs.redis.MallResubmission;
 import org.aspectj.lang.ProceedingJoinPoint;
@@ -41,7 +42,7 @@ public class MallResubmissionAspect extends MallAbstractAspect {
                 (RedisCallback<Boolean>) connection -> connection.set(parameterKey.getBytes(), new byte[0], Expiration.from(mallResubmission.expire(), mallResubmission.timeUnit())
                         , RedisStringCommands.SetOption.SET_IF_ABSENT));
         if (!Boolean.TRUE.equals(success)) {
-            throw new ApiException("操作过快，请稍候再试");
+            throw new ApiException(GlobalResCodeConstants.REPEATED_REQUESTS);
         }
         return joinPoint.proceed();
     }

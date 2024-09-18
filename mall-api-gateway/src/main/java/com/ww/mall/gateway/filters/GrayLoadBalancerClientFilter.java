@@ -55,7 +55,7 @@ public class GrayLoadBalancerClientFilter implements GlobalFilter, Ordered {
     private Mono<Response<ServiceInstance>> choose(ServerWebExchange exchange) {
         URI uri = exchange.getAttribute(ServerWebExchangeUtils.GATEWAY_REQUEST_URL_ATTR);
         if (uri == null) {
-            throw new ApiException("{} is null", ServerWebExchangeUtils.GATEWAY_REQUEST_URL_ATTR);
+            throw new ApiException(ServerWebExchangeUtils.GATEWAY_REQUEST_URL_ATTR + " is null");
         }
         String serviceId = uri.getHost();
         GrayLoadBalancer loadBalancer = new GrayLoadBalancer(serviceId, serverGrayProperties,

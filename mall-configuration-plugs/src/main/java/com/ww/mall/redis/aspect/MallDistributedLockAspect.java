@@ -1,7 +1,7 @@
 package com.ww.mall.redis.aspect;
 
 import com.ww.mall.common.constant.Constant;
-import com.ww.mall.common.enums.CodeEnum;
+import com.ww.mall.common.enums.GlobalResCodeConstants;
 import com.ww.mall.common.exception.ApiException;
 import com.ww.mall.annotation.plugs.redis.MallDistributedLock;
 import lombok.extern.slf4j.Slf4j;
@@ -62,7 +62,7 @@ public class MallDistributedLockAspect extends MallAbstractAspect {
             log.info("线程【{}】尝试获取锁key：{}", Thread.currentThread().getId(), lockKey);
             boolean successGetLock = lock.tryLock(mallDistributedLock.waitTime(), mallDistributedLock.leaseTime(), mallDistributedLock.timeUnit());
             if (!successGetLock) {
-                throw new ApiException(CodeEnum.FAIL_GET_LOCK_EXCEPTION.getCode(), CodeEnum.FAIL_GET_LOCK_EXCEPTION.getMessage());
+                throw new ApiException(GlobalResCodeConstants.LIMIT_REQUEST);
             }
             log.info("线程【{}】获取到锁key：{}", Thread.currentThread().getId(), lockKey);
             return joinPoint.proceed();
@@ -70,7 +70,7 @@ public class MallDistributedLockAspect extends MallAbstractAspect {
             throw new ApiException(e.getCode(), e.getMessage());
         } catch (Exception e) {
             log.info("线程【{}】锁key【{}】业务异常【{}】", Thread.currentThread().getId(), lockKey, e.getMessage());
-            throw new ApiException(CodeEnum.LOCK_SERVICE_EXCEPTION.getCode(), CodeEnum.LOCK_SERVICE_EXCEPTION.getMessage());
+            throw new ApiException(GlobalResCodeConstants.SYSTEM_ERROR);
         } finally {
             if (lock.isHeldByCurrentThread()) {
                 log.info("线程【{}】释放锁key：{}", Thread.currentThread().getId(), lockKey);

@@ -3,8 +3,7 @@ package com.ww.mall.gateway.config;
 import com.alibaba.csp.sentinel.adapter.gateway.sc.callback.GatewayCallbackManager;
 import com.alibaba.fastjson.JSON;
 import com.ww.mall.common.common.Result;
-import com.ww.mall.common.enums.CodeEnum;
-import com.ww.mall.gateway.enums.GatewayResultEnum;
+import com.ww.mall.common.enums.GlobalResCodeConstants;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.web.reactive.function.server.ServerResponse;
@@ -22,7 +21,7 @@ public class SentinelGatewayConfiguration {
         // 网关sentinel限流回调
         GatewayCallbackManager.setBlockHandler((serverWebExchange, throwable) -> {
             log.error("网关限流回调: {}", serverWebExchange, throwable);
-            Result<Object> result = new Result<>(GatewayResultEnum.TOO_MANY_REQUESTS.getCode(), GatewayResultEnum.TOO_MANY_REQUESTS.getMsg());
+            Result<Object> result = Result.error(GlobalResCodeConstants.TOO_MANY_REQUESTS);
             return ServerResponse.ok().bodyValue(JSON.toJSONString(result));
         });
     }

@@ -4,7 +4,7 @@ import cn.hutool.core.date.DatePattern;
 import cn.hutool.core.date.DateUtil;
 import cn.hutool.core.date.LocalDateTimeUtil;
 import com.ww.mall.common.common.MallClientUser;
-import com.ww.mall.common.enums.CodeEnum;
+import com.ww.mall.common.enums.GlobalResCodeConstants;
 import com.ww.mall.common.exception.ApiException;
 import com.ww.mall.member.service.SignService;
 import com.ww.mall.annotation.plugs.redis.MallDistributedLock;
@@ -176,7 +176,7 @@ public class SignServiceImpl implements SignService {
             return DateUtil.parseDate(dateStr);
         } catch (Exception e) {
             log.error("日期格式解析失败：{}", dateStr);
-            throw new ApiException(CodeEnum.PARAM_ERROR.getCode(), CodeEnum.PARAM_ERROR.getMessage());
+            throw new ApiException(GlobalResCodeConstants.BAD_REQUEST);
         }
     }
 

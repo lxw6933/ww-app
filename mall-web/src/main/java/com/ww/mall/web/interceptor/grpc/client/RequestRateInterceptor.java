@@ -35,7 +35,7 @@ public class RequestRateInterceptor implements ClientInterceptor {
             }
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
-            throw new ApiException("Thread interrupted", e);
+            throw new ApiException("Thread interrupted:" + e.getMessage());
         }
         return null;
     }

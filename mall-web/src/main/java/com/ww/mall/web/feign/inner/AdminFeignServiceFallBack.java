@@ -1,7 +1,7 @@
 package com.ww.mall.web.feign.inner;
 
 import com.ww.mall.common.common.Result;
-import com.ww.mall.common.enums.CodeEnum;
+import com.ww.mall.common.enums.GlobalResCodeConstants;
 import com.ww.mall.web.feign.AdminFeignService;
 import com.ww.mall.web.view.bo.SysUserLoginBO;
 import com.ww.mall.web.view.dto.SysUserDTO;
@@ -22,7 +22,7 @@ public class AdminFeignServiceFallBack implements FallbackFactory<AdminFeignServ
         return new AdminFeignService() {
             @Override
             public Result<SysUserDTO> login(SysUserLoginBO sysUserLoginBO) {
-                return new Result<>(CodeEnum.LIMIT_ERROR.getCode(), CodeEnum.LIMIT_ERROR.getMessage());
+                return Result.error(GlobalResCodeConstants.LIMIT_REQUEST);
             }
         };
     }

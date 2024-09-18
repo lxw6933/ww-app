@@ -63,7 +63,7 @@ public class ResponseBodyHandler implements ResponseBodyAdvice<Object> {
         if (body instanceof Result) {
             result = (Result<Object>) body;
         } else {
-            result = new Result<>(body);
+            result = Result.success(body);
         }
         response.getHeaders().set(Constant.ENCRYPT_HEADER, "false");
         // 是否开启加密

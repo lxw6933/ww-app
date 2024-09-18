@@ -2,7 +2,7 @@ package com.ww.mall.gateway.filters;
 
 import cn.hutool.core.util.IdUtil;
 import com.ww.mall.common.constant.Constant;
-import com.ww.mall.gateway.enums.GatewayResultEnum;
+import com.ww.mall.common.enums.GlobalResCodeConstants;
 import com.ww.mall.gateway.properties.MallGatewayProperties;
 import com.ww.mall.gateway.properties.ServerGrayProperties;
 import com.ww.mall.gateway.utils.GatewayIpUtil;
@@ -47,7 +47,7 @@ public class IpFilter implements GlobalFilter, Ordered {
         String userRealIp = GatewayIpUtil.getIpAddress(exchange.getRequest());
         // ip黑名单校验
         if (CollectionUtils.isNotEmpty(mallGatewayProperties.getBlackIpList()) && mallGatewayProperties.getBlackIpList().contains(userRealIp)) {
-            return WebFluxResultUtils.result(exchange, GatewayResultEnum.IP_LIMITED, HttpStatus.FORBIDDEN);
+            return WebFluxResultUtils.result(exchange, GlobalResCodeConstants.IP_LIMITED, HttpStatus.FORBIDDEN);
         }
         // 是否开启灰度
         Boolean enableGray = serverGrayProperties.getEnable();

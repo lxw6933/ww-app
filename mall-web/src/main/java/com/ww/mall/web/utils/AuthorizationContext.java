@@ -4,7 +4,7 @@ import com.alibaba.fastjson.JSON;
 import com.ww.mall.common.common.MallAdminUser;
 import com.ww.mall.common.common.MallClientUser;
 import com.ww.mall.common.constant.Constant;
-import com.ww.mall.common.enums.CodeEnum;
+import com.ww.mall.common.enums.GlobalResCodeConstants;
 import com.ww.mall.common.exception.ApiException;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
@@ -58,7 +58,7 @@ public class AuthorizationContext {
                 .getRequestAttributes();
         if (attributes == null) {
             if (ex) {
-                throw new ApiException(CodeEnum.UN_LOGIN.getCode(), CodeEnum.UN_LOGIN.getMessage());
+                throw new ApiException(GlobalResCodeConstants.UNAUTHORIZED);
             } else {
                 return null;
             }
@@ -67,7 +67,7 @@ public class AuthorizationContext {
         String tokenInfo = request.getHeader(Constant.USER_TOKEN_INFO);
         if (StringUtils.isEmpty(tokenInfo)) {
             if (ex) {
-                throw new ApiException(CodeEnum.UN_LOGIN.getCode(), CodeEnum.UN_LOGIN.getMessage());
+                throw new ApiException(GlobalResCodeConstants.UNAUTHORIZED);
             } else {
                 return null;
             }
