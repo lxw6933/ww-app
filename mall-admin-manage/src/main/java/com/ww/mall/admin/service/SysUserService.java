@@ -8,7 +8,6 @@ import com.ww.mall.admin.view.form.SysUserForm;
 import com.ww.mall.admin.view.query.SysUserPageQuery;
 import com.ww.mall.admin.view.vo.CurrentSysUserInfoVO;
 import com.ww.mall.admin.view.vo.SysRoleSelectVO;
-import com.ww.mall.admin.view.vo.SysRoleVO;
 import com.ww.mall.admin.view.vo.SysUserVO;
 import com.ww.mall.common.common.MallPageResult;
 import com.ww.mall.web.view.bo.SysUserLoginBO;

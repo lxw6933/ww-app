@@ -1,11 +1,15 @@
 package com.ww.mall.admin.service.impl;
 
+import cn.hutool.core.bean.BeanUtil;
 import cn.hutool.core.lang.Assert;
 import cn.hutool.core.lang.tree.Tree;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.update.UpdateWrapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
+import com.mzt.logapi.context.LogRecordContext;
+import com.mzt.logapi.service.impl.DiffParseFunction;
+import com.mzt.logapi.starter.annotation.LogRecord;
 import com.ww.mall.admin.dao.SysUserMapper;
 import com.ww.mall.admin.entity.SysMenu;
 import com.ww.mall.admin.entity.SysRole;
@@ -39,6 +43,9 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
 
+import static com.ww.mall.admin.enums.LogRecordConstants.*;
+import static com.ww.mall.admin.utils.PasswordUtil.DEFAULT_PASSWORD;
+
 /**
  * @author ww
  * @create 2024-05-20 14:02:20
@@ -62,6 +69,7 @@ public class SysUserServiceImpl extends BaseService<SysUserMapper, SysUser> impl
     @Override
     @Transactional
     @MallResubmission
+    @LogRecord(type = SYSTEM_USER_TYPE, subType = SYSTEM_USER_CREATE_SUB_TYPE, bizNo = "{{#user.id}}", success = SYSTEM_USER_CREATE_SUCCESS)
     public boolean save(SysUserForm form) {
         SysUser sysUser = this.getOne(new QueryWrapper<SysUser>().eq("username", form.getUsername()));
         Assert.isNull(sysUser, () -> new ApiException("账号已存在"));
@@ -74,34 +82,39 @@ public class SysUserServiceImpl extends BaseService<SysUserMapper, SysUser> impl
         newSysUser.setStatus(true);
         this.save(newSysUser);
         saveUserRoles(newSysUser.getId(), form.getRoleIds());
+        // 记录操作日志上下文
+        LogRecordContext.putVariable("user", newSysUser);
         return true;
     }
 
     @Override
     @Transactional
     @MallResubmission
+    @LogRecord(type = SYSTEM_USER_TYPE, subType = SYSTEM_USER_UPDATE_SUB_TYPE, bizNo = "{{#form.id}}", success = SYSTEM_USER_UPDATE_SUCCESS)
     public boolean update(SysUserForm form) {
-        SysUser sysUser = this.getById(form.getId());
-        Assert.notNull(sysUser, () -> new ApiException("信息不存在"));
+        SysUser oldSysUser = this.getById(form.getId());
+        Assert.notNull(oldSysUser, () -> new ApiException("信息不存在"));
 
         if (Objects.equals(Constant.SUPER_ADMIN_MANAGER_ID, form.getId())) {
             throw new ApiException("禁止修改超管账号的信息");
         }
         // 账号不能更新
-        form.setUsername(sysUser.getUsername());
-        BeanUtils.copyProperties(form, sysUser);
-        this.updateById(sysUser);
+        SysUser updateSysUser = BeanUtil.toBean(form, SysUser.class);
+        this.updateById(updateSysUser);
         // 判断角色是否变化
-        List<Long> userRoleIds = df.getSysUserMapper().findRoleIdsByUserId(sysUser.getId());
+        List<Long> userRoleIds = df.getSysUserMapper().findRoleIdsByUserId(updateSysUser.getId());
         if (CollectionUtils.isEmpty(userRoleIds)) {
-            saveUserRoles(sysUser.getId(), form.getRoleIds());
+            saveUserRoles(updateSysUser.getId(), form.getRoleIds());
         } else {
             if (!CollectionUtils.isEqualCollection(form.getRoleIds(), userRoleIds)) {
                 // 删除之前所有的关联信息，新增目前的关联信息
-                df.getSysUserMapper().deleteUserOfRole(sysUser.getId());
-                saveUserRoles(sysUser.getId(), form.getRoleIds());
+                df.getSysUserMapper().deleteUserOfRole(updateSysUser.getId());
+                saveUserRoles(updateSysUser.getId(), form.getRoleIds());
             }
         }
+        // 记录操作日志上下文
+        LogRecordContext.putVariable("user", oldSysUser);
+        LogRecordContext.putVariable(DiffParseFunction.OLD_OBJECT, BeanUtil.toBean(oldSysUser, SysUserForm.class));
         return true;
     }
 
@@ -150,6 +163,7 @@ public class SysUserServiceImpl extends BaseService<SysUserMapper, SysUser> impl
 
     @Override
     @MallResubmission
+    @LogRecord(type = SYSTEM_USER_TYPE, subType = SYSTEM_USER_DELETE_SUB_TYPE, bizNo = "{{#form.id}}", success = SYSTEM_USER_DELETE_SUCCESS)
     public boolean delete(IdForm form) {
         MallAdminUser adminUser = AuthorizationContext.getAdminUser();
         if (Objects.equals(adminUser.getUserId(), form.getId())) {
@@ -158,10 +172,15 @@ public class SysUserServiceImpl extends BaseService<SysUserMapper, SysUser> impl
         if (Objects.equals(Constant.SUPER_ADMIN_MANAGER_ID, form.getId())) {
             throw new ApiException("禁止删除超管账号");
         }
-        return this.update(new UpdateWrapper<SysUser>()
+        SysUser sysUser = this.getById(form.getId());
+        Assert.notNull(sysUser, () -> new ApiException("信息不存在"));
+        this.update(new UpdateWrapper<SysUser>()
                 .set("valid", false)
                 .eq("id", form.getId())
         );
+        // 记录操作日志上下文
+        LogRecordContext.putVariable("user", sysUser);
+        return true;
     }
 
     @Override
@@ -186,14 +205,21 @@ public class SysUserServiceImpl extends BaseService<SysUserMapper, SysUser> impl
 
     @Override
     @MallResubmission(expire = 1)
+    @LogRecord(type = SYSTEM_USER_TYPE, subType = SYSTEM_USER_UPDATE_PASSWORD_SUB_TYPE, bizNo = "{{#userId}}", success = SYSTEM_USER_UPDATE_PASSWORD_SUCCESS)
     public boolean resetPassword(Long userId) {
+        SysUser sysUser = this.getById(userId);
+        Assert.notNull(sysUser, () -> new ApiException("信息不存在"));
         String salt = PasswordUtil.generateSalt();
         String password = PasswordUtil.resetPassword(salt);
-        return this.update(new UpdateWrapper<SysUser>()
+        this.update(new UpdateWrapper<SysUser>()
                 .set("salt", salt)
                 .set("password", password)
                 .eq("id", userId)
         );
+        // 记录操作日志上下文
+        LogRecordContext.putVariable("user", sysUser);
+        LogRecordContext.putVariable("newPassword", DEFAULT_PASSWORD);
+        return true;
     }
 
     @Override

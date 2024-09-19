@@ -2,6 +2,7 @@ package com.ww.mall.search.view.bo;
 
 import com.ww.mall.common.exception.ApiException;
 import com.ww.mall.common.common.MallPage;
+import com.ww.mall.common.utils.SpecialCharacterUtil;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import org.apache.commons.lang3.StringUtils;
@@ -62,7 +63,7 @@ public class PortalProductSearchBO extends MallPage {
                 .and("openSearch").is(1)
                 .and("brandAuthExpire").is(0);
         if (StringUtils.isNotEmpty(this.keyword)) {
-            String escapedKeyword = escapeSpecialCharacters(this.keyword);
+            String escapedKeyword = SpecialCharacterUtil.escapeSpecialCharacters(this.keyword);
             String pattern = ".*" + escapedKeyword + ".*";
             criteria.orOperator(
                     Criteria.where("spuTitle").regex(pattern, "i"),
@@ -158,24 +159,6 @@ public class PortalProductSearchBO extends MallPage {
                 .first("minFixPrice").as("minFixPrice")
                 .first("minFixIntegral").as("minFixIntegral")
                 .count().as("count");
-    }
-
-    private String escapeSpecialCharacters(String keyword) {
-        // 特殊字符转义
-        return keyword.replace("\\", "\\\\")
-                .replace("$", "\\$")
-                .replace("^", "\\^")
-                .replace("*", "\\*")
-                .replace("+", "\\+")
-                .replace(".", "\\.")
-                .replace("?", "\\?")
-                .replace("(", "\\(")
-                .replace(")", "\\)")
-                .replace("{", "\\{")
-                .replace("}", "\\}")
-                .replace("[", "\\[")
-                .replace("]", "\\]")
-                .replace("|", "\\|");
     }
 
 }

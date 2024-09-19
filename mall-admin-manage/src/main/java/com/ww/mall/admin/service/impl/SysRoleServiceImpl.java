@@ -1,8 +1,12 @@
 package com.ww.mall.admin.service.impl;
 
+import cn.hutool.core.bean.BeanUtil;
 import cn.hutool.core.lang.Assert;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
+import com.mzt.logapi.context.LogRecordContext;
+import com.mzt.logapi.service.impl.DiffParseFunction;
+import com.mzt.logapi.starter.annotation.LogRecord;
 import com.ww.mall.admin.dao.SysRoleMapper;
 import com.ww.mall.admin.entity.SysRole;
 import com.ww.mall.admin.service.BaseService;
@@ -24,6 +28,8 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.ArrayList;
 import java.util.List;
+
+import static com.ww.mall.admin.enums.LogRecordConstants.*;
 
 /**
  * @author ww
@@ -58,42 +64,55 @@ public class SysRoleServiceImpl extends BaseService<SysRoleMapper, SysRole> impl
     @Override
     @Transactional
     @MallResubmission
+    @LogRecord(type = SYSTEM_ROLE_TYPE, subType = SYSTEM_ROLE_CREATE_SUB_TYPE, bizNo = "{{#form.id}}", success = SYSTEM_ROLE_CREATE_SUCCESS)
     public boolean save(SysRoleForm form) {
         SysRole sysRole = new SysRole();
         BeanUtils.copyProperties(form, sysRole);
         sysRole.setStatus(true);
         this.save(sysRole);
         saveRolePermissions(sysRole.getId(), form.getPermissionIds());
+        // 记录操作日志上下文
+        LogRecordContext.putVariable("role", sysRole);
         return true;
     }
 
     @Override
     @Transactional
     @MallResubmission
+    @LogRecord(type = SYSTEM_ROLE_TYPE, subType = SYSTEM_ROLE_UPDATE_SUB_TYPE, bizNo = "{{#form.id}}", success = SYSTEM_ROLE_UPDATE_SUCCESS)
     public boolean update(SysRoleForm form) {
-        SysRole sysRole = this.getById(form.getId());
-        Assert.notNull(sysRole, () -> new ApiException("信息不存在"));
+        SysRole oldSysRole = this.getById(form.getId());
+        Assert.notNull(oldSysRole, () -> new ApiException("信息不存在"));
 
-        BeanUtils.copyProperties(form, sysRole);
-        this.updateById(sysRole);
+        SysRole updateSysRole = BeanUtil.toBean(form, SysRole.class);
+        this.updateById(updateSysRole);
         // 判断权限是否变化
-        List<Long> rolePermissionIds = df.getSysRoleMapper().findMenuIdsByRoleId(sysRole.getId());
+        List<Long> rolePermissionIds = df.getSysRoleMapper().findMenuIdsByRoleId(updateSysRole.getId());
         if (CollectionUtils.isEmpty(rolePermissionIds)) {
-            saveRolePermissions(sysRole.getId(), form.getPermissionIds());
+            saveRolePermissions(updateSysRole.getId(), form.getPermissionIds());
         } else {
             if (!CollectionUtils.isEqualCollection(form.getPermissionIds(), rolePermissionIds)) {
                 // 删除之前所有的关联信息，新增目前的关联信息
-                df.getSysRoleMapper().removeRoleAndPermission(sysRole.getId());
-                saveRolePermissions(sysRole.getId(), form.getPermissionIds());
+                df.getSysRoleMapper().removeRoleAndPermission(updateSysRole.getId());
+                saveRolePermissions(updateSysRole.getId(), form.getPermissionIds());
             }
         }
+        // 记录操作日志上下文
+        LogRecordContext.putVariable("role", oldSysRole);
+        LogRecordContext.putVariable(DiffParseFunction.OLD_OBJECT, BeanUtil.toBean(oldSysRole, SysRoleForm.class));
         return true;
     }
 
     @Override
     @MallResubmission
+    @LogRecord(type = SYSTEM_ROLE_TYPE, subType = SYSTEM_ROLE_DELETE_SUB_TYPE, bizNo = "{{#idForm.id}}", success = SYSTEM_ROLE_DELETE_SUCCESS)
     public boolean delete(IdForm idForm) {
-        return this.removeById(idForm.getId());
+        SysRole sysRole = this.getById(idForm.getId());
+        Assert.notNull(sysRole, () -> new ApiException("信息不存在"));
+        this.removeById(idForm.getId());
+        // 记录操作日志上下文
+        LogRecordContext.putVariable("role", sysRole);
+        return true;
     }
 
     @Override

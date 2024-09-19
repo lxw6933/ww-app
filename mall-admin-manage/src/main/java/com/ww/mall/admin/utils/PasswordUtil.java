@@ -10,7 +10,7 @@ import cn.hutool.crypto.digest.MD5;
  */
 public class PasswordUtil {
 
-    private static final String DEFAULT_PASSWORD = "123456";
+    public static final String DEFAULT_PASSWORD = "123456";
 
     private static final int WORKLOAD = 12;
 

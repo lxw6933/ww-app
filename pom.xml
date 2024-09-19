@@ -88,6 +88,7 @@
         <mapstruct.version>1.5.5.Final</mapstruct.version>
         <sensitive.word.version>0.16.1</sensitive.word.version>
         <pay.version>2.9.11</pay.version>
+        <bizlog.version>3.0.6</bizlog.version>
 
         <influxdb.version>6.7.0</influxdb.version>
     </properties>
@@ -295,6 +296,13 @@
                 <groupId>com.github.houbb</groupId>
                 <artifactId>sensitive-word</artifactId>
                 <version>${sensitive.word.version}</version>
+            </dependency>
+            <!-- operate log -->
+            <!-- operate log -->
+            <dependency>
+                <groupId>io.github.mouzt</groupId>
+                <artifactId>bizlog-sdk</artifactId>
+                <version>${bizlog.version}</version>
             </dependency>
             <!-- influxdb -->
             <dependency>

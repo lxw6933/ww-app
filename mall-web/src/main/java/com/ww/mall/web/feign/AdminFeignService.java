@@ -5,7 +5,6 @@ import com.ww.mall.web.feign.inner.AdminFeignServiceFallBack;
 import com.ww.mall.web.view.bo.SysUserLoginBO;
 import com.ww.mall.web.view.dto.SysUserDTO;
 import org.springframework.cloud.openfeign.FeignClient;
-import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 

@@ -23,4 +23,7 @@ public class ServiceFactory {
     @Resource
     private SysMenuService sysMenuService;
 
+    @Resource
+    private OperateLogService operateLogService;
+
 }
