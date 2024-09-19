@@ -47,6 +47,7 @@ CREATE TABLE `sys_menu`
     `icon`        varchar(50) CHARACTER SET utf8mb3 COLLATE utf8mb3_general_ci  DEFAULT NULL COMMENT '图标',
     `permission`  varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NOT NULL COMMENT '权限标识',
     `sort`        int                                                           DEFAULT NULL COMMENT '排序',
+    `visible`     tinyint(1)                                                    DEFAULT '1' COMMENT '是否可见【仅菜单使用】',
     `valid`       tinyint(1)                                                    NOT NULL COMMENT '是否有效',
     `version`     bigint                                                        DEFAULT NULL,
     `creator_id`  bigint                                                        DEFAULT NULL,
