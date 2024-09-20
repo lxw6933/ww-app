@@ -15,6 +15,7 @@ import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -135,9 +136,9 @@ public class ExcelManager {
 
     private void setResponse(HttpServletResponse response, String fileName) throws UnsupportedEncodingException {
         response.setContentType("application/vnd.ms-excel");
-        response.setCharacterEncoding("UTF-8");
+        response.setCharacterEncoding(StandardCharsets.UTF_8.name());
         // 这里URLEncoder.encode可以防止中文乱码
-        fileName = URLEncoder.encode(fileName, "UTF-8")
+        fileName = URLEncoder.encode(fileName, StandardCharsets.UTF_8.name())
                 .replace("\\+", "%20");
         response.setHeader("Content-disposition", "attachment;filename*=utf-8''" + fileName + ".xlsx");
     }
@@ -147,7 +148,7 @@ public class ExcelManager {
         // 重置response
         response.reset();
         response.setContentType("application/json");
-        response.setCharacterEncoding("utf-8");
+        response.setCharacterEncoding(StandardCharsets.UTF_8.name());
         Map<String, String> map = new HashMap<>(64);
         map.put("status", "failure");
         map.put("message", "下载文件失败" + e.getMessage());

@@ -19,6 +19,7 @@ import org.springframework.stereotype.Service;
 import javax.annotation.Resource;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
+import java.nio.charset.StandardCharsets;
 import java.util.Map;
 
 /**
@@ -109,7 +110,7 @@ public class AliPayServiceImpl implements AliPayService {
                         .setAppCertPath(aliPayProperties.getAppCertPath())
                         .setAliPayCertPath(aliPayProperties.getAliPayCertPath())
                         .setAliPayRootCertPath(aliPayProperties.getAliPayRootCertPath())
-                        .setCharset("UTF-8")
+                        .setCharset(StandardCharsets.UTF_8.name())
                         .setPrivateKey(aliPayProperties.getPrivateKey())
                         .setServiceUrl(aliPayProperties.getServerUrl())
                         .setSignType(aliPayProperties.getSignType())

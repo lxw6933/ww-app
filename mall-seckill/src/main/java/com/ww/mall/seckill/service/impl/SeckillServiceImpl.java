@@ -28,6 +28,7 @@ import org.springframework.stereotype.Service;
 import javax.annotation.PostConstruct;
 import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.util.Date;
 import java.util.concurrent.TimeUnit;
 
@@ -97,7 +98,7 @@ public class SeckillServiceImpl implements SeckillService {
             return userSecKillPath;
         }
         // 生成secKillPath
-        userSecKillPath = MD5.create().digestHex(UUID.randomUUID() + activityCode + clientUser.getMemberId().toString(), "UTF-8");
+        userSecKillPath = MD5.create().digestHex(UUID.randomUUID() + activityCode + clientUser.getMemberId().toString(), StandardCharsets.UTF_8.name());
         // 加密后地址存入redis
         redisTemplate.opsForValue().set(key, userSecKillPath, 1, TimeUnit.MINUTES);
         return userSecKillPath;
