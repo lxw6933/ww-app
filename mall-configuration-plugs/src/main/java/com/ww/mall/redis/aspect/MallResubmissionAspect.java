@@ -36,7 +36,7 @@ public class MallResubmissionAspect extends MallAbstractAspect {
         Method method = signature.getMethod();
         MallResubmission mallResubmission = method.getAnnotation(MallResubmission.class);
         // 通过方法名+参数 ===> 生成key
-        String argsStr = StrUtil.join(",", joinPoint.getArgs());
+        String argsStr = StrUtil.join(mallResubmission.delimiter(), joinPoint.getArgs());
         // 避免key过长，使用md5
         String key = SecureUtil.md5(signature + argsStr);
         final Boolean success = redisTemplate.execute(
