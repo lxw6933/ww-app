@@ -38,7 +38,7 @@ public class MallResubmissionAspect extends MallAbstractAspect {
         // 通过方法名+参数 ===> 生成key
         String argsStr = StrUtil.join(mallResubmission.delimiter(), joinPoint.getArgs());
         // 避免key过长，使用md5
-        String key = SecureUtil.md5(signature + argsStr);
+        String key = StrUtil.join(mallResubmission.delimiter(), mallResubmission.prefix(), SecureUtil.md5(signature + argsStr));
         final Boolean success = redisTemplate.execute(
                 (RedisCallback<Boolean>) connection -> connection.set(key.getBytes(), new byte[0], Expiration.from(mallResubmission.expire(), mallResubmission.timeUnit())
                         , RedisStringCommands.SetOption.SET_IF_ABSENT));
