@@ -3,6 +3,7 @@ package com.ww.mall.redis.aspect;
 import cn.hutool.core.util.StrUtil;
 import cn.hutool.crypto.SecureUtil;
 import com.ww.mall.annotation.plugs.redis.MallResubmission;
+import com.ww.mall.common.constant.Constant;
 import com.ww.mall.common.enums.GlobalResCodeConstants;
 import com.ww.mall.common.exception.ApiException;
 import org.aspectj.lang.ProceedingJoinPoint;
@@ -30,15 +31,17 @@ public class MallResubmissionAspect extends MallAbstractAspect {
     @Autowired
     private RedisTemplate<String, String> redisTemplate;
 
+    private static final String RESUBMISSION_PREFIX = "resubmission";
+
     @Around("@annotation(com.ww.mall.annotation.plugs.redis.MallResubmission)")
     public Object mallResubmissionAdvice(ProceedingJoinPoint joinPoint) throws Throwable {
         MethodSignature signature = (MethodSignature) joinPoint.getSignature();
         Method method = signature.getMethod();
         MallResubmission mallResubmission = method.getAnnotation(MallResubmission.class);
         // 通过方法名+参数 ===> 生成key
-        String argsStr = StrUtil.join(mallResubmission.delimiter(), joinPoint.getArgs());
+        String argsStr = StrUtil.join(Constant.SPLIT, joinPoint.getArgs());
         // 避免key过长，使用md5
-        String key = StrUtil.join(mallResubmission.delimiter(), mallResubmission.prefix(), SecureUtil.md5(signature + argsStr));
+        String key = StrUtil.join(Constant.SPLIT, RESUBMISSION_PREFIX, SecureUtil.md5(signature + argsStr));
         final Boolean success = redisTemplate.execute(
                 (RedisCallback<Boolean>) connection -> connection.set(key.getBytes(), new byte[0], Expiration.from(mallResubmission.expire(), mallResubmission.timeUnit())
                         , RedisStringCommands.SetOption.SET_IF_ABSENT));

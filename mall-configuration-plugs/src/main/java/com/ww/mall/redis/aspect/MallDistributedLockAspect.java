@@ -1,9 +1,11 @@
 package com.ww.mall.redis.aspect;
 
+import cn.hutool.core.util.StrUtil;
+import cn.hutool.crypto.SecureUtil;
+import com.ww.mall.annotation.plugs.redis.MallDistributedLock;
 import com.ww.mall.common.constant.Constant;
 import com.ww.mall.common.enums.GlobalResCodeConstants;
 import com.ww.mall.common.exception.ApiException;
-import com.ww.mall.annotation.plugs.redis.MallDistributedLock;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.aspectj.lang.ProceedingJoinPoint;
@@ -45,8 +47,9 @@ public class MallDistributedLockAspect extends MallAbstractAspect {
         // 构建SpEL上下文，并设置变量值
         MyStandardEvaluationContext elContext = new MyStandardEvaluationContext(parameterNames, parameterValues);
         MallDistributedLock mallDistributedLock = method.getAnnotation(MallDistributedLock.class);
+        // 生成key
         StringBuilder sb = new StringBuilder(128);
-        sb.append(LOCK_PREFIX).append(Constant.SPLIT).append(
+        sb.append(
                 StringUtils.isNotEmpty(mallDistributedLock.value()) ?
                 parser.parseExpression(mallDistributedLock.value()).getValue(elContext) : classDeclaringTypeName + Constant.SPLIT + method.getName()
         );
@@ -56,7 +59,7 @@ public class MallDistributedLockAspect extends MallAbstractAspect {
         if (StringUtils.isNotEmpty(mallDistributedLock.operationKey())) {
             sb.append(Constant.SPLIT).append(parser.parseExpression(mallDistributedLock.operationKey()).getValue(elContext));
         }
-        String lockKey = sb.toString();
+        String lockKey = StrUtil.join(Constant.SPLIT, LOCK_PREFIX, SecureUtil.md5(sb.toString()));
         RLock lock = redissonClient.getLock(lockKey);
         try {
             log.info("线程【{}】尝试获取锁key：{}", Thread.currentThread().getId(), lockKey);

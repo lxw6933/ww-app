@@ -17,11 +17,6 @@ import java.util.concurrent.TimeUnit;
 public @interface MallResubmission {
 
     /**
-     * redis 锁key的前缀
-     */
-    String prefix() default "resubmission";
-
-    /**
      * 过期秒数,默认为3秒
      */
     long expire() default 3;
@@ -30,10 +25,5 @@ public @interface MallResubmission {
      * 超时时间单位
      */
     TimeUnit timeUnit() default TimeUnit.SECONDS;
-
-    /**
-     * Key的分隔符（默认 :）
-     */
-    String delimiter() default ":";
 
 }
