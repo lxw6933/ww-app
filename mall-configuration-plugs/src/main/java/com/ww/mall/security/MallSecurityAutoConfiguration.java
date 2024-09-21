@@ -1,26 +1,19 @@
 package com.ww.mall.security;
 
-import com.ww.mall.security.filter.TokenAuthenticationFilter;
-import org.springframework.boot.autoconfigure.AutoConfigureOrder;
+import com.ww.mall.security.filter.TokenAuthenticationAuthFilter;
+import com.ww.mall.security.handler.MallAccessDeniedHandler;
+import com.ww.mall.security.handler.MallAuthenticationEntryPoint;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.http.HttpMethod;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.config.Customizer;
-import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
+import org.springframework.security.config.annotation.authentication.builders.AuthenticationManagerBuilder;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
+import org.springframework.security.config.annotation.web.configuration.WebSecurityConfigurerAdapter;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
 import org.springframework.security.config.annotation.web.configurers.HeadersConfigurer;
 import org.springframework.security.config.http.SessionCreationPolicy;
-import org.springframework.security.core.userdetails.UserDetailsService;
-import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
-import org.springframework.security.crypto.password.PasswordEncoder;
-import org.springframework.security.web.AuthenticationEntryPoint;
-import org.springframework.security.web.SecurityFilterChain;
-import org.springframework.security.web.access.AccessDeniedHandler;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
-
-import javax.annotation.Resource;
 
 /**
  * @author ww
@@ -28,40 +21,38 @@ import javax.annotation.Resource;
  * @description:
  */
 @Configuration
-@AutoConfigureOrder(-1)
-public class MallSecurityConfiguration {
+public class MallSecurityAutoConfiguration extends WebSecurityConfigurerAdapter {
 
-    @Resource
-    private UserDetailsService mallUserDetailServiceImpl;
-
-    @Resource
-    private TokenAuthenticationFilter tokenAuthenticationFilter;
-
-    @Resource
-    public AuthenticationEntryPoint mallAuthenticationEntryPoint;
-
-    @Resource
-    public AccessDeniedHandler mallAccessDeniedHandler;
-
-    /**
-     * 密码加密方式
-     */
     @Bean
-    public PasswordEncoder passwordEncoder() {
-        return new BCryptPasswordEncoder(4);
+    public TokenAuthenticationAuthFilter tokenAuthenticationAuthFilter() {
+        return new TokenAuthenticationAuthFilter();
     }
 
     /**
      * 由于 Spring Security 创建 AuthenticationManager 对象时，没声明 @Bean 注解，导致无法被注入
      */
     @Bean
-    public AuthenticationManager authenticationManagerBean(AuthenticationConfiguration authenticationConfiguration) throws Exception {
-        return authenticationConfiguration.getAuthenticationManager();
+    public AuthenticationManager authenticationManagerBean() throws Exception {
+        return super.authenticationManagerBean();
     }
 
     /**
-     * 配置 URL 的安全配置
-     *
+     * 自定义认证方式
+     */
+    @Override
+    protected void configure(AuthenticationManagerBuilder auth) {
+        // 不使用security 的认证逻辑
+    }
+//    /**
+//     * 密码加密方式
+//     */
+//    @Bean
+//    public PasswordEncoder passwordEncoder() {
+//        return new BCryptPasswordEncoder(4);
+//    }
+
+    /**
+     * 认证、授权、基础 配置
      * anyRequest          |   匹配所有请求路径
      * access              |   SpringEl表达式结果为true时可以访问
      * anonymous           |   匿名可以访问
@@ -76,8 +67,8 @@ public class MallSecurityConfiguration {
      * rememberMe          |   允许通过remember-me登录的用户访问
      * authenticated       |   用户登录后可访问
      */
-    @Bean
-    protected SecurityFilterChain filterChain(HttpSecurity httpSecurity) throws Exception {
+    @Override
+    protected void configure(HttpSecurity httpSecurity) throws Exception {
         // 基础配置
         httpSecurity
                 // 开启跨域
@@ -89,25 +80,23 @@ public class MallSecurityConfiguration {
                 .headers(c -> c.frameOptions(HeadersConfigurer.FrameOptionsConfig::disable))
                 // 自定义认证、授权失败处理器
                 .exceptionHandling(c -> c
-                        .authenticationEntryPoint(mallAuthenticationEntryPoint)
-                        .accessDeniedHandler(mallAccessDeniedHandler)
-                )
-                // 自定义用户信息处理
-                .userDetailsService(mallUserDetailServiceImpl);
+                        .authenticationEntryPoint(new MallAuthenticationEntryPoint())
+                        .accessDeniedHandler(new MallAccessDeniedHandler())
+                );
         // 认证、授权
         httpSecurity
                 .authorizeRequests()
                 // 不需要登录认证就能访问的资源
-                .antMatchers("/actuator/**", "/websocket/**").permitAll()
+                .antMatchers("/actuator/**", "/websocket/**", "/login/**", "/**/inner/**").permitAll()
                 // 所有门户接口不需要登录
                 .antMatchers("/portal/**").permitAll()
                 // 剩余接口都需要认证
                 .antMatchers("/").authenticated()
                 // 认证通过后，授权校验
-                .anyRequest().access("@ss.hasPermission(authentication)");
+                .anyRequest().access("@acl.hasPermission(authentication)");
 
         // Token Filter
-        httpSecurity.addFilterBefore(tokenAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
-        return httpSecurity.build();
+        httpSecurity.addFilterBefore(tokenAuthenticationAuthFilter(), UsernamePasswordAuthenticationFilter.class);
     }
+
 }

@@ -22,7 +22,7 @@ import com.ww.mall.coupon.view.vo.CouponPageVO;
 import com.ww.mall.annotation.plugs.redis.MallDistributedLock;
 import com.ww.mall.common.common.MallPageResult;
 import com.ww.mall.mybatisplus.MallPlusPageResult;
-import com.ww.mall.web.utils.AuthorizationContext;
+import com.ww.mall.utils.AuthorizationContext;
 import com.ww.mall.common.utils.IdUtil;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.CollectionUtils;
@@ -200,7 +200,7 @@ public class CouponServiceImpl extends ServiceImpl<CouponMapper, Coupon> impleme
         // 构建用户领取优惠券记录
         MemberCoupon memberCoupon = buildMemberCoupon(clientUser, coupon);
         mongoTemplate.save(memberCoupon);
-        log.info("用户【{}】领取优惠券【{}】", clientUser.getMemberId(), memberCoupon);
+        log.info("用户【{}】领取优惠券【{}】", clientUser.getId(), memberCoupon);
         return true;
     }
 
@@ -266,7 +266,7 @@ public class CouponServiceImpl extends ServiceImpl<CouponMapper, Coupon> impleme
                 Date dayEndDay = DateUtil.endOfDay(now);
                 query.addCriteria(
                         Criteria.where("activityCode").is(coupon.getActivityCode())
-                                .and("memberId").is(clientUser.getMemberId())
+                                .and("memberId").is(clientUser.getId())
                                 .and("receiveTime")
                                 .gte(DateUtil.format(dayBeginDay, DatePattern.NORM_DATETIME_PATTERN))
                                 .lte(DateUtil.format(dayEndDay, DatePattern.NORM_DATETIME_PATTERN))
@@ -278,7 +278,7 @@ public class CouponServiceImpl extends ServiceImpl<CouponMapper, Coupon> impleme
                 Date weekEndDay = DateUtil.endOfWeek(now);
                 query.addCriteria(
                         Criteria.where("activityCode").is(coupon.getActivityCode())
-                                .and("memberId").is(clientUser.getMemberId())
+                                .and("memberId").is(clientUser.getId())
                                 .and("receiveTime")
                                 .gte(DateUtil.format(weekBeginDay, DatePattern.NORM_DATETIME_PATTERN))
                                 .lte(DateUtil.format(weekEndDay, DatePattern.NORM_DATETIME_PATTERN))
@@ -290,7 +290,7 @@ public class CouponServiceImpl extends ServiceImpl<CouponMapper, Coupon> impleme
                 Date monthEndDay = DateUtil.endOfMonth(now);
                 query.addCriteria(
                         Criteria.where("activityCode").is(coupon.getActivityCode())
-                                .and("memberId").is(clientUser.getMemberId())
+                                .and("memberId").is(clientUser.getId())
                                 .and("receiveTime")
                                 .gte(DateUtil.format(monthBeginDay, DatePattern.NORM_DATETIME_PATTERN))
                                 .lte(DateUtil.format(monthEndDay, DatePattern.NORM_DATETIME_PATTERN))
@@ -300,7 +300,7 @@ public class CouponServiceImpl extends ServiceImpl<CouponMapper, Coupon> impleme
             case FOREVER:
                 query.addCriteria(
                         Criteria.where("activityCode").is(coupon.getActivityCode())
-                                .and("memberId").is(clientUser.getMemberId())
+                                .and("memberId").is(clientUser.getId())
                 );
                 memberReceiveCount = mongoTemplate.count(query, MemberCoupon.class);
                 break;
@@ -316,7 +316,7 @@ public class CouponServiceImpl extends ServiceImpl<CouponMapper, Coupon> impleme
     private MemberCoupon buildMemberCoupon(MallClientUser clientUser, Coupon coupon) {
         Date now = new Date();
         MemberCoupon memberCoupon = new MemberCoupon();
-        memberCoupon.setMemberId(clientUser.getMemberId());
+        memberCoupon.setMemberId(clientUser.getId());
         memberCoupon.setActivityCode(coupon.getActivityCode());
         memberCoupon.setCouponType(coupon.getCouponType());
         memberCoupon.setCouponDiscountType(coupon.getCouponDiscountType());
@@ -343,7 +343,7 @@ public class CouponServiceImpl extends ServiceImpl<CouponMapper, Coupon> impleme
         } else {
             memberCoupon.setCouponStatus(CouponStatus.EXPIRED);
         }
-        memberCoupon.setCouponTicketCode(clientUser.getMemberId() + RandomUtil.randomStringUpper(20));
+        memberCoupon.setCouponTicketCode(clientUser.getId() + RandomUtil.randomStringUpper(20));
         return memberCoupon;
     }
 

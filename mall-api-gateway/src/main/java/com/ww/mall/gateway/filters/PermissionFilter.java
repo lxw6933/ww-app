@@ -52,6 +52,7 @@ public class PermissionFilter implements GlobalFilter, Ordered {
         ServerHttpRequest request = exchange.getRequest();
         String token = request.getHeaders().getFirst(Constant.USER_TOKEN_KEY);
         String tokenInfo = null;
+        String userType = null;
 
         boolean isWhite = false;
         if (token == null) {
@@ -83,7 +84,11 @@ public class PermissionFilter implements GlobalFilter, Ordered {
                 }
                 switch (claimsJson.get("userType", UserType.class)) {
                     case ADMIN:
+                        userType = UserType.ADMIN.name();
+                        tokenInfo = claimsJson.toString();
+                        break;
                     case CLIENT:
+                        userType = UserType.CLIENT.name();
                         tokenInfo = claimsJson.toString();
                         break;
                     case OTHER:
@@ -103,6 +108,7 @@ public class PermissionFilter implements GlobalFilter, Ordered {
         if (StringUtils.isNotEmpty(tokenInfo)) {
             ServerHttpRequest permissionRequest = requestBuilder
                     .header(Constant.USER_TOKEN_INFO, tokenInfo)
+                    .header(Constant.USER_TYPE, userType)
                     .build();
             return chain.filter(exchange.mutate().request(permissionRequest).build());
         } else {

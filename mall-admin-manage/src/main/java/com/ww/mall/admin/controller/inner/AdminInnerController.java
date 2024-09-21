@@ -19,4 +19,9 @@ public class AdminInnerController extends MallAbstractController {
         return sf.getSysUserService().login(sysUserLoginBO);
     }
 
+    @GetMapping("/loadUserDetails")
+    public SysUserDTO loadUserDetails(@RequestParam("username") String username) {
+        return sf.getSysUserService().loadUserDetails(username);
+    }
+
 }

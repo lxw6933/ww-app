@@ -3,6 +3,7 @@ package com.ww.mall.admin.service.impl;
 import cn.hutool.core.bean.BeanUtil;
 import cn.hutool.core.lang.Assert;
 import cn.hutool.core.lang.tree.Tree;
+import com.alibaba.fastjson.JSON;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.update.UpdateWrapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
@@ -25,10 +26,11 @@ import com.ww.mall.admin.view.vo.*;
 import com.ww.mall.annotation.plugs.redis.MallResubmission;
 import com.ww.mall.common.common.MallAdminUser;
 import com.ww.mall.common.constant.Constant;
+import com.ww.mall.common.constant.RedisKeyConstant;
 import com.ww.mall.common.exception.ApiException;
 import com.ww.mall.common.common.MallPageResult;
 import com.ww.mall.mybatisplus.MallPlusPageResult;
-import com.ww.mall.web.utils.AuthorizationContext;
+import com.ww.mall.utils.AuthorizationContext;
 import com.ww.mall.web.view.bo.SysUserLoginBO;
 import com.ww.mall.web.view.dto.SysUserDTO;
 import com.ww.mall.web.view.form.IdForm;
@@ -42,6 +44,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
+import java.util.stream.Collectors;
 
 import static com.ww.mall.admin.enums.LogRecordConstants.*;
 import static com.ww.mall.admin.utils.PasswordUtil.DEFAULT_PASSWORD;
@@ -149,7 +152,7 @@ public class SysUserServiceImpl extends BaseService<SysUserMapper, SysUser> impl
     @MallResubmission(expire = 1)
     public boolean modifySysUserStatus(Long userId, boolean status) {
         MallAdminUser adminUser = AuthorizationContext.getAdminUser();
-        if (Objects.equals(adminUser.getUserId(), userId)) {
+        if (Objects.equals(adminUser.getId(), userId)) {
             throw new ApiException("禁止修改自己账号的状态");
         }
         if (Objects.equals(Constant.SUPER_ADMIN_MANAGER_ID, userId)) {
@@ -166,7 +169,7 @@ public class SysUserServiceImpl extends BaseService<SysUserMapper, SysUser> impl
     @LogRecord(type = SYSTEM_USER_TYPE, subType = SYSTEM_USER_DELETE_SUB_TYPE, bizNo = "{{#form.id}}", success = SYSTEM_USER_DELETE_SUCCESS)
     public boolean delete(IdForm form) {
         MallAdminUser adminUser = AuthorizationContext.getAdminUser();
-        if (Objects.equals(adminUser.getUserId(), form.getId())) {
+        if (Objects.equals(adminUser.getId(), form.getId())) {
             throw new ApiException("禁止删除自己账号");
         }
         if (Objects.equals(Constant.SUPER_ADMIN_MANAGER_ID, form.getId())) {
@@ -190,7 +193,7 @@ public class SysUserServiceImpl extends BaseService<SysUserMapper, SysUser> impl
         MallAdminUser adminUser = AuthorizationContext.getAdminUser();
         Assert.isTrue(modifyPasswordForm.getNewPassword().equals(modifyPasswordForm.getConfirmNewPassword()), () -> new ApiException("新密码前后两次不一致"));
         // 校验旧密码是否一致
-        SysUser sysUser = this.getById(adminUser.getUserId());
+        SysUser sysUser = this.getById(adminUser.getId());
         boolean checkPassword = PasswordUtil.checkPassword(modifyPasswordForm.getOldPassword(), sysUser.getSalt() + sysUser.getPassword());
         Assert.isTrue(checkPassword, () -> new ApiException("旧密码错误"));
         // 更新密码
@@ -199,7 +202,7 @@ public class SysUserServiceImpl extends BaseService<SysUserMapper, SysUser> impl
         return this.update(new UpdateWrapper<SysUser>()
                 .set("salt", salt)
                 .set("password", newPassword)
-                .eq("id", adminUser.getUserId())
+                .eq("id", adminUser.getId())
         );
     }
 
@@ -252,8 +255,7 @@ public class SysUserServiceImpl extends BaseService<SysUserMapper, SysUser> impl
         return userRoleVOList;
     }
 
-    @Override
-    public List<Tree<Long>> queryUserOfMenu(Long userId) {
+    private List<SysMenu> queryUserOfMenu(Long userId) {
         List<SysMenu> menuList;
         if (Objects.equals(Constant.SUPER_ADMIN_MANAGER_ID, userId)) {
             menuList = sf.getSysMenuService().list(new QueryWrapper<SysMenu>()
@@ -273,7 +275,7 @@ public class SysUserServiceImpl extends BaseService<SysUserMapper, SysUser> impl
                     .in("id", userMenuIdList)
             );
         }
-        return SysMenuTreeNodeVO.menuTree(menuList);
+        return menuList;
     }
 
     @Override
@@ -292,12 +294,12 @@ public class SysUserServiceImpl extends BaseService<SysUserMapper, SysUser> impl
     @Override
     public CurrentSysUserInfoVO selfInfo() {
         MallAdminUser adminUser = AuthorizationContext.getAdminUser();
-        SysUserVO sysUserVO = this.info(adminUser.getUserId());
+        SysUserVO sysUserVO = this.info(adminUser.getId());
         CurrentSysUserInfoVO currentSysUserInfoVO = new CurrentSysUserInfoVO();
         BeanUtils.copyProperties(sysUserVO, currentSysUserInfoVO);
-        currentSysUserInfoVO.setUserId(adminUser.getUserId());
+        currentSysUserInfoVO.setUserId(adminUser.getId());
         // 用户权限信息
-        List<Tree<Long>> userMenuTreeList = this.queryUserOfMenu(adminUser.getUserId());
+        List<Tree<Long>> userMenuTreeList = SysMenuTreeNodeVO.menuTree(this.queryUserOfMenu(adminUser.getId()));
         currentSysUserInfoVO.setMenuTreeList(userMenuTreeList);
         return currentSysUserInfoVO;
     }
@@ -312,6 +314,18 @@ public class SysUserServiceImpl extends BaseService<SysUserMapper, SysUser> impl
         Assert.notNull(sysUser, () -> new ApiException("用户信息异常"));
         sysUser.setStatus(!sysUser.getStatus());
         return this.updateById(sysUser);
+    }
+
+    @Override
+    public SysUserDTO loadUserDetails(String username) {
+        SysUser sysUser = this.getOne(new QueryWrapper<SysUser>().eq("username", username).eq("valid", true));
+        // 加载用户权限到redis
+        List<SysMenu> userMenuList = this.queryUserOfMenu(sysUser.getId());
+        List<String> userAuthorities = userMenuList.stream().map(SysMenu::getPermission).collect(Collectors.toList());
+        redisTemplate.opsForValue().set(RedisKeyConstant.USER_AUTHORITIES + sysUser.getId(), JSON.toJSONString(userAuthorities));
+        SysUserDTO sysUserDTO = BeanUtil.toBean(sysUser, SysUserDTO.class);
+        sysUserDTO.setAuthorities(userAuthorities);
+        return sysUserDTO;
     }
 
 }

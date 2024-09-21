@@ -8,7 +8,7 @@ import com.ww.mall.admin.service.OperateLogService;
 import com.ww.mall.common.constant.Constant;
 import com.ww.mall.common.enums.UserType;
 import com.ww.mall.admin.view.dto.OperateLogDTO;
-import com.ww.mall.web.utils.AuthorizationContext;
+import com.ww.mall.utils.AuthorizationContext;
 import lombok.extern.slf4j.Slf4j;
 import org.slf4j.MDC;
 import org.springframework.web.context.request.RequestAttributes;
@@ -37,7 +37,7 @@ public class MongoOperateLogComponent implements ILogRecordService {
             // traceId
             reqDTO.setTraceId(MDC.get(Constant.TRACE_ID));
             // 用户信息
-            reqDTO.setUserId(AuthorizationContext.getAdminUser().getUserId());
+            reqDTO.setUserId(AuthorizationContext.getAdminUser().getId());
             reqDTO.setUserType(UserType.ADMIN);
             // 模块信息
             reqDTO.setType(logRecord.getType());

@@ -1,6 +1,5 @@
 package com.ww.mall.admin.service;
 
-import cn.hutool.core.lang.tree.Tree;
 import com.baomidou.mybatisplus.extension.service.IService;
 import com.ww.mall.admin.entity.SysUser;
 import com.ww.mall.admin.view.form.ModifyPasswordForm;
@@ -105,14 +104,6 @@ public interface SysUserService extends IService<SysUser> {
     List<SysRoleSelectVO> queryUserOfRole(Long userId);
 
     /**
-     * 查询用户拥有的所有权限
-     *
-     * @param userId userId
-     * @return List<Tree<Long>>
-     */
-    List<Tree<Long>> queryUserOfMenu(Long userId);
-
-    /**
      * 后台登录
      *
      * @param form 登录form
@@ -134,5 +125,13 @@ public interface SysUserService extends IService<SysUser> {
      * @return boolean
      */
     boolean modifyStatus(Long userId);
+
+    /**
+     * 根据username加载用户信息
+     *
+     * @param username 账号
+     * @return SysUserDTO
+     */
+    SysUserDTO loadUserDetails(String username);
 }
 

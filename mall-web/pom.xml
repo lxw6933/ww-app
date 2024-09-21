@@ -22,11 +22,13 @@
         <dependency>
             <groupId>net.devh</groupId>
             <artifactId>grpc-server-spring-boot-starter</artifactId>
+            <optional>true</optional>
         </dependency>
         <!-- grpc-client -->
         <dependency>
             <groupId>net.devh</groupId>
             <artifactId>grpc-client-spring-boot-starter</artifactId>
+            <optional>true</optional>
         </dependency>
         <!-- 插件配置 -->
         <dependency>

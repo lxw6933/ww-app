@@ -12,7 +12,7 @@ import com.ww.mall.member.service.MemberIntegralRecordService;
 import com.ww.mall.member.service.MemberService;
 import com.ww.mall.common.common.MallPage;
 import com.ww.mall.common.common.MallPageResult;
-import com.ww.mall.web.utils.AuthorizationContext;
+import com.ww.mall.utils.AuthorizationContext;
 import com.ww.mall.web.view.bo.AddMemberIntegralBO;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -57,7 +57,7 @@ public class MemberIntegralRecordServiceImpl implements MemberIntegralRecordServ
         Sort sort = Sort.by(Sort.Direction.DESC, "createTime");
         // 创建查询条件
         Query query = new Query();
-        query.addCriteria(Criteria.where("memberId").is(clientUser.getMemberId()));
+        query.addCriteria(Criteria.where("memberId").is(clientUser.getId()));
         // 获取总记录数
         long totalCount = mongoTemplate.count(query, MemberIntegralRecord.class);
         // 在查询条件中添加分页信息，并执行查询
@@ -71,7 +71,7 @@ public class MemberIntegralRecordServiceImpl implements MemberIntegralRecordServ
         MallClientUser clientUser = AuthorizationContext.getClientUser();
         Query query = new Query();
         Criteria criteria = Criteria.where("id").is(integralRecordId)
-                .and("memberId").is(clientUser.getMemberId());
+                .and("memberId").is(clientUser.getId());
         query.addCriteria(criteria);
         return mongoTemplate.findOne(query, MemberIntegralRecord.class);
     }

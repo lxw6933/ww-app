@@ -1,4 +1,3 @@
-Application Version: ${ww.mall.version}
 Spring Boot Version: ${spring-boot.version}
 
 .__   __.   ______      .______    __    __    _______

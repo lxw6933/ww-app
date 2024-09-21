@@ -14,7 +14,7 @@ public interface GlobalResCodeConstants {
     // ========== 客户端错误段 ==========
     ResCode BAD_REQUEST = new ResCode(400, "请求参数不正确");
     ResCode UNAUTHORIZED = new ResCode(401, "账号未登录");
-    ResCode FORBIDDEN = new ResCode(403, "没有该操作权限");
+    ResCode FORBIDDEN = new ResCode(403, "禁止访问");
     ResCode NOT_FOUND = new ResCode(404, "请求未找到");
     ResCode METHOD_NOT_ALLOWED = new ResCode(405, "请求方法不正确");
     ResCode NOT_SUPPORTED_MEDIA = new ResCode(415,"不支持当前媒体类型");

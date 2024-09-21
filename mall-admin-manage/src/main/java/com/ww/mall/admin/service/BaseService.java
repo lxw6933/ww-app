@@ -4,6 +4,7 @@ import com.baomidou.mybatisplus.core.mapper.BaseMapper;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.ww.mall.admin.dao.DaoFactory;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.redis.core.RedisTemplate;
 
 import javax.annotation.Resource;
 
@@ -20,5 +21,8 @@ public abstract class BaseService <M extends BaseMapper<T>, T> extends ServiceIm
 
     @Resource
     protected ServiceFactory sf;
+
+    @Resource
+    protected RedisTemplate<String, String> redisTemplate;
 
 }

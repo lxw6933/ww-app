@@ -64,19 +64,17 @@ public class LoginServiceImpl implements LoginService {
         Date tokenEffectTime = new Date();
         Date tokenExpTime = DateUtils.addHours(tokenEffectTime, jwtProperties.getExpire());
         Map<String, Object> map = new HashMap<>();
-        map.put("userId", sysUserDTO.getId());
+        map.put("id", sysUserDTO.getId());
+        map.put("userType", UserType.ADMIN);
         map.put("exp", tokenExpTime.getTime());
         map.put("nbf", tokenEffectTime.getTime());
         map.put("iss", jwtProperties.getIss());
-        map.put("userType", UserType.ADMIN);
         String token = JWTUtil.createToken(map, jwtProperties.getSecret().getBytes());
         AdminLoginResultVO loginResultVO = new AdminLoginResultVO();
         loginResultVO.setAccessToken(token);
         loginResultVO.setAccessTokenExpTime(tokenExpTime.getTime());
         loginResultVO.setUsername(sysUserDTO.getUsername());
-        loginResultVO.setRealName(sysUserDTO.getRealName());
         loginResultVO.setUserId(sysUserDTO.getId());
-        loginResultVO.setAvatar(sysUserDTO.getAvatar());
         return loginResultVO;
     }
 
@@ -94,13 +92,13 @@ public class LoginServiceImpl implements LoginService {
             Date tokenEffectTime = new Date();
             Date tokenExpTime = DateUtils.addHours(tokenEffectTime, jwtProperties.getExpire());
             Map<String, Object> map = new HashMap<>();
-            map.put("memberId", member.getId());
+            map.put("id", member.getId());
+            map.put("userType", UserType.CLIENT);
             map.put("channelId", member.getChannelId());
             map.put("mobile", member.getMobile());
             map.put("exp", tokenExpTime.getTime());
             map.put("nbf", tokenEffectTime.getTime());
             map.put("iss", jwtProperties.getIss());
-            map.put("userType", UserType.CLIENT);
             String token = JWTUtil.createToken(map, jwtProperties.getSecret().getBytes());
             LoginResultVO loginResultVO = new LoginResultVO();
             loginResultVO.setAccessToken(token);

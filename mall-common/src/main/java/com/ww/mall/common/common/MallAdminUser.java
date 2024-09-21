@@ -11,10 +11,6 @@ import lombok.EqualsAndHashCode;
 @Data
 @EqualsAndHashCode(callSuper = true)
 public class MallAdminUser extends MallBaseUser {
-
-    /**
-     * 用户id
-     */
-    private Long userId;;
+    
 
 }

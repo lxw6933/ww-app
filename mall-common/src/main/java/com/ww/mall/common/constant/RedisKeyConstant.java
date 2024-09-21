@@ -23,4 +23,6 @@ public class RedisKeyConstant {
     public static final String SECKILL_PATH_PREFIX = "mall-seckill:seckill:path:";
     public static final String SECKILL_CODE_PREFIX = "mall-seckill:seckill:captcha:";
 
+    public static final String USER_AUTHORITIES = "user:authorities:";
+
 }

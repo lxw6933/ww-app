@@ -24,6 +24,11 @@ public class AdminFeignServiceFallBack implements FallbackFactory<AdminFeignServ
             public Result<SysUserDTO> login(SysUserLoginBO sysUserLoginBO) {
                 return Result.error(GlobalResCodeConstants.LIMIT_REQUEST);
             }
+
+            @Override
+            public Result<SysUserDTO> loadUserDetails(String username) {
+                return Result.error(GlobalResCodeConstants.LIMIT_REQUEST);
+            }
         };
     }
 }

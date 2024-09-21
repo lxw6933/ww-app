@@ -27,6 +27,11 @@ public class MallBaseUser {
     protected Long nbf;
 
     /**
+     * 用户id
+     */
+    private Long id;
+
+    /**
      * 用户类型
      */
     protected UserType userType;

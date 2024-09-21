@@ -7,6 +7,7 @@ import com.ww.mall.web.view.dto.SysUserDTO;
 import org.springframework.cloud.openfeign.FeignClient;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestParam;
 
 /**
  * @author ww
@@ -24,5 +25,14 @@ public interface AdminFeignService {
      */
     @PostMapping("/mall-admin-manage/admin/inner/login")
     Result<SysUserDTO> login(@RequestBody SysUserLoginBO sysUserLoginBO);
+
+    /**
+     * 【security】加载用户信息
+     *
+     * @param username username
+     * @return SysUserDTO
+     */
+    @PostMapping("/mall-admin-manage/admin/inner/loadUserDetails")
+    Result<SysUserDTO> loadUserDetails(@RequestParam("username") String username);
 
 }

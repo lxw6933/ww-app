@@ -2,7 +2,8 @@ package com.ww.mall.web.filter;
 
 import cn.hutool.core.util.IdUtil;
 import com.ww.mall.common.constant.Constant;
-import com.ww.mall.web.utils.AuthorizationContext;
+import com.ww.mall.utils.AuthorizationContext;
+import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import org.slf4j.MDC;
 import org.springframework.stereotype.Component;
@@ -23,7 +24,7 @@ import java.io.IOException;
 @Component
 public class ServerRequestFilter extends OncePerRequestFilter {
     @Override
-    protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain) throws ServletException, IOException {
+    protected void doFilterInternal(HttpServletRequest request, @NonNull HttpServletResponse response, @NonNull FilterChain filterChain) throws ServletException, IOException {
         try {
             // 如果有上层调用就用上层的ID
             String traceId = request.getHeader(Constant.TRACE_ID);

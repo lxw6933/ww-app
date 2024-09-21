@@ -18,11 +18,6 @@ public class MallClientUser extends MallBaseUser {
     private String mobile;
 
     /**
-     * 用户id
-     */
-    private Long memberId;
-
-    /**
      * 渠道id
      */
     private Long channelId;

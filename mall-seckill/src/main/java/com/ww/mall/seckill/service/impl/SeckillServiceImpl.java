@@ -18,7 +18,7 @@ import com.ww.mall.rabbitmq.routekey.RouteKeyConstant;
 import com.ww.mall.redis.MallRedisTemplate;
 import com.ww.mall.seckill.service.SeckillService;
 import com.ww.mall.seckill.view.bo.SecKillOrderReqBO;
-import com.ww.mall.web.utils.AuthorizationContext;
+import com.ww.mall.utils.AuthorizationContext;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -98,7 +98,7 @@ public class SeckillServiceImpl implements SeckillService {
             return userSecKillPath;
         }
         // 生成secKillPath
-        userSecKillPath = MD5.create().digestHex(UUID.randomUUID() + activityCode + clientUser.getMemberId().toString(), StandardCharsets.UTF_8.name());
+        userSecKillPath = MD5.create().digestHex(UUID.randomUUID() + activityCode + clientUser.getId().toString(), StandardCharsets.UTF_8.name());
         // 加密后地址存入redis
         redisTemplate.opsForValue().set(key, userSecKillPath, 1, TimeUnit.MINUTES);
         return userSecKillPath;
@@ -143,11 +143,11 @@ public class SeckillServiceImpl implements SeckillService {
     }
 
     private String getSecKillPathKey(MallClientUser clientUser, String activityCode, Long skuId) {
-        return RedisKeyConstant.SECKILL_PATH_PREFIX + clientUser.getMemberId() + RedisKeyConstant.SPLIT_KEY + activityCode + RedisKeyConstant.SPLIT_KEY + skuId;
+        return RedisKeyConstant.SECKILL_PATH_PREFIX + clientUser.getId() + RedisKeyConstant.SPLIT_KEY + activityCode + RedisKeyConstant.SPLIT_KEY + skuId;
     }
 
     private String getSecKillVerCodeKey(MallClientUser clientUser, String activityCode, Long skuId) {
-        return RedisKeyConstant.SECKILL_CODE_PREFIX + clientUser.getMemberId() + RedisKeyConstant.SPLIT_KEY + activityCode + RedisKeyConstant.SPLIT_KEY + skuId;
+        return RedisKeyConstant.SECKILL_CODE_PREFIX + clientUser.getId() + RedisKeyConstant.SPLIT_KEY + activityCode + RedisKeyConstant.SPLIT_KEY + skuId;
     }
 
 }

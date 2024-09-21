@@ -52,7 +52,7 @@ public class SignServiceImpl implements SignService {
         // 偏移量 offset 从 0 开始
         int offset = dayOfMonth - 1;
         // 构建 Key user:sign:5:yyyyMM
-        String signKey = buildSignKey(clientUser.getMemberId(), date);
+        String signKey = buildSignKey(clientUser.getId(), date);
         // 查看是否已签到
         Boolean isSigned = redisTemplate.opsForValue().getBit(signKey, offset);
         if (Boolean.TRUE.equals(isSigned)) {
@@ -71,7 +71,7 @@ public class SignServiceImpl implements SignService {
         // 获取日期对应的天数，多少号，假设是 30
         int dayOfMonth = DateUtil.dayOfMonth(date);
         // 构建 Key
-        String signKey = buildSignKey(clientUser.getMemberId(), date);
+        String signKey = buildSignKey(clientUser.getId(), date);
         // bitfield user:sign:5:202011 u30 0
         BitFieldSubCommands bitFieldSubCommands
                 = BitFieldSubCommands.create()
@@ -104,7 +104,7 @@ public class SignServiceImpl implements SignService {
     public int getSignCount(String dateStr, MallClientUser clientUser) {
         Date date = getDate(dateStr);
         // 构建 Key
-        String signKey = buildSignKey(clientUser.getMemberId(), date);
+        String signKey = buildSignKey(clientUser.getId(), date);
         // bitcount user:sign:5:202011
         Long signCount = redisTemplate.execute(
                 (RedisCallback<Long>) con -> con.bitCount(signKey.getBytes())
@@ -116,7 +116,7 @@ public class SignServiceImpl implements SignService {
     public Map<String, Boolean> getSignInfo(String dateStr, MallClientUser clientUser) {
         Date date = getDate(dateStr);
         // 构建 Key
-        String signKey = buildSignKey(clientUser.getMemberId(), date);
+        String signKey = buildSignKey(clientUser.getId(), date);
         // 构建一个自动排序的 Map
         Map<String, Boolean> signInfo = new TreeMap<>();
         // 获取月份，从0开始：0-11

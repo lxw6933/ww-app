@@ -60,6 +60,11 @@
             <artifactId>bizlog-sdk</artifactId>
             <optional>true</optional>
         </dependency>
+        <!-- spring security -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-security</artifactId>
+        </dependency>
         <!-- test -->
         <dependency>
             <groupId>org.springframework.boot</groupId>
