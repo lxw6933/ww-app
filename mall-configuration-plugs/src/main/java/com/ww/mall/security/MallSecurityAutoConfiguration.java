@@ -93,6 +93,8 @@ public class MallSecurityAutoConfiguration extends WebSecurityConfigurerAdapter 
                 // 剩余接口都需要认证
                 .antMatchers("/").authenticated()
                 // 认证通过后，授权校验
+                // 由于使用的Expression表达统一处理授权，不需要所有接口贴上注解，
+                // 要求菜单数据配置的权限标识都是接口请求路径，不要使用restful风格，否则需要特殊处理
                 .anyRequest().access("@acl.hasPermission(authentication)");
 
         // Token Filter
