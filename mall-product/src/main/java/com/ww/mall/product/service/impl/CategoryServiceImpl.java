@@ -1,13 +1,10 @@
 package com.ww.mall.product.service.impl;
 
-import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.ww.mall.product.dao.CategoryMapper;
 import com.ww.mall.product.entity.Category;
-import com.ww.mall.product.enums.CategoryLevel;
 import com.ww.mall.product.service.CategoryService;
 import com.ww.mall.product.view.bo.CategoryBO;
-import org.apache.commons.lang3.StringUtils;
 import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
@@ -15,6 +12,8 @@ import org.springframework.stereotype.Service;
 import java.util.Comparator;
 import java.util.List;
 import java.util.stream.Collectors;
+
+import static com.ww.mall.common.utils.CollectionUtils.filterList;
 
 /**
  * @author ww
@@ -42,7 +41,7 @@ public class CategoryServiceImpl extends ServiceImpl<CategoryMapper, Category> i
         String searchCategoryName = categoryBO.getCategoryName();
         List<Category> categoryList = this.listCategoryTree();
         String highLightStr = "<span class='category-hilight'>" + searchCategoryName + "</span>";
-        return categoryList.stream().filter(res -> {
+        return filterList(categoryList, res -> {
             boolean one = res.getCategoryName().contains(searchCategoryName);
             if (one) {
                 res.getCategoryName().replace(searchCategoryName, highLightStr);
@@ -63,7 +62,7 @@ public class CategoryServiceImpl extends ServiceImpl<CategoryMapper, Category> i
                 }
             }
             return one || flag;
-        }).collect(Collectors.toList());
+        });
     }
 
     @Override

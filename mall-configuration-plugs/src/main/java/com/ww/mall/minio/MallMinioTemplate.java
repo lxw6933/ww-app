@@ -30,7 +30,8 @@ import java.nio.charset.StandardCharsets;
 import java.text.DecimalFormat;
 import java.util.*;
 import java.util.concurrent.TimeUnit;
-import java.util.stream.Collectors;
+
+import static com.ww.mall.common.utils.CollectionUtils.convertList;
 
 @Slf4j
 public class MallMinioTemplate {
@@ -121,7 +122,7 @@ public class MallMinioTemplate {
         try {
             // 删除桶内文件
             List<Item> bucketFiles = listBucketAllFile(bucketName, true);
-            List<String> fileNames = bucketFiles.stream().map(Item::objectName).collect(Collectors.toList());
+            List<String> fileNames = convertList(bucketFiles, Item::objectName);
             if (CollectionUtils.isNotEmpty(fileNames)) {
                 fileNames.forEach(fileName -> removeFile(bucketName, fileName));
             }
@@ -238,7 +239,7 @@ public class MallMinioTemplate {
     public boolean mergeFile(String originBucketName, String targetBucketName, String fileName) {
         // 获取桶内所有文件
         List<Item> bucketFiles = listBucketAllFile(targetBucketName, true);
-        List<String> fileNameList = bucketFiles.stream().map(Item::objectName).collect(Collectors.toList());
+        List<String> fileNameList = convertList(bucketFiles, Item::objectName);
         List<ComposeSource> composeSourceList = new ArrayList<>(fileNameList.size());
         // 对文件名集合进行升序排序
         Collections.sort(fileNameList);

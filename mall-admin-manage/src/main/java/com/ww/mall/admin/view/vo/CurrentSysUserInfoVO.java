@@ -36,4 +36,9 @@ public class CurrentSysUserInfoVO {
      * 用户权限集合
      */
     private List<Tree<Long>> menuTreeList;
+
+    /**
+     * 用户权限标识集合
+     */
+    private List<String> permissions;
 }

@@ -25,6 +25,9 @@ import java.util.List;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
+import static com.ww.mall.common.utils.CollectionUtils.convertList;
+import static com.ww.mall.common.utils.CollectionUtils.filterList;
+
 /**
  * @author ww
  * @create 2023-07-31- 16:57
@@ -89,13 +92,6 @@ public class GrayLoadBalancer implements ReactorServiceInstanceLoadBalancer {
         }
         // 随机 + 权重获取实例列表
         return new DefaultResponse(NacosBalancer.getHostByRandomWeight3(chooseInstances));
-    }
-
-    public static <T> List<T> filterList(Collection<T> from, Predicate<T> predicate) {
-        if (CollUtil.isEmpty(from)) {
-            return new ArrayList<>();
-        }
-        return from.stream().filter(predicate).collect(Collectors.toList());
     }
 
 }

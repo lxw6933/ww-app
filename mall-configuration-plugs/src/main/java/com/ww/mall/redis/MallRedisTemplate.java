@@ -25,7 +25,8 @@ import org.springframework.stereotype.Component;
 import javax.annotation.PostConstruct;
 import javax.annotation.Resource;
 import java.util.*;
-import java.util.stream.Collectors;
+
+import static com.ww.mall.common.utils.CollectionUtils.convertGroupListMap;
 
 @Slf4j
 @Component
@@ -472,7 +473,7 @@ public class MallRedisTemplate {
      * @param locations DataList
      */
     public void loadGEOData(List<Location> locations) {
-        Map<Long, List<Location>> locationMap = locations.stream().collect(Collectors.groupingBy(Location::getTypeId));
+        Map<Long, List<Location>> locationMap = convertGroupListMap(locations, Location::getTypeId);
         locationMap.forEach((typeId, typeIdLocations) -> {
             String geoKey = RedisKeyConstant.GEO_KEY + typeId;
             List<RedisGeoCommands.GeoLocation<String>> locationGEOList = new ArrayList<>();

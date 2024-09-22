@@ -8,6 +8,8 @@ import java.util.List;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
+import static com.ww.mall.common.utils.CollectionUtils.convertList;
+
 /**
  * @author ww
  * @create 2023-07-19- 13:48
@@ -45,7 +47,7 @@ public class MallPageResult<T> extends MallPage {
             throw new ApiException("数据转换器不能为空");
         }
         this.totalCount = totalCount;
-        this.result = result.stream().map(convert).collect(Collectors.toList());
+        this.result = convertList(result, convert);
         this.totalPage = totalCount % getPageSize() == 0 ? totalCount / getPageSize() : totalCount / getPageSize() + 1;
     }
 

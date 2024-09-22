@@ -47,10 +47,10 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
-import java.util.stream.Collectors;
 
 import static com.ww.mall.admin.enums.LogRecordConstants.*;
 import static com.ww.mall.admin.utils.PasswordUtil.DEFAULT_PASSWORD;
+import static com.ww.mall.common.utils.CollectionUtils.convertList;
 
 /**
  * @author ww
@@ -293,7 +293,7 @@ public class SysUserServiceImpl extends BaseService<SysUserMapper, SysUser> impl
         sysUserDTO.setAvatar(sysUserVO.getAvatar());
         // 加载用户权限到redis
         List<SysMenu> userMenuList = this.queryUserOfMenu(sysUserVO.getId());
-        List<String> userAuthorities = userMenuList.stream().map(SysMenu::getPermission).collect(Collectors.toList());
+        List<String> userAuthorities = convertList(userMenuList, SysMenu::getPermission);
         redisTemplate.opsForValue().set(RedisKeyConstant.USER_AUTHORITIES + sysUserVO.getId(), userAuthorities);
         sysUserDTO.setAuthorities(userAuthorities);
         return sysUserDTO;
@@ -307,8 +307,10 @@ public class SysUserServiceImpl extends BaseService<SysUserMapper, SysUser> impl
         BeanUtils.copyProperties(sysUserVO, currentSysUserInfoVO);
         currentSysUserInfoVO.setUserId(adminUser.getId());
         // 用户权限信息
-        List<Tree<Long>> userMenuTreeList = SysMenuTreeNodeVO.menuTree(this.queryUserOfMenu(adminUser.getId()));
+        List<SysMenu> sysMenuList = this.queryUserOfMenu(adminUser.getId());
+        List<Tree<Long>> userMenuTreeList = SysMenuTreeNodeVO.menuTree(sysMenuList);
         currentSysUserInfoVO.setMenuTreeList(userMenuTreeList);
+        currentSysUserInfoVO.setPermissions(convertList(sysMenuList, SysMenu::getPermission));
         return currentSysUserInfoVO;
     }
 
@@ -329,7 +331,7 @@ public class SysUserServiceImpl extends BaseService<SysUserMapper, SysUser> impl
         SysUser sysUser = this.getOne(new QueryWrapper<SysUser>().eq("username", username).eq("valid", true));
         // 加载用户权限到redis
         List<SysMenu> userMenuList = this.queryUserOfMenu(sysUser.getId());
-        List<String> userAuthorities = userMenuList.stream().map(SysMenu::getPermission).collect(Collectors.toList());
+        List<String> userAuthorities = convertList(userMenuList, SysMenu::getPermission);
         redisTemplate.opsForValue().set(RedisKeyConstant.USER_AUTHORITIES + sysUser.getId(), JSON.toJSONString(userAuthorities));
         SysUserDTO sysUserDTO = BeanUtil.toBean(sysUser, SysUserDTO.class);
         sysUserDTO.setAuthorities(userAuthorities);
