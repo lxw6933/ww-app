@@ -17,12 +17,6 @@
             <groupId>com.ww</groupId>
             <artifactId>mall-web</artifactId>
             <version>${ww.mall.version}</version>
-            <exclusions>
-                <exclusion>
-                    <groupId>net.devh</groupId>
-                    <artifactId>grpc-server-spring-boot-starter</artifactId>
-                </exclusion>
-            </exclusions>
         </dependency>
         <!-- redis -->
         <dependency>
