@@ -4,6 +4,7 @@ import com.baomidou.mybatisplus.core.mapper.BaseMapper;
 import com.ww.mall.admin.entity.SysUser;
 import com.ww.mall.admin.view.form.UserAndRoleForm;
 import org.apache.ibatis.annotations.Mapper;
+import org.apache.ibatis.annotations.Param;
 import org.apache.ibatis.annotations.Select;
 
 import java.util.List;
@@ -31,7 +32,7 @@ public interface SysUserMapper extends BaseMapper<SysUser> {
      * @param roleIds roleIdList
      * @return 所有权限id
      */
-    List<Long> findMenuIdsByRoleIds(List<Long> roleIds);
+    List<Long> findMenuIdsByRoleIds(@Param("roleIds") List<Long> roleIds);
 
     /**
      * 保存用户角色信息

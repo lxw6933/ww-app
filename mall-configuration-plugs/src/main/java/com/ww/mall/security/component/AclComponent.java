@@ -1,5 +1,7 @@
 package com.ww.mall.security.component;
 
+import com.ww.mall.common.common.MallBaseUser;
+import com.ww.mall.common.enums.UserType;
 import com.ww.mall.utils.HttpContextUtils;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.core.Authentication;
@@ -22,10 +24,13 @@ public class AclComponent {
     private final AntPathMatcher antPathMatcher = new AntPathMatcher();
 
     public boolean hasPermission(Authentication authentication) {
-        log.info("acl 权限控制: {}", authentication);
+        MallBaseUser mallBaseUser = (MallBaseUser) authentication.getPrincipal();
+        if (UserType.ADMIN.equals(mallBaseUser.getUserType()) && mallBaseUser.getId().equals(1L)) {
+            return true;
+        }
         HttpServletRequest request = HttpContextUtils.getHttpServletRequest();
         // 获取请求uri
-        String uri = request.getRequestURI();
+        String uri = request.getRequestURI().replace(request.getContextPath(), "");
         // 获取登录用户所有权限
         Collection<? extends GrantedAuthority> authorities = authentication.getAuthorities();
         boolean hasPermission = false;

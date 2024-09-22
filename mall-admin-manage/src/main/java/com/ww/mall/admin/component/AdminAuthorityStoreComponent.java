@@ -1,6 +1,5 @@
 package com.ww.mall.admin.component;
 
-import com.alibaba.fastjson.JSON;
 import com.ww.mall.common.constant.RedisKeyConstant;
 import com.ww.mall.security.component.AuthorityStore;
 import org.apache.commons.collections4.CollectionUtils;
@@ -22,12 +21,11 @@ import java.util.List;
 public class AdminAuthorityStoreComponent implements AuthorityStore {
 
     @Autowired
-    private RedisTemplate<String, String> redisTemplate;
+    private RedisTemplate<String, Object> redisTemplate;
 
     @Override
     public List<GrantedAuthority> loadCurrentUserAuthorities(Long userId) {
-        String userAuthoritiesStr = redisTemplate.opsForValue().get(RedisKeyConstant.USER_AUTHORITIES + userId);
-        List<String> authorities = JSON.parseArray(userAuthoritiesStr, String.class);
+        List<String> authorities = (List<String>) redisTemplate.opsForValue().get(RedisKeyConstant.USER_AUTHORITIES + userId);
 
         return CollectionUtils.isEmpty(authorities) ?
                 Collections.emptyList() :

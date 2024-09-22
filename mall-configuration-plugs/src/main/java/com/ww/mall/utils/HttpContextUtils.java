@@ -1,5 +1,6 @@
 package com.ww.mall.utils;
 
+import com.alibaba.fastjson.JSON;
 import com.ww.mall.common.common.Result;
 import org.springframework.http.MediaType;
 import org.springframework.web.context.request.RequestContextHolder;
@@ -35,7 +36,7 @@ public class HttpContextUtils {
         response.setStatus(HttpServletResponse.SC_OK);
         response.setCharacterEncoding("UTF-8");
         try(PrintWriter writer = response.getWriter()) {
-            writer.write(result.toString());
+            writer.write(JSON.toJSONString(result));
         } catch (IOException e) {
             throw new RuntimeException(e);
         }

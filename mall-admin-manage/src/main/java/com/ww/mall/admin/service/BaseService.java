@@ -23,6 +23,6 @@ public abstract class BaseService <M extends BaseMapper<T>, T> extends ServiceIm
     protected ServiceFactory sf;
 
     @Resource
-    protected RedisTemplate<String, String> redisTemplate;
+    protected RedisTemplate<String, Object> redisTemplate;
 
 }

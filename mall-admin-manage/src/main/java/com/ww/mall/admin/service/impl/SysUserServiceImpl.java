@@ -22,13 +22,16 @@ import com.ww.mall.admin.view.form.ModifyPasswordForm;
 import com.ww.mall.admin.view.form.SysUserForm;
 import com.ww.mall.admin.view.form.UserAndRoleForm;
 import com.ww.mall.admin.view.query.SysUserPageQuery;
-import com.ww.mall.admin.view.vo.*;
+import com.ww.mall.admin.view.vo.CurrentSysUserInfoVO;
+import com.ww.mall.admin.view.vo.SysMenuTreeNodeVO;
+import com.ww.mall.admin.view.vo.SysRoleSelectVO;
+import com.ww.mall.admin.view.vo.SysUserVO;
 import com.ww.mall.annotation.plugs.redis.MallResubmission;
 import com.ww.mall.common.common.MallAdminUser;
+import com.ww.mall.common.common.MallPageResult;
 import com.ww.mall.common.constant.Constant;
 import com.ww.mall.common.constant.RedisKeyConstant;
 import com.ww.mall.common.exception.ApiException;
-import com.ww.mall.common.common.MallPageResult;
 import com.ww.mall.mybatisplus.MallPlusPageResult;
 import com.ww.mall.utils.AuthorizationContext;
 import com.ww.mall.web.view.bo.SysUserLoginBO;
@@ -288,6 +291,11 @@ public class SysUserServiceImpl extends BaseService<SysUserMapper, SysUser> impl
         sysUserDTO.setUsername(sysUserVO.getUsername());
         sysUserDTO.setRealName(sysUserVO.getRealName());
         sysUserDTO.setAvatar(sysUserVO.getAvatar());
+        // 加载用户权限到redis
+        List<SysMenu> userMenuList = this.queryUserOfMenu(sysUserVO.getId());
+        List<String> userAuthorities = userMenuList.stream().map(SysMenu::getPermission).collect(Collectors.toList());
+        redisTemplate.opsForValue().set(RedisKeyConstant.USER_AUTHORITIES + sysUserVO.getId(), userAuthorities);
+        sysUserDTO.setAuthorities(userAuthorities);
         return sysUserDTO;
     }
 

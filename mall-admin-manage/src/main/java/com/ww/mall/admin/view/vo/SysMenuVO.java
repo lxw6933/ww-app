@@ -49,6 +49,11 @@ public class SysMenuVO {
     private String permission;
 
     /**
+     * 是否可见
+     */
+    private Boolean visible;
+
+    /**
      * 是否有效
      */
     private Boolean valid;

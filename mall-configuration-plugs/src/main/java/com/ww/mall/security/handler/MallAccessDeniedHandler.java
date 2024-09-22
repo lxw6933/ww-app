@@ -21,7 +21,7 @@ import static com.ww.mall.common.enums.GlobalResCodeConstants.FORBIDDEN;
 public class MallAccessDeniedHandler implements AccessDeniedHandler {
     @Override
     public void handle(HttpServletRequest request, HttpServletResponse response, AccessDeniedException accessDeniedException) {
-        log.error("访问 URL【{}】，用户【{}】没有权限", request.getRequestURI(), SecurityContextHolder.getContext() == null ? "" : SecurityContextHolder.getContext().getAuthentication());
+        log.error("访问 URL【{}】，用户【{}】没有权限", request.getRequestURI(), SecurityContextHolder.getContext() == null ? "" : SecurityContextHolder.getContext().getAuthentication().getPrincipal());
         HttpContextUtils.write(response, Result.error(FORBIDDEN));
     }
 }
