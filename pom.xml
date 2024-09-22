@@ -63,9 +63,9 @@
         <fastjson.version>1.2.83</fastjson.version>
         <easyexcel.version>3.3.4</easyexcel.version>
         <druid.version>1.1.13</druid.version>
-        <mysql.version>8.0.11</mysql.version>
+        <mysql.version>8.0.28</mysql.version>
         <redisson.version>3.22.1</redisson.version>
-        <mybatisplus.starter.version>3.4.2</mybatisplus.starter.version>
+        <mybatisplus.starter.version>3.5.7</mybatisplus.starter.version>
         <commons.lang3.version>3.12.0</commons.lang3.version>
         <commons.collections4.version>4.4</commons.collections4.version>
         <pagehelper.version>6.4</pagehelper.version>
