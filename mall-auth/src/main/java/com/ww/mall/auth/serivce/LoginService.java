@@ -1,6 +1,5 @@
 package com.ww.mall.auth.serivce;
 
-import com.ww.mall.auth.view.vo.AdminLoginResultVO;
 import com.ww.mall.auth.view.vo.LoginResultVO;
 import com.ww.mall.web.view.bo.MemberLoginBO;
 import com.ww.mall.web.view.bo.SysUserLoginBO;
@@ -18,7 +17,7 @@ public interface LoginService {
      * @param sysUserLoginBO bo
      * @return LoginVO
      */
-    AdminLoginResultVO adminLogin(SysUserLoginBO sysUserLoginBO);
+    LoginResultVO adminLogin(SysUserLoginBO sysUserLoginBO);
 
     /**
      * 验证码登录

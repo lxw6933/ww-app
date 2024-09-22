@@ -1,5 +1,6 @@
 package com.ww.mall.auth;
 
+import com.ww.mall.annotation.enable.EnableMallMongodb;
 import com.ww.mall.annotation.enable.EnableMallRedis;
 import com.ww.mall.annotation.enable.EnableMallSecurity;
 import org.springframework.boot.SpringApplication;
@@ -7,6 +8,7 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.cloud.client.discovery.EnableDiscoveryClient;
 
 @EnableMallRedis
+@EnableMallMongodb
 @EnableMallSecurity
 @EnableDiscoveryClient
 @SpringBootApplication

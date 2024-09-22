@@ -10,6 +10,7 @@ import org.apache.commons.lang3.builder.ToStringBuilder;
 
 import java.io.Serializable;
 import java.util.Objects;
+import java.util.function.Supplier;
 
 /**
  * @author ww
@@ -65,6 +66,15 @@ public class Result<T> implements Serializable {
         if (isSuccess()) {
             return;
         }
+        // 业务异常
+        throw new ApiException(code, msg);
+    }
+
+    public void checkError(Supplier<Void> handler) throws ApiException {
+        if (isSuccess()) {
+            return;
+        }
+        handler.get();
         // 业务异常
         throw new ApiException(code, msg);
     }

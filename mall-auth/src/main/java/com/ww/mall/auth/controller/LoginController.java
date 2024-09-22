@@ -1,7 +1,6 @@
 package com.ww.mall.auth.controller;
 
 import com.ww.mall.auth.serivce.LoginService;
-import com.ww.mall.auth.view.vo.AdminLoginResultVO;
 import com.ww.mall.auth.view.vo.LoginResultVO;
 import com.ww.mall.web.view.bo.MemberLoginBO;
 import com.ww.mall.web.view.bo.SysUserLoginBO;
@@ -26,7 +25,7 @@ public class LoginController {
     private LoginService loginService;
 
     @PostMapping("/adminLogin")
-    public AdminLoginResultVO adminLogin(@RequestBody @Validated SysUserLoginBO sysUserLoginBO) {
+    public LoginResultVO adminLogin(@RequestBody @Validated SysUserLoginBO sysUserLoginBO) {
         return loginService.adminLogin(sysUserLoginBO);
     }
 

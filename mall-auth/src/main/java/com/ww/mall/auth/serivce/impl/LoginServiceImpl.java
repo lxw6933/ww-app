@@ -2,18 +2,16 @@ package com.ww.mall.auth.serivce.impl;
 
 import cn.hutool.core.util.RandomUtil;
 import cn.hutool.jwt.JWTUtil;
-import com.ww.mall.auth.config.JwtProperties;
+import com.ww.mall.auth.entity.LoginLog;
+import com.ww.mall.auth.serivce.BaseService;
 import com.ww.mall.auth.serivce.LoginService;
-import com.ww.mall.auth.view.vo.AdminLoginResultVO;
 import com.ww.mall.auth.view.vo.LoginResultVO;
 import com.ww.mall.common.common.Result;
 import com.ww.mall.common.constant.RedisKeyConstant;
 import com.ww.mall.common.enums.GlobalResCodeConstants;
+import com.ww.mall.common.enums.LoginType;
 import com.ww.mall.common.enums.UserType;
 import com.ww.mall.common.exception.ApiException;
-import com.ww.mall.web.feign.AdminFeignService;
-import com.ww.mall.web.feign.MemberFeignService;
-import com.ww.mall.web.feign.ThirdServerFeignService;
 import com.ww.mall.web.view.bo.MemberLoginBO;
 import com.ww.mall.web.view.bo.SysUserLoginBO;
 import com.ww.mall.web.view.dto.MemberDTO;
@@ -21,8 +19,6 @@ import com.ww.mall.web.view.dto.SysUserDTO;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.time.DateUtils;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
 
 import java.util.Date;
@@ -37,45 +33,20 @@ import java.util.concurrent.TimeUnit;
  */
 @Slf4j
 @Service
-public class LoginServiceImpl implements LoginService {
-
-    @Autowired
-    private JwtProperties jwtProperties;
-
-    @Autowired
-    private RedisTemplate<String, String> redisTemplate;
-
-    @Autowired
-    private ThirdServerFeignService thirdServerFeignService;
-
-    @Autowired
-    private MemberFeignService memberFeignService;
-
-    @Autowired
-    private AdminFeignService adminFeignService;
+public class LoginServiceImpl extends BaseService implements LoginService {
 
     @Override
-    public AdminLoginResultVO adminLogin(SysUserLoginBO sysUserLoginBO) {
+    public LoginResultVO adminLogin(SysUserLoginBO sysUserLoginBO) {
         // 获取登录用户信息
         Result<SysUserDTO> result = adminFeignService.login(sysUserLoginBO);
-        result.checkError();
+        result.checkError(() -> {
+            LoginLog loginLog = LoginLog.build(sysUserLoginBO.getUsername(), UserType.ADMIN, LoginType.USERNAME, result.getMsg());
+            mongoTemplate.save(loginLog);
+            return null;
+        });
         SysUserDTO sysUserDTO = result.getData();
         // 生成jwt token
-        Date tokenEffectTime = new Date();
-        Date tokenExpTime = DateUtils.addHours(tokenEffectTime, jwtProperties.getExpire());
-        Map<String, Object> map = new HashMap<>();
-        map.put("id", sysUserDTO.getId());
-        map.put("userType", UserType.ADMIN);
-        map.put("exp", tokenExpTime.getTime());
-        map.put("nbf", tokenEffectTime.getTime());
-        map.put("iss", jwtProperties.getIss());
-        String token = JWTUtil.createToken(map, jwtProperties.getSecret().getBytes());
-        AdminLoginResultVO loginResultVO = new AdminLoginResultVO();
-        loginResultVO.setAccessToken(token);
-        loginResultVO.setAccessTokenExpTime(tokenExpTime.getTime());
-        loginResultVO.setUsername(sysUserDTO.getUsername());
-        loginResultVO.setUserId(sysUserDTO.getId());
-        return loginResultVO;
+        return buildLoginResult(sysUserDTO.getId(), UserType.ADMIN, LoginType.USERNAME, null);
     }
 
     @Override
@@ -86,26 +57,20 @@ public class LoginServiceImpl implements LoginService {
         if (memberLoginBO.getVerifyCode().equals(mobileCode)) {
             // 获取登录用户信息
             Result<MemberDTO> memberResult = memberFeignService.getMemberByMobile(mobile);
-            memberResult.checkError();
+            memberResult.checkError(() -> {
+                LoginLog loginLog = LoginLog.build(memberLoginBO.getMobile(), UserType.CLIENT, LoginType.CODE, memberResult.getMsg());
+                mongoTemplate.save(loginLog);
+                return null;
+            });
             MemberDTO member = memberResult.getData();
-            // 生成jwt token
-            Date tokenEffectTime = new Date();
-            Date tokenExpTime = DateUtils.addHours(tokenEffectTime, jwtProperties.getExpire());
+            // 处理登录结果
             Map<String, Object> map = new HashMap<>();
-            map.put("id", member.getId());
-            map.put("userType", UserType.CLIENT);
             map.put("channelId", member.getChannelId());
             map.put("mobile", member.getMobile());
-            map.put("exp", tokenExpTime.getTime());
-            map.put("nbf", tokenEffectTime.getTime());
-            map.put("iss", jwtProperties.getIss());
-            String token = JWTUtil.createToken(map, jwtProperties.getSecret().getBytes());
-            LoginResultVO loginResultVO = new LoginResultVO();
-            loginResultVO.setAccessToken(token);
-            loginResultVO.setAccessTokenExpTime(tokenExpTime.getTime());
-            return loginResultVO;
+            return buildLoginResult(member.getId(), UserType.CLIENT, LoginType.CODE, map);
         } else {
-            log.error("验证码错误");
+            LoginLog loginLog = LoginLog.build(memberLoginBO.getMobile(), UserType.CLIENT, LoginType.CODE, GlobalResCodeConstants.CODE_ERROR.getMsg());
+            mongoTemplate.save(loginLog);
             throw new ApiException(GlobalResCodeConstants.CODE_ERROR);
         }
     }
@@ -136,5 +101,27 @@ public class LoginServiceImpl implements LoginService {
         } else {
             throw new ApiException("发送短信验证码失败");
         }
+    }
+
+    private LoginResultVO buildLoginResult(Long userId, UserType userType, LoginType loginType, Map<String, Object> extraMap) {
+        Date now = new Date();
+        Date tokenExpTime = DateUtils.addHours(now, jwtProperties.getExpire());
+        Map<String, Object> map = new HashMap<>();
+        map.put("id", userId);
+        map.put("userType", userType);
+        map.put("exp", tokenExpTime.getTime());
+        map.put("nbf", now);
+        map.put("iss", jwtProperties.getIss());
+        if (extraMap != null) {
+            map.putAll(extraMap);
+        }
+        String token = JWTUtil.createToken(map, jwtProperties.getSecret().getBytes());
+        LoginResultVO loginResultVO = new LoginResultVO();
+        loginResultVO.setAccessToken(token);
+        loginResultVO.setAccessTokenExpTime(tokenExpTime.getTime());
+        // 登录日志
+        LoginLog loginLog = LoginLog.build(userId, userType, loginType);
+        mongoTemplate.save(loginLog);
+        return loginResultVO;
     }
 }
