@@ -24,9 +24,9 @@ public class MallCorsConfiguration {
         // 允许任何请求头
         corsConfiguration.addAllowedHeader(CorsConfiguration.ALL);
         // 允许任何来源
-        corsConfiguration.addAllowedOrigin("http://localhost:5173");
+        corsConfiguration.addAllowedOriginPattern(CorsConfiguration.ALL);
         // 允许任何方式POST GET等
-        corsConfiguration.addAllowedMethod("*");
+        corsConfiguration.addAllowedMethod(CorsConfiguration.ALL);
         // 允许携带cookie
         corsConfiguration.setAllowCredentials(true);
         // 最大年龄
