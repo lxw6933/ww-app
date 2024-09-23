@@ -83,6 +83,6 @@ public class IpFilter implements GlobalFilter, Ordered {
 
     @Override
     public int getOrder() {
-        return 1;
+        return HIGHEST_PRECEDENCE;
     }
 }

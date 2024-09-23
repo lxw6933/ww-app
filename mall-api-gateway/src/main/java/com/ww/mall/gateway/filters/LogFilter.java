@@ -1,12 +1,9 @@
 package com.ww.mall.gateway.filters;
 
-import cn.hutool.core.util.IdUtil;
 import com.alibaba.fastjson.JSON;
-import com.ww.mall.common.constant.Constant;
 import com.ww.mall.gateway.utils.GatewayContext;
 import io.netty.buffer.ByteBufAllocator;
 import lombok.extern.slf4j.Slf4j;
-import org.slf4j.MDC;
 import org.springframework.cloud.gateway.filter.GatewayFilterChain;
 import org.springframework.cloud.gateway.filter.GlobalFilter;
 import org.springframework.core.Ordered;
@@ -20,7 +17,6 @@ import org.springframework.http.MediaType;
 import org.springframework.http.codec.HttpMessageReader;
 import org.springframework.http.server.reactive.ServerHttpRequest;
 import org.springframework.http.server.reactive.ServerHttpRequestDecorator;
-import org.springframework.stereotype.Component;
 import org.springframework.util.MultiValueMap;
 import org.springframework.web.reactive.function.server.HandlerStrategies;
 import org.springframework.web.reactive.function.server.ServerRequest;
@@ -45,9 +41,10 @@ import java.util.Map;
  *    如果对FormData内容进行了修改，则必须重新定义Header中的content-length已保证传输数据的大小一致
  * @author: ww
  * @create: 2021/7/4 下午2:00
+ * 迁移到 {@link AccessLogFilter}
  **/
 @Slf4j
-@Component
+//@Component
 public class LogFilter implements GlobalFilter, Ordered {
 
     /**
