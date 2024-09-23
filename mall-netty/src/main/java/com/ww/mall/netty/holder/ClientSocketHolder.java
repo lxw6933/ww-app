@@ -9,6 +9,8 @@ import java.net.SocketAddress;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
+import static com.ww.mall.common.utils.CollectionUtils.filterList;
+
 /**
  * @author ww
  * @create 2024-05-09- 10:30
@@ -35,7 +37,7 @@ public class ClientSocketHolder {
     }
 
     public static void removeClientSocket(NioSocketChannel clientSocket) {
-        clientSocketMap.entrySet().stream().filter(entry -> entry.getValue() == clientSocket).forEach(entry -> clientSocketMap.remove(entry.getKey()));
+        filterList(clientSocketMap.entrySet(), entry -> entry.getValue() == clientSocket).forEach(entry -> clientSocketMap.remove(entry.getKey()));
     }
 
     public static String getClientIp(ChannelHandlerContext ctx) {

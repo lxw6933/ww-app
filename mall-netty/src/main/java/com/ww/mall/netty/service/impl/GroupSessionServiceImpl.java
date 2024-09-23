@@ -1,8 +1,8 @@
 package com.ww.mall.netty.service.impl;
 
+import com.ww.mall.netty.entity.Group;
 import com.ww.mall.netty.service.GroupSessionService;
 import com.ww.mall.netty.service.SessionService;
-import com.ww.mall.netty.entity.Group;
 import io.netty.channel.Channel;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -10,10 +10,10 @@ import org.springframework.stereotype.Service;
 import javax.annotation.Resource;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.stream.Collectors;
+
+import static com.ww.mall.common.utils.CollectionUtils.convertList;
 
 /**
  * @author ww
@@ -66,10 +66,7 @@ public class GroupSessionServiceImpl implements GroupSessionService {
 
     @Override
     public List<Channel> getMembersChannel(String name) {
-        return getMembers(name).stream()
-                .map(member -> sessionService.getChannel(member))
-                .filter(Objects::nonNull)
-                .collect(Collectors.toList());
+        return convertList(getMembers(name), member -> sessionService.getChannel(member));
     }
 
 }

@@ -1,10 +1,12 @@
 package com.ww.mall.cart.entity;
 
 import lombok.Data;
-import org.apache.commons.collections4.CollectionUtils;
+import lombok.Getter;
 
 import java.math.BigDecimal;
 import java.util.List;
+
+import static com.ww.mall.common.utils.CollectionUtils.getSumValue;
 
 /**
  * @description:
@@ -36,17 +38,11 @@ public class Cart {
     /**
      * 购物车扣减总金额
      */
+    @Getter
     private BigDecimal reduceAmount = BigDecimal.ZERO;
 
     public Integer getCountNum() {
-        if (CollectionUtils.isNotEmpty(this.cartItems)) {
-            return this.cartItems.stream()
-                    .map(CartItem::getCount)
-                    .reduce(Integer::sum)
-                    .orElse(0);
-        } else {
-            return 0;
-        }
+        return getSumValue(this.cartItems, CartItem::getCount, Integer::sum, 0);
     }
 
     public Integer getCountType() {
@@ -54,20 +50,7 @@ public class Cart {
     }
 
     public BigDecimal getTotalAmount() {
-        if (CollectionUtils.isNotEmpty(this.cartItems)) {
-            BigDecimal cartSkuTotalAmount = this.cartItems.stream()
-                    .map(CartItem::getTotalPrice)
-                    .reduce(BigDecimal::add)
-                    .orElse(BigDecimal.ZERO);
-            cartSkuTotalAmount = cartSkuTotalAmount.subtract(getReduceAmount());
-            cartSkuTotalAmount = cartSkuTotalAmount.compareTo(BigDecimal.ZERO) > 0 ? cartSkuTotalAmount : BigDecimal.ZERO;
-            return cartSkuTotalAmount;
-        } else {
-            return BigDecimal.ZERO;
-        }
+        return getSumValue(this.cartItems, CartItem::getTotalPrice, BigDecimal::add, BigDecimal.ZERO);
     }
 
-    public BigDecimal getReduceAmount() {
-        return reduceAmount;
-    }
 }

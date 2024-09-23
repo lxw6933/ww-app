@@ -17,9 +17,9 @@ import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.ThreadPoolExecutor;
-import java.util.stream.Collectors;
 
 import static com.ww.mall.cart.constant.CartConstant.CART_PREFIX;
+import static com.ww.mall.common.utils.CollectionUtils.convertList;
 
 /**
  * @description:
@@ -135,9 +135,7 @@ public class CartServiceImpl implements CartService {
         List<CartItem> userCartList = new ArrayList<>();
         BoundHashOperations<String, Object, Object> userCart = getUserCart();
         if (CollectionUtils.isNotEmpty(userCart.values())) {
-            userCartList = userCart.values().stream()
-                    .map(res -> JSON.parseObject(res.toString(), CartItem.class))
-                    .collect(Collectors.toList());
+            userCartList = convertList(userCart.values(), res -> JSON.parseObject(res.toString(), CartItem.class));
         }
         return userCartList;
     }
