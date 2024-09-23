@@ -53,6 +53,8 @@ import static cn.hutool.core.date.DatePattern.NORM_DATETIME_MS_FORMATTER;
 @Component
 public class AccessLogFilter implements GlobalFilter, Ordered {
 
+    private final DefaultDataBufferFactory dataBufferFactory = new DefaultDataBufferFactory(true);
+
     @Resource
     private CodecConfigurer codecConfigurer;
 
@@ -238,7 +240,6 @@ public class AccessLogFilter implements GlobalFilter, Ordered {
 
     private byte[] readContent(List<? extends DataBuffer> dataBuffers) {
         // 合并多个流集合，解决返回体分段传输
-        DataBufferFactory dataBufferFactory = new DefaultDataBufferFactory();
         DataBuffer join = dataBufferFactory.join(dataBuffers);
         byte[] content = new byte[join.readableByteCount()];
         join.read(content);
