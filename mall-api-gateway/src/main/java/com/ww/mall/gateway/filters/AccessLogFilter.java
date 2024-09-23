@@ -65,7 +65,7 @@ public class AccessLogFilter implements GlobalFilter, Ordered {
      */
     private void writeAccessLog(AccessLog gatewayLog) {
         // 方式一：打印 Logger 后，通过 ELK 进行收集
-        // log.info("[writeAccessLog][日志内容：{}]", JsonUtils.toJsonString(gatewayLog));
+        // log.info("[writeAccessLog][网关日志：{}]", JsonUtils.toJsonString(gatewayLog));
 
         // 方式二：打印到控制台，方便排查错误
         Map<String, Object> values = MapUtil.newHashMap(15, true);

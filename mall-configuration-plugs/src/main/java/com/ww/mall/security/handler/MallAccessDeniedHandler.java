@@ -1,5 +1,6 @@
 package com.ww.mall.security.handler;
 
+import com.ww.mall.common.common.MallBaseUser;
 import com.ww.mall.common.common.Result;
 import com.ww.mall.utils.HttpContextUtils;
 import lombok.extern.slf4j.Slf4j;
@@ -21,7 +22,8 @@ import static com.ww.mall.common.enums.GlobalResCodeConstants.FORBIDDEN;
 public class MallAccessDeniedHandler implements AccessDeniedHandler {
     @Override
     public void handle(HttpServletRequest request, HttpServletResponse response, AccessDeniedException accessDeniedException) {
-        log.error("访问 URL【{}】，用户【{}】没有权限", request.getRequestURI(), SecurityContextHolder.getContext() == null ? "" : SecurityContextHolder.getContext().getAuthentication().getPrincipal());
+        MallBaseUser user = (MallBaseUser) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+        log.error("访问 URL【{}】，[{}]用户[{}]没有权限", request.getRequestURI(), user.getUserType(), user.getId());
         HttpContextUtils.write(response, Result.error(FORBIDDEN));
     }
 }

@@ -12,6 +12,8 @@ import com.ww.mall.web.view.form.IdForm;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
+import javax.annotation.security.PermitAll;
+
 /**
  * @author ww
  * @create 2024-05-20 14:02:20
@@ -46,6 +48,7 @@ public class SysUserController extends MallAbstractController {
         return sf.getSysUserService().delete(form);
     }
 
+    @PermitAll
     @GetMapping("/user/self")
     public CurrentSysUserInfoVO selfInfo() {
         return sf.getSysUserService().selfInfo();

@@ -1,10 +1,16 @@
 package com.ww.mall.security;
 
+import cn.hutool.core.collection.CollUtil;
+import cn.hutool.extra.spring.SpringUtil;
+import com.google.common.collect.HashMultimap;
+import com.google.common.collect.Multimap;
 import com.ww.mall.security.filter.TokenAuthenticationAuthFilter;
 import com.ww.mall.security.handler.MallAccessDeniedHandler;
 import com.ww.mall.security.handler.MallAuthenticationEntryPoint;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.http.HttpMethod;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.config.Customizer;
 import org.springframework.security.config.annotation.authentication.builders.AuthenticationManagerBuilder;
@@ -14,12 +20,25 @@ import org.springframework.security.config.annotation.web.configurers.AbstractHt
 import org.springframework.security.config.annotation.web.configurers.HeadersConfigurer;
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
+import org.springframework.web.bind.annotation.RequestMethod;
+import org.springframework.web.method.HandlerMethod;
+import org.springframework.web.servlet.mvc.method.RequestMappingInfo;
+import org.springframework.web.servlet.mvc.method.annotation.RequestMappingHandlerMapping;
+import org.springframework.web.util.pattern.PathPattern;
+
+import javax.annotation.security.PermitAll;
+import java.util.HashSet;
+import java.util.Map;
+import java.util.Set;
+
+import static com.ww.mall.common.utils.CollectionUtils.convertList;
 
 /**
  * @author ww
  * @create 2024-09-20- 14:29
  * @description:
  */
+@Slf4j
 @Configuration
 public class MallSecurityAutoConfiguration extends WebSecurityConfigurerAdapter {
 
@@ -69,6 +88,8 @@ public class MallSecurityAutoConfiguration extends WebSecurityConfigurerAdapter 
      */
     @Override
     protected void configure(HttpSecurity httpSecurity) throws Exception {
+        // 获取@PermitAll的接口url
+        Multimap<HttpMethod, String> permitAllUrls = getPermitAllUrlsFromAnnotations();
         // 基础配置
         httpSecurity
                 // 开启跨域
@@ -90,6 +111,11 @@ public class MallSecurityAutoConfiguration extends WebSecurityConfigurerAdapter 
                 .antMatchers("/actuator/**", "/websocket/**", "/login/**", "/**/inner/**").permitAll()
                 // 所有门户接口不需要登录
                 .antMatchers("/portal/**").permitAll()
+                // 1.2 设置 @PermitAll 无需认证
+                .antMatchers(HttpMethod.GET, permitAllUrls.get(HttpMethod.GET).toArray(new String[0])).permitAll()
+                .antMatchers(HttpMethod.POST, permitAllUrls.get(HttpMethod.POST).toArray(new String[0])).permitAll()
+                .antMatchers(HttpMethod.PUT, permitAllUrls.get(HttpMethod.PUT).toArray(new String[0])).permitAll()
+                .antMatchers(HttpMethod.DELETE, permitAllUrls.get(HttpMethod.DELETE).toArray(new String[0])).permitAll()
                 // 剩余接口都需要认证
                 .antMatchers("/").authenticated()
                 // 认证通过后，授权校验
@@ -99,6 +125,67 @@ public class MallSecurityAutoConfiguration extends WebSecurityConfigurerAdapter 
 
         // Token Filter
         httpSecurity.addFilterBefore(tokenAuthenticationAuthFilter(), UsernamePasswordAuthenticationFilter.class);
+    }
+
+    private Multimap<HttpMethod, String> getPermitAllUrlsFromAnnotations() {
+        Multimap<HttpMethod, String> result = HashMultimap.create();
+        // 获得接口对应的 HandlerMethod 集合
+        RequestMappingHandlerMapping requestMappingHandlerMapping = SpringUtil.getBean("requestMappingHandlerMapping");
+        Map<RequestMappingInfo, HandlerMethod> handlerMethodMap = requestMappingHandlerMapping.getHandlerMethods();
+        // 获得有 @PermitAll 注解的接口
+        for (Map.Entry<RequestMappingInfo, HandlerMethod> entry : handlerMethodMap.entrySet()) {
+            HandlerMethod handlerMethod = entry.getValue();
+            if (!handlerMethod.hasMethodAnnotation(PermitAll.class)) {
+                continue;
+            }
+            log.info("permitAll method：{}", handlerMethod.getMethod().getName());
+            Set<String> urls = new HashSet<>();
+            if (entry.getKey().getPatternsCondition() != null) {
+                urls.addAll(entry.getKey().getPatternsCondition().getPatterns());
+            }
+            if (entry.getKey().getPathPatternsCondition() != null) {
+                urls.addAll(convertList(entry.getKey().getPathPatternsCondition().getPatterns(), PathPattern::getPatternString));
+            }
+            if (urls.isEmpty()) {
+                continue;
+            }
+
+            // 特殊：使用 @RequestMapping 注解，并且未写 method 属性，此时认为都需要免登录
+            Set<RequestMethod> methods = entry.getKey().getMethodsCondition().getMethods();
+            if (CollUtil.isEmpty(methods)) {
+                result.putAll(HttpMethod.GET, urls);
+                result.putAll(HttpMethod.POST, urls);
+                result.putAll(HttpMethod.PUT, urls);
+                result.putAll(HttpMethod.DELETE, urls);
+                result.putAll(HttpMethod.HEAD, urls);
+                result.putAll(HttpMethod.PATCH, urls);
+                continue;
+            }
+            // 根据请求方法，添加到 result 结果
+            entry.getKey().getMethodsCondition().getMethods().forEach(requestMethod -> {
+                switch (requestMethod) {
+                    case GET:
+                        result.putAll(HttpMethod.GET, urls);
+                        break;
+                    case POST:
+                        result.putAll(HttpMethod.POST, urls);
+                        break;
+                    case PUT:
+                        result.putAll(HttpMethod.PUT, urls);
+                        break;
+                    case DELETE:
+                        result.putAll(HttpMethod.DELETE, urls);
+                        break;
+                    case HEAD:
+                        result.putAll(HttpMethod.HEAD, urls);
+                        break;
+                    case PATCH:
+                        result.putAll(HttpMethod.PATCH, urls);
+                        break;
+                }
+            });
+        }
+        return result;
     }
 
 }
