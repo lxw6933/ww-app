@@ -39,7 +39,7 @@ public abstract class AbstractCodeQueue {
 
     public void addRecordToQueue(IssueCodeRecord issueCodeRecord) {
         recordQueue.offer(issueCodeRecord);
-        log.info("【入队】outOrderCode【{}】codes【{}】", issueCodeRecord.getOutOrderCode(), issueCodeRecord.getCodes());
+        log.info("【入队】outOrderCode[{}]codes[{}]", issueCodeRecord.getOutOrderCode(), issueCodeRecord.getCodes());
         if (!running.get() && recordQueue.size() > BATCH_NUMBER) {
             recordQueueHandler();
         }
@@ -84,7 +84,7 @@ public abstract class AbstractCodeQueue {
             log.info("【发放结果批量入库 数量: {}】", batchCodeRecordList.size());
         } catch (Exception e) {
             log.error("【发放结果批量入库异常】", e);
-            batchCodeRecordList.forEach(errorRecord -> log.error("【发放结果批量入库异常】outOrderCode【{}】codes【{}】", errorRecord.getOutOrderCode(), errorRecord.getCodes()));
+            batchCodeRecordList.forEach(errorRecord -> log.error("【发放结果批量入库异常】outOrderCode[{}]codes[{}]", errorRecord.getOutOrderCode(), errorRecord.getCodes()));
         }
     }
 

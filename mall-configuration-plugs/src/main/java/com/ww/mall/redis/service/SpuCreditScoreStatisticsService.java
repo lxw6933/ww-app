@@ -55,7 +55,7 @@ public class SpuCreditScoreStatisticsService {
         if (spuId == null || channelId == null) {
             return;
         }
-        log.info("本地缓存渠道【{}】商品【{}】评分信用分【{}】", channelId, spuId, score);
+        log.info("本地缓存渠道[{}]商品[{}]评分信用分[{}]", channelId, spuId, score);
         String spuKey = StringUtils.joinWith(RedisKeyConstant.SPLIT_KEY, channelId, spuId);
         creditScoreMap.computeIfAbsent(spuKey, k -> new CreditScore()).addScore(score);
     }
@@ -73,7 +73,7 @@ public class SpuCreditScoreStatisticsService {
                 String channelIdStr = split[0];
                 String spuIdStr = split[1];
                 String hashKey = RedisKeyConstant.SPU_CREDIT_SCORE + channelIdStr;
-                log.info("【{}】评价信用数据同步到redis, 评价信用【{}】【{}】", localKey, localCount, localTotalScore);
+                log.info("[{}]评价信用数据同步到redis, 评价信用[{}]【{}】", localKey, localCount, localTotalScore);
                 try {
                     RMap<String, SpuScore> spuScoreMap = redissonClient.getMap(hashKey);
                     spuScoreMap.compute(spuIdStr, (spuId, spuScore) -> {

@@ -44,7 +44,7 @@ public class ServerConfig {
                 .childHandler(serverHandlerInitializer);
         ChannelFuture serverStartFuture = serverBootstrap.bind().sync();
         if (serverStartFuture.isSuccess()) {
-            log.info("netty server success start port：【{}】", mallNettyProperties.getPort());
+            log.info("netty server success start port：[{}]", mallNettyProperties.getPort());
         } else {
             log.error("netty server fail start");
         }

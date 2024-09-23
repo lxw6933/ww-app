@@ -19,7 +19,7 @@ public class HeartBeatHandler extends ChannelDuplexHandler {
         if (evt instanceof IdleStateEvent){
             IdleStateEvent idleStateEvent = (IdleStateEvent) evt;
             if (idleStateEvent.state() == IdleState.READER_IDLE) {
-                log.info("[websocket server] 15 seconds did not receive the client ❤ message! Disconnect the client【{}】", ctx.channel().remoteAddress());
+                log.info("[websocket server] 15 seconds did not receive the client ❤ message! Disconnect the client[{}]", ctx.channel().remoteAddress());
                 ctx.channel().close();
             }
         }

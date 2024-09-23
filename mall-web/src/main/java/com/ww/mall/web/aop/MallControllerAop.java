@@ -57,7 +57,7 @@ public class MallControllerAop {
                 .filter(e -> !(e instanceof MultipartFile || e instanceof HttpServletRequest || e instanceof HttpServletResponse || e instanceof BindingResult))
                 .collect(Collectors.toList());
         String params = JSONUtil.toJsonStr(targetArgs);
-        log.info("IP:【{}】请求 [{}#{}] 请求参数: {}", ip, className, methodName, params);
+        log.info("IP:[{}]请求 [{}#{}] 请求参数: {}", ip, className, methodName, params);
     }
 
     /**

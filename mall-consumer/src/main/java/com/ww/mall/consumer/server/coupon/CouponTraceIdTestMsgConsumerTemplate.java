@@ -12,7 +12,7 @@ import lombok.extern.slf4j.Slf4j;
 public class CouponTraceIdTestMsgConsumerTemplate extends MsgConsumerTemplate<Integer>  {
     @Override
     public boolean serverHandler(Integer msg) {
-        log.info("traceId 测试 消息【{}】消费处理逻辑", msg);
+        log.info("traceId 测试 消息[{}]消费处理逻辑", msg);
         int a = 1 / msg;
         return true;
     }

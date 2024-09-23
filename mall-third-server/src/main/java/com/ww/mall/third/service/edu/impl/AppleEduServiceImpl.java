@@ -246,21 +246,21 @@ public class AppleEduServiceImpl implements AppleEduService {
     private <T, V> void resultHandler(BaseAppleEduReqBO<T> baseReqBO, ResponseEntity<BaseAppleEduResultVO<V>> responseEntity, String cmd) {
         BaseAppleEduResultVO<V> body = responseEntity.getBody();
         if (body == null) {
-            log.error("【apple_edu】cmd接口:【{}】调用结果===》payload请求参数:【{}】调用失败: {}", cmd, baseReqBO.getPayload(), responseEntity);
+            log.error("【apple_edu】cmd接口:[{}]调用结果===》payload请求参数:[{}]调用失败: {}", cmd, baseReqBO.getPayload(), responseEntity);
             throw new ApiException("edu接口远程调用失败");
         }
         if (!EDU_SUCCESS_CODE.equals(body.getCode())) {
-            log.error("【apple_edu】cmd接口:【{}】调用结果===》payload请求参数:【{}】调用失败：{}", cmd, baseReqBO.getPayload(), body);
+            log.error("【apple_edu】cmd接口:[{}]调用结果===》payload请求参数:[{}]调用失败：{}", cmd, baseReqBO.getPayload(), body);
             if (SYSTEM_ERROR_CODES.contains(body.getCode())) {
                 throw new ApiException("活动无效");
             }
             throw new ApiException(body.getError());
         }
         if (body.getPayload() == null) {
-            log.error("【apple_edu】cmd接口:【{}】调用结果===》payload请求参数:【{}】返回异常", cmd, baseReqBO.getPayload());
+            log.error("【apple_edu】cmd接口:[{}]调用结果===》payload请求参数:[{}]返回异常", cmd, baseReqBO.getPayload());
             throw new ApiException(body.getError());
         }
-        log.info("【apple_edu】cmd接口:【{}】调用结果===》payload请求参数:【{}】调用成功：{}", cmd, baseReqBO.getPayload(), body);
+        log.info("【apple_edu】cmd接口:[{}]调用结果===》payload请求参数:[{}]调用成功：{}", cmd, baseReqBO.getPayload(), body);
     }
 
 }

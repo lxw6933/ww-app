@@ -40,7 +40,7 @@ public class JacksonSerializer implements MallSerializer {
         try {
             return mapper.readValue(bytes, clazz);
         } catch (IOException e) {
-            log.error("【{}】【{}】反序列化异常：", clazz, bytes, e);
+            log.error("[{}][{}]反序列化异常：", clazz, bytes, e);
             throw new ApiException(GlobalResCodeConstants.SYSTEM_ERROR);
         }
     }

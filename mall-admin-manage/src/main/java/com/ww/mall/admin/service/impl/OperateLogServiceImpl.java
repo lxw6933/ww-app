@@ -42,7 +42,7 @@ public class OperateLogServiceImpl implements OperateLogService {
     @Async
     @Override
     public void save(OperateLogDTO operateLogDTO) {
-        log.info("保存操作日志traceId【{}】", operateLogDTO.getTraceId());
+        log.info("保存操作日志traceId[{}]", operateLogDTO.getTraceId());
         OperateLog operateLog = BeanUtil.toBean(operateLogDTO, OperateLog.class);
         mongoTemplate.save(operateLog);
     }

@@ -25,10 +25,10 @@ public class MemberRegisterMsgConsumerTemplate extends MsgConsumerTemplate<Long>
         Result<Boolean> booleanResult = memberFeignService.addMemberIntegral(addMemberIntegralBO);
         booleanResult.checkError();
         if (Boolean.TRUE.equals(booleanResult.getData())) {
-            log.info("【新用户注册】添加积分成功");
+            log.info("[新用户注册]添加积分成功");
             return true;
         } else {
-            log.warn("【新用户注册】添加积分失败");
+            log.warn("[新用户注册]添加积分失败");
             return false;
         }
     }

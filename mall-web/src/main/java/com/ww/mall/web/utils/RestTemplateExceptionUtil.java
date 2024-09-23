@@ -17,13 +17,13 @@ public class RestTemplateExceptionUtil {
 
     // 服务流量控制处理
     public static ClientHttpResponse handleException(HttpRequest request, byte[] body, ClientHttpRequestExecution execution, BlockException exception) {
-        log.error("restTemplate 远程调用第三方接口【{}】响应数据【{}】异常[handleException blockException]: {}", request.getURI(), new String(body), exception.getMessage());
+        log.error("restTemplate 远程调用第三方接口[{}]响应数据[{}]异常[handleException blockException]: {}", request.getURI(), new String(body), exception.getMessage());
         return new SentinelClientHttpResponse("{\"code\":\"500\",\"msg\": \"服务流量控制处理\"}");
     }
 
     // 服务熔断降级处理
     public static ClientHttpResponse fallback(HttpRequest request, byte[] body, ClientHttpRequestExecution execution, BlockException exception) {
-        log.error("restTemplate 远程调用第三方接口【{}】响应数据【{}】异常[fallback blockException]: {}", request.getURI(), new String(body), exception.getMessage());
+        log.error("restTemplate 远程调用第三方接口[{}]响应数据[{}]异常[fallback blockException]: {}", request.getURI(), new String(body), exception.getMessage());
         return new SentinelClientHttpResponse("{\"code\":\"500\",\"msg\": \"服务熔断降级处理\"}");
     }
 

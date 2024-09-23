@@ -22,7 +22,7 @@ public class RedisCacheMsgListener extends MallRedisListener {
     public void onMessage(Message message, byte[] pattern) {
         String channel = new String(message.getChannel());
         String content = new String(message.getBody());
-        log.info("接收到redis渠道【{}】: 发布的内容【{}】", channel, content);
+        log.info("接收到redis渠道[{}]: 发布的内容[{}]", channel, content);
         switch (channel) {
             case RedisChannelConstant.MALL_SPU_CHANNEL:
                 break;

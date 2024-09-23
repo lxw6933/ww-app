@@ -49,8 +49,8 @@ public class RSAUtil {
             String privateEncodeStr = Base64.encodeBase64String(privateKeyEncoded);
             String publicEncodeStr = Base64.encodeBase64String(publicKeyEncoded);
             // 打印公钥和私钥
-            log.info("生成的公钥: 【{}】", publicEncodeStr);
-            log.info("生成的私钥: 【{}】", privateEncodeStr);
+            log.info("生成的公钥: [{}]", publicEncodeStr);
+            log.info("生成的私钥: [{}]", privateEncodeStr);
             keys.put(Constant.RSA_PUBLIC_KEY, publicEncodeStr);
             keys.put(Constant.RSA_PRIVATE_KEY, privateEncodeStr);
             return keys;

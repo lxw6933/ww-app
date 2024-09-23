@@ -64,7 +64,7 @@ public class UniqueService {
             // check in Set and add if not exists
             return !outOrderCodeSet.add(target);
         } catch (Exception e) {
-            log.error("【{}】校验异常", target, e);
+            log.error("[{}]校验异常", target, e);
             throw e;
         }
     }

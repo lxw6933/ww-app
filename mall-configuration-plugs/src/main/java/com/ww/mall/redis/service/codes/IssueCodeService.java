@@ -109,7 +109,7 @@ public class IssueCodeService {
      */
     public List<String> distributeCodes(String actCode, String outOrderCode, int quantity) {
         if (uniqueService.checkOutOrderCode(outOrderCode)) {
-            log.warn("【{}】重复使用", outOrderCode);
+            log.warn("[{}]重复使用", outOrderCode);
             // return before codes result
             throw new ApiException("当前单号已发放过兑换码，请勿重复使用");
         }
@@ -117,11 +117,11 @@ public class IssueCodeService {
         RScript scriptExecutor = redissonClient.getScript();
         List<Object> keys = Collections.singletonList(CONVERT_CODE_LIST + actCode);
         List<String> result = scriptExecutor.evalSha(RScript.Mode.READ_WRITE, issueScriptSha1, RScript.ReturnType.MULTI, keys, quantity);
-        log.info("【{}】发放结果：{}", outOrderCode, result);
+        log.info("[{}]发放结果：{}", outOrderCode, result);
         // result valid
         if (result.isEmpty()) {
             if (!uniqueService.removeTargetFormSet(outOrderCode)) {
-                log.warn("外部单号【{}】移除失败", outOrderCode);
+                log.warn("外部单号[{}]移除失败", outOrderCode);
             }
             // TODO 异步通知服务补充兑换码数量
             throw new ApiException("兑换码数量不足，请稍后再试");

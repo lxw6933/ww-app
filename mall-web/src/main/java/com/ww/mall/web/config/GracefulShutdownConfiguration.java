@@ -44,9 +44,9 @@ public class GracefulShutdownConfiguration implements SmartLifecycle {
     }
 
     private void deregisterNacosInstance() {
-        log.info("即将关闭nacos服务【{}】【{}】【{}:{}】注册...", nacosDiscoveryProperties.getService(), nacosDiscoveryProperties.getGroup(), nacosDiscoveryProperties.getIp(), nacosDiscoveryProperties.getPort());
+        log.info("即将关闭nacos服务[{}][{}]【{}:{}】注册...", nacosDiscoveryProperties.getService(), nacosDiscoveryProperties.getGroup(), nacosDiscoveryProperties.getIp(), nacosDiscoveryProperties.getPort());
         nacosAutoServiceRegistration.stop();
-        log.info("成功关闭nacos服务【{}】【{}】【{}:{}】注册...", nacosDiscoveryProperties.getService(), nacosDiscoveryProperties.getGroup(), nacosDiscoveryProperties.getIp(), nacosDiscoveryProperties.getPort());
+        log.info("成功关闭nacos服务[{}][{}]【{}:{}】注册...", nacosDiscoveryProperties.getService(), nacosDiscoveryProperties.getGroup(), nacosDiscoveryProperties.getIp(), nacosDiscoveryProperties.getPort());
     }
 
     @Override

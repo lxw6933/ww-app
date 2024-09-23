@@ -190,7 +190,7 @@ public class DemoServiceImpl implements DemoService {
             String orderNo = IdUtil.generatorIdStr();
             int totalOrderNum = num.incrementAndGet();
             mallPublisher.publishMsg(ExchangeConstant.MALL_OMS_EXCHANGE, RouteKeyConstant.MALL_CREATE_ORDER_KEY, orderNo);
-            log.info("下单总数【{}】订单【{}】下单成功【{}】", totalOrderNum, orderNo, orderDate);
+            log.info("下单总数[{}]订单[{}]下单成功[{}]", totalOrderNum, orderNo, orderDate);
         }
         return true;
     }
@@ -255,7 +255,7 @@ public class DemoServiceImpl implements DemoService {
                 break;
             case 2:
                 // 判断
-                log.info("是否包含：【{}】,【{}】", ele, redisTemplate.opsForValue().getBit("bitMapTest", ele));
+                log.info("是否包含：[{}],[{}]", ele, redisTemplate.opsForValue().getBit("bitMapTest", ele));
         }
     }
 

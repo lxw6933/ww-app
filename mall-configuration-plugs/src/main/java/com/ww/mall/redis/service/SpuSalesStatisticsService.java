@@ -58,7 +58,7 @@ public class SpuSalesStatisticsService {
     private void syncSaleDataToRedis() {
         salesMap.forEach((key, longAddr) -> {
             if (longAddr.sum() > 0) {
-                log.info("【{}】销量数据同步到redis, 销量【{}】", key, longAddr.sum());
+                log.info("[{}]销量数据同步到redis, 销量[{}]", key, longAddr.sum());
                 redisTemplate.opsForValue().increment(RedisKeyConstant.SPU_SALE_DATA + key, longAddr.sumThenReset());
             }
         });

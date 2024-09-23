@@ -44,7 +44,7 @@ public class DirectMemoryMonitorTask {
     @Scheduled(fixedRate = 10000)
     public void report() {
         int currentMemory = (int) (directMemory.get() / 1024);
-        log.info("【{}】:【{}k】", MONITOR_KEY, currentMemory);
+        log.info("[{}]:【{}k】", MONITOR_KEY, currentMemory);
     }
 
 }

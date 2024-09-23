@@ -62,7 +62,7 @@ public class MallRedisPublishAspect extends MallAbstractAspect{
                 } else {
                     messageJson = JSON.toJSONString(Collections.singleton(message));
                 }
-                log.info("发布redis订阅渠道【{}】消息【{}】", channelName, messageJson);
+                log.info("发布redis订阅渠道[{}]消息[{}]", channelName, messageJson);
                 mallRedisTemplate.publishMessage(channelName, messageJson);
             } catch (Exception e) {
                 log.error("发布redis订阅渠道异常：{}", e.getMessage());

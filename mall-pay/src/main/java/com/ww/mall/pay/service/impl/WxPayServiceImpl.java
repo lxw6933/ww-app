@@ -113,7 +113,7 @@ public class WxPayServiceImpl implements WxPayService {
 
         Map<String, String> result = sendWxPayReq(request, wxPayApiConfig, paramMap);
         String webUrl = result.get("mweb_url");
-        log.info("h5微信支付链接: 【{}】", webUrl);
+        log.info("h5微信支付链接: [{}]", webUrl);
         try {
             response.sendRedirect(webUrl);
         } catch (IOException e) {
@@ -425,7 +425,7 @@ public class WxPayServiceImpl implements WxPayService {
 
     @Override
     public String queryPayResult(String transactionId, String outTradeNo) {
-        log.info("transactionId:【{}】outTradeNo:【{}】查询微信支付结果", transactionId, outTradeNo);
+        log.info("transactionId:[{}]outTradeNo:[{}]查询微信支付结果", transactionId, outTradeNo);
         try {
             WxPayApiConfig wxPayApiConfig = WxPayApiConfigKit.getWxPayApiConfig();
 
@@ -448,7 +448,7 @@ public class WxPayServiceImpl implements WxPayService {
 
     @Override
     public String refund(String transactionId, String outTradeNo) {
-        log.info("transactionId:【{}】outTradeNo:【{}】发起微信退款", transactionId, outTradeNo);
+        log.info("transactionId:[{}]outTradeNo:[{}]发起微信退款", transactionId, outTradeNo);
         if (StringUtils.isBlank(outTradeNo) && StringUtils.isBlank(transactionId)) {
             throw new ApiException("退款单号不能为空");
         }
@@ -468,7 +468,7 @@ public class WxPayServiceImpl implements WxPayService {
                     .build()
                     .createSign(wxPayApiConfig.getPartnerKey(), SignType.MD5);
             String refundStr = WxPayApi.orderRefund(false, params, wxPayApiConfig.getCertPath(), wxPayApiConfig.getMchId());
-            log.info("transactionId:【{}】outTradeNo:【{}】微信发起退款结果：{}", transactionId, outTradeNo, refundStr);
+            log.info("transactionId:[{}]outTradeNo:[{}]微信发起退款结果：{}", transactionId, outTradeNo, refundStr);
             return refundStr;
         } catch (Exception e) {
             log.error("微信发起退款异常", e);

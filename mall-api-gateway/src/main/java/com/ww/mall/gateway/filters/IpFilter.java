@@ -57,7 +57,7 @@ public class IpFilter implements GlobalFilter, Ordered {
         // 获取配置的灰度ip白名单
         List<String> grayIps = serverGrayProperties.getGrayIps();
         boolean grayIpFlag = CollectionUtils.isNotEmpty(grayIps) && grayIps.contains(userRealIp);
-        log.info("是否开启灰度:【{}】生产版本:【{}】灰度版本:【{}】请求ip是否为灰度:【{}】",
+        log.info("是否开启灰度:[{}]生产版本:[{}]灰度版本:[{}]请求ip是否为灰度:[{}]",
                 enableGray, prodVersion, grayVersion, grayIpFlag);
         ServerHttpRequest ipRequest;
         if (Boolean.TRUE.equals(enableGray) && grayIpFlag) {

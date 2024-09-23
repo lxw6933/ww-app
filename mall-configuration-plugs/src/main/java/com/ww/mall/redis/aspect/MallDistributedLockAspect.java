@@ -62,21 +62,21 @@ public class MallDistributedLockAspect extends MallAbstractAspect {
         String lockKey = StrUtil.join(Constant.SPLIT, LOCK_PREFIX, SecureUtil.md5(sb.toString()));
         RLock lock = redissonClient.getLock(lockKey);
         try {
-            log.info("线程【{}】尝试获取锁key：{}", Thread.currentThread().getId(), lockKey);
+            log.info("线程[{}]尝试获取锁key：{}", Thread.currentThread().getId(), lockKey);
             boolean successGetLock = lock.tryLock(mallDistributedLock.waitTime(), mallDistributedLock.leaseTime(), mallDistributedLock.timeUnit());
             if (!successGetLock) {
                 throw new ApiException(GlobalResCodeConstants.LIMIT_REQUEST);
             }
-            log.info("线程【{}】获取到锁key：{}", Thread.currentThread().getId(), lockKey);
+            log.info("线程[{}]获取到锁key：{}", Thread.currentThread().getId(), lockKey);
             return joinPoint.proceed();
         } catch (ApiException e) {
             throw new ApiException(e.getCode(), e.getMessage());
         } catch (Exception e) {
-            log.info("线程【{}】锁key【{}】业务异常【{}】", Thread.currentThread().getId(), lockKey, e.getMessage());
+            log.info("线程[{}]锁key[{}]业务异常[{}]", Thread.currentThread().getId(), lockKey, e.getMessage());
             throw new ApiException(GlobalResCodeConstants.SYSTEM_ERROR);
         } finally {
             if (lock.isHeldByCurrentThread()) {
-                log.info("线程【{}】释放锁key：{}", Thread.currentThread().getId(), lockKey);
+                log.info("线程[{}]释放锁key：{}", Thread.currentThread().getId(), lockKey);
                 lock.unlock();
             }
         }

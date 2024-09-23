@@ -74,7 +74,7 @@ public class MallWebSocketServerAutoConfiguration {
         try {
             serverStartFuture = serverBootstrap.bind(mallNettyProperties.getWebsocketPort()).sync();
             if (serverStartFuture.isSuccess()) {
-                log.info("mall websocket server success start port：【{}】", mallNettyProperties.getWebsocketPort());
+                log.info("mall websocket server success start port：[{}]", mallNettyProperties.getWebsocketPort());
             } else {
                 log.error("mall websocket server fail start");
             }

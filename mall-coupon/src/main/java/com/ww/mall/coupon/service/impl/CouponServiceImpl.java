@@ -200,7 +200,7 @@ public class CouponServiceImpl extends ServiceImpl<CouponMapper, Coupon> impleme
         // 构建用户领取优惠券记录
         MemberCoupon memberCoupon = buildMemberCoupon(clientUser, coupon);
         mongoTemplate.save(memberCoupon);
-        log.info("用户【{}】领取优惠券【{}】", clientUser.getId(), memberCoupon);
+        log.info("用户[{}]领取优惠券[{}]", clientUser.getId(), memberCoupon);
         return true;
     }
 
@@ -226,7 +226,7 @@ public class CouponServiceImpl extends ServiceImpl<CouponMapper, Coupon> impleme
                     memberCoupon.setCouponStatus(couponStatus);
                     memberCoupon.setUpdateTime(DateUtil.format(now, DatePattern.NORM_DATETIME_PATTERN));
                     mongoTemplate.save(memberCoupon);
-                    log.info("用户【{}】优惠券【{}】更新状态为【{}】", memberId, memberCoupon.getCouponTicketCode(), couponStatus);
+                    log.info("用户[{}]优惠券[{}]更新状态为[{}]", memberId, memberCoupon.getCouponTicketCode(), couponStatus);
                 }
             });
         }

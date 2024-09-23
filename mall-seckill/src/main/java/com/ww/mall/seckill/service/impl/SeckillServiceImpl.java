@@ -119,7 +119,7 @@ public class SeckillServiceImpl implements SeckillService {
             String orderDate = DateUtil.format(new Date(), DatePattern.NORM_DATETIME_PATTERN);
             String orderNo = IdUtil.generatorIdStr();
             mallPublisher.publishMsg(ExchangeConstant.MALL_OMS_EXCHANGE, RouteKeyConstant.MALL_CREATE_ORDER_KEY, orderNo);
-            log.info("订单【{}】下单成功【{}】", orderNo, orderDate);
+            log.info("订单[{}]下单成功[{}]", orderNo, orderDate);
             return true;
         } else {
             // TODO 标记秒杀结束，无库存

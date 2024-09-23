@@ -29,7 +29,7 @@ public class ClientHandler extends ChannelInboundHandlerAdapter {
 
     @Override
     public void channelRead(ChannelHandlerContext ctx, Object msg) throws Exception {
-        log.info("[client] receive netty server msg:【{}】", msg);
+        log.info("[client] receive netty server msg:[{}]", msg);
         super.channelRead(ctx, msg);
     }
 

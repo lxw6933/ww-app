@@ -26,7 +26,7 @@ public class TokenBucket {
         Executors.newSingleThreadScheduledExecutor().scheduleWithFixedDelay(() -> {
             synchronized (this) {
                 int res = Math.min(this.capacity, this.bucket.addAndGet(this.tokenRate));
-                log.info("生成token, 当前bucket容量为【{}】个", res);
+                log.info("生成token, 当前bucket容量为[{}]个", res);
                 this.bucket.set(res);
             }
         }, 1, 1, TimeUnit.SECONDS);

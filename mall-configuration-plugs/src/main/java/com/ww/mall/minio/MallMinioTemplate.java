@@ -363,7 +363,7 @@ public class MallMinioTemplate {
      * @return vo
      */
     public CreateMultipartUploadResultVO chunkFileUpload(ChunkFileUploadReqBO reqBO) {
-        log.info("开始分片上传：【{}】", JSON.toJSONString(reqBO));
+        log.info("开始分片上传：[{}]", JSON.toJSONString(reqBO));
         // 1. 收集分片信息
         Map<String, Object> resMap = new HashMap<>();
         if (CharSequenceUtil.isEmpty(reqBO.getContentType())) {
@@ -393,7 +393,7 @@ public class MallMinioTemplate {
             String uploadUrl = this.getFileUrl(reqBO.getFileMd5(), reqBO.getFileName(), chunkFileParams);
             resMap.put("chunk_" + (i - 1), uploadUrl);
         }
-        log.info("bucket【{}】uploadId【{}】分片上传成功", reqBO.getFileMd5(), reqBO.getUploadId());
+        log.info("bucket[{}]uploadId[{}]分片上传成功", reqBO.getFileMd5(), reqBO.getUploadId());
         CreateMultipartUploadResultVO createMultipartUploadResultVO = new CreateMultipartUploadResultVO();
         createMultipartUploadResultVO.setUploadId(reqBO.getUploadId());
         createMultipartUploadResultVO.setChunkFileList(resMap);

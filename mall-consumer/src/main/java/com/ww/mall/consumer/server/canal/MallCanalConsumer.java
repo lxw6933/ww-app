@@ -31,7 +31,7 @@ public class MallCanalConsumer {
         String bodyStr = new String(bodyByte, StandardCharsets.UTF_8);
         String bodyJsonStr = JSONUtil.toJsonStr(bodyStr);
         CanalMessage<?> canalMessage = JSONUtil.toBean(bodyJsonStr, CanalMessage.class);
-        log.info("收到canal消息,数据库:【{}】表名:【{}】操作类型:【{}】数据：【{}】", canalMessage.getDatabase(), canalMessage.getTable(), canalMessage.getType(), canalMessage.getData());
+        log.info("收到canal消息,数据库:[{}]表名:[{}]操作类型:[{}]数据：[{}]", canalMessage.getDatabase(), canalMessage.getTable(), canalMessage.getType(), canalMessage.getData());
         MsgConsumerTemplate<CanalMessage<?>> canalMsgConsumer = new CanalMsgConsumerTemplate();
         canalMsgConsumer.consumer(message, canalMessage, channel);
     }

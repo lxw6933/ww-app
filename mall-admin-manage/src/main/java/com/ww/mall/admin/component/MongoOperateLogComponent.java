@@ -57,7 +57,7 @@ public class MongoOperateLogComponent implements ILogRecordService {
             }
             operateLogService.save(reqDTO);
         } catch (Exception e) {
-            log.error("logRecord:【{}】出现异常", logRecord, e);
+            log.error("logRecord:[{}]出现异常", logRecord, e);
         }
     }
 

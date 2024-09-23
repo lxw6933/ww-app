@@ -112,7 +112,7 @@ public class MallCaffeineUtil {
                                                         TimeUnit expireTimeUnit) {
         Caffeine<K, V> caffeine = Caffeine.newBuilder()
                 .initialCapacity(minSize)
-                .removalListener((RemovalListener<K, V>) (key, value, cause) -> log.info("caffeine remove key:【{}】value:【{}】cause:【{}】", key, JSON.toJSONString(value), cause))
+                .removalListener((RemovalListener<K, V>) (key, value, cause) -> log.info("caffeine remove key:[{}]value:[{}]cause:[{}]", key, JSON.toJSONString(value), cause))
                 .maximumSize(maxSize);
         if (Objects.equals(minExpireTime, maxExpireTime)) {
             caffeine.expireAfterWrite(minExpireTime, expireTimeUnit);
@@ -135,14 +135,14 @@ public class MallCaffeineUtil {
             @Override
             public @Nullable V load(@NonNull K key) throws Exception {
                 V v = refreshFactory.apply(key);
-                log.info("query database data key:【{}】value:【{}】", key, v);
+                log.info("query database data key:[{}]value:[{}]", key, v);
                 return v;
             }
 
             @Override
             public @Nullable V reload(@NonNull K key, @NonNull V oldValue) throws Exception {
                 V v = refreshFactory.apply(key);
-                log.info("reload database data key:【{}】value:【{}】", key, v);
+                log.info("reload database data key:[{}]value:[{}]", key, v);
                 return v;
             }
         };
@@ -188,7 +188,7 @@ public class MallCaffeineUtil {
         @Override
         public long expireAfterCreate(@NonNull K key, @NonNull V value, long currentTime) {
             int expireTime = RandomUtil.randomInt(minExpirationTime, maxExpirationTime);
-            log.info("创建key:【{}】过期时间：【{}】【{}】", key, expireTime, expireTimeUnit.name());
+            log.info("创建key:[{}]过期时间：[{}][{}]", key, expireTime, expireTimeUnit.name());
             return expireTimeUnit.toNanos(expireTime);
         }
 

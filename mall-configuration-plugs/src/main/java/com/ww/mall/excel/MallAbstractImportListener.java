@@ -78,7 +78,7 @@ public abstract class MallAbstractImportListener<T> extends AnalysisEventListene
             }
             importTaskList.clear();
         }
-        log.info("此次导入总数据量：【{}】异常数据量：【{}】", importTotalCount.get(), importErrorCount.get());
+        log.info("此次导入总数据量：[{}]异常数据量：[{}]", importTotalCount.get(), importErrorCount.get());
     }
 
     private void asyncHandlerData() {

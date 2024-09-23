@@ -54,7 +54,7 @@ public class ServerClientHandler extends ChannelInboundHandlerAdapter {
         sessionService.unbind(ctx.channel());
         String clientIp = ClientSocketHolder.getClientIp(ctx);
         int clientPort = ClientSocketHolder.getClientPort(ctx);
-        log.info("[server] an exception【{}】 occurred on the client【{}:{}】", cause.getMessage(), clientIp, clientPort);
+        log.info("[server] an exception[{}] occurred on the client【{}:{}】", cause.getMessage(), clientIp, clientPort);
     }
 
 }

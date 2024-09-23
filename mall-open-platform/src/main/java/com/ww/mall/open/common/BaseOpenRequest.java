@@ -64,7 +64,7 @@ public class BaseOpenRequest<T> {
 
     private void verifyReqSign(String publicKey) {
         String reqData = this.sysCode + this.appCode + this.methodCode + this.transId + JSON.toJSON(data);
-        log.info("请求reqData：【{}】商户【{}】生成sign：【{}】", reqData, this.sysCode, this.sign);
+        log.info("请求reqData：[{}]商户[{}]生成sign：[{}]", reqData, this.sysCode, this.sign);
         boolean success = DigitalSignatureUtil.verifySignature(reqData, this.sign, Base64.decodeBase64(publicKey));
         Assert.isTrue(success, () -> new ApiException(GlobalResCodeConstants.SIGN_ERROR));
     }

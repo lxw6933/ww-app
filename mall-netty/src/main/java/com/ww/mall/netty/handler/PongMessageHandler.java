@@ -36,7 +36,7 @@ public class PongMessageHandler extends MallAbstractChatInboundHandler<PongChatM
 
     @Override
     protected void channelRead0(ChannelHandlerContext ctx, PongChatMessage msg) throws Exception {
-        log.info("[client] receive a ❤ message【{}】 from the server【{}】", msg, ctx.channel().remoteAddress());
+        log.info("[client] receive a ❤ message[{}] from the server[{}]", msg, ctx.channel().remoteAddress());
         // 给服务端发送心跳消息
         PingChatMessage pingChatMessage = new PingChatMessage();
         pingChatMessage.setSequenceId(ctx.channel().hashCode());
