@@ -17,6 +17,55 @@ import static java.util.Arrays.asList;
  */
 public class CollectionUtils {
 
+    /**
+     * true：匹配predicate到集合中任意一个元素
+     */
+    public static <T> boolean anyMatch(Collection<T> source, Predicate<T> predicate) {
+        return source.stream().anyMatch(predicate);
+    }
+
+    /**
+     * 求和
+     */
+    public static <T, V extends Comparable<? super V>> V getSumValue(List<T> source, Function<T, V> valueFunc, BinaryOperator<V> accumulator) {
+        return getSumValue(source, valueFunc, accumulator, null);
+    }
+
+    public static <T, V extends Comparable<? super V>> V getSumValue(Collection<T> source, Function<T, V> valueFunc, BinaryOperator<V> accumulator, V defaultValue) {
+        if (CollUtil.isEmpty(source)) {
+            return defaultValue;
+        }
+        assert !source.isEmpty();
+        return source.stream().map(valueFunc).filter(Objects::nonNull).reduce(accumulator).orElse(defaultValue);
+    }
+
+    /**
+     * 最大值
+     */
+    public static <T, V extends Comparable<? super V>> V getMaxValue(Collection<T> source, Function<T, V> valueFunc) {
+        if (CollUtil.isEmpty(source)) {
+            return null;
+        }
+        assert !source.isEmpty();
+        T t = source.stream().max(Comparator.comparing(valueFunc)).get();
+        return valueFunc.apply(t);
+    }
+
+    /**
+     * 最小值
+     */
+    public static <T, V extends Comparable<? super V>> V getMinValue(Collection<T> source, Function<T, V> valueFunc) {
+        if (CollUtil.isEmpty(source)) {
+            return null;
+        }
+        assert !source.isEmpty();
+        T t = source.stream().min(Comparator.comparing(valueFunc)).get();
+        return valueFunc.apply(t);
+    }
+
+    /**
+     * 过滤集合
+     */
     public static <T> List<T> filterList(Collection<T> source, Predicate<T> filter) {
         if (CollUtil.isEmpty(source)) {
             return new ArrayList<>();
