@@ -1,7 +1,5 @@
 package com.ww.mall.web.config.thread;
 
-import cn.hippo4j.core.executor.DynamicThreadPool;
-import cn.hippo4j.core.executor.support.ThreadPoolBuilder;
 import com.ww.mall.common.thread.DefaultThreadFactoryBuilder;
 import com.ww.mall.common.thread.ThreadPoolExecutorMdcWrapper;
 import lombok.extern.slf4j.Slf4j;
@@ -9,7 +7,10 @@ import org.springframework.boot.context.properties.EnableConfigurationProperties
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
-import java.util.concurrent.*;
+import java.util.concurrent.ArrayBlockingQueue;
+import java.util.concurrent.ThreadFactory;
+import java.util.concurrent.ThreadPoolExecutor;
+import java.util.concurrent.TimeUnit;
 
 /**
  * @description: 所有服务通用线程池配置
@@ -47,9 +48,8 @@ public class DefaultThreadPoolConfiguration {
      * ThreadPoolExecutor.CallerRunsPolicy：由调用线程处理该任务
      *
      * @return ThreadPoolExecutor
-     * 迁移到 {@link DefaultThreadPoolConfiguration#defaultThreadPoolExecutor()}
      */
-//    @Bean(name = "defaultThreadPoolExecutor")
+    @Bean(name = "defaultThreadPoolExecutor")
     public ThreadPoolExecutor defaultThreadPoolExecutor(DefaultThreadPoolProperties defaultThreadPoolProperties) {
         ThreadFactory threadFactory = new DefaultThreadFactoryBuilder().setNamePrefix(defaultThreadPoolProperties.getThreadName()).build();
         ThreadPoolExecutorMdcWrapper executor =
@@ -65,16 +65,17 @@ public class DefaultThreadPoolConfiguration {
         return executor;
     }
 
-    @Bean
-    @DynamicThreadPool
-    public ThreadPoolExecutor defaultThreadPoolExecutor() {
-        String threadPoolId = "defaultThreadPoolExecutor";
-        return ThreadPoolBuilder.builder()
-                .threadFactory(threadPoolId)
-                .threadPoolId(threadPoolId)
-                .dynamicPool()
-                .build();
-    }
+//    @Bean
+//    @DynamicThreadPool
+//    public ThreadPoolExecutor defaultThreadPoolExecutor() {
+//        String threadPoolId = "defaultThreadPoolExecutor";
+//        return ThreadPoolBuilder.builder()
+//                .threadFactory(threadPoolId)
+//                .threadPoolId(threadPoolId)
+//                .dynamicPool()
+//                .build();
+//
+//    }
 
 }
 

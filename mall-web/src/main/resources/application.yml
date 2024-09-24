@@ -2,55 +2,6 @@
 server:
   shutdown: graceful
 spring:
-  # hippo4j动态线程池
-  dynamic:
-    thread-pool:
-      # 是否开启动态线程池
-      enable: true
-      # 是否打印 banner
-      banner: true
-      # 检查线程池状态，是否达到报警条件，单位毫秒
-      check-state-interval: 3000
-      # Nacos
-      nacos:
-        data-id: mall-dynamic-threadPool.yml
-        group: DEFAULT
-      # 配置中心文件格式
-      config-file-type: yml
-      # 动态线程池列表
-      executors:
-        - thread-pool-id: 'defaultThreadPoolExecutor'
-          # 核心线程数
-          core-pool-size: 20
-          # 最大线程数
-          maximum-pool-size: 20
-          # 阻塞队列名称，参考 BlockingQueueTypeEnum，支持 SPI
-          blocking-queue: 'LinkedBlockingQueue'
-          # 阻塞队列大小
-          queue-capacity: 10000
-          # 执行超时时间，超过此时间发起报警，单位毫秒
-          execute-time-out: 3000
-          # 拒绝策略名称，参考 RejectedPolicyTypeEnum，支持 SPI
-          rejected-handler: 'AbortPolicy'
-          # 线程存活时间，单位秒
-          keep-alive-time: 1024
-          # 是否允许核心线程超时
-          allow-core-thread-time-out: true
-          # 线程工厂名称前缀
-          thread-name-prefix: 'ww-mall-default'
-          # 是否报警
-          alarm: false
-          # 活跃度报警阈值；假设线程池最大线程数 10，当线程数达到 8 发起报警
-          active-alarm: 80
-          # 容量报警阈值；假设阻塞队列容量 100，当容量达到 80 发起报警
-          capacity-alarm: 80
-          # 通知配置，线程池中通知配置如果存在，则会覆盖全局通知配置
-#          notify:
-            # 报警间隔，同一线程池下同一报警纬度，在 interval 时间内只会报警一次，单位分钟
-#            interval: 8
-            # 企业微信填写用户 ID（填写其它将无法达到 @ 效果）、钉钉填手机号、飞书填 ou_ 开头唯一 ID
-#            receives: xxx
-
   main:
     # 开启循环依赖
     allow-circular-references: true
