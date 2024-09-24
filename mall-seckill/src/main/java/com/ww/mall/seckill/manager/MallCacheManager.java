@@ -1,7 +1,7 @@
 package com.ww.mall.seckill.manager;
 
 import com.github.benmanes.caffeine.cache.LoadingCache;
-import com.ww.mall.web.utils.MallCaffeineUtil;
+import com.ww.mall.common.utils.MallCaffeineUtil;
 import lombok.extern.slf4j.Slf4j;
 
 import java.util.concurrent.TimeUnit;
