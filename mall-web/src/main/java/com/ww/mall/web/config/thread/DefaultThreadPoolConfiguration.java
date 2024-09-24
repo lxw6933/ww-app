@@ -1,5 +1,7 @@
 package com.ww.mall.web.config.thread;
 
+import cn.hippo4j.core.executor.DynamicThreadPool;
+import cn.hippo4j.core.executor.support.ThreadPoolBuilder;
 import com.ww.mall.common.thread.DefaultThreadFactoryBuilder;
 import com.ww.mall.common.thread.ThreadPoolExecutorMdcWrapper;
 import lombok.extern.slf4j.Slf4j;
@@ -45,8 +47,9 @@ public class DefaultThreadPoolConfiguration {
      * ThreadPoolExecutor.CallerRunsPolicy：由调用线程处理该任务
      *
      * @return ThreadPoolExecutor
+     * 迁移到 {@link DefaultThreadPoolConfiguration#defaultThreadPoolExecutor()}
      */
-    @Bean(name = "defaultThreadPoolExecutor")
+//    @Bean(name = "defaultThreadPoolExecutor")
     public ThreadPoolExecutor defaultThreadPoolExecutor(DefaultThreadPoolProperties defaultThreadPoolProperties) {
         ThreadFactory threadFactory = new DefaultThreadFactoryBuilder().setNamePrefix(defaultThreadPoolProperties.getThreadName()).build();
         ThreadPoolExecutorMdcWrapper executor =
@@ -61,5 +64,17 @@ public class DefaultThreadPoolConfiguration {
         log.info("初始化线程池DefaultThreadPoolExecutor成功...");
         return executor;
     }
+
+    @Bean
+    @DynamicThreadPool
+    public ThreadPoolExecutor defaultThreadPoolExecutor() {
+        String threadPoolId = "defaultThreadPoolExecutor";
+        return ThreadPoolBuilder.builder()
+                .threadFactory(threadPoolId)
+                .threadPoolId(threadPoolId)
+                .dynamicPool()
+                .build();
+    }
+
 }
 

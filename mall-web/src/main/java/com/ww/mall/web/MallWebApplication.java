@@ -1,5 +1,6 @@
 package com.ww.mall.web;
 
+import cn.hippo4j.core.enable.EnableDynamicThreadPool;
 import cn.hutool.core.date.DatePattern;
 import com.fasterxml.jackson.datatype.jsr310.deser.LocalDateDeserializer;
 import com.fasterxml.jackson.datatype.jsr310.deser.LocalDateTimeDeserializer;
@@ -33,6 +34,7 @@ import java.time.LocalTime;
 @Slf4j
 @EnableRetry
 @Configuration
+@EnableDynamicThreadPool
 @EnableFeignClients(basePackages = "com.ww.mall.web.feign")
 @LoadBalancerClients(defaultConfiguration = {LoadBalancerConfiguration.class})
 public class MallWebApplication {

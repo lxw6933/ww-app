@@ -1,4 +1,4 @@
-package com.ww.mall.web.utils;
+package com.ww.mall.common.utils;
 
 import lombok.Data;
 import org.apache.commons.lang3.StringUtils;
