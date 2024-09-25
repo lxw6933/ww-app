@@ -13,12 +13,12 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpMethod;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.config.Customizer;
-import org.springframework.security.config.annotation.authentication.builders.AuthenticationManagerBuilder;
+import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
-import org.springframework.security.config.annotation.web.configuration.WebSecurityConfigurerAdapter;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
 import org.springframework.security.config.annotation.web.configurers.HeadersConfigurer;
 import org.springframework.security.config.http.SessionCreationPolicy;
+import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.method.HandlerMethod;
@@ -40,7 +40,7 @@ import static com.ww.mall.common.utils.CollectionUtils.convertList;
  */
 @Slf4j
 @Configuration
-public class MallSecurityAutoConfiguration extends WebSecurityConfigurerAdapter {
+public class MallSecurityAutoConfiguration {
 
     @Bean
     public TokenAuthenticationAuthFilter tokenAuthenticationAuthFilter() {
@@ -51,24 +51,9 @@ public class MallSecurityAutoConfiguration extends WebSecurityConfigurerAdapter 
      * 由于 Spring Security 创建 AuthenticationManager 对象时，没声明 @Bean 注解，导致无法被注入
      */
     @Bean
-    public AuthenticationManager authenticationManagerBean() throws Exception {
-        return super.authenticationManagerBean();
+    public AuthenticationManager authenticationManagerBean(AuthenticationConfiguration authenticationConfiguration) throws Exception {
+        return authenticationConfiguration.getAuthenticationManager();
     }
-
-    /**
-     * 自定义认证方式
-     */
-    @Override
-    protected void configure(AuthenticationManagerBuilder auth) {
-        // 不使用security 的认证逻辑
-    }
-//    /**
-//     * 密码加密方式
-//     */
-//    @Bean
-//    public PasswordEncoder passwordEncoder() {
-//        return new BCryptPasswordEncoder(4);
-//    }
 
     /**
      * 认证、授权、基础 配置
@@ -86,8 +71,8 @@ public class MallSecurityAutoConfiguration extends WebSecurityConfigurerAdapter 
      * rememberMe          |   允许通过remember-me登录的用户访问
      * authenticated       |   用户登录后可访问
      */
-    @Override
-    protected void configure(HttpSecurity httpSecurity) throws Exception {
+    @Bean
+    public SecurityFilterChain filterChain(HttpSecurity httpSecurity) throws Exception {
         // 获取@PermitAll的接口url
         Multimap<HttpMethod, String> permitAllUrls = getPermitAllUrlsFromAnnotations();
         // 基础配置
@@ -125,6 +110,7 @@ public class MallSecurityAutoConfiguration extends WebSecurityConfigurerAdapter 
 
         // Token Filter
         httpSecurity.addFilterBefore(tokenAuthenticationAuthFilter(), UsernamePasswordAuthenticationFilter.class);
+        return httpSecurity.build();
     }
 
     private Multimap<HttpMethod, String> getPermitAllUrlsFromAnnotations() {
