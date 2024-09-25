@@ -7,6 +7,8 @@ import lombok.EqualsAndHashCode;
 import org.slf4j.MDC;
 import org.springframework.amqp.rabbit.connection.CorrelationData;
 
+import java.util.UUID;
+
 /**
  * @description:
  * @author: ww
@@ -41,6 +43,7 @@ public class MallCorrelationData<T> extends CorrelationData {
     private boolean msgMode;
 
     public MallCorrelationData() {
+        this.setId(UUID.randomUUID().toString().replaceAll("-", ""));
         this.traceId = MDC.get(Constant.TRACE_ID);
     }
 

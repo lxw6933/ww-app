@@ -10,7 +10,6 @@ import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.stereotype.Component;
 
 import javax.annotation.Resource;
-import java.util.UUID;
 
 /**
  * @author ww
@@ -44,7 +43,6 @@ public class MallPublisher {
         msgData.setExchange(exchange);
         msgData.setMessage(msg);
         msgData.setRoutingKey(routeKey);
-        msgData.setId(UUID.randomUUID().toString().replaceAll("-", ""));
         msgData.setMsgMode(msgMode);
         if (msgMode) {
             // 保存消息
