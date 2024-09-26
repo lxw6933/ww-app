@@ -53,6 +53,7 @@
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
 
         <spring-boot.version>2.7.18</spring-boot.version>
+        <spring-boot-admin.version>2.7.15</spring-boot-admin.version>
         <spring-cloud.version>2021.0.9</spring-cloud.version>
         <spring-alibaba.version>2021.0.6.0</spring-alibaba.version>
 
@@ -120,6 +121,18 @@
                 <version>${spring-alibaba.version}</version>
                 <type>pom</type>
                 <scope>import</scope>
+            </dependency>
+            <!-- 实现 Spring Boot Admin Server 服务端 -->
+            <dependency>
+                <groupId>de.codecentric</groupId>
+                <artifactId>spring-boot-admin-starter-server</artifactId>
+                <version>${spring-boot-admin.version}</version>
+            </dependency>
+            <!-- 实现 Spring Boot Admin Server 服务端 -->
+            <dependency>
+                <groupId>de.codecentric</groupId>
+                <artifactId>spring-boot-admin-starter-client</artifactId>
+                <version>${spring-boot-admin.version}</version>
             </dependency>
             <!-- hutool -->
             <dependency>
