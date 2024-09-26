@@ -18,6 +18,11 @@
             <artifactId>mall-web</artifactId>
             <version>${ww.mall.version}</version>
         </dependency>
+        <!-- grpc-server -->
+        <dependency>
+            <groupId>net.devh</groupId>
+            <artifactId>grpc-server-spring-boot-starter</artifactId>
+        </dependency>
         <!-- redis -->
         <dependency>
             <groupId>org.springframework.boot</groupId>
