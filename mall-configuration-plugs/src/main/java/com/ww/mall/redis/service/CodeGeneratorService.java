@@ -40,8 +40,7 @@ public class CodeGeneratorService {
     private RedisTemplate<String, String> redisTemplate;
 
     public int doGeneratorCode(String batchNo, int length, int totalCount) {
-        boolean flag = this.running.compareAndSet(false, true);
-        Assert.isTrue(flag, () -> new ApiException("正在生成code"));
+        Assert.isTrue(this.running.compareAndSet(false, true), () -> new ApiException("正在生成code"));
         try {
             return generatorCodes(batchNo, length, totalCount);
         } finally {

@@ -49,8 +49,7 @@ public abstract class AbstractCodeQueue {
      * 处理队列中的发放结果进行落库
      */
     public void recordQueueHandler() {
-        boolean flag = this.running.compareAndSet(false, true);
-        if (!flag) {
+        if (!this.running.compareAndSet(false, true)) {
             return;
         }
         log.info("【处理队列中的发放结果进行落库】开始");
