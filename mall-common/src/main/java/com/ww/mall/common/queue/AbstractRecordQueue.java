@@ -99,8 +99,9 @@ public abstract class AbstractRecordQueue<T> {
      * 队列记录批量处理
      *
      * @param batchCodeRecordList 批量数据
+     * @return 成功数量
      */
-    public abstract void recordDBHandler(List<T> batchCodeRecordList);
+    public abstract int recordDBHandler(List<T> batchCodeRecordList);
 
     /**
      * 处理队列中所有剩余未落库的record

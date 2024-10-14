@@ -2,6 +2,7 @@ package com.ww.mall.redis.service.codes;
 
 import cn.hutool.core.date.DateUtil;
 import com.ww.mall.common.exception.ApiException;
+import com.ww.mall.mongodb.queue.RecordQueueComponent;
 import com.ww.mall.redis.service.UniqueService;
 import lombok.extern.slf4j.Slf4j;
 import org.redisson.api.RList;
@@ -36,7 +37,7 @@ public class IssueCodeService {
 
     private UniqueService uniqueService;
 
-    private static RecordCurrentQueueComponent codeCurrentQueueComponent;
+    private static RecordQueueComponent codeCurrentQueueComponent;
 
     private static final String REDIS_SCRIPT_SHA1_KEY = "script:sha1:";
 
@@ -93,7 +94,7 @@ public class IssueCodeService {
         // init outOrderCode uniqueService
         uniqueService = new UniqueService(redissonClient, OUT_ORDER_CODE_KEY);
         // init code result queueComponent
-        codeCurrentQueueComponent = new RecordCurrentQueueComponent(mongoTemplate);
+        codeCurrentQueueComponent = new RecordQueueComponent(mongoTemplate);
         // preload lua script
         issueScriptSha1 = preLoadScript(issueScriptName, issueScript);
     }
