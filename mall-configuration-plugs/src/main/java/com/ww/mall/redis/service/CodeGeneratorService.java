@@ -37,6 +37,14 @@ public class CodeGeneratorService {
 
     public static final ExecutorService codeGeneratorExecutor = Executors.newFixedThreadPool(CODE_GENERATOR_THREAD_POOL_SIZE);
 
+    /**
+     * 生成code
+     *
+     * @param batchNo    批次号
+     * @param length     code长度
+     * @param totalCount 数量
+     * @return 成功数量
+     */
     public int doGeneratorCode(String batchNo, int length, int totalCount) {
         Assert.isTrue(this.running.compareAndSet(false, true), () -> new ApiException("正在生成code"));
         try {
@@ -46,12 +54,11 @@ public class CodeGeneratorService {
         }
     }
 
-
     /**
      * 生成code
      *
-     * @param batchNo 批次号
-     * @param length code长度
+     * @param batchNo    批次号
+     * @param length     code长度
      * @param totalCount 生成总数量
      * @return 成功数量
      */
@@ -86,15 +93,13 @@ public class CodeGeneratorService {
         int totalSuccess = 0;
         for (Future<Integer> result : results) {
             // 累加成功处理的数量
-            int successCount = 0;
             try {
-                successCount = result.get();
+                totalSuccess += result.get();
             } catch (Exception e) {
-                log.error("批次号【{}】生成兑换码异常", batchNo, e);
+                log.error("批次号[{}]获取生成兑换码结果异常", batchNo, e);
             }
-            totalSuccess += successCount;
         }
-        log.info("批次号【{}】所有任务完成，总共成功处理的数量：{}", batchNo, totalSuccess);
+        log.info("批次号[{}]所有任务完成，总共成功处理的数量：{}", batchNo, totalSuccess);
         return totalSuccess;
     }
 
@@ -102,10 +107,10 @@ public class CodeGeneratorService {
         try {
             Set<String> codes = batchGenerateCodes(length, num);
             // TODO 数据处理 入库
-            log.info("任务【{}】批次号【{}】成功生成【{}】个code", taskNo, batchNo, codes.size());
+            log.info("任务[{}]批次号[{}]成功生成[{}]个code", taskNo, batchNo, codes.size());
             return codes.size();
         } catch (Exception e) {
-            log.error("任务【{}】批次号【{}】codes生成异常", taskNo, batchNo, e);
+            log.error("任务[{}]批次号[{}]codes生成异常", taskNo, batchNo, e);
             return 0;
         }
     }
@@ -114,15 +119,14 @@ public class CodeGeneratorService {
      * 生成批次兑换码集合
      *
      * @param length 兑换码长度
-     * @param count 兑换码数量
+     * @param count  兑换码数量
      * @return 批次兑换码集合
      */
     private Set<String> batchGenerateCodes(int length, int count) {
         Set<String> codes = new HashSet<>();
         while (codes.size() < count) {
             String code = RandomUtil.randomString(length);
-            boolean result = codeBloomFilterComponent.addData(code);
-            if (result) {
+            if (codeBloomFilterComponent.addData(code)) {
                 codes.add(code);
             }
         }
