@@ -2,18 +2,19 @@ package com.ww.mall.redis.service;
 
 import cn.hutool.core.lang.Assert;
 import cn.hutool.core.util.RandomUtil;
-import com.ww.mall.common.constant.Constant;
 import com.ww.mall.common.exception.ApiException;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Component;
 
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
-import java.util.concurrent.*;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
@@ -25,19 +26,16 @@ import java.util.concurrent.atomic.AtomicBoolean;
 @Component
 public class CodeGeneratorService {
 
-    private final static String CODE_PREFIX = "codes";
+    @Autowired
+    private CodeBloomFilterComponent codeBloomFilterComponent;
 
     public final AtomicBoolean running = new AtomicBoolean(false);
 
-    public static final int SHARD_NUM = 10000;
     public static final int BATCH_NUM = 1000;
     public static final int CODE_GENERATOR_THREAD_POOL_SIZE = 20;
     public static final int MAX_NUM = BATCH_NUM * CODE_GENERATOR_THREAD_POOL_SIZE;
 
     public static final ExecutorService codeGeneratorExecutor = Executors.newFixedThreadPool(CODE_GENERATOR_THREAD_POOL_SIZE);
-
-    @Autowired
-    private RedisTemplate<String, String> redisTemplate;
 
     public int doGeneratorCode(String batchNo, int length, int totalCount) {
         Assert.isTrue(this.running.compareAndSet(false, true), () -> new ApiException("正在生成code"));
@@ -123,18 +121,12 @@ public class CodeGeneratorService {
         Set<String> codes = new HashSet<>();
         while (codes.size() < count) {
             String code = RandomUtil.randomString(length);
-            String shardKey = getShardKey(code, "[" + length + "]");
-            Long result = redisTemplate.opsForSet().add(shardKey, code);
-            if (result != null && result > 0) {
+            boolean result = codeBloomFilterComponent.addData(code);
+            if (result) {
                 codes.add(code);
             }
         }
         return codes;
-    }
-
-    private String getShardKey(String code, String codeBit) {
-        int shardId = Math.abs(code.hashCode()) % SHARD_NUM;
-        return CODE_PREFIX + codeBit + Constant.SPLIT + shardId;
     }
 
 }
