@@ -42,7 +42,7 @@ public abstract class AbstractRecordQueue<T> {
 
     public void initRecordScheduled() {
         // 初始化定时任务处理record
-        Executors.newScheduledThreadPool(1).scheduleAtFixedRate(this::handleRemainingRecord, 0, 5, TimeUnit.SECONDS);
+        Executors.newScheduledThreadPool(1).scheduleAtFixedRate(this::recordQueueHandler, 0, 10, TimeUnit.SECONDS);
     }
 
     public void addRecordToQueue(T record) {
