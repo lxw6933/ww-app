@@ -2,6 +2,7 @@ package com.ww.mall.web.filter;
 
 import cn.hutool.core.util.IdUtil;
 import com.ww.mall.common.constant.Constant;
+import com.ww.mall.common.thread.ThreadMdcUtil;
 import com.ww.mall.utils.AuthorizationContext;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
@@ -31,7 +32,7 @@ public class ServerRequestFilter extends OncePerRequestFilter {
             if (traceId == null) {
                 traceId = IdUtil.objectId();
             }
-            MDC.put(Constant.TRACE_ID, traceId);
+            ThreadMdcUtil.setTraceId(traceId);
             filterChain.doFilter(request, response);
         } finally {
             MDC.remove(Constant.TRACE_ID);

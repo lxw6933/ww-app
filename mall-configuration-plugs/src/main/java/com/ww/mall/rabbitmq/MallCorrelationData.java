@@ -1,10 +1,9 @@
 package com.ww.mall.rabbitmq;
 
-import com.ww.mall.common.constant.Constant;
+import com.ww.mall.common.thread.ThreadMdcUtil;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
-import org.slf4j.MDC;
 import org.springframework.amqp.rabbit.connection.CorrelationData;
 
 import java.util.UUID;
@@ -44,7 +43,7 @@ public class MallCorrelationData<T> extends CorrelationData {
 
     public MallCorrelationData() {
         this.setId(UUID.randomUUID().toString().replaceAll("-", ""));
-        this.traceId = MDC.get(Constant.TRACE_ID);
+        this.traceId = ThreadMdcUtil.getTraceId();
     }
 
 }

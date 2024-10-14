@@ -1,16 +1,16 @@
 package com.ww.mall.rabbitmq;
 
 import cn.hutool.extra.spring.SpringUtil;
+import com.ww.mall.annotation.enable.EnableMallMongodb;
 import com.ww.mall.common.constant.Constant;
 import com.ww.mall.common.exception.ApiException;
-import com.ww.mall.annotation.enable.EnableMallMongodb;
+import com.ww.mall.common.thread.ThreadMdcUtil;
 import com.ww.mall.mongodb.repository.MongoMqLogRepository;
 import com.ww.mall.mongodb.repository.MqMsgLogEntity;
 import com.ww.mall.rabbitmq.enums.MqMsgStatus;
 import com.ww.mall.rabbitmq.repository.BaseMqLog;
 import com.ww.mall.rabbitmq.repository.MqLogRepository;
 import lombok.extern.slf4j.Slf4j;
-import org.slf4j.MDC;
 import org.springframework.amqp.AmqpException;
 import org.springframework.amqp.core.Correlation;
 import org.springframework.amqp.core.Message;
@@ -79,7 +79,7 @@ public class MallRabbitmqAutoConfiguration {
                 throw new ApiException("发送失败，请按照规范发送消息");
             }
             MallCorrelationData<?> mallCorrelationData = (MallCorrelationData<?>) correlationData;
-            MDC.put(Constant.TRACE_ID, mallCorrelationData.getTraceId());
+            ThreadMdcUtil.setTraceId(mallCorrelationData.getTraceId());
             if (!ack) {
                 log.error("消息发送到Exchange失败, {}, cause: {}", correlationData, cause);
                 if (((MallCorrelationData<?>) correlationData).isMsgMode()) {

@@ -3,11 +3,11 @@ package com.ww.mall.rabbitmq.template;
 import cn.hutool.extra.spring.SpringUtil;
 import com.rabbitmq.client.Channel;
 import com.ww.mall.common.constant.Constant;
+import com.ww.mall.common.thread.ThreadMdcUtil;
 import com.ww.mall.rabbitmq.enums.MqMsgStatus;
 import com.ww.mall.rabbitmq.repository.BaseMqLog;
 import com.ww.mall.rabbitmq.repository.MqLogRepository;
 import lombok.extern.slf4j.Slf4j;
-import org.slf4j.MDC;
 import org.springframework.amqp.core.Message;
 import org.springframework.amqp.core.MessageProperties;
 
@@ -30,7 +30,7 @@ public abstract class MsgConsumerTemplate<T> {
         MessageProperties properties = message.getMessageProperties();
         String traceId = properties.getHeader(Constant.TRACE_ID);
         boolean msgMode = properties.getHeader(Constant.MALL_MSG_MODE);
-        MDC.put(Constant.TRACE_ID, traceId);
+        ThreadMdcUtil.setTraceId(traceId);
         log.info("消费消息【{}】", msg);
         long tag = properties.getDeliveryTag();
         // 获取消息的id

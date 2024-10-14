@@ -5,12 +5,11 @@ import cn.hutool.http.Header;
 import com.mzt.logapi.beans.LogRecord;
 import com.mzt.logapi.service.ILogRecordService;
 import com.ww.mall.admin.service.OperateLogService;
-import com.ww.mall.common.constant.Constant;
-import com.ww.mall.common.enums.UserType;
 import com.ww.mall.admin.view.dto.OperateLogDTO;
+import com.ww.mall.common.enums.UserType;
+import com.ww.mall.common.thread.ThreadMdcUtil;
 import com.ww.mall.utils.AuthorizationContext;
 import lombok.extern.slf4j.Slf4j;
-import org.slf4j.MDC;
 import org.springframework.web.context.request.RequestAttributes;
 import org.springframework.web.context.request.RequestContextHolder;
 import org.springframework.web.context.request.ServletRequestAttributes;
@@ -35,7 +34,7 @@ public class MongoOperateLogComponent implements ILogRecordService {
         OperateLogDTO reqDTO = new OperateLogDTO();
         try {
             // traceId
-            reqDTO.setTraceId(MDC.get(Constant.TRACE_ID));
+            reqDTO.setTraceId(ThreadMdcUtil.getTraceId());
             // 用户信息
             reqDTO.setUserId(AuthorizationContext.getAdminUser().getId());
             reqDTO.setUserType(UserType.ADMIN);

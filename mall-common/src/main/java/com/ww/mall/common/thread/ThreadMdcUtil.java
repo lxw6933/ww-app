@@ -13,9 +13,18 @@ import java.util.concurrent.Callable;
  * @create: 2023/7/8 11:30
  **/
 public class ThreadMdcUtil {
+
+    public static String getTraceId() {
+        return MDC.get(Constant.TRACE_ID);
+    }
+
+    public static void setTraceId(String traceId) {
+        MDC.put(Constant.TRACE_ID, traceId);
+    }
+
     public static void setTraceIdIfAbsent() {
-        if (MDC.get(Constant.TRACE_ID) == null) {
-            MDC.put(Constant.TRACE_ID, IdUtil.objectId());
+        if (getTraceId() == null) {
+            setTraceId(IdUtil.objectId());
         }
     }
 

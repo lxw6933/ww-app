@@ -2,14 +2,13 @@ package com.ww.mall.auth.entity;
 
 import cn.hutool.extra.servlet.ServletUtil;
 import cn.hutool.http.Header;
-import com.ww.mall.common.constant.Constant;
 import com.ww.mall.common.enums.LoginType;
 import com.ww.mall.common.enums.UserType;
+import com.ww.mall.common.thread.ThreadMdcUtil;
 import com.ww.mall.mongodb.BaseDoc;
 import com.ww.mall.utils.HttpContextUtils;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
-import org.slf4j.MDC;
 import org.springframework.data.mongodb.core.mapping.Document;
 
 import javax.servlet.http.HttpServletRequest;
@@ -71,7 +70,7 @@ public class LoginLog extends BaseDoc {
 
     public static LoginLog build(Long userId, UserType userType, LoginType loginType) {
         LoginLog loginLog = new LoginLog();
-        loginLog.setTraceId(MDC.get(Constant.TRACE_ID));
+        loginLog.setTraceId(ThreadMdcUtil.getTraceId());
         loginLog.setUserId(userId);
         loginLog.setUserType(userType);
         loginLog.setLoginType(loginType);
@@ -85,7 +84,7 @@ public class LoginLog extends BaseDoc {
 
     public static LoginLog build(String account, UserType userType, LoginType loginType, String loginResult) {
         LoginLog loginLog = new LoginLog();
-        loginLog.setTraceId(MDC.get(Constant.TRACE_ID));
+        loginLog.setTraceId(ThreadMdcUtil.getTraceId());
         loginLog.setAccount(account);
         loginLog.setUserType(userType);
         loginLog.setLoginType(loginType);
