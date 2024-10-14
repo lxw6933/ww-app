@@ -1,4 +1,4 @@
-package com.ww.mall.redis.service.codes;
+package com.ww.mall.common.queue;
 
 import lombok.extern.slf4j.Slf4j;
 
@@ -100,7 +100,7 @@ public abstract class AbstractRecordQueue<T> {
      *
      * @param batchCodeRecordList 批量数据
      */
-    protected abstract void recordDBHandler(List<T> batchCodeRecordList);
+    public abstract void recordDBHandler(List<T> batchCodeRecordList);
 
     /**
      * 处理队列中所有剩余未落库的record

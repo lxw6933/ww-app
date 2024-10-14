@@ -3,7 +3,6 @@ package com.ww.mall.redis.service.codes;
 import cn.hutool.core.date.DateUtil;
 import com.ww.mall.common.exception.ApiException;
 import com.ww.mall.redis.service.UniqueService;
-import com.ww.mall.redis.service.codes.queue.RecordCurrentQueueComponent;
 import lombok.extern.slf4j.Slf4j;
 import org.redisson.api.RList;
 import org.redisson.api.RScript;

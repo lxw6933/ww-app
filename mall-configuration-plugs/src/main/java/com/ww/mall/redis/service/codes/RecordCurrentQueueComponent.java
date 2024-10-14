@@ -1,7 +1,6 @@
-package com.ww.mall.redis.service.codes.queue;
+package com.ww.mall.redis.service.codes;
 
-import com.ww.mall.redis.service.codes.AbstractRecordQueue;
-import com.ww.mall.redis.service.codes.IssueCodeRecord;
+import com.ww.mall.common.queue.AbstractRecordQueue;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.mongodb.core.MongoTemplate;
 
@@ -23,7 +22,7 @@ public class RecordCurrentQueueComponent extends AbstractRecordQueue<IssueCodeRe
     }
 
     @Override
-    protected void recordDBHandler(List<IssueCodeRecord> batchCodeRecordList) {
+    public void recordDBHandler(List<IssueCodeRecord> batchCodeRecordList) {
         mongoTemplate.insert(batchCodeRecordList, IssueCodeRecord.class);
     }
 
