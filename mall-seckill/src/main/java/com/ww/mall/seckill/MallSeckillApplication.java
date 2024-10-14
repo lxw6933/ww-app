@@ -1,7 +1,7 @@
 package com.ww.mall.seckill;
 
 import com.ww.mall.annotation.enable.*;
-import com.ww.mall.redis.service.codes.IssueCodeService;
+import com.ww.mall.redis.service.IssueCodeService;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.cloud.client.discovery.EnableDiscoveryClient;
