@@ -1,4 +1,4 @@
-package com.ww.mall.redis.service.codes;
+package com.ww.mall.mongodb.repository;
 
 import com.ww.mall.mongodb.BaseDoc;
 import lombok.AllArgsConstructor;

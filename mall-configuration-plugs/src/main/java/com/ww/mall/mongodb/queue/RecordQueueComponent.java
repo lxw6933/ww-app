@@ -2,7 +2,7 @@ package com.ww.mall.mongodb.queue;
 
 import com.mongodb.bulk.BulkWriteResult;
 import com.ww.mall.common.queue.AbstractRecordQueue;
-import com.ww.mall.redis.service.codes.IssueCodeRecord;
+import com.ww.mall.mongodb.repository.IssueCodeRecord;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.mongodb.core.BulkOperations;
 import org.springframework.data.mongodb.core.MongoTemplate;
