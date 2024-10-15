@@ -2,10 +2,14 @@ package com.ww.mall.mongodb.queue;
 
 import com.mongodb.bulk.BulkWriteResult;
 import com.ww.mall.common.queue.AbstractRecordQueue;
+import com.ww.mall.mongodb.handler.MongoBulkDataHandler;
 import com.ww.mall.mongodb.repository.IssueCodeRecord;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.DependsOn;
 import org.springframework.data.mongodb.core.BulkOperations;
 import org.springframework.data.mongodb.core.MongoTemplate;
+import org.springframework.stereotype.Component;
 
 import java.util.List;
 
@@ -17,24 +21,16 @@ import java.util.List;
 @Slf4j
 public class RecordQueueComponent extends AbstractRecordQueue<IssueCodeRecord> {
 
-    private final MongoTemplate mongoTemplate;
+    private final MongoBulkDataHandler<IssueCodeRecord> mongoBulkDataHandler;
 
-    public RecordQueueComponent(MongoTemplate mongoTemplate) {
+    public RecordQueueComponent(MongoBulkDataHandler<IssueCodeRecord> mongoBulkDataHandler) {
         super();
-        this.mongoTemplate = mongoTemplate;
+        this.mongoBulkDataHandler = mongoBulkDataHandler;
     }
 
     @Override
     public int recordDBHandler(List<IssueCodeRecord> batchCodeRecordList) {
-        // 初始化 BulkOperations
-        // UNORDERED: 条记录插入失败，其他数据仍然会继续插入
-        // ORDERED: 遇到错误时停止后续操作
-        BulkOperations bulkOps = mongoTemplate.bulkOps(BulkOperations.BulkMode.UNORDERED, IssueCodeRecord.class);
-        // 将所有数据添加到 bulk 操作中
-        bulkOps.insert(batchCodeRecordList);
-        // 提交批量操作
-        BulkWriteResult bulkWriteResult = bulkOps.execute();
-        return bulkWriteResult.getInsertedCount();
+        return mongoBulkDataHandler.bulkSave(batchCodeRecordList);
     }
 
 }

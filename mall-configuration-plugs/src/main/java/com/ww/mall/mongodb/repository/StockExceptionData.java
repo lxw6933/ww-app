@@ -1,4 +1,4 @@
-package com.ww.mall.mongodb.handler;
+package com.ww.mall.mongodb.repository;
 
 import lombok.Data;
 import org.springframework.data.annotation.Id;

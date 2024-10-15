@@ -2,14 +2,14 @@ package com.ww.mall.redis.service;
 
 import cn.hutool.core.date.DateUtil;
 import com.ww.mall.common.exception.ApiException;
+import com.ww.mall.mongodb.handler.MongoBulkDataHandler;
 import com.ww.mall.mongodb.queue.RecordQueueComponent;
 import com.ww.mall.mongodb.repository.IssueCodeRecord;
 import lombok.extern.slf4j.Slf4j;
 import org.redisson.api.RList;
 import org.redisson.api.RScript;
 import org.redisson.api.RedissonClient;
-import org.springframework.context.annotation.DependsOn;
-import org.springframework.data.mongodb.core.MongoTemplate;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnBean;
 import org.springframework.stereotype.Component;
 
 import javax.annotation.PostConstruct;
@@ -26,11 +26,11 @@ import java.util.List;
  */
 @Slf4j
 @Component
-@DependsOn({"mongoTemplate"})
+@ConditionalOnBean(MongoBulkDataHandler.class)
 public class IssueCodeService {
 
     @Resource
-    private MongoTemplate mongoTemplate;
+    private MongoBulkDataHandler<IssueCodeRecord> mongoBulkDataHandler;
 
     @Resource
     private RedissonClient redissonClient;
@@ -94,7 +94,7 @@ public class IssueCodeService {
         // init outOrderCode uniqueService
         uniqueService = new UniqueService(redissonClient, OUT_ORDER_CODE_KEY);
         // init code result queueComponent
-        codeCurrentQueueComponent = new RecordQueueComponent(mongoTemplate);
+        codeCurrentQueueComponent = new RecordQueueComponent(mongoBulkDataHandler);
         // preload lua script
         issueScriptSha1 = preLoadScript(issueScriptName, issueScript);
     }

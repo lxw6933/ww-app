@@ -87,8 +87,8 @@ public abstract class AbstractRecordQueue<T> {
             return;
         }
         try {
-            recordDBHandler(batchRecordList);
-            log.info("[批量处理record数量: {}]", batchRecordList.size());
+            int successSize = recordDBHandler(batchRecordList);
+            log.info("[批量处理record数量: {}]", successSize);
         } catch (Exception e) {
             log.error("[批量处理异常]", e);
             batchRecordList.forEach(errorRecord -> log.error("[批量处理异常]record[{}]", errorRecord));
