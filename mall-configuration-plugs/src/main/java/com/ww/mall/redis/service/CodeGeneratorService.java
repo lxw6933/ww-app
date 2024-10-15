@@ -142,10 +142,16 @@ public class CodeGeneratorService {
      */
     private Set<String> batchGenerateCodes(int length, int count) {
         Set<String> codes = new HashSet<>();
+        int loopCount = 0;
         while (codes.size() < count) {
             String code = RandomUtil.randomString(length);
             if (codeBloomFilterComponent.addData(code)) {
                 codes.add(code);
+            } else {
+                if (++loopCount > 100) {
+                    log.error("生成相同code次数过多");
+                    break;
+                }
             }
         }
         return codes;
