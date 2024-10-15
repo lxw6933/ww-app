@@ -27,7 +27,7 @@ public class CodeBloomFilterComponent {
     // 存储多个布隆过滤器，每个分片对应一个布隆过滤器
     private static final Map<Integer, RBloomFilter<String>> codeBloomFilterMap = new HashMap<>();
 
-    // 分片数量，比如将数据分成1000片，每片处理20w数据
+    // 分片数量，比如将数据分成1000片，每片处理50w数据
     private static final int DEFAULT_SHARD_COUNT = 1000;
 
     @PostConstruct
@@ -35,7 +35,7 @@ public class CodeBloomFilterComponent {
         for (int i = 0; i < DEFAULT_SHARD_COUNT; i++) {
             RBloomFilter<String> bloomFilter = redissonClient.getBloomFilter(CODE_BLOOM_FILTER_KEY + i);
             if (!bloomFilter.isExists()) {
-                bloomFilter.tryInit(200000L, 0.01);
+                bloomFilter.tryInit(500000L, 0.01);
             }
             codeBloomFilterMap.put(i, bloomFilter);
         }
