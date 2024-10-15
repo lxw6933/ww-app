@@ -60,7 +60,6 @@ public abstract class AbstractRecordQueue<T> {
         if (!this.running.compareAndSet(false, true)) {
             return;
         }
-        log.info("[record进行落库]开始");
         try {
             List<T> recordList = new ArrayList<>();
             // 队列不为空 and 批处理数据<批处理数量
@@ -73,7 +72,6 @@ public abstract class AbstractRecordQueue<T> {
             recordResultExecutor.submit(() -> batchSaveRecordResult(recordList));
         } finally {
             running.set(false);
-            log.info("[record进行落库]结束");
         }
     }
 
