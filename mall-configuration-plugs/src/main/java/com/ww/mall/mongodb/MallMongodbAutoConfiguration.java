@@ -1,6 +1,7 @@
 package com.ww.mall.mongodb;
 
 import com.ww.mall.mongodb.handler.CommonStockHandler;
+import com.ww.mall.mongodb.handler.MongoBulkDataHandler;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
 import org.springframework.boot.autoconfigure.mongo.MongoProperties;
@@ -49,6 +50,11 @@ public class MallMongodbAutoConfiguration {
     @Bean
     public CommonStockHandler commonStockHandler() {
         return new CommonStockHandler();
+    }
+
+    @Bean
+    public <T> MongoBulkDataHandler<T> mongoBulkDataHandler() {
+        return new MongoBulkDataHandler<>();
     }
 
 }
