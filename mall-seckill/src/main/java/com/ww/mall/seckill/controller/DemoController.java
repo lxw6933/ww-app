@@ -29,6 +29,11 @@ public class DemoController {
     @Autowired
     private DemoService demoService;
 
+    @GetMapping("/generatorCode")
+    public int generatorCode(@RequestParam String batchNo, @RequestParam int length, @RequestParam int total) {
+        return demoService.generatorCode(batchNo, length, total);
+    }
+
     @GetMapping("/issueCode")
     public List<String> issueCode(@RequestParam String outOrderCode, @RequestParam int quantity) {
         return demoService.issueCode(outOrderCode, quantity);

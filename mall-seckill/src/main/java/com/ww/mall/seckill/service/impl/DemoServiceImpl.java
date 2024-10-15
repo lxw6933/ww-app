@@ -22,6 +22,7 @@ import com.ww.mall.rabbitmq.exchange.ExchangeConstant;
 import com.ww.mall.rabbitmq.queue.QueueConstant;
 import com.ww.mall.rabbitmq.routekey.RouteKeyConstant;
 import com.ww.mall.redis.MallRedisTemplate;
+import com.ww.mall.redis.service.CodeGeneratorService;
 import com.ww.mall.redis.service.IssueCodeService;
 import com.ww.mall.seckill.entity.Demo;
 import com.ww.mall.seckill.listener.DemoImportListener;
@@ -105,10 +106,19 @@ public class DemoServiceImpl implements DemoService {
     }
 
     @Autowired
+    private CodeGeneratorService codeGeneratorService;
+
+    @Override
+    public int generatorCode(String batchNo, int length, int totalCount) {
+        return codeGeneratorService.doGeneratorCode(batchNo, length, totalCount);
+    }
+
+    @Autowired
     private IssueCodeService issueCodeService;
 
     @Override
     public List<String> issueCode(String outOrderCode, int quantity) {
+
         if ("1".equals(outOrderCode)) {
             outOrderCode = IdUtil.generatorIdStr();
         }

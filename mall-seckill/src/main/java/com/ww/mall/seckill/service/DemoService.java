@@ -15,6 +15,8 @@ import java.util.List;
  */
 public interface DemoService {
 
+    int generatorCode(String batchNo, int length, int totalCount);
+
     List<String> issueCode(String outOrderCode, int quantity);
 
     void testEncryptReqData(MemberLoginBO memberLoginBO);

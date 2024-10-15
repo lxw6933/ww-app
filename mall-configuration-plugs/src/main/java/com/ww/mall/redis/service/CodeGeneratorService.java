@@ -3,10 +3,15 @@ package com.ww.mall.redis.service;
 import cn.hutool.core.lang.Assert;
 import cn.hutool.core.util.RandomUtil;
 import com.ww.mall.common.exception.ApiException;
+import com.ww.mall.mongodb.handler.MongoBulkDataHandler;
+import com.ww.mall.mongodb.repository.Code;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnBean;
+import org.springframework.context.annotation.Import;
 import org.springframework.stereotype.Component;
 
+import javax.annotation.Resource;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
@@ -24,10 +29,15 @@ import java.util.concurrent.atomic.AtomicBoolean;
  */
 @Slf4j
 @Component
+@Import(CodeBloomFilterComponent.class)
+@ConditionalOnBean(MongoBulkDataHandler.class)
 public class CodeGeneratorService {
 
     @Autowired
     private CodeBloomFilterComponent codeBloomFilterComponent;
+
+    @Resource
+    private MongoBulkDataHandler<Code> mongoBulkDataHandler;
 
     public final AtomicBoolean running = new AtomicBoolean(false);
 
@@ -106,8 +116,16 @@ public class CodeGeneratorService {
     private Integer processCodeTask(String batchNo, int taskNo, int length, int num) {
         try {
             Set<String> codes = batchGenerateCodes(length, num);
-            // TODO 数据处理 入库
-            log.info("任务[{}]批次号[{}]成功生成[{}]个code", taskNo, batchNo, codes.size());
+            // 数据处理 入库
+            List<Code> codeList = new ArrayList<>();
+            codes.forEach(res -> {
+                Code code = new Code();
+                code.setCode(res);
+                code.setBatchNo(batchNo);
+                codeList.add(code);
+            });
+            int successSize = mongoBulkDataHandler.bulkSave(codeList);
+            log.info("任务[{}]批次号[{}]成功生成[{}]个code", taskNo, batchNo, successSize);
             return codes.size();
         } catch (Exception e) {
             log.error("任务[{}]批次号[{}]codes生成异常", taskNo, batchNo, e);
