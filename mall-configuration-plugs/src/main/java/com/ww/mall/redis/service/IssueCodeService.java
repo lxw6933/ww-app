@@ -52,8 +52,9 @@ public class IssueCodeService {
             "if available < quantity then\n" +
             "    return {}\n" +
             "end\n" +
-            "return redis.call('LRANGE', redeemCodeList, 0, quantity - 1)\n" +
-            "redis.call('LTRIM', redeemCodeList, quantity, -1)";
+            "codes = redis.call('LRANGE', redeemCodeList, 0, quantity - 1)\n" +
+            "redis.call('LTRIM', redeemCodeList, quantity, -1)\n" +
+            "return codes";
 
     private String issueScriptSha1;
 
