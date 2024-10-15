@@ -1,5 +1,7 @@
 package com.ww.mall.coupon.eunms;
 
+import lombok.Getter;
+
 import java.util.StringJoiner;
 
 /**
@@ -7,23 +9,16 @@ import java.util.StringJoiner;
  * @create 2023-07-25- 09:23
  * @description:
  */
+@Getter
 public enum CouponDiscountType {
 
     FULL_REDUCTION("满减券"),
     DIRECT_REDUCTION("代金券"),
     FULL_DISCOUNT("折扣券");
 
-    private String text;
+    private final String text;
 
     CouponDiscountType(String text) {
-        this.text = text;
-    }
-
-    public String getText() {
-        return text;
-    }
-
-    public void setText(String text) {
         this.text = text;
     }
 

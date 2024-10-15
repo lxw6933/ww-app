@@ -1,5 +1,7 @@
 package com.ww.mall.coupon.eunms;
 
+import lombok.Getter;
+
 import java.util.StringJoiner;
 
 /**
@@ -7,22 +9,15 @@ import java.util.StringJoiner;
  * @create 2023-07-25- 09:08
  * @description:
  */
+@Getter
 public enum CouponUseTimeType {
 
     FIXED("固定"),
     AFTER_RECEIVING("领取后");
 
-    private String text;
+    private final String text;
 
     CouponUseTimeType(String text) {
-        this.text = text;
-    }
-
-    public String getText() {
-        return text;
-    }
-
-    public void setText(String text) {
         this.text = text;
     }
 

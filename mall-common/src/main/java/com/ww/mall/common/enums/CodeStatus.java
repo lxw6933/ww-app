@@ -1,4 +1,6 @@
-package com.ww.mall.coupon.eunms;
+package com.ww.mall.common.enums;
+
+import lombok.Getter;
 
 import java.util.StringJoiner;
 
@@ -7,6 +9,7 @@ import java.util.StringJoiner;
  * @create 2024-03-12- 14:17
  * @description:
  */
+@Getter
 public enum CodeStatus {
 
     UNUSED("未核销"),
@@ -19,15 +22,7 @@ public enum CodeStatus {
         this.text = text;
     }
 
-    private String text;
-
-    public String getText() {
-        return text;
-    }
-
-    public void setText(String text) {
-        this.text = text;
-    }
+    private final String text;
 
     @Override
     public String toString() {

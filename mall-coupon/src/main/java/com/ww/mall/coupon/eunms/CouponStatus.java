@@ -1,5 +1,7 @@
 package com.ww.mall.coupon.eunms;
 
+import lombok.Getter;
+
 import java.util.StringJoiner;
 
 /**
@@ -7,6 +9,7 @@ import java.util.StringJoiner;
  * @create 2023-07-25- 10:09
  * @description:
  */
+@Getter
 public enum CouponStatus {
 
     TO_TAKE_EFFECT("待生效"),
@@ -15,17 +18,9 @@ public enum CouponStatus {
     USED("已使用"),
     OCCUPIED("已占用");
 
-    private String text;
+    private final String text;
 
     CouponStatus(String text) {
-        this.text = text;
-    }
-
-    public String getText() {
-        return text;
-    }
-
-    public void setText(String text) {
         this.text = text;
     }
 

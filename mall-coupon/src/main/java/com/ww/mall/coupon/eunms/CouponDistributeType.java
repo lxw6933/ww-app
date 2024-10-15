@@ -1,5 +1,7 @@
 package com.ww.mall.coupon.eunms;
 
+import lombok.Getter;
+
 import java.util.StringJoiner;
 
 /**
@@ -7,22 +9,15 @@ import java.util.StringJoiner;
  * @create 2023-07-25- 09:41
  * @description:
  */
+@Getter
 public enum CouponDistributeType {
 
     RECEIVE("用户领取"),
     DISTRIBUTE("后台发放");
 
-    private String text;
+    private final String text;
 
     CouponDistributeType(String text) {
-        this.text = text;
-    }
-
-    public String getText() {
-        return text;
-    }
-
-    public void setText(String text) {
         this.text = text;
     }
 

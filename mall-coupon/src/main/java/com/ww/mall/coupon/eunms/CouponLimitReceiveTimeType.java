@@ -1,5 +1,7 @@
 package com.ww.mall.coupon.eunms;
 
+import lombok.Getter;
+
 import java.util.StringJoiner;
 
 /**
@@ -7,6 +9,7 @@ import java.util.StringJoiner;
  * @create 2023-07-25- 09:16
  * @description:
  */
+@Getter
 public enum CouponLimitReceiveTimeType {
 
     FOREVER("永久"),
@@ -14,24 +17,12 @@ public enum CouponLimitReceiveTimeType {
     WEEK("周"),
     DAY("天");
 
-    private String text;
+    private final String text;
 
     CouponLimitReceiveTimeType(String text) {
         this.text = text;
     }
 
-    public String getText() {
-        return text;
-    }
-
-    public void setText(String text) {
-        this.text = text;
-    }
-
-    /**
-     * 重写方便文档展示
-     * @return
-     */
     @Override
     public String toString() {
         return new StringJoiner(", ", name() + "[", "]")

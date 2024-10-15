@@ -1,6 +1,6 @@
 package com.ww.mall.coupon.entity.mongo;
 
-import com.ww.mall.coupon.eunms.CodeStatus;
+import com.ww.mall.common.enums.CodeStatus;
 import lombok.Data;
 import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.mapping.Document;
