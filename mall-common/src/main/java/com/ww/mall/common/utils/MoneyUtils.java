@@ -136,11 +136,11 @@ public class MoneyUtils {
     }
 
     /**
-     * 按比例将优惠金额均摊到 SKU 集合
+     * 按比例将优惠金额均摊到 BO 集合
      *
-     * @param boList   SKU 集合
+     * @param boList   BO 集合
      * @param discount 总优惠金额
-     * @return 返回每个 SKU 的优惠金额映射
+     * @return 返回每个 BO 的优惠金额映射
      */
     public static <T> Map<T, BigDecimal> allocateDiscount(List<MoneyBO<T>> boList, BigDecimal discount) {
         Map<T, BigDecimal> result = new HashMap<>();
@@ -153,7 +153,7 @@ public class MoneyUtils {
         // 2. 初始化变量，累积分摊的优惠金额，确保精度不丢失
         BigDecimal remainingDiscount = discount;
 
-        // 3. 遍历 SKU 集合，按比例计算每个 SKU 的优惠金额
+        // 3. 遍历 BO 集合，按比例计算每个 BO 的优惠金额
         for (int i = 0; i < boList.size(); i++) {
             MoneyBO<T> bo = boList.get(i);
 
@@ -161,7 +161,7 @@ public class MoneyUtils {
             BigDecimal proportion = bo.getPrice().divide(totalAmount, 8, RoundingMode.HALF_UP);
             BigDecimal allocatedDiscount = discount.multiply(proportion).setScale(PRICE_SCALE, RoundingMode.HALF_UP);
 
-            // 如果是最后一个 SKU，直接将剩余的优惠金额分摊给它，确保总金额精度不丢失
+            // 如果是最后一个 BO，直接将剩余的优惠金额分摊给它，确保总金额精度不丢失
             if (i == boList.size() - 1) {
                 allocatedDiscount = remainingDiscount;
             }
