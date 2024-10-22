@@ -8,10 +8,7 @@ import lombok.NoArgsConstructor;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 /**
  * @author ww
@@ -29,6 +26,11 @@ public class MoneyUtils {
      * 百分比对应的 BigDecimal 对象
      */
     public static final BigDecimal PERCENT_100 = BigDecimal.valueOf(100);
+
+    /**
+     * 默认拆分最小金额
+     */
+    private static final BigDecimal DEFAULT_MIN_AMOUNT = new BigDecimal("0.01");
 
     /**
      * 计算百分比金额，四舍五入
@@ -144,47 +146,81 @@ public class MoneyUtils {
      */
     public static <T> Map<T, BigDecimal> allocateDiscount(List<MoneyBO<T>> boList, BigDecimal discount) {
         Map<T, BigDecimal> result = new HashMap<>();
-
         // 1. 计算总价
         BigDecimal totalAmount = boList.stream()
                 .map(MoneyBO::getPrice)
                 .reduce(BigDecimal.ZERO, BigDecimal::add);
-
         // 2. 初始化变量，累积分摊的优惠金额，确保精度不丢失
         BigDecimal remainingDiscount = discount;
-
         // 3. 遍历 BO 集合，按比例计算每个 BO 的优惠金额
         for (int i = 0; i < boList.size(); i++) {
             MoneyBO<T> bo = boList.get(i);
-
             // 计算当前 BO 应分摊的优惠金额
             BigDecimal proportion = bo.getPrice().divide(totalAmount, 8, RoundingMode.HALF_UP);
             BigDecimal allocatedDiscount = discount.multiply(proportion).setScale(PRICE_SCALE, RoundingMode.HALF_UP);
-
             // 如果是最后一个 BO，直接将剩余的优惠金额分摊给它，确保总金额精度不丢失
             if (i == boList.size() - 1) {
                 allocatedDiscount = remainingDiscount;
             }
-
             result.put(bo.getId(), allocatedDiscount);
-
             // 减少剩余的优惠金额
             remainingDiscount = remainingDiscount.subtract(allocatedDiscount);
         }
+        return result;
+    }
 
+    /**
+     * 拆分红包
+     *
+     * @param totalAmount 红包总金额，单位为元
+     * @param totalCount  拆分的红包个数
+     * @return 拆分后的红包金额列表
+     */
+    public static List<BigDecimal> splitRedPacket(BigDecimal totalAmount, int totalCount) {
+        List<BigDecimal> result = new ArrayList<>();
+        Random random = new Random();
+        BigDecimal remainingAmount = totalAmount;
+
+        for (int i = 0; i < totalCount - 1; i++) {
+            // 最大可分配金额为剩余金额的两倍均值
+            BigDecimal maxAmount = remainingAmount.divide(BigDecimal.valueOf(totalCount - i), 2, RoundingMode.HALF_UP)
+                    .multiply(BigDecimal.valueOf(2));
+            // 生成一个随机金额（0.01到最大金额之间）
+            BigDecimal randomAmount = BigDecimal.valueOf(random.nextDouble()).multiply(maxAmount)
+                    .setScale(2, RoundingMode.HALF_UP);
+            // 保证每个红包至少0.01元
+            if (randomAmount.compareTo(DEFAULT_MIN_AMOUNT) < 0) {
+                randomAmount = DEFAULT_MIN_AMOUNT;
+            }
+            result.add(randomAmount);
+            remainingAmount = remainingAmount.subtract(randomAmount);
+        }
+        // 剩余的金额给最后一个红包
+        result.add(remainingAmount.setScale(2, RoundingMode.HALF_UP));
         return result;
     }
 
     public static void main(String[] args) {
+//        testAllocateDiscount();
+        testSplitRedPacket();
+    }
+
+    private static void testSplitRedPacket() {
+        BigDecimal totalAmount = new BigDecimal("100.00");
+        int count = 100;
+
+        List<BigDecimal> redPackets = splitRedPacket(totalAmount, count);
+        redPackets.forEach(amount -> System.out.println("红包金额: " + amount));
+    }
+
+    private static void testAllocateDiscount() {
         // 示例数据
         List<MoneyBO<String>> skuList = Arrays.asList(
                 new MoneyBO<>("sku1", new BigDecimal("0.01")),
                 new MoneyBO<>("sku2", new BigDecimal("200.00")),
                 new MoneyBO<>("sku3", new BigDecimal("301.00"))
         );
-
         BigDecimal discount = new BigDecimal("50.00");
-
         // 计算并打印优惠金额分摊结果
         Map<String, BigDecimal> result = allocateDiscount(skuList, discount);
         result.forEach((skuId, allocated) ->

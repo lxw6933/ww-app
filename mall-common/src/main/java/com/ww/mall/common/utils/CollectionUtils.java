@@ -77,10 +77,10 @@ public class CollectionUtils {
      * 数组对象===>获取target集合
      *
      * @param source 数组
-     * @param func target convert
+     * @param func   target convert
+     * @param <T>    数组元素类型
+     * @param <R>    target类型
      * @return target集合
-     * @param <T> 数组元素类型
-     * @param <R> target类型
      */
     public static <T, R> List<R> convertList(T[] source, Function<T, R> func) {
         if (ArrayUtil.isEmpty(source)) {
@@ -107,8 +107,8 @@ public class CollectionUtils {
      * 将其他集合类型转成set
      *
      * @param source 集合
+     * @param <T>    元素类型
      * @return Set
-     * @param <T> 元素类型
      */
     public static <T> Set<T> convertSet(Collection<T> source) {
         return convertSet(source, v -> v);
@@ -148,11 +148,11 @@ public class CollectionUtils {
     /**
      * 将集合===>map [key：keyFunc, value：集合元素]
      *
-     * @param source 集合
+     * @param source  集合
      * @param keyFunc key function
+     * @param <T>     集合元素类型
+     * @param <K>     key类型
      * @return map
-     * @param <T> 集合元素类型
-     * @param <K> key类型
      */
     public static <T, K> Map<K, T> convertMap(Collection<T> source, Function<T, K> keyFunc) {
         if (CollUtil.isEmpty(source)) {
@@ -200,11 +200,11 @@ public class CollectionUtils {
     /**
      * 将一个集合以某个key进行分组， value是List<T>
      *
-     * @param source 集合
+     * @param source  集合
      * @param keyFunc key分组规则
-     * @return Map<K, List<T>>
-     * @param <T> 集合元素类型
-     * @param <K> key类型
+     * @param <T>     集合元素类型
+     * @param <K>     key类型
+     * @return Map<K, List < T>>
      */
     public static <T, K> Map<K, List<T>> convertGroupListMap(Collection<T> source, Function<T, K> keyFunc) {
         if (CollUtil.isEmpty(source)) {
@@ -216,11 +216,11 @@ public class CollectionUtils {
     /**
      * 将一个集合以某个key进行分组， value是List<V>  V是将T进行 valueFunc 后的结果
      *
-     * @param source 集合
+     * @param source  集合
      * @param keyFunc key分组规则
-     * @return Map<K, List<V>>
-     * @param <T> 集合元素类型
-     * @param <K> key类型
+     * @param <T>     集合元素类型
+     * @param <K>     key类型
+     * @return Map<K, List < V>>
      */
     public static <T, K, V> Map<K, List<V>> convertGroupListMap(Collection<T> source, Function<T, K> keyFunc, Function<T, V> valueFunc) {
         if (CollUtil.isEmpty(source)) {
@@ -274,7 +274,5 @@ public class CollectionUtils {
         }
         return asList(createList, updateList, deleteList);
     }
-
-
 
 }
