@@ -31,6 +31,10 @@ public class RestTemplateConfiguration {
 
     /**
      * 注册RestTemplate
+     * # @SentinelRestTemplate
+     * 限流：对 RestTemplate 调用外部接口的请求流量进行限制，防止某些服务接口被频繁调用。
+     * 熔断：在 RestTemplate 请求超时或失败次数达到设定阈值后，自动熔断该服务调用，避免继续发送可能会失败的请求。
+     * 降级：当服务调用失败后，提供备用的降级方案或返回默认值，保证系统的稳定性。
      *
      * @param okHttpClientHttpRequestFactory 工厂
      * @return RestTemplate
