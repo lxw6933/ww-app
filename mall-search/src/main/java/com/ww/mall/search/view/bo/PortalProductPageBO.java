@@ -1,8 +1,9 @@
 package com.ww.mall.search.view.bo;
 
 import com.ww.mall.common.exception.ApiException;
-import com.ww.mall.common.common.MallPage;
 import com.ww.mall.common.utils.SpecialCharacterUtil;
+import com.ww.mall.mongodb.AbstractMongoPage;
+import com.ww.mall.search.entity.ProductSearch;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import org.apache.commons.lang3.StringUtils;
@@ -22,7 +23,7 @@ import java.util.List;
  */
 @Data
 @EqualsAndHashCode(callSuper = true)
-public class PortalProductSearchBO extends MallPage {
+public class PortalProductPageBO extends AbstractMongoPage<ProductSearch> {
 
     /**
      * 搜索关键词
@@ -55,7 +56,13 @@ public class PortalProductSearchBO extends MallPage {
      */
     private SearchScopeBO searchScopeBO;
 
-    public Criteria buildQueryCriteria() {
+    /**
+     * 是否积分渠道
+     */
+    private boolean integralChannel;
+
+    @Override
+    public Criteria buildQuery() {
         Criteria criteria = new Criteria();
         criteria.and("channelId").is(this.channelId)
                 .and("skuStatus").is(1)
@@ -110,7 +117,8 @@ public class PortalProductSearchBO extends MallPage {
         return criteria;
     }
 
-    public Sort buildSort(boolean integralChannel) {
+    @Override
+    public Sort buildSort() {
         List<Sort.Order> sortFieldList = new ArrayList<>();
         if (this.searchSortBO != null && this.searchSortBO.support()) {
             boolean asc = Boolean.TRUE.equals(this.searchSortBO.getSort());
@@ -125,7 +133,7 @@ public class PortalProductSearchBO extends MallPage {
                     sortFieldList.add(asc ? Sort.Order.asc("upTime") : Sort.Order.desc("upTime"));
                     break;
                 case PRICE:
-                    if (integralChannel) {
+                    if (this.integralChannel) {
                         sortFieldList.add(asc ? Sort.Order.asc("minFixPrice") : Sort.Order.desc("minFixPrice"));
                     } else {
                         sortFieldList.add(asc ? Sort.Order.asc("salePrice") : Sort.Order.desc("salePrice"));
@@ -136,7 +144,7 @@ public class PortalProductSearchBO extends MallPage {
             }
         }
         if (sortFieldList.isEmpty()) {
-            if (integralChannel) {
+            if (this.integralChannel) {
                 sortFieldList.add(Sort.Order.asc("minFixIntegral"));
                 sortFieldList.add(Sort.Order.asc("minFixPrice"));
             }

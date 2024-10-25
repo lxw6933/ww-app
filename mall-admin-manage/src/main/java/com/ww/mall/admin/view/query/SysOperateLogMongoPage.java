@@ -1,7 +1,8 @@
 package com.ww.mall.admin.view.query;
 
-import com.ww.mall.common.common.MallPage;
+import com.ww.mall.admin.entity.mongo.OperateLog;
 import com.ww.mall.common.utils.SpecialCharacterUtil;
+import com.ww.mall.mongodb.AbstractMongoPage;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import org.apache.commons.lang3.StringUtils;
@@ -15,7 +16,7 @@ import org.springframework.data.mongodb.core.query.Criteria;
  */
 @Data
 @EqualsAndHashCode(callSuper = true)
-public class SysOperateLogPageQuery extends MallPage {
+public class SysOperateLogMongoPage extends AbstractMongoPage<OperateLog> {
 
     /**
      * 操作用户id
@@ -52,6 +53,7 @@ public class SysOperateLogPageQuery extends MallPage {
      */
     private String endTime;
 
+    @Override
     public Criteria buildQuery() {
         Criteria criteria = new Criteria();
         if (this.userId != null) {
@@ -84,6 +86,7 @@ public class SysOperateLogPageQuery extends MallPage {
         return criteria;
     }
 
+    @Override
     public Sort buildSort() {
         return Sort.by("id");
     }

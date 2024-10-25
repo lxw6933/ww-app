@@ -1,6 +1,6 @@
 package com.ww.mall.admin.controller;
 
-import com.ww.mall.admin.view.query.SysOperateLogPageQuery;
+import com.ww.mall.admin.view.query.SysOperateLogMongoPage;
 import com.ww.mall.admin.view.vo.OperateLogVO;
 import com.ww.mall.common.common.MallPageResult;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -17,7 +17,7 @@ import org.springframework.web.bind.annotation.RestController;
 public class OperateLogController extends MallAbstractController {
 
     @GetMapping("/logs/page")
-    public MallPageResult<OperateLogVO> page(SysOperateLogPageQuery query) {
+    public MallPageResult<OperateLogVO> page(SysOperateLogMongoPage query) {
         return sf.getOperateLogService().page(query);
     }
 

@@ -6,23 +6,17 @@ import com.ww.mall.admin.entity.mongo.OperateLog;
 import com.ww.mall.admin.service.OperateLogService;
 import com.ww.mall.admin.service.SysUserService;
 import com.ww.mall.admin.view.dto.OperateLogDTO;
-import com.ww.mall.admin.view.query.SysOperateLogPageQuery;
+import com.ww.mall.admin.view.query.SysOperateLogMongoPage;
 import com.ww.mall.admin.view.vo.OperateLogVO;
 import com.ww.mall.common.common.MallPageResult;
 import lombok.extern.slf4j.Slf4j;
-import org.bson.Document;
 import org.springframework.beans.BeanUtils;
 import org.springframework.data.mongodb.core.MongoTemplate;
-import org.springframework.data.mongodb.core.aggregation.Aggregation;
-import org.springframework.data.mongodb.core.aggregation.AggregationOperation;
-import org.springframework.data.mongodb.core.aggregation.AggregationResults;
-import org.springframework.data.mongodb.core.query.Collation;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 
 import javax.annotation.Resource;
 import java.util.List;
-import java.util.Locale;
 
 /**
  * @author ww
@@ -48,28 +42,11 @@ public class OperateLogServiceImpl implements OperateLogService {
     }
 
     @Override
-    public MallPageResult<OperateLogVO> page(SysOperateLogPageQuery query) {
-        String collectionName = "sys_operate_log";
-        // number str sort
-        Collation collation = Collation.of(Locale.CHINESE).numericOrdering(true);
-        // query condition
-        AggregationOperation matchAggregation = Aggregation.match(query.buildQuery());
-        // sort condition
-        AggregationOperation sortAggregation = Aggregation.sort(query.buildSort());
-        // page condition
-        AggregationOperation skip = Aggregation.skip((long) (query.getPageNum() - 1) * query.getPageSize());
-        AggregationOperation limit = Aggregation.limit(query.getPageSize());
-        // build the aggregation pipeline
-        Aggregation aggregation = Aggregation.newAggregation(matchAggregation, sortAggregation, skip, limit)
-                .withOptions(Aggregation.newAggregationOptions().collation(collation).build());
+    public MallPageResult<OperateLogVO> page(SysOperateLogMongoPage query) {
         // query aggregation data result
-        AggregationResults<OperateLog> operateLogAggregationResult = mongoTemplate.aggregate(aggregation, collectionName, OperateLog.class);
-        List<OperateLog> operateLogResultList = operateLogAggregationResult.getMappedResults();
-        // totalCount
-        Aggregation countAggregation = Aggregation.newAggregation(matchAggregation, Aggregation.count().as("totalCount"));
-
-        AggregationResults<Document> countResults = mongoTemplate.aggregate(countAggregation, collectionName, Document.class);
-        int total = !countResults.getMappedResults().isEmpty() ? countResults.getMappedResults().get(0).getInteger("totalCount") : 0;
+        List<OperateLog> operateLogResultList = query.buildPageQueryResult(mongoTemplate, OperateLog.class);
+        // query aggregation data result totalCount
+        int total = (int) query.buildPageQueryResultTotalCount(mongoTemplate, OperateLog.class);
         // return
         return new MallPageResult<>(query.getPageNum(), query.getPageSize(), total, operateLogResultList, operateLog -> {
             OperateLogVO vo = new OperateLogVO();

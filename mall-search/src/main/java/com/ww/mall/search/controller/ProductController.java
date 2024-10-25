@@ -2,7 +2,7 @@ package com.ww.mall.search.controller;
 
 import com.ww.mall.search.entity.Product;
 import com.ww.mall.search.service.ProductSearchService;
-import com.ww.mall.search.view.bo.PortalProductSearchBO;
+import com.ww.mall.search.view.bo.PortalProductPageBO;
 import com.ww.mall.search.view.vo.PortalProductSearchVO;
 import com.ww.mall.common.common.MallPageResult;
 import org.elasticsearch.index.query.BoolQueryBuilder;
@@ -37,8 +37,8 @@ public class ProductController {
     private ProductSearchService productSearchService;
 
     @PostMapping("/portal/product/search")
-    public MallPageResult<PortalProductSearchVO> portalProductSearch(@RequestBody @Validated PortalProductSearchBO portalProductSearchBO, @RequestHeader("appkey") String appKey) {
-        return productSearchService.portalProductSearch(portalProductSearchBO, appKey);
+    public MallPageResult<PortalProductSearchVO> portalProductSearch(@RequestBody @Validated PortalProductPageBO portalProductPageBO, @RequestHeader("appkey") String appKey) {
+        return productSearchService.portalProductSearch(portalProductPageBO, appKey);
     }
 
     @GetMapping("/query")

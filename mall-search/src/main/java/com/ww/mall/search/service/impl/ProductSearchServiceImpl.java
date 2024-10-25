@@ -1,24 +1,18 @@
 package com.ww.mall.search.service.impl;
 
+import com.ww.mall.common.common.MallPageResult;
 import com.ww.mall.search.entity.ProductSearch;
 import com.ww.mall.search.service.ProductSearchService;
-import com.ww.mall.search.view.bo.PortalProductSearchBO;
+import com.ww.mall.search.view.bo.PortalProductPageBO;
 import com.ww.mall.search.view.vo.PortalProductSearchVO;
-import com.ww.mall.common.common.MallPageResult;
 import lombok.extern.slf4j.Slf4j;
-import org.bson.Document;
 import org.springframework.beans.BeanUtils;
 import org.springframework.data.mongodb.core.MongoTemplate;
-import org.springframework.data.mongodb.core.aggregation.Aggregation;
-import org.springframework.data.mongodb.core.aggregation.AggregationOperation;
-import org.springframework.data.mongodb.core.aggregation.AggregationResults;
-import org.springframework.data.mongodb.core.query.Collation;
 import org.springframework.stereotype.Service;
 
 import javax.annotation.Resource;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Locale;
 
 /**
  * @author ww
@@ -33,30 +27,11 @@ public class ProductSearchServiceImpl implements ProductSearchService {
     private MongoTemplate mongoTemplate;
 
     @Override
-    public MallPageResult<PortalProductSearchVO> portalProductSearch(PortalProductSearchBO portalProductSearchBO, String curAppKey) {
-        String collectionName = "v2_product_search";
-        boolean integralChannel = true;
-        // number str sort
-        Collation collation = Collation.of(Locale.CHINESE).numericOrdering(true);
-        // query condition
-        AggregationOperation matchAggregation = Aggregation.match(portalProductSearchBO.buildQueryCriteria());
-        // sort condition
-        AggregationOperation sortAggregation = Aggregation.sort(portalProductSearchBO.buildSort(integralChannel));
-        // group condition
-        AggregationOperation groupAggregation = portalProductSearchBO.buildGroup();
-        // page condition
-        AggregationOperation skip = Aggregation.skip((long) (portalProductSearchBO.getPageNum() - 1) * portalProductSearchBO.getPageSize());
-        AggregationOperation limit = Aggregation.limit(portalProductSearchBO.getPageSize());
-        // build the aggregation pipeline
-        Aggregation aggregation = Aggregation.newAggregation(matchAggregation, sortAggregation, groupAggregation, skip, limit)
-                .withOptions(Aggregation.newAggregationOptions().collation(collation).build());
+    public MallPageResult<PortalProductSearchVO> portalProductSearch(PortalProductPageBO portalProductPageBO, String curAppKey) {
         // query aggregation data result
-        AggregationResults<ProductSearch> productSearchAggregationResult = mongoTemplate.aggregate(aggregation, collectionName, ProductSearch.class);
-        List<ProductSearch> productSearchResult = productSearchAggregationResult.getMappedResults();
-        // totalCount
-        Aggregation countAggregation = Aggregation.newAggregation(matchAggregation, groupAggregation, Aggregation.count().as("totalCount"));
-        AggregationResults<Document> countResults = mongoTemplate.aggregate(countAggregation, collectionName, Document.class);
-        int total = !countResults.getMappedResults().isEmpty() ? countResults.getMappedResults().get(0).getInteger("totalCount") : 0;
+        List<ProductSearch> productSearchResult = portalProductPageBO.buildPageQueryResult(mongoTemplate, ProductSearch.class);
+        // query aggregation data result totalCount
+        int total = (int) portalProductPageBO.buildPageQueryResultTotalCount(mongoTemplate, ProductSearch.class);
 
         List<PortalProductSearchVO> resultVOList = new ArrayList<>();
         productSearchResult.forEach(res -> {
@@ -68,7 +43,7 @@ public class ProductSearchServiceImpl implements ProductSearchService {
                 log.error("搜索商品数据异常", e);
             }
         });
-        return new MallPageResult<>(portalProductSearchBO.getPageNum(), portalProductSearchBO.getPageSize(), total, resultVOList);
+        return new MallPageResult<>(portalProductPageBO.getPageNum(), portalProductPageBO.getPageSize(), total, resultVOList);
     }
 
     private PortalProductSearchVO searchResultDataHandler(ProductSearch productSearch) {

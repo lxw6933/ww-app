@@ -1,6 +1,6 @@
 package com.ww.mall.search.service;
 
-import com.ww.mall.search.view.bo.PortalProductSearchBO;
+import com.ww.mall.search.view.bo.PortalProductPageBO;
 import com.ww.mall.search.view.vo.PortalProductSearchVO;
 import com.ww.mall.common.common.MallPageResult;
 
@@ -14,10 +14,10 @@ public interface ProductSearchService {
     /**
      * 门户搜索
      *
-     * @param portalProductSearchBO 搜索条件
+     * @param portalProductPageBO 搜索条件
      * @param curAppKey 当前搜索渠道appKey
      * @return PageResult<PortalSearchVO>
      */
-    MallPageResult<PortalProductSearchVO> portalProductSearch(PortalProductSearchBO portalProductSearchBO, String curAppKey);
+    MallPageResult<PortalProductSearchVO> portalProductSearch(PortalProductPageBO portalProductPageBO, String curAppKey);
 
 }

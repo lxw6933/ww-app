@@ -1,7 +1,7 @@
 package com.ww.mall.admin.service;
 
 import com.ww.mall.admin.view.dto.OperateLogDTO;
-import com.ww.mall.admin.view.query.SysOperateLogPageQuery;
+import com.ww.mall.admin.view.query.SysOperateLogMongoPage;
 import com.ww.mall.admin.view.vo.OperateLogVO;
 import com.ww.mall.common.common.MallPageResult;
 
@@ -25,6 +25,6 @@ public interface OperateLogService {
      * @param query 分页条件
      * @return 操作日志分页列表
      */
-    MallPageResult<OperateLogVO> page(SysOperateLogPageQuery query);
+    MallPageResult<OperateLogVO> page(SysOperateLogMongoPage query);
 
 }
