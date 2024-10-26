@@ -24,7 +24,13 @@ public class AclComponent {
     private final AntPathMatcher antPathMatcher = new AntPathMatcher();
 
     public boolean hasPermission(Authentication authentication) {
-        MallBaseUser mallBaseUser = (MallBaseUser) authentication.getPrincipal();
+        MallBaseUser mallBaseUser;
+        try {
+            mallBaseUser = (MallBaseUser) authentication.getPrincipal();
+        } catch (Exception e) {
+            log.error("用户信息异常：{}", e.getMessage());
+            return false;
+        }
         if (UserType.ADMIN.equals(mallBaseUser.getUserType()) && mallBaseUser.getId().equals(1L)) {
             return true;
         }
