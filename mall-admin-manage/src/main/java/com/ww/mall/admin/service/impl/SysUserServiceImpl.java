@@ -48,7 +48,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
 
-import static com.ww.mall.admin.enums.LogRecordConstants.*;
+import static com.ww.mall.admin.constant.LogRecordConstants.*;
 import static com.ww.mall.admin.utils.PasswordUtil.DEFAULT_PASSWORD;
 import static com.ww.mall.common.utils.CollectionUtils.convertList;
 

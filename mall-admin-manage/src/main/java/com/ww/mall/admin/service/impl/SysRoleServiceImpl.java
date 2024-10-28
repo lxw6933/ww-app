@@ -29,7 +29,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.util.ArrayList;
 import java.util.List;
 
-import static com.ww.mall.admin.enums.LogRecordConstants.*;
+import static com.ww.mall.admin.constant.LogRecordConstants.*;
 
 /**
  * @author ww

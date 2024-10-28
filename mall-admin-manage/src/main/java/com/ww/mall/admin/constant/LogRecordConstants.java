@@ -1,4 +1,4 @@
-package com.ww.mall.admin.enums;
+package com.ww.mall.admin.constant;
 
 /**
  * @author ww
