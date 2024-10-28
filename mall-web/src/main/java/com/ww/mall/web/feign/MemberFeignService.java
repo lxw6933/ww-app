@@ -36,4 +36,10 @@ public interface MemberFeignService {
     @PostMapping("/mall-member/member/inner/addNewMemberIntegral")
     Result<Boolean> addMemberIntegral(@RequestBody AddMemberIntegralBO addMemberIntegralBO);
 
+    /**
+     * test openFeign pk grpc
+     */
+    @GetMapping("/mall-member/member/inner/test")
+    Result<String> test();
+
 }

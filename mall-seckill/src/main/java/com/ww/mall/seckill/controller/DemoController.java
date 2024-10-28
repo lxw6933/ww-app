@@ -5,6 +5,7 @@ import com.ww.mall.seckill.grpc.GrpcClientService;
 import com.ww.mall.seckill.service.DemoService;
 import com.ww.mall.seckill.view.bo.SensitiveWordBO;
 import com.ww.mall.seckill.view.bo.UserInfoVO;
+import com.ww.mall.web.feign.MemberFeignService;
 import com.ww.mall.web.view.bo.MemberLoginBO;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -104,8 +105,16 @@ public class DemoController {
     private GrpcClientService grpcClientService;
 
     @GetMapping("/grpc/hello")
-    public String hello() {
+    public String helloGrpc() {
         return grpcClientService.sendMessage("mall-seckill");
+    }
+
+    @Autowired
+    private MemberFeignService memberFeignService;
+
+    @GetMapping("/openFeign/hello")
+    public String helloOpenFeign() {
+        return memberFeignService.test().getData();
     }
 
     @GetMapping("/sensitiveWord")

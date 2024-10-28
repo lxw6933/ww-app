@@ -30,6 +30,7 @@ import com.ww.mall.seckill.model.DemoModel;
 import com.ww.mall.seckill.node.executor.DemoFlowExecutor;
 import com.ww.mall.seckill.service.DemoService;
 import com.ww.mall.seckill.view.bo.SensitiveWordBO;
+import com.ww.mall.web.feign.MemberFeignService;
 import com.ww.mall.web.feign.ThirdServerFeignService;
 import com.ww.mall.web.view.bo.MemberLoginBO;
 import lombok.extern.slf4j.Slf4j;

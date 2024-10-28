@@ -29,6 +29,11 @@ public class MemberFeignServiceFallBack implements FallbackFactory<MemberFeignSe
             public Result<Boolean> addMemberIntegral(AddMemberIntegralBO addMemberIntegralBO) {
                 return Result.error(GlobalResCodeConstants.LIMIT_REQUEST);
             }
+
+            @Override
+            public Result<String> test() {
+                return Result.error(GlobalResCodeConstants.LIMIT_REQUEST);
+            }
         };
     }
 }

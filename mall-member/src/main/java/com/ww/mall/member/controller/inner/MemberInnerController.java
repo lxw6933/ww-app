@@ -32,5 +32,9 @@ public class MemberInnerController {
         return memberIntegralRecordService.addNewMemberIntegral(addMemberIntegralBO);
     }
 
+    @GetMapping("/test")
+    public String test() {
+        return "member openFeign hello";
+    }
 
 }
