@@ -55,7 +55,6 @@ public class IdUtil {
             executorService.submit(() -> container.add(generatorIdStr()));
         }
         waitFinish(executorService);
-        log.info("数量：" + container.size());
     }
 
     public static void main(String[] args) throws InterruptedException {
