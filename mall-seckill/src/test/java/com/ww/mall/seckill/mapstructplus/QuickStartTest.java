@@ -3,6 +3,8 @@ package com.ww.mall.seckill.mapstructplus;
 import cn.hutool.core.date.TimeInterval;
 import com.ww.mall.seckill.service.DemoService;
 import io.github.linpeilie.Converter;
+import io.github.linpeilie.annotations.AutoMapper;
+import io.github.linpeilie.annotations.ComponentModelConfig;
 import lombok.Data;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -48,9 +50,9 @@ public class QuickStartTest {
     @Test
     public void test2() {
         TimeInterval timer = new TimeInterval();
-        timer.start("Mapstruct-plus");
-        demoService.testBeanCopy(0);
-        System.out.println("Mapstruct-plus 耗时：" + timer.intervalSecond("Mapstruct-plus") + "秒");
+//        timer.start("Mapstruct-plus");
+//        demoService.testBeanCopy(0);
+//        System.out.println("Mapstruct-plus 耗时：" + timer.intervalSecond("Mapstruct-plus") + "秒");
 
         timer.start("BeanUtil");
         demoService.testBeanCopy(1);
@@ -58,6 +60,7 @@ public class QuickStartTest {
     }
 
     @Data
+    @AutoMapper(target = UserDto.class)
     public static class User {
         private String username;
         private int age;

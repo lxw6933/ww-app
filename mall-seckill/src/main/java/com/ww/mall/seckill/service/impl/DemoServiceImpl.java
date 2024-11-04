@@ -25,6 +25,8 @@ import com.ww.mall.rabbitmq.routekey.RouteKeyConstant;
 import com.ww.mall.redis.MallRedisTemplate;
 import com.ww.mall.redis.service.CodeGeneratorService;
 import com.ww.mall.redis.service.IssueCodeService;
+import com.ww.mall.seckill.entity.A;
+import com.ww.mall.seckill.entity.B;
 import com.ww.mall.seckill.entity.Demo;
 import com.ww.mall.seckill.listener.DemoImportListener;
 import com.ww.mall.seckill.model.DemoModel;
@@ -34,9 +36,6 @@ import com.ww.mall.seckill.view.bo.SensitiveWordBO;
 import com.ww.mall.web.feign.ThirdServerFeignService;
 import com.ww.mall.web.view.bo.MemberLoginBO;
 import io.github.linpeilie.Converter;
-import lombok.AllArgsConstructor;
-import lombok.Data;
-import lombok.NoArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.redisson.api.RBloomFilter;
 import org.redisson.api.RedissonClient;
@@ -387,33 +386,16 @@ public class DemoServiceImpl implements DemoService {
     @Autowired
     private Converter converter;
 
-    private final A a = new A("jack", 23, false);
-
     @Override
     public void testBeanCopy(int type) {
-        for (int i = 0; i < 10000; i++) {
+        A a = new A("jack", 23, false);
+        for (int i = 0; i < 10000000; i++) {
             if (type == 0) {
                 converter.convert(a, B.class);
             } else {
                 BeanUtil.toBean(a, B.class);
             }
         }
-    }
-
-    @Data
-    @AllArgsConstructor
-    @NoArgsConstructor
-    public static class A {
-        private String username;
-        private int age;
-        private boolean young;
-    }
-
-    @Data
-    public static class B {
-        private String username;
-        private int age;
-        private boolean young;
     }
 
 }

@@ -13,6 +13,7 @@ import com.ww.mall.web.handler.ResExceptionHandler;
 import com.ww.mall.web.handler.ResponseBodyHandler;
 import com.ww.mall.web.handler.ServerSentinelHandler;
 import com.ww.mall.web.interceptor.FeignRequestInterceptor;
+import io.github.linpeilie.annotations.ComponentModelConfig;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.autoconfigure.jackson.Jackson2ObjectMapperBuilderCustomizer;
 import org.springframework.cloud.loadbalancer.annotation.LoadBalancerClients;
@@ -33,6 +34,7 @@ import java.time.LocalTime;
 @Slf4j
 @EnableRetry
 @Configuration
+@ComponentModelConfig(componentModel = "default")
 @EnableFeignClients(basePackages = "com.ww.mall.web.feign")
 @LoadBalancerClients(defaultConfiguration = {LoadBalancerConfiguration.class})
 public class MallWebApplication {

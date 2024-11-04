@@ -3,6 +3,7 @@ package com.ww.mall.seckill;
 import com.ww.mall.annotation.enable.*;
 import com.ww.mall.redis.service.CodeGeneratorService;
 import com.ww.mall.redis.service.IssueCodeService;
+import io.github.linpeilie.annotations.ComponentModelConfig;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.cloud.client.discovery.EnableDiscoveryClient;

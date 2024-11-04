@@ -55,7 +55,7 @@ public class MallRabbitmqAutoConfiguration {
      * @return MessageConverter
      */
     @Bean
-    public MessageConverter converter() {
+    public MessageConverter messageConverter() {
         return new Jackson2JsonMessageConverter();
     }
 
