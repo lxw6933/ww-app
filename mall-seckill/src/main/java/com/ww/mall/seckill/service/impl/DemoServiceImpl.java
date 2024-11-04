@@ -1,5 +1,6 @@
 package com.ww.mall.seckill.service.impl;
 
+import cn.hutool.core.bean.BeanUtil;
 import cn.hutool.core.date.DatePattern;
 import cn.hutool.core.date.DateUtil;
 import com.alibaba.fastjson.JSON;
@@ -30,9 +31,12 @@ import com.ww.mall.seckill.model.DemoModel;
 import com.ww.mall.seckill.node.executor.DemoFlowExecutor;
 import com.ww.mall.seckill.service.DemoService;
 import com.ww.mall.seckill.view.bo.SensitiveWordBO;
-import com.ww.mall.web.feign.MemberFeignService;
 import com.ww.mall.web.feign.ThirdServerFeignService;
 import com.ww.mall.web.view.bo.MemberLoginBO;
+import io.github.linpeilie.Converter;
+import lombok.AllArgsConstructor;
+import lombok.Data;
+import lombok.NoArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.redisson.api.RBloomFilter;
 import org.redisson.api.RedissonClient;
@@ -378,6 +382,38 @@ public class DemoServiceImpl implements DemoService {
     public String ip2region(HttpServletRequest request) {
         IpInfo ipInfo = ip2regionSearcher.search(IpUtil.getIp(request));
         return ipInfo.toString();
+    }
+
+    @Autowired
+    private Converter converter;
+
+    private final A a = new A("jack", 23, false);
+
+    @Override
+    public void testBeanCopy(int type) {
+        for (int i = 0; i < 10000; i++) {
+            if (type == 0) {
+                converter.convert(a, B.class);
+            } else {
+                BeanUtil.toBean(a, B.class);
+            }
+        }
+    }
+
+    @Data
+    @AllArgsConstructor
+    @NoArgsConstructor
+    public static class A {
+        private String username;
+        private int age;
+        private boolean young;
+    }
+
+    @Data
+    public static class B {
+        private String username;
+        private int age;
+        private boolean young;
     }
 
 }

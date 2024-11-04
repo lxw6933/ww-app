@@ -30,6 +30,11 @@ public class DemoController {
     @Autowired
     private DemoService demoService;
 
+    @GetMapping("/testBeanCopy")
+    public void testBeanCopy(@RequestParam int type) {
+        demoService.testBeanCopy(type);
+    }
+
     @GetMapping("/generatorCode")
     public int generatorCode(@RequestParam String batchNo, @RequestParam int length, @RequestParam int total) {
         return demoService.generatorCode(batchNo, length, total);

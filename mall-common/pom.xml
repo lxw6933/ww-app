@@ -57,10 +57,15 @@
             <artifactId>javax.servlet-api</artifactId>
         </dependency>
         <!-- mapStruct -->
+<!--        <dependency>-->
+<!--            <groupId>org.mapstruct</groupId>-->
+<!--            <artifactId>mapstruct-processor</artifactId>-->
+<!--            <scope>provided</scope>-->
+<!--        </dependency>-->
+        <!-- mapstruct-plus -->
         <dependency>
-            <groupId>org.mapstruct</groupId>
-            <artifactId>mapstruct-processor</artifactId>
-            <scope>provided</scope>
+            <groupId>io.github.linpeilie</groupId>
+            <artifactId>mapstruct-plus-spring-boot-starter</artifactId>
         </dependency>
         <!-- codec -->
         <dependency>

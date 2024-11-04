@@ -87,6 +87,7 @@
         <easy.captcha.version>1.6.2</easy.captcha.version>
         <elasticsearch.version>7.16.3</elasticsearch.version>
         <mapstruct.version>1.5.5.Final</mapstruct.version>
+        <mapstruct-plus.version>1.4.5</mapstruct-plus.version>
         <sensitive.word.version>0.16.1</sensitive.word.version>
         <pay.version>2.9.11</pay.version>
         <bizlog.version>3.0.6</bizlog.version>
@@ -319,11 +320,17 @@
 <!--                <artifactId>mapstruct</artifactId>-->
 <!--                <version>${mapstruct.version}</version>-->
 <!--            </dependency>-->
+<!--            <dependency>-->
+<!--                <groupId>org.mapstruct</groupId>-->
+<!--                <artifactId>mapstruct-processor</artifactId>-->
+<!--                <version>${mapstruct.version}</version>-->
+<!--                <scope>provided</scope>-->
+<!--            </dependency>-->
+            <!-- mapstruct-plus -->
             <dependency>
-                <groupId>org.mapstruct</groupId>
-                <artifactId>mapstruct-processor</artifactId>
-                <version>${mapstruct.version}</version>
-                <scope>provided</scope>
+                <groupId>io.github.linpeilie</groupId>
+                <artifactId>mapstruct-plus-spring-boot-starter</artifactId>
+                <version>${mapstruct-plus.version}</version>
             </dependency>
             <!-- sensitive word -->
             <dependency>
@@ -381,10 +388,15 @@
                             <artifactId>lombok</artifactId>
                             <version>${lombok.version}</version>
                         </path>
+<!--                        <path>-->
+<!--                            <groupId>org.mapstruct</groupId>-->
+<!--                            <artifactId>mapstruct-processor</artifactId>-->
+<!--                            <version>${mapstruct.version}</version>-->
+<!--                        </path>-->
                         <path>
-                            <groupId>org.mapstruct</groupId>
-                            <artifactId>mapstruct-processor</artifactId>
-                            <version>${mapstruct.version}</version>
+                            <groupId>io.github.linpeilie</groupId>
+                            <artifactId>mapstruct-plus-processor</artifactId>
+                            <version>${mapstruct-plus.version}</version>
                         </path>
                         <path>
                             <groupId>org.springframework.boot</groupId>
