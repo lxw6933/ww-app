@@ -92,6 +92,7 @@
         <bizlog.version>3.0.6</bizlog.version>
         <codec.version>1.17.0</codec.version>
         <hippo4j.version>1.5.0</hippo4j.version>
+        <jsoup.version>1.17.2</jsoup.version>
 
         <influxdb.version>6.7.0</influxdb.version>
     </properties>
@@ -354,6 +355,12 @@
                 <groupId>cn.hippo4j</groupId>
                 <artifactId>hippo4j-config-spring-boot-starter</artifactId>
                 <version>${hippo4j.version}</version>
+            </dependency>
+            <!-- jsoup -->
+            <dependency>
+                <groupId>org.jsoup</groupId>
+                <artifactId>jsoup</artifactId>
+                <version>${jsoup.version}</version>
             </dependency>
         </dependencies>
     </dependencyManagement>
