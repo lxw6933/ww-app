@@ -43,12 +43,7 @@ public class OperateLogServiceImpl implements OperateLogService {
 
     @Override
     public MallPageResult<OperateLogVO> page(SysOperateLogMongoPage query) {
-        // query aggregation data result
-        List<OperateLog> operateLogResultList = query.buildPageQueryResult(mongoTemplate, OperateLog.class);
-        // query aggregation data result totalCount
-        int total = (int) query.buildPageQueryResultTotalCount(mongoTemplate, OperateLog.class);
-        // return
-        return new MallPageResult<>(query.getPageNum(), query.getPageSize(), total, operateLogResultList, operateLog -> {
+        return query.buildPageResult(OperateLog.class, operateLog -> {
             OperateLogVO vo = new OperateLogVO();
             BeanUtils.copyProperties(operateLog, vo);
             SysUser sysUser = sysUserService.getById(vo.getUserId());
