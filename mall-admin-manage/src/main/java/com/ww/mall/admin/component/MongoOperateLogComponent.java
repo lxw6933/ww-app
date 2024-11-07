@@ -41,7 +41,7 @@ public class MongoOperateLogComponent implements ILogRecordService {
             // 模块信息
             reqDTO.setType(logRecord.getType());
             reqDTO.setSubType(logRecord.getSubType());
-            reqDTO.setBizId(Long.parseLong(logRecord.getBizNo()));
+            reqDTO.setBizId(logRecord.getBizNo());
             reqDTO.setAction(logRecord.getAction());
             reqDTO.setExtra(logRecord.getExtra());
             reqDTO.setCreateTime(logRecord.getCreateTime());

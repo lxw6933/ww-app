@@ -26,7 +26,7 @@ public class SysOperateLogMongoPage extends AbstractMongoPage<OperateLog> {
     /**
      * 业务模块id
      */
-    private Long bizId;
+    private String bizId;
 
     /**
      * 业务模块类型
@@ -59,7 +59,7 @@ public class SysOperateLogMongoPage extends AbstractMongoPage<OperateLog> {
         if (this.userId != null) {
             criteria.and("userId").is(this.userId);
         }
-        if (this.bizId != null) {
+        if (StringUtils.isNotEmpty(this.bizId)) {
             criteria.and("bizId").is(this.bizId);
         }
         if (StringUtils.isNotEmpty(this.type)) {

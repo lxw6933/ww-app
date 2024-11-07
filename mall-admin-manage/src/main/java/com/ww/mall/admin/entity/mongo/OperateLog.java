@@ -44,7 +44,7 @@ public class OperateLog extends BaseDoc {
     /**
      * 操作模块业务编号
      */
-    private Long bizId;
+    private String bizId;
 
     /**
      * 日志内容，记录整个操作的明细
