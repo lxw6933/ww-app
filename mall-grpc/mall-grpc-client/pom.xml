@@ -1,15 +1,20 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-    xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
     <parent>
         <groupId>com.ww.mall</groupId>
-        <artifactId>ww-mall</artifactId>
+        <artifactId>mall-grpc</artifactId>
         <version>${revision}</version>
     </parent>
 
-    <artifactId>mall-grpc-server</artifactId>
-    <description>grpc服务端</description>
+    <artifactId>mall-grpc-client</artifactId>
+    <packaging>jar</packaging>
+
+    <name>${project.artifactId}</name>
+    <description>
+        grpc 客户端 模块，test专用
+    </description>
 
     <dependencies>
         <dependency>
@@ -22,8 +27,8 @@
                     <groupId>com.github.ben-manes.caffeine</groupId>
                 </exclusion>
                 <exclusion>
-                    <artifactId>spring-boot-starter-tomcat</artifactId>
-                    <groupId>org.springframework.boot</groupId>
+                    <groupId>net.devh</groupId>
+                    <artifactId>grpc-server-spring-boot-starter</artifactId>
                 </exclusion>
             </exclusions>
         </dependency>
@@ -36,12 +41,22 @@
         <!-- grpc-server -->
         <dependency>
             <groupId>net.devh</groupId>
-            <artifactId>grpc-server-spring-boot-starter</artifactId>
+            <artifactId>grpc-client-spring-boot-starter</artifactId>
         </dependency>
-        <!-- sensitive word -->
+        <!-- netty -->
         <dependency>
-            <groupId>com.github.houbb</groupId>
-            <artifactId>sensitive-word</artifactId>
+            <groupId>io.netty</groupId>
+            <artifactId>netty-all</artifactId>
+        </dependency>
+        <!-- rabbitmq -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-amqp</artifactId>
+        </dependency>
+        <!-- mongodb -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-data-mongodb</artifactId>
         </dependency>
         <!-- test -->
         <dependency>

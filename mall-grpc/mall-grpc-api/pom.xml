@@ -5,11 +5,17 @@
     <modelVersion>4.0.0</modelVersion>
     <parent>
         <groupId>com.ww.mall</groupId>
-        <artifactId>ww-mall</artifactId>
+        <artifactId>mall-grpc</artifactId>
         <version>${revision}</version>
     </parent>
 
     <artifactId>mall-grpc-api</artifactId>
+    <packaging>jar</packaging>
+
+    <name>${project.artifactId}</name>
+    <description>
+        grpc 模块 API，暴露给其它模块调用
+    </description>
 
     <dependencies>
         <!-- grpc protobuf start -->

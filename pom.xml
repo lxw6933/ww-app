@@ -37,9 +37,8 @@
         <module>mall-seckill</module>
         <module>mall-flink</module>
         <module>mall-netty</module>
-        <module>mall-grpc-api</module>
-        <module>mall-grpc-server</module>
-        <module>mall-grpc-client</module>
+        <!-- grpc -->
+        <module>mall-grpc</module>
         <!-- 开发平台 -->
         <module>mall-open-platform</module>
         <!-- 消息平台 -->
