@@ -4,24 +4,44 @@
     <modelVersion>4.0.0</modelVersion>
     <parent>
         <groupId>com.ww.mall</groupId>
-        <artifactId>ww-mall</artifactId>
+        <artifactId>mall-member</artifactId>
         <version>${revision}</version>
     </parent>
 
-    <artifactId>mall-order</artifactId>
-    <description>订单服务</description>
+    <artifactId>mall-member-biz</artifactId>
+    <packaging>jar</packaging>
+
+    <name>${project.artifactId}</name>
+    <description>
+        member 业务模块
+    </description>
 
     <dependencies>
-        <!-- web通用服务依赖 -->
+        <dependency>
+            <groupId>com.ww.mall</groupId>
+            <artifactId>mall-member-api</artifactId>
+            <version>${revision}</version>
+        </dependency>
+        <!-- web -->
         <dependency>
             <groupId>com.ww</groupId>
             <artifactId>mall-web</artifactId>
             <version>${revision}</version>
         </dependency>
+        <!-- grpc-server -->
+        <dependency>
+            <groupId>net.devh</groupId>
+            <artifactId>grpc-server-spring-boot-starter</artifactId>
+        </dependency>
         <!-- redis -->
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-data-redis</artifactId>
+        </dependency>
+        <!-- redisson -->
+        <dependency>
+            <groupId>org.redisson</groupId>
+            <artifactId>redisson</artifactId>
         </dependency>
         <!-- rabbitmq -->
         <dependency>

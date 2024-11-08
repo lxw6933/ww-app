@@ -6,7 +6,7 @@
     <parent>
         <groupId>com.ww.mall</groupId>
         <artifactId>ww-mall</artifactId>
-        <version>1.0.0</version>
+        <version>${revision}</version>
     </parent>
 
     <artifactId>mall-grpc-api</artifactId>
@@ -16,18 +16,15 @@
         <dependency>
             <groupId>io.grpc</groupId>
             <artifactId>grpc-netty-shaded</artifactId>
-            <version>${grpc.version}</version>
             <scope>runtime</scope>
         </dependency>
         <dependency>
             <groupId>io.grpc</groupId>
             <artifactId>grpc-protobuf</artifactId>
-            <version>${grpc.version}</version>
         </dependency>
         <dependency>
             <groupId>io.grpc</groupId>
             <artifactId>grpc-stub</artifactId>
-            <version>${grpc.version}</version>
         </dependency>
         <!-- necessary for Java 9+ -->
         <dependency>

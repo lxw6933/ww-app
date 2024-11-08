@@ -5,7 +5,7 @@
     <parent>
         <groupId>com.ww.mall</groupId>
         <artifactId>ww-mall</artifactId>
-        <version>1.0.0</version>
+        <version>${revision}</version>
     </parent>
 
     <artifactId>mall-search</artifactId>
@@ -16,7 +16,7 @@
         <dependency>
             <groupId>com.ww</groupId>
             <artifactId>mall-web</artifactId>
-            <version>${ww.mall.version}</version>
+            <version>${revision}</version>
         </dependency>
         <!-- canal -->
         <dependency>
@@ -42,12 +42,10 @@
         <dependency>
             <groupId>org.elasticsearch.client</groupId>
             <artifactId>elasticsearch-rest-high-level-client</artifactId>
-            <version>${elasticsearch.version}</version>
         </dependency>
         <dependency>
             <groupId>org.elasticsearch</groupId>
             <artifactId>elasticsearch</artifactId>
-            <version>${elasticsearch.version}</version>
         </dependency>
         <!-- redis -->
         <dependency>

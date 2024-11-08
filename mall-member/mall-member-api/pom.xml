@@ -4,20 +4,20 @@
     <modelVersion>4.0.0</modelVersion>
     <parent>
         <groupId>com.ww.mall</groupId>
-        <artifactId>ww-mall</artifactId>
+        <artifactId>mall-member</artifactId>
         <version>${revision}</version>
     </parent>
-    <modules>
-        <module>mall-member-api</module>
-        <module>mall-member-biz</module>
-    </modules>
 
-    <artifactId>mall-member</artifactId>
-    <packaging>pom</packaging>
+    <artifactId>mall-member-api</artifactId>
+    <packaging>jar</packaging>
 
     <name>${project.artifactId}</name>
     <description>
-        member 模块
+        member 模块 API，暴露给其它模块调用
     </description>
+
+    <dependencies>
+
+    </dependencies>
 
 </project>

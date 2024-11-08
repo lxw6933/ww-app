@@ -8,19 +8,16 @@ import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.cloud.client.discovery.EnableDiscoveryClient;
 
-/**
- * @author ww
- */
 @EnableMallRedis
 @EnableMallRedisson
 @EnableMallRabbitmq
 @EnableMallMybatisPlus
 @EnableDiscoveryClient
 @SpringBootApplication
-public class MallMemberApplication {
+public class MallMemberBizApplication {
 
     public static void main(String[] args) {
-        SpringApplication.run(MallMemberApplication.class, args);
+        SpringApplication.run(MallMemberBizApplication.class, args);
     }
 
 }

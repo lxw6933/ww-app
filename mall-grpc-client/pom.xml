@@ -5,7 +5,7 @@
     <parent>
         <groupId>com.ww.mall</groupId>
         <artifactId>ww-mall</artifactId>
-        <version>1.0.0</version>
+        <version>${revision}</version>
     </parent>
 
     <artifactId>mall-grpc-client</artifactId>
@@ -15,7 +15,7 @@
         <dependency>
             <groupId>com.ww</groupId>
             <artifactId>mall-web</artifactId>
-            <version>${ww.mall.version}</version>
+            <version>${revision}</version>
             <exclusions>
                 <exclusion>
                     <artifactId>caffeine</artifactId>
@@ -31,13 +31,12 @@
         <dependency>
             <groupId>com.ww.mall</groupId>
             <artifactId>mall-grpc-api</artifactId>
-            <version>${ww.mall.version}</version>
+            <version>${revision}</version>
         </dependency>
         <!-- grpc-server -->
         <dependency>
             <groupId>net.devh</groupId>
             <artifactId>grpc-client-spring-boot-starter</artifactId>
-            <version>${grpc.springboot.version}</version>
         </dependency>
         <!-- netty -->
         <dependency>
