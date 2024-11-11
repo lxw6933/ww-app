@@ -1,7 +1,7 @@
 package com.ww.mall.member.controller;
 
 import com.ww.mall.member.service.SignService;
-import com.ww.mall.utils.AuthorizationContext;
+import com.ww.mall.common.utils.AuthorizationContext;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.GetMapping;

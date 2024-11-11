@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+    <parent>
+        <groupId>com.ww.mall</groupId>
+        <artifactId>ww-mall</artifactId>
+        <version>${revision}</version>
+    </parent>
+    <modules>
+        <module>mall-spring-boot-start-es</module>
+        <module>mall-spring-boot-start-excel</module>
+        <module>mall-spring-boot-start-influxdb</module>
+        <module>mall-spring-boot-start-ip</module>
+        <module>mall-spring-boot-start-minio</module>
+        <module>mall-spring-boot-start-mongodb</module>
+        <module>mall-spring-boot-start-mybatis</module>
+        <module>mall-spring-boot-start-rabbitmq</module>
+        <module>mall-spring-boot-start-redis</module>
+        <module>mall-spring-boot-start-security</module>
+        <module>mall-spring-boot-start-sensitive</module>
+        <module>mall-spring-boot-start-websocket</module>
+        <module>mall-spring-boot-start-job</module>
+    </modules>
+
+    <artifactId>mall-framework</artifactId>
+    <packaging>pom</packaging>
+
+    <name>${project.artifactId}</name>
+    <description>
+        技术组件 framework 模块
+    </description>
+</project>

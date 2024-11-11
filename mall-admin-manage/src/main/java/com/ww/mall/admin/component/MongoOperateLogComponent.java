@@ -8,7 +8,7 @@ import com.ww.mall.admin.service.OperateLogService;
 import com.ww.mall.admin.view.dto.OperateLogDTO;
 import com.ww.mall.common.enums.UserType;
 import com.ww.mall.common.thread.ThreadMdcUtil;
-import com.ww.mall.utils.AuthorizationContext;
+import com.ww.mall.common.utils.AuthorizationContext;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.web.context.request.RequestAttributes;
 import org.springframework.web.context.request.RequestContextHolder;

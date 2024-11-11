@@ -1,6 +1,5 @@
 package com.ww.mall.excel.aspect;
 
-import com.ww.mall.redis.aspect.MallAbstractAspect;
 import lombok.extern.slf4j.Slf4j;
 import org.aspectj.lang.ProceedingJoinPoint;
 import org.aspectj.lang.annotation.Around;
@@ -17,9 +16,9 @@ import java.time.Duration;
 @Slf4j
 @Aspect
 @Component
-public class ExcelHandlerAspect extends MallAbstractAspect {
+public class ExcelHandlerAspect {
 
-    @Around("@annotation(com.ww.mall.annotation.plugs.excel.ExcelExportTimer)")
+    @Around("@annotation(com.ww.mall.excel.annotation.ExcelExportTimer)")
     public Object exportExcel(ProceedingJoinPoint joinPoint) {
         long startTime = System.nanoTime();
         log.info("开始导出：{}", joinPoint.getSignature().getName());
@@ -33,7 +32,7 @@ public class ExcelHandlerAspect extends MallAbstractAspect {
         }
     }
 
-    @Around("@annotation(com.ww.mall.annotation.plugs.excel.ExcelImportTimer)")
+    @Around("@annotation(com.ww.mall.excel.annotation.ExcelImportTimer)")
     public Object importExcel(ProceedingJoinPoint joinPoint) {
         long startTime = System.nanoTime();
         log.info("开始导入：{}", joinPoint.getSignature().getName());

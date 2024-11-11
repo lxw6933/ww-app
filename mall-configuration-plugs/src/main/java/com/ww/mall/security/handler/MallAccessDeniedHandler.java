@@ -2,7 +2,7 @@ package com.ww.mall.security.handler;
 
 import com.ww.mall.common.common.MallBaseUser;
 import com.ww.mall.common.common.Result;
-import com.ww.mall.utils.HttpContextUtils;
+import com.ww.mall.common.utils.HttpContextUtils;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.core.context.SecurityContextHolder;

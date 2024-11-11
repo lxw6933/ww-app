@@ -1,4 +1,4 @@
-package com.ww.mall.utils;
+package com.ww.mall.common.utils;
 
 import com.alibaba.fastjson.JSON;
 import com.ww.mall.common.common.Result;

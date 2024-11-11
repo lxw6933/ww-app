@@ -7,7 +7,7 @@ import com.ww.mall.common.constant.Constant;
 import com.ww.mall.common.enums.UserType;
 import com.ww.mall.common.exception.ApiException;
 import com.ww.mall.security.component.AuthorityStore;
-import com.ww.mall.utils.AuthorizationContext;
+import com.ww.mall.common.utils.AuthorizationContext;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;

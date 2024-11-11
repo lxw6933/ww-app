@@ -2,7 +2,7 @@ package com.ww.mall.security.component;
 
 import com.ww.mall.common.common.MallBaseUser;
 import com.ww.mall.common.enums.UserType;
-import com.ww.mall.utils.HttpContextUtils;
+import com.ww.mall.common.utils.HttpContextUtils;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.GrantedAuthority;

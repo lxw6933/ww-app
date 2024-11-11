@@ -18,7 +18,7 @@ import com.ww.mall.rabbitmq.routekey.RouteKeyConstant;
 import com.ww.mall.redis.MallRedisTemplate;
 import com.ww.mall.seckill.service.SeckillService;
 import com.ww.mall.seckill.view.bo.SecKillOrderReqBO;
-import com.ww.mall.utils.AuthorizationContext;
+import com.ww.mall.common.utils.AuthorizationContext;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;

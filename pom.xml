@@ -43,6 +43,8 @@
         <module>mall-open-platform</module>
         <!-- 消息平台 -->
         <module>mall-message</module>
+        <!-- framework -->
+        <module>mall-framework</module>
     </modules>
 
     <properties>

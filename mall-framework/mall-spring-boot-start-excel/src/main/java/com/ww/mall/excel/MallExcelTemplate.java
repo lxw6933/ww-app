@@ -28,7 +28,7 @@ import java.util.Set;
  */
 @Slf4j
 @Component
-public class ExcelManager {
+public class MallExcelTemplate {
 
     /**
      * 下载excel（导出所有属性字段在一个sheet里）

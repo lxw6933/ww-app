@@ -12,7 +12,7 @@ import com.ww.mall.member.view.vo.MemberVO;
 import com.ww.mall.common.common.MallPage;
 import com.ww.mall.common.common.MallPageResult;
 import com.ww.mall.mybatisplus.MallPlusPageResult;
-import com.ww.mall.utils.AuthorizationContext;
+import com.ww.mall.common.utils.AuthorizationContext;
 import com.ww.mall.common.utils.IdUtil;
 import com.ww.mall.web.view.dto.MemberDTO;
 import org.springframework.beans.BeanUtils;

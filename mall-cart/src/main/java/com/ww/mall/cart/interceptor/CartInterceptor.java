@@ -3,7 +3,7 @@ package com.ww.mall.cart.interceptor;
 import com.ww.mall.cart.to.UserInfoTo;
 import com.ww.mall.common.common.MallClientUser;
 import com.ww.mall.common.constant.Constant;
-import com.ww.mall.utils.AuthorizationContext;
+import com.ww.mall.common.utils.AuthorizationContext;
 import lombok.NonNull;
 import org.apache.commons.lang3.ArrayUtils;
 import org.apache.commons.lang3.StringUtils;

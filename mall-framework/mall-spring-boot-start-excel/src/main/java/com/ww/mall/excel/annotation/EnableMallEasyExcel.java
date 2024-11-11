@@ -1,4 +1,4 @@
-package com.ww.mall.annotation.enable;
+package com.ww.mall.excel.annotation;
 
 import com.ww.mall.excel.MallEasyExcelAutoConfiguration;
 import org.springframework.context.annotation.Import;

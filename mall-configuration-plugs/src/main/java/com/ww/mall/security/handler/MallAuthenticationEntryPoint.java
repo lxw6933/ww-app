@@ -1,7 +1,7 @@
 package com.ww.mall.security.handler;
 
 import com.ww.mall.common.common.Result;
-import com.ww.mall.utils.HttpContextUtils;
+import com.ww.mall.common.utils.HttpContextUtils;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.core.AuthenticationException;
 import org.springframework.security.web.AuthenticationEntryPoint;

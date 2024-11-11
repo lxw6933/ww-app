@@ -6,7 +6,7 @@ import com.ww.mall.common.enums.LoginType;
 import com.ww.mall.common.enums.UserType;
 import com.ww.mall.common.thread.ThreadMdcUtil;
 import com.ww.mall.mongodb.BaseDoc;
-import com.ww.mall.utils.HttpContextUtils;
+import com.ww.mall.common.utils.HttpContextUtils;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import org.springframework.data.mongodb.core.mapping.Document;

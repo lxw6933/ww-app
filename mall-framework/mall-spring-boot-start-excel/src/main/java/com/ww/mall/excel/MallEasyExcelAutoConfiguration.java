@@ -15,9 +15,9 @@ import org.springframework.context.annotation.Configuration;
 public class MallEasyExcelAutoConfiguration {
 
     @Bean
-    public ExcelManager excelManager() {
+    public MallExcelTemplate excelManager() {
         log.info("初始化excelManager功能成功...");
-        return new ExcelManager();
+        return new MallExcelTemplate();
     }
 
     @Bean
