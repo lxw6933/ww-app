@@ -1,5 +1,6 @@
 package com.ww.mall.minio;
 
+import cn.hutool.core.collection.CollectionUtil;
 import cn.hutool.core.date.DatePattern;
 import cn.hutool.core.date.DateUtil;
 import cn.hutool.core.text.CharSequenceUtil;
@@ -7,6 +8,7 @@ import cn.hutool.core.util.StrUtil;
 import com.alibaba.fastjson.JSON;
 import com.google.common.collect.HashMultimap;
 import com.ww.mall.common.exception.ApiException;
+import com.ww.mall.common.utils.CollectionUtils;
 import com.ww.mall.minio.bo.ChunkFileMergeReqBO;
 import com.ww.mall.minio.bo.ChunkFileUploadReqBO;
 import com.ww.mall.minio.vo.CreateMultipartUploadResultVO;
@@ -16,7 +18,6 @@ import io.minio.messages.Item;
 import io.minio.messages.ListPartsResult;
 import io.minio.messages.Part;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.tomcat.util.http.fileupload.IOUtils;
 import org.springframework.http.*;
@@ -30,8 +31,6 @@ import java.nio.charset.StandardCharsets;
 import java.text.DecimalFormat;
 import java.util.*;
 import java.util.concurrent.TimeUnit;
-
-import static com.ww.mall.common.utils.CollectionUtils.convertList;
 
 @Slf4j
 public class MallMinioTemplate {
@@ -122,8 +121,8 @@ public class MallMinioTemplate {
         try {
             // 删除桶内文件
             List<Item> bucketFiles = listBucketAllFile(bucketName, true);
-            List<String> fileNames = convertList(bucketFiles, Item::objectName);
-            if (CollectionUtils.isNotEmpty(fileNames)) {
+            List<String> fileNames = CollectionUtils.convertList(bucketFiles, Item::objectName);
+            if (CollectionUtil.isNotEmpty(fileNames)) {
                 fileNames.forEach(fileName -> removeFile(bucketName, fileName));
             }
             // 先删除文件，再删除bucket
@@ -239,7 +238,7 @@ public class MallMinioTemplate {
     public boolean mergeFile(String originBucketName, String targetBucketName, String fileName) {
         // 获取桶内所有文件
         List<Item> bucketFiles = listBucketAllFile(targetBucketName, true);
-        List<String> fileNameList = convertList(bucketFiles, Item::objectName);
+        List<String> fileNameList = CollectionUtils.convertList(bucketFiles, Item::objectName);
         List<ComposeSource> composeSourceList = new ArrayList<>(fileNameList.size());
         // 对文件名集合进行升序排序
         Collections.sort(fileNameList);

@@ -1,4 +1,4 @@
-package com.ww.mall.minio;
+package com.ww.mall.minio.config;
 
 import lombok.Data;
 import org.springframework.boot.context.properties.ConfigurationProperties;

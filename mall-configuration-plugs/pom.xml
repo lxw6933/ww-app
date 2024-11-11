@@ -53,12 +53,6 @@
             <artifactId>aspectjweaver</artifactId>
             <optional>true</optional>
         </dependency>
-        <!-- minio -->
-        <dependency>
-            <groupId>io.minio</groupId>
-            <artifactId>minio</artifactId>
-            <optional>true</optional>
-        </dependency>
         <!-- validation -->
         <dependency>
             <groupId>org.springframework.boot</groupId>

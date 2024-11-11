@@ -52,11 +52,6 @@
             <groupId>com.yomahub</groupId>
             <artifactId>liteflow-rule-nacos</artifactId>
         </dependency>
-        <!-- minio -->
-        <dependency>
-            <groupId>io.minio</groupId>
-            <artifactId>minio</artifactId>
-        </dependency>
         <!-- captcha -->
         <dependency>
             <groupId>com.github.whvcse</groupId>
@@ -83,6 +78,12 @@
         <dependency>
             <groupId>com.ww.mall</groupId>
             <artifactId>mall-spring-boot-start-job</artifactId>
+            <version>${revision}</version>
+        </dependency>
+        <!-- minio starter -->
+        <dependency>
+            <groupId>com.ww.mall</groupId>
+            <artifactId>mall-spring-boot-start-minio</artifactId>
             <version>${revision}</version>
         </dependency>
         <!-- test -->

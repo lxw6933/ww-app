@@ -1,6 +1,6 @@
-package com.ww.mall.annotation.enable;
+package com.ww.mall.minio.annotation;
 
-import com.ww.mall.minio.MinioAutoConfiguration;
+import com.ww.mall.minio.config.MinioAutoConfiguration;
 import org.springframework.context.annotation.Import;
 
 import java.lang.annotation.ElementType;
