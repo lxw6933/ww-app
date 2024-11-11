@@ -5,8 +5,6 @@ import cn.hutool.core.date.DatePattern;
 import cn.hutool.core.date.DateUtil;
 import com.alibaba.fastjson.JSON;
 import com.github.houbb.sensitive.word.bs.SensitiveWordBs;
-import com.ww.mall.annotation.plugs.excel.ExcelExportTimer;
-import com.ww.mall.annotation.plugs.excel.ExcelImportTimer;
 import com.ww.mall.annotation.plugs.sensitive.MallSensitiveWordHandler;
 import com.ww.mall.common.constant.Constant;
 import com.ww.mall.common.constant.RedisChannelConstant;
@@ -14,10 +12,12 @@ import com.ww.mall.common.enums.SensitiveWordHandlerType;
 import com.ww.mall.common.exception.ApiException;
 import com.ww.mall.common.utils.IdUtil;
 import com.ww.mall.common.utils.IpUtil;
-import com.ww.mall.excel.ExcelManager;
+import com.ww.mall.excel.MallExcelTemplate;
+import com.ww.mall.excel.annotation.ExcelExportTimer;
+import com.ww.mall.excel.annotation.ExcelImportTimer;
 import com.ww.mall.excel.vo.ExcelResultVO;
-import com.ww.mall.ip2region.Ip2regionSearcher;
-import com.ww.mall.ip2region.IpInfo;
+import com.ww.mall.ip.Ip2regionSearcher;
+import com.ww.mall.ip.common.IpInfo;
 import com.ww.mall.rabbitmq.MallPublisher;
 import com.ww.mall.rabbitmq.exchange.ExchangeConstant;
 import com.ww.mall.rabbitmq.queue.QueueConstant;
@@ -291,7 +291,7 @@ public class DemoServiceImpl implements DemoService {
     }
 
     @Resource
-    private ExcelManager excelManager;
+    private MallExcelTemplate mallExcelTemplate;
 
     private final ExecutorService executorService = Executors.newFixedThreadPool(20);
 
@@ -305,7 +305,7 @@ public class DemoServiceImpl implements DemoService {
                 int num = i;
                 tasks.add(() -> {
                     log.info("线程{}执行任务{}", Thread.currentThread().getName(), num);
-                    excelManager.readExcel(file, num, DemoModel.class, new DemoImportListener(excelResult));
+                    mallExcelTemplate.readExcel(file, num, DemoModel.class, new DemoImportListener(excelResult));
                     return num;
                 });
             } catch (Exception e) {
@@ -368,7 +368,7 @@ public class DemoServiceImpl implements DemoService {
         Set<String> fieldNames = new HashSet<>();
         fieldNames.add("empNo");
         try {
-            excelManager.exportExcelOfManySheet(response, map, "demo", fieldNames, false);
+            mallExcelTemplate.exportExcelOfManySheet(response, map, "demo", fieldNames, false);
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
