@@ -83,22 +83,10 @@
             <artifactId>sensitive-word</artifactId>
             <optional>true</optional>
         </dependency>
-        <!-- easy-excel -->
-        <dependency>
-            <groupId>com.alibaba</groupId>
-            <artifactId>easyexcel</artifactId>
-            <optional>true</optional>
-        </dependency>
         <!-- ip -->
         <dependency>
             <groupId>org.lionsoul</groupId>
             <artifactId>ip2region</artifactId>
-            <optional>true</optional>
-        </dependency>
-        <!-- influxdb -->
-        <dependency>
-            <groupId>com.influxdb</groupId>
-            <artifactId>influxdb-client-java</artifactId>
             <optional>true</optional>
         </dependency>
         <!-- mybatis-plus -->

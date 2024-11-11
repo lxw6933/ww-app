@@ -1,6 +1,6 @@
-package com.ww.mall.annotation.enable;
+package com.ww.mall.influxdb.annotation;
 
-import com.ww.mall.influxdb.InfluxDBAutoConfiguration;
+import com.ww.mall.influxdb.config.InfluxDBAutoConfiguration;
 import org.springframework.context.annotation.Import;
 
 import java.lang.annotation.ElementType;

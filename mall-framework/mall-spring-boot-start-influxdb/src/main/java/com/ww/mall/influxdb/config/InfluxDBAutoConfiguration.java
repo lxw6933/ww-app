@@ -1,8 +1,8 @@
-package com.ww.mall.influxdb;
+package com.ww.mall.influxdb.config;
 
 import com.influxdb.client.InfluxDBClient;
 import com.influxdb.client.InfluxDBClientFactory;
-import org.springframework.beans.factory.annotation.Value;
+import com.ww.mall.influxdb.MallInfluxDBTemplate;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
@@ -14,21 +14,14 @@ import org.springframework.context.annotation.Configuration;
 @Configuration(proxyBeanMethods = false)
 public class InfluxDBAutoConfiguration {
 
-    @Value("${influxdb.url}")
-    private String url;
-
-    @Value("${influxdb.token}")
-    private String token;
-
-    @Value("${influxdb.org}")
-    private String org;
-
-    @Value("${influxdb.bucket}")
-    private String bucket;
+    @Bean
+    public InfluxDBProperties influxDBProperties() {
+        return new InfluxDBProperties();
+    }
 
     @Bean
-    public InfluxDBClient influxDBClient() {
-        return InfluxDBClientFactory.create(url, token.toCharArray(), org, bucket);
+    public InfluxDBClient influxDBClient(InfluxDBProperties influxDBProperties) {
+        return InfluxDBClientFactory.create(influxDBProperties.getUrl(), influxDBProperties.getToken().toCharArray(), influxDBProperties.getOrg(), influxDBProperties.getBucket());
     }
 
     @Bean
