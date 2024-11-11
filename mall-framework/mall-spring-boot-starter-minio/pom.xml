@@ -8,12 +8,12 @@
         <version>${revision}</version>
     </parent>
 
-    <artifactId>mall-spring-boot-start-influxdb</artifactId>
+    <artifactId>mall-spring-boot-starter-minio</artifactId>
     <packaging>jar</packaging>
 
     <name>${project.artifactId}</name>
     <description>
-        influxdb 业务模块
+        minio 业务模块
     </description>
 
     <dependencies>
@@ -22,15 +22,21 @@
             <artifactId>mall-common</artifactId>
             <version>${revision}</version>
         </dependency>
-        <!-- influxdb -->
+        <!-- minio -->
         <dependency>
-            <groupId>com.influxdb</groupId>
-            <artifactId>influxdb-client-java</artifactId>
+            <groupId>io.minio</groupId>
+            <artifactId>minio</artifactId>
         </dependency>
         <!-- web -->
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-web</artifactId>
+            <optional>true</optional>
+        </dependency>
+        <!-- mongodb -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-data-mongodb</artifactId>
             <optional>true</optional>
         </dependency>
     </dependencies>

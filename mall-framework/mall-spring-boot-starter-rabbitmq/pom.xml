@@ -8,12 +8,12 @@
         <version>${revision}</version>
     </parent>
 
-    <artifactId>mall-spring-boot-start-security</artifactId>
+    <artifactId>mall-spring-boot-starter-rabbitmq</artifactId>
     <packaging>jar</packaging>
 
     <name>${project.artifactId}</name>
     <description>
-        security 业务模块
+        rabbitmq 业务模块
     </description>
 
     <dependencies>

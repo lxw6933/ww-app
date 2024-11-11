@@ -65,25 +65,25 @@
         <!-- excel starter -->
         <dependency>
             <groupId>com.ww.mall</groupId>
-            <artifactId>mall-spring-boot-start-excel</artifactId>
+            <artifactId>mall-spring-boot-starter-excel</artifactId>
             <version>${revision}</version>
         </dependency>
         <!-- ip2Region starter -->
         <dependency>
             <groupId>com.ww.mall</groupId>
-            <artifactId>mall-spring-boot-start-ip</artifactId>
+            <artifactId>mall-spring-boot-starter-ip</artifactId>
             <version>${revision}</version>
         </dependency>
         <!-- xxl job starter -->
         <dependency>
             <groupId>com.ww.mall</groupId>
-            <artifactId>mall-spring-boot-start-job</artifactId>
+            <artifactId>mall-spring-boot-starter-job</artifactId>
             <version>${revision}</version>
         </dependency>
         <!-- minio starter -->
         <dependency>
             <groupId>com.ww.mall</groupId>
-            <artifactId>mall-spring-boot-start-minio</artifactId>
+            <artifactId>mall-spring-boot-starter-minio</artifactId>
             <version>${revision}</version>
         </dependency>
         <!-- test -->

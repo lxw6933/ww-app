@@ -31,7 +31,7 @@
         <!-- minio starter -->
         <dependency>
             <groupId>com.ww.mall</groupId>
-            <artifactId>mall-spring-boot-start-minio</artifactId>
+            <artifactId>mall-spring-boot-starter-minio</artifactId>
             <version>${revision}</version>
         </dependency>
         <!-- test -->

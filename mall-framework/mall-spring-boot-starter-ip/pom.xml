@@ -8,12 +8,12 @@
         <version>${revision}</version>
     </parent>
 
-    <artifactId>mall-spring-boot-start-job</artifactId>
+    <artifactId>mall-spring-boot-starter-ip</artifactId>
     <packaging>jar</packaging>
 
     <name>${project.artifactId}</name>
     <description>
-        job 业务模块
+        ip region 业务模块
     </description>
 
     <dependencies>
@@ -22,10 +22,10 @@
             <artifactId>mall-common</artifactId>
             <version>${revision}</version>
         </dependency>
-        <!-- xxl-job -->
+        <!-- ip -->
         <dependency>
-            <groupId>com.xuxueli</groupId>
-            <artifactId>xxl-job-core</artifactId>
+            <groupId>org.lionsoul</groupId>
+            <artifactId>ip2region</artifactId>
         </dependency>
         <!-- web -->
         <dependency>

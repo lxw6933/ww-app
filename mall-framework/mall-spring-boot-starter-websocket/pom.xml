@@ -8,12 +8,12 @@
         <version>${revision}</version>
     </parent>
 
-    <artifactId>mall-spring-boot-start-mybatis</artifactId>
+    <artifactId>mall-spring-boot-starter-websocket</artifactId>
     <packaging>jar</packaging>
 
     <name>${project.artifactId}</name>
     <description>
-        mybatis 业务模块
+        websocket 业务模块
     </description>
 
     <dependencies>

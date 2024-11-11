@@ -8,7 +8,7 @@
         <version>${revision}</version>
     </parent>
 
-    <artifactId>mall-spring-boot-start-sensitive</artifactId>
+    <artifactId>mall-spring-boot-starter-sensitive</artifactId>
     <packaging>jar</packaging>
 
     <name>${project.artifactId}</name>

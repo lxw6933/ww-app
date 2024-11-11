@@ -8,12 +8,12 @@
         <version>${revision}</version>
     </parent>
 
-    <artifactId>mall-spring-boot-start-rabbitmq</artifactId>
+    <artifactId>mall-spring-boot-starter-mybatis</artifactId>
     <packaging>jar</packaging>
 
     <name>${project.artifactId}</name>
     <description>
-        rabbitmq 业务模块
+        mybatis 业务模块
     </description>
 
     <dependencies>

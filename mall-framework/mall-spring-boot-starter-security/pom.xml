@@ -8,12 +8,12 @@
         <version>${revision}</version>
     </parent>
 
-    <artifactId>mall-spring-boot-start-websocket</artifactId>
+    <artifactId>mall-spring-boot-starter-security</artifactId>
     <packaging>jar</packaging>
 
     <name>${project.artifactId}</name>
     <description>
-        websocket 业务模块
+        security 业务模块
     </description>
 
     <dependencies>

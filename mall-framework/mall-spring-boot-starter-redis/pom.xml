@@ -8,7 +8,7 @@
         <version>${revision}</version>
     </parent>
 
-    <artifactId>mall-spring-boot-start-redis</artifactId>
+    <artifactId>mall-spring-boot-starter-redis</artifactId>
     <packaging>jar</packaging>
 
     <name>${project.artifactId}</name>

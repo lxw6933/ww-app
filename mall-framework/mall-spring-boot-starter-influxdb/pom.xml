@@ -8,12 +8,12 @@
         <version>${revision}</version>
     </parent>
 
-    <artifactId>mall-spring-boot-start-ip</artifactId>
+    <artifactId>mall-spring-boot-starter-influxdb</artifactId>
     <packaging>jar</packaging>
 
     <name>${project.artifactId}</name>
     <description>
-        ip region 业务模块
+        influxdb 业务模块
     </description>
 
     <dependencies>
@@ -22,10 +22,10 @@
             <artifactId>mall-common</artifactId>
             <version>${revision}</version>
         </dependency>
-        <!-- ip -->
+        <!-- influxdb -->
         <dependency>
-            <groupId>org.lionsoul</groupId>
-            <artifactId>ip2region</artifactId>
+            <groupId>com.influxdb</groupId>
+            <artifactId>influxdb-client-java</artifactId>
         </dependency>
         <!-- web -->
         <dependency>
