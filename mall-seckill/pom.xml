@@ -72,15 +72,16 @@
             <groupId>com.github.houbb</groupId>
             <artifactId>sensitive-word</artifactId>
         </dependency>
-        <!-- ip -->
-        <dependency>
-            <groupId>org.lionsoul</groupId>
-            <artifactId>ip2region</artifactId>
-        </dependency>
         <!-- excel starter -->
         <dependency>
             <groupId>com.ww.mall</groupId>
             <artifactId>mall-spring-boot-start-excel</artifactId>
+            <version>${revision}</version>
+        </dependency>
+        <!-- ip2Region starter -->
+        <dependency>
+            <groupId>com.ww.mall</groupId>
+            <artifactId>mall-spring-boot-start-ip</artifactId>
             <version>${revision}</version>
         </dependency>
         <!-- test -->

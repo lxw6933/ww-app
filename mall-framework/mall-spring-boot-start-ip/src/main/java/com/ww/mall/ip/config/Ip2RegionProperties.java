@@ -1,4 +1,4 @@
-package com.ww.mall.ip2region;
+package com.ww.mall.ip.config;
 
 import lombok.Data;
 import org.springframework.boot.context.properties.ConfigurationProperties;

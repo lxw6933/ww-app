@@ -83,12 +83,6 @@
             <artifactId>sensitive-word</artifactId>
             <optional>true</optional>
         </dependency>
-        <!-- ip -->
-        <dependency>
-            <groupId>org.lionsoul</groupId>
-            <artifactId>ip2region</artifactId>
-            <optional>true</optional>
-        </dependency>
         <!-- mybatis-plus -->
         <dependency>
             <groupId>com.baomidou</groupId>

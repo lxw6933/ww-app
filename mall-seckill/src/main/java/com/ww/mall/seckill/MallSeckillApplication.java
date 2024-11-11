@@ -2,6 +2,7 @@ package com.ww.mall.seckill;
 
 import com.ww.mall.annotation.enable.*;
 import com.ww.mall.excel.annotation.EnableMallEasyExcel;
+import com.ww.mall.ip.annotation.EnableMallIp2Region;
 import com.ww.mall.redis.service.CodeGeneratorService;
 import com.ww.mall.redis.service.IssueCodeService;
 import org.springframework.boot.SpringApplication;

@@ -1,7 +1,8 @@
-package com.ww.mall.ip2region;
+package com.ww.mall.ip.config;
 
 import cn.hutool.core.io.IoUtil;
 import cn.hutool.core.util.ClassLoaderUtil;
+import com.ww.mall.ip.Ip2regionSearcher;
 import lombok.extern.slf4j.Slf4j;
 import org.lionsoul.ip2region.xdb.Searcher;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;

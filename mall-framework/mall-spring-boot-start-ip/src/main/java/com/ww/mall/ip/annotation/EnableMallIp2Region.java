@@ -1,6 +1,6 @@
-package com.ww.mall.annotation.enable;
+package com.ww.mall.ip.annotation;
 
-import com.ww.mall.ip2region.Ip2RegionAutoConfiguration;
+import com.ww.mall.ip.config.Ip2RegionAutoConfiguration;
 import org.springframework.context.annotation.Import;
 
 import java.lang.annotation.ElementType;

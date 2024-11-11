@@ -17,7 +17,22 @@
     </description>
 
     <dependencies>
-
+        <dependency>
+            <groupId>com.ww.mall</groupId>
+            <artifactId>mall-common</artifactId>
+            <version>${revision}</version>
+        </dependency>
+        <!-- ip -->
+        <dependency>
+            <groupId>org.lionsoul</groupId>
+            <artifactId>ip2region</artifactId>
+        </dependency>
+        <!-- web -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-web</artifactId>
+            <optional>true</optional>
+        </dependency>
     </dependencies>
 
 </project>

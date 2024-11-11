@@ -1,4 +1,4 @@
-package com.ww.mall.ip2region;
+package com.ww.mall.ip.common;
 
 import cn.hutool.core.util.StrUtil;
 import lombok.Data;

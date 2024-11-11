@@ -1,5 +1,6 @@
-package com.ww.mall.ip2region;
+package com.ww.mall.ip;
 
+import com.ww.mall.ip.common.IpInfo;
 import lombok.SneakyThrows;
 import org.lionsoul.ip2region.xdb.Searcher;
 import org.springframework.beans.factory.DisposableBean;
