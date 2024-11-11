@@ -1,4 +1,4 @@
-package com.ww.mall.es;
+package com.ww.mall.es.config;
 
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;

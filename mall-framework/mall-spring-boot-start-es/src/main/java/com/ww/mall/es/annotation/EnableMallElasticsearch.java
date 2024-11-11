@@ -1,6 +1,6 @@
-package com.ww.mall.annotation.enable;
+package com.ww.mall.es.annotation;
 
-import com.ww.mall.es.MallElasticsearchAutoConfiguration;
+import com.ww.mall.es.config.MallElasticsearchAutoConfiguration;
 import org.springframework.context.annotation.Import;
 
 import java.lang.annotation.ElementType;
