@@ -53,12 +53,6 @@
             <artifactId>aspectjweaver</artifactId>
             <optional>true</optional>
         </dependency>
-        <!-- xxl-job -->
-        <dependency>
-            <groupId>com.xuxueli</groupId>
-            <artifactId>xxl-job-core</artifactId>
-            <optional>true</optional>
-        </dependency>
         <!-- minio -->
         <dependency>
             <groupId>io.minio</groupId>

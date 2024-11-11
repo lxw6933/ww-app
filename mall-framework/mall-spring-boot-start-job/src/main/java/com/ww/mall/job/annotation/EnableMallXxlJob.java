@@ -1,6 +1,6 @@
-package com.ww.mall.annotation.enable;
+package com.ww.mall.job.annotation;
 
-import com.ww.mall.xxljob.MallXxlJobAutoConfiguration;
+import com.ww.mall.job.config.MallXxlJobAutoConfiguration;
 import org.springframework.context.annotation.Import;
 
 import java.lang.annotation.ElementType;
