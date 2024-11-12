@@ -2,12 +2,12 @@ package com.ww.mall.mongodb;
 
 import cn.hutool.core.date.DatePattern;
 import org.bson.Document;
-import org.jetbrains.annotations.NotNull;
 import org.springframework.data.mongodb.core.mapping.event.AbstractMongoEventListener;
 import org.springframework.data.mongodb.core.mapping.event.BeforeConvertEvent;
 import org.springframework.data.mongodb.core.mapping.event.BeforeSaveEvent;
 import org.springframework.stereotype.Component;
 
+import javax.validation.constraints.NotNull;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 

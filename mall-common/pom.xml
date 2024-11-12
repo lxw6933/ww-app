@@ -72,6 +72,12 @@
             <groupId>com.github.ben-manes.caffeine</groupId>
             <artifactId>caffeine</artifactId>
         </dependency>
+        <!-- google guava -->
+        <dependency>
+            <groupId>com.google.guava</groupId>
+            <artifactId>guava</artifactId>
+            <scope>provided</scope>
+        </dependency>
         <!-- spring el [spring 相关工具类使用] -->
         <dependency>
             <groupId>org.springframework</groupId>

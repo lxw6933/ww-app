@@ -1,9 +1,9 @@
 package com.ww.mall.mongodb.handler;
 
 import cn.hutool.core.date.DatePattern;
+import cn.hutool.core.date.DateUtil;
 import com.ww.mall.mongodb.repository.StockExceptionData;
 import com.ww.mall.redis.handler.IRedisStockHandler;
-import com.xxl.job.core.util.DateUtil;
 import org.springframework.data.mongodb.core.MongoTemplate;
 import org.springframework.stereotype.Component;
 

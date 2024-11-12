@@ -33,6 +33,7 @@
         <mybatisplus.starter.version>3.5.7</mybatisplus.starter.version>
         <commons.lang3.version>3.12.0</commons.lang3.version>
         <commons.collections4.version>4.4</commons.collections4.version>
+        <guava.version>33.2.1-jre</guava.version>
         <pagehelper.version>6.4</pagehelper.version>
         <okhttp.version>4.12.0</okhttp.version>
         <ip2region.version>2.7.0</ip2region.version>
@@ -121,6 +122,12 @@
                 <groupId>org.apache.commons</groupId>
                 <artifactId>commons-lang3</artifactId>
                 <version>${commons.lang3.version}</version>
+            </dependency>
+            <!-- google guava -->
+            <dependency>
+                <groupId>com.google.guava</groupId>
+                <artifactId>guava</artifactId>
+                <version>${guava.version}</version>
             </dependency>
             <!-- fastjson -->
             <dependency>
