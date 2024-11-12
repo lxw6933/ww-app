@@ -1,4 +1,4 @@
-package com.ww.mall.redis;
+package com.ww.mall.redis.config;
 
 import com.ww.mall.redis.aspect.MallDistributedLockAspect;
 import com.ww.mall.redis.codec.RedissonCodec;

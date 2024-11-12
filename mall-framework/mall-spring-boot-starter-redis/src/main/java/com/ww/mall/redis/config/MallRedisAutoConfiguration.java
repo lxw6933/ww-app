@@ -1,8 +1,10 @@
-package com.ww.mall.redis;
+package com.ww.mall.redis.config;
 
 import com.fasterxml.jackson.annotation.JsonAutoDetect;
 import com.fasterxml.jackson.annotation.PropertyAccessor;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.ww.mall.redis.listener.MallRedisListener;
+import com.ww.mall.redis.MallRedisTemplate;
 import com.ww.mall.redis.aspect.MallRateLimitAspect;
 import com.ww.mall.redis.aspect.MallResubmissionAspect;
 import com.ww.mall.redis.handler.RedisStockHandlerManager;

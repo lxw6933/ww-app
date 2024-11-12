@@ -1,8 +1,8 @@
 package com.ww.mall.netty;
 
 import com.ww.mall.annotation.enable.EnableMallMongodb;
-import com.ww.mall.annotation.enable.EnableMallRedis;
-import com.ww.mall.annotation.enable.EnableMallRedisson;
+import com.ww.mall.redis.annotation.EnableMallRedis;
+import com.ww.mall.redis.annotation.EnableMallRedisson;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.cloud.client.discovery.EnableDiscoveryClient;

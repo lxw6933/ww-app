@@ -1,4 +1,4 @@
-package com.ww.mall.redis;
+package com.ww.mall.redis.config;
 
 import com.ww.mall.redis.constant.LuaConstant;
 import lombok.extern.slf4j.Slf4j;

@@ -1,6 +1,7 @@
-package com.ww.mall.annotation.enable;
+package com.ww.mall.redis.annotation;
 
-import com.ww.mall.redis.MallRedissonAutoConfig;
+import com.ww.mall.redis.config.LuaScriptConfig;
+import com.ww.mall.redis.config.MallRedisAutoConfiguration;
 import org.springframework.context.annotation.Import;
 
 import java.lang.annotation.ElementType;
@@ -10,12 +11,11 @@ import java.lang.annotation.Target;
 
 /**
  * @author ww
- * @create 2023-07-25- 15:15
+ * @create 2023-07-15- 15:18
  * @description:
  */
 @Target({ElementType.TYPE})
 @Retention(RetentionPolicy.RUNTIME)
-@Import({MallRedissonAutoConfig.class})
-public @interface EnableMallRedisson {
-
+@Import({MallRedisAutoConfiguration.class, LuaScriptConfig.class})
+public @interface EnableMallRedis {
 }

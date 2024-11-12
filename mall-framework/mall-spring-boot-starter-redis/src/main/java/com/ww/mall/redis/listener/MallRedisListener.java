@@ -1,4 +1,4 @@
-package com.ww.mall.redis;
+package com.ww.mall.redis.listener;
 
 import org.springframework.data.redis.connection.MessageListener;
 import org.springframework.data.redis.listener.ChannelTopic;
@@ -13,9 +13,9 @@ import java.util.List;
  */
 public abstract class MallRedisListener implements MessageListener {
 
-    abstract protected List<String> channelName();
+    abstract public List<String> channelName();
 
-    protected List<ChannelTopic> channelTopics() {
+    public List<ChannelTopic> channelTopics() {
         List<ChannelTopic> channelTopics = new ArrayList<>();
         this.channelName().forEach(channelName -> channelTopics.add(new ChannelTopic(channelName)));
         return channelTopics;

@@ -2,6 +2,8 @@ package com.ww.mall.coupon;
 
 import com.ww.mall.annotation.enable.*;
 import com.ww.mall.mybatis.annotation.EnableMallMybatis;
+import com.ww.mall.redis.annotation.EnableMallRedis;
+import com.ww.mall.redis.annotation.EnableMallRedisson;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.cloud.client.discovery.EnableDiscoveryClient;

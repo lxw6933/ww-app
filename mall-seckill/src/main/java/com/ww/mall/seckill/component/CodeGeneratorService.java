@@ -1,10 +1,11 @@
-package com.ww.mall.redis.service;
+package com.ww.mall.seckill.component;
 
 import cn.hutool.core.lang.Assert;
 import cn.hutool.core.util.RandomUtil;
 import com.ww.mall.common.exception.ApiException;
 import com.ww.mall.mongodb.handler.MongoBulkDataHandler;
 import com.ww.mall.mongodb.repository.Code;
+import com.ww.mall.redis.service.CodeBloomFilterComponent;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnBean;

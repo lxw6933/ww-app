@@ -2,10 +2,10 @@ package com.ww.mall.redis.aspect;
 
 import cn.hutool.core.util.StrUtil;
 import cn.hutool.crypto.SecureUtil;
-import com.ww.mall.annotation.plugs.redis.MallResubmission;
 import com.ww.mall.common.constant.Constant;
 import com.ww.mall.common.enums.GlobalResCodeConstants;
 import com.ww.mall.common.exception.ApiException;
+import com.ww.mall.redis.annotation.MallResubmission;
 import org.aspectj.lang.ProceedingJoinPoint;
 import org.aspectj.lang.annotation.Around;
 import org.aspectj.lang.annotation.Aspect;
@@ -26,14 +26,14 @@ import java.lang.reflect.Method;
  */
 @Aspect
 @Component
-public class MallResubmissionAspect extends MallAbstractAspect {
+public class MallResubmissionAspect {
 
     @Autowired
     private RedisTemplate<String, String> redisTemplate;
 
     private static final String RESUBMISSION_PREFIX = "resubmission";
 
-    @Around("@annotation(com.ww.mall.annotation.plugs.redis.MallResubmission)")
+    @Around("@annotation(com.ww.mall.redis.annotation.MallResubmission)")
     public Object mallResubmissionAdvice(ProceedingJoinPoint joinPoint) throws Throwable {
         MethodSignature signature = (MethodSignature) joinPoint.getSignature();
         Method method = signature.getMethod();

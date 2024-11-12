@@ -14,12 +14,12 @@ import org.springframework.stereotype.Component;
  */
 @Aspect
 @Component
-public class MallRateLimitAspect extends MallAbstractAspect {
+public class MallRateLimitAspect {
 
     @Autowired
     private RedisTemplate<String, String> redisTemplate;
 
-    @Around("@annotation(com.ww.mall.annotation.plugs.redis.MallRateLimit)")
+    @Around("@annotation(com.ww.mall.redis.annotation.MallRateLimit)")
     public Object mallRateLimitAdvice(ProceedingJoinPoint joinPoint) throws Throwable {
 
         return joinPoint.proceed();

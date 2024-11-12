@@ -2,10 +2,11 @@ package com.ww.mall.redis.aspect;
 
 import cn.hutool.core.util.StrUtil;
 import cn.hutool.crypto.SecureUtil;
-import com.ww.mall.annotation.plugs.redis.MallDistributedLock;
 import com.ww.mall.common.constant.Constant;
 import com.ww.mall.common.enums.GlobalResCodeConstants;
 import com.ww.mall.common.exception.ApiException;
+import com.ww.mall.common.utils.SpringExpressionUtils;
+import com.ww.mall.redis.annotation.MallDistributedLock;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.aspectj.lang.ProceedingJoinPoint;
@@ -15,7 +16,6 @@ import org.aspectj.lang.reflect.MethodSignature;
 import org.redisson.api.RLock;
 import org.redisson.api.RedissonClient;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.core.LocalVariableTableParameterNameDiscoverer;
 import org.springframework.stereotype.Component;
 
 import java.lang.reflect.Method;
@@ -28,36 +28,32 @@ import java.lang.reflect.Method;
 @Slf4j
 @Aspect
 @Component
-public class MallDistributedLockAspect extends MallAbstractAspect {
+public class MallDistributedLockAspect {
 
     @Autowired
     private RedissonClient redissonClient;
 
     private static final String LOCK_PREFIX = "mall:lock";
 
-    @Around("@annotation(com.ww.mall.annotation.plugs.redis.MallDistributedLock)")
+    @Around("@annotation(com.ww.mall.redis.annotation.MallDistributedLock)")
     public Object mallDistributedLockAdvise(ProceedingJoinPoint joinPoint) throws Throwable {
         MethodSignature signature = (MethodSignature) joinPoint.getSignature();
         String classDeclaringTypeName = signature.getDeclaringTypeName();
         Method method = signature.getMethod();
-        // 获取方法参数名
-        String[] parameterNames = new LocalVariableTableParameterNameDiscoverer().getParameterNames(method);
-        // 获取方法参数
-        Object[] parameterValues = joinPoint.getArgs();
         // 构建SpEL上下文，并设置变量值
-        MyStandardEvaluationContext elContext = new MyStandardEvaluationContext(parameterNames, parameterValues);
         MallDistributedLock mallDistributedLock = method.getAnnotation(MallDistributedLock.class);
         // 生成key
         StringBuilder sb = new StringBuilder(128);
+
         sb.append(
                 StringUtils.isNotEmpty(mallDistributedLock.value()) ?
-                parser.parseExpression(mallDistributedLock.value()).getValue(elContext) : classDeclaringTypeName + Constant.SPLIT + method.getName()
+                SpringExpressionUtils.parseExpression(joinPoint, mallDistributedLock.value()) : classDeclaringTypeName + Constant.SPLIT + method.getName()
         );
         if (StringUtils.isNotEmpty(mallDistributedLock.userId())) {
-            sb.append(Constant.SPLIT).append(parser.parseExpression(mallDistributedLock.userId()).getValue(elContext));
+            sb.append(Constant.SPLIT).append(SpringExpressionUtils.parseExpression(joinPoint, mallDistributedLock.userId()));
         }
         if (StringUtils.isNotEmpty(mallDistributedLock.operationKey())) {
-            sb.append(Constant.SPLIT).append(parser.parseExpression(mallDistributedLock.operationKey()).getValue(elContext));
+            sb.append(Constant.SPLIT).append(SpringExpressionUtils.parseExpression(joinPoint, mallDistributedLock.operationKey()));
         }
         String lockKey = StrUtil.join(Constant.SPLIT, LOCK_PREFIX, SecureUtil.md5(sb.toString()));
         RLock lock = redissonClient.getLock(lockKey);

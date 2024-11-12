@@ -17,18 +17,6 @@
             <artifactId>mall-common</artifactId>
             <version>${revision}</version>
         </dependency>
-        <!-- redis -->
-        <dependency>
-            <groupId>org.springframework.boot</groupId>
-            <artifactId>spring-boot-starter-data-redis</artifactId>
-            <optional>true</optional>
-        </dependency>
-        <!-- redisson -->
-        <dependency>
-            <groupId>org.redisson</groupId>
-            <artifactId>redisson</artifactId>
-            <optional>true</optional>
-        </dependency>
         <!-- mongodb -->
         <dependency>
             <groupId>org.springframework.boot</groupId>

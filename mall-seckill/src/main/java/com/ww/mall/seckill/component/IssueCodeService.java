@@ -1,10 +1,11 @@
-package com.ww.mall.redis.service;
+package com.ww.mall.seckill.component;
 
 import cn.hutool.core.date.DateUtil;
 import com.ww.mall.common.exception.ApiException;
 import com.ww.mall.mongodb.handler.MongoBulkDataHandler;
 import com.ww.mall.mongodb.queue.RecordQueueComponent;
 import com.ww.mall.mongodb.repository.IssueCodeRecord;
+import com.ww.mall.redis.service.UniqueService;
 import lombok.extern.slf4j.Slf4j;
 import org.redisson.api.RList;
 import org.redisson.api.RScript;

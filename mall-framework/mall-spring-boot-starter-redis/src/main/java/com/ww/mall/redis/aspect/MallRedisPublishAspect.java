@@ -1,8 +1,9 @@
 package com.ww.mall.redis.aspect;
 
 import com.alibaba.fastjson.JSON;
+import com.ww.mall.common.utils.SpringExpressionUtils;
 import com.ww.mall.redis.MallRedisTemplate;
-import com.ww.mall.annotation.plugs.redis.MallRedisPublishMsg;
+import com.ww.mall.redis.annotation.MallRedisPublishMsg;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.aspectj.lang.ProceedingJoinPoint;
@@ -10,7 +11,6 @@ import org.aspectj.lang.annotation.Around;
 import org.aspectj.lang.annotation.Aspect;
 import org.aspectj.lang.reflect.MethodSignature;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnBean;
-import org.springframework.core.LocalVariableTableParameterNameDiscoverer;
 import org.springframework.stereotype.Component;
 
 import javax.annotation.Resource;
@@ -29,7 +29,7 @@ import java.util.concurrent.ThreadPoolExecutor;
 @Aspect
 @Component
 @ConditionalOnBean(MallRedisTemplate.class)
-public class MallRedisPublishAspect extends MallAbstractAspect{
+public class MallRedisPublishAspect {
 
     @Resource
     private MallRedisTemplate mallRedisTemplate;
@@ -37,24 +37,19 @@ public class MallRedisPublishAspect extends MallAbstractAspect{
     @Resource
     private ThreadPoolExecutor defaultThreadPoolExecutor;
 
-    @Around("@annotation(com.ww.mall.annotation.plugs.redis.MallRedisPublishMsg)")
+    @Around("@annotation(com.ww.mall.redis.annotation.MallRedisPublishMsg)")
     public Object mallRedisPublishAdvise(ProceedingJoinPoint joinPoint) throws Throwable {
         Object proceed = joinPoint.proceed();
         CompletableFuture.runAsync(() -> {
             try {
                 MethodSignature signature = (MethodSignature) joinPoint.getSignature();
                 Method method = signature.getMethod();
-                // 获取方法参数名
-                String[] parameterNames = new LocalVariableTableParameterNameDiscoverer().getParameterNames(method);
-                // 获取方法参数
-                Object[] parameterValues = joinPoint.getArgs();
                 // 构建SpEL上下文，并设置变量值
-                MyStandardEvaluationContext elContext = new MyStandardEvaluationContext(parameterNames, parameterValues);
                 MallRedisPublishMsg mallRedisPublishMsg = method.getAnnotation(MallRedisPublishMsg.class);
                 String channelName = mallRedisPublishMsg.value();
                 Object message = "all";
                 if (StringUtils.isNotEmpty(mallRedisPublishMsg.message())) {
-                    message = parser.parseExpression(mallRedisPublishMsg.message()).getValue(elContext);
+                    message = SpringExpressionUtils.parseExpression(joinPoint, mallRedisPublishMsg.message());
                 }
                 String messageJson;
                 if (message instanceof Collection) {
