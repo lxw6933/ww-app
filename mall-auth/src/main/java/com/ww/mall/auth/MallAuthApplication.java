@@ -1,6 +1,6 @@
 package com.ww.mall.auth;
 
-import com.ww.mall.annotation.enable.EnableMallMongodb;
+import com.ww.mall.mongodb.annotation.EnableMallMongodb;
 import com.ww.mall.redis.annotation.EnableMallRedis;
 import com.ww.mall.security.annotation.EnableMallSecurity;
 import org.springframework.boot.SpringApplication;

@@ -23,15 +23,17 @@
             <artifactId>mall-spring-boot-starter-redis</artifactId>
             <version>${revision}</version>
         </dependency>
-        <!-- rabbitmq -->
+        <!-- rabbitmq starter -->
         <dependency>
-            <groupId>org.springframework.boot</groupId>
-            <artifactId>spring-boot-starter-amqp</artifactId>
+            <groupId>com.ww.mall</groupId>
+            <artifactId>mall-spring-boot-starter-rabbitmq</artifactId>
+            <version>${revision}</version>
         </dependency>
-        <!-- mongodb -->
+        <!-- mongodb starter -->
         <dependency>
-            <groupId>org.springframework.boot</groupId>
-            <artifactId>spring-boot-starter-data-mongodb</artifactId>
+            <groupId>com.ww.mall</groupId>
+            <artifactId>mall-spring-boot-starter-mongodb</artifactId>
+            <version>${revision}</version>
         </dependency>
         <!-- test -->
         <dependency>

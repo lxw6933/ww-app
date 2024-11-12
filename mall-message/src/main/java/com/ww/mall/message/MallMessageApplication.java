@@ -1,6 +1,7 @@
 package com.ww.mall.message;
 
-import com.ww.mall.annotation.enable.*;
+import com.ww.mall.mongodb.annotation.EnableMallMongodb;
+import com.ww.mall.rabbitmq.annotation.EnableMallRabbitmq;
 import com.ww.mall.redis.annotation.EnableMallRedis;
 import com.ww.mall.redis.annotation.EnableMallRedisson;
 import org.springframework.boot.SpringApplication;

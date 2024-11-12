@@ -1,6 +1,6 @@
 package com.ww.mall.netty;
 
-import com.ww.mall.annotation.enable.EnableMallMongodb;
+import com.ww.mall.mongodb.annotation.EnableMallMongodb;
 import com.ww.mall.redis.annotation.EnableMallRedis;
 import com.ww.mall.redis.annotation.EnableMallRedisson;
 import org.springframework.boot.SpringApplication;

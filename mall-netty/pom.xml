@@ -27,10 +27,11 @@
             <groupId>com.google.protobuf</groupId>
             <artifactId>protobuf-java</artifactId>
         </dependency>
-        <!-- mongodb -->
+        <!-- mongodb starter -->
         <dependency>
-            <groupId>org.springframework.boot</groupId>
-            <artifactId>spring-boot-starter-data-mongodb</artifactId>
+            <groupId>com.ww.mall</groupId>
+            <artifactId>mall-spring-boot-starter-mongodb</artifactId>
+            <version>${revision}</version>
         </dependency>
         <!-- redis starter -->
         <dependency>

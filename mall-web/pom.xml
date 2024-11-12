@@ -30,12 +30,6 @@
             <artifactId>grpc-client-spring-boot-starter</artifactId>
             <optional>true</optional>
         </dependency>
-        <!-- 插件配置 -->
-        <dependency>
-            <groupId>com.ww.mall</groupId>
-            <artifactId>mall-configuration-plugs</artifactId>
-            <version>${revision}</version>
-        </dependency>
         <!-- 服务注册中心 -->
         <dependency>
             <groupId>com.alibaba.cloud</groupId>

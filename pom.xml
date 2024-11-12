@@ -30,7 +30,6 @@
         <module>mall-admin-manage</module>
         <!-- 公共模块 -->
         <module>mall-web</module>
-        <module>mall-configuration-plugs</module>
         <!-- 服务监控 -->
         <module>mall-monitor</module>
         <!-- 秒杀服务 -->

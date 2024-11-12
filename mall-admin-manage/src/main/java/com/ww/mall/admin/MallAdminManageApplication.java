@@ -1,6 +1,6 @@
 package com.ww.mall.admin;
 
-import com.ww.mall.annotation.enable.*;
+import com.ww.mall.mongodb.annotation.EnableMallMongodb;
 import com.ww.mall.mybatis.annotation.EnableMallMybatis;
 import com.ww.mall.redis.annotation.EnableMallRedis;
 import com.ww.mall.redis.annotation.EnableMallRedisson;

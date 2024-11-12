@@ -1,6 +1,6 @@
 package com.ww.mall.open;
 
-import com.ww.mall.annotation.enable.EnableMallMongodb;
+import com.ww.mall.mongodb.annotation.EnableMallMongodb;
 import com.ww.mall.mybatis.annotation.EnableMallMybatis;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
