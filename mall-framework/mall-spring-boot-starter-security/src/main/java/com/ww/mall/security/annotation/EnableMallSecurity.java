@@ -1,7 +1,7 @@
-package com.ww.mall.annotation.enable;
+package com.ww.mall.security.annotation;
 
-import com.ww.mall.security.MallSecurityAutoConfiguration;
 import com.ww.mall.security.component.AclComponent;
+import com.ww.mall.security.config.MallSecurityAutoConfiguration;
 import com.ww.mall.security.handler.MallAccessDeniedHandler;
 import com.ww.mall.security.handler.MallAuthenticationEntryPoint;
 import org.springframework.context.annotation.Import;

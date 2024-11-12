@@ -54,10 +54,11 @@
             <artifactId>bizlog-sdk</artifactId>
             <optional>true</optional>
         </dependency>
-        <!-- spring security -->
+        <!-- spring security starter -->
         <dependency>
-            <groupId>org.springframework.boot</groupId>
-            <artifactId>spring-boot-starter-security</artifactId>
+            <groupId>com.ww.mall</groupId>
+            <artifactId>mall-spring-boot-starter-security</artifactId>
+            <version>${revision}</version>
         </dependency>
         <!-- test -->
         <dependency>
