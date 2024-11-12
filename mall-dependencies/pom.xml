@@ -31,7 +31,7 @@
         <mysql.version>8.0.28</mysql.version>
         <redisson.version>3.22.1</redisson.version>
         <mybatisplus.starter.version>3.5.7</mybatisplus.starter.version>
-        <commons.lang3.version>3.12.0</commons.lang3.version>
+        <commons.lang3.version>3.13.0</commons.lang3.version>
         <commons.collections4.version>4.4</commons.collections4.version>
         <guava.version>33.2.1-jre</guava.version>
         <pagehelper.version>6.4</pagehelper.version>
