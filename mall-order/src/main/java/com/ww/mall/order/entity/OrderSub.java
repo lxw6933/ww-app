@@ -1,9 +1,9 @@
 package com.ww.mall.order.entity;
 
 import com.baomidou.mybatisplus.annotation.TableName;
+import com.ww.mall.mybatis.common.BaseEntity;
 import com.ww.mall.order.enums.OrderSubStatus;
 import com.ww.mall.order.enums.ProductType;
-import com.ww.mall.mybatisplus.BaseEntity;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 

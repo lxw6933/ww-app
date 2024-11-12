@@ -1,7 +1,7 @@
 package com.ww.mall.open.entity;
 
 import com.baomidou.mybatisplus.annotation.TableName;
-import com.ww.mall.mybatisplus.BaseEntity;
+import com.ww.mall.mybatis.common.BaseEntity;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 

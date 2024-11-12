@@ -38,20 +38,11 @@
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-data-mongodb</artifactId>
         </dependency>
-        <!-- mybatis-plus -->
+        <!-- mybatis starter -->
         <dependency>
-            <groupId>com.baomidou</groupId>
-            <artifactId>mybatis-plus-boot-starter</artifactId>
-        </dependency>
-        <!-- mysql connect -->
-        <dependency>
-            <groupId>mysql</groupId>
-            <artifactId>mysql-connector-java</artifactId>
-        </dependency>
-        <!-- druid -->
-        <dependency>
-            <groupId>com.alibaba</groupId>
-            <artifactId>druid-spring-boot-starter</artifactId>
+            <groupId>com.ww.mall</groupId>
+            <artifactId>mall-spring-boot-starter-mybatis</artifactId>
+            <version>${revision}</version>
         </dependency>
         <!-- test -->
         <dependency>

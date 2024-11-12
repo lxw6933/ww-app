@@ -19,7 +19,7 @@ import com.ww.mall.admin.view.vo.SysRoleVO;
 import com.ww.mall.annotation.plugs.redis.MallResubmission;
 import com.ww.mall.common.exception.ApiException;
 import com.ww.mall.common.common.MallPageResult;
-import com.ww.mall.mybatisplus.MallPlusPageResult;
+import com.ww.mall.mybatis.common.MallPlusPageResult;
 import com.ww.mall.web.view.form.IdForm;
 import org.apache.commons.collections4.CollectionUtils;
 import org.springframework.beans.BeanUtils;

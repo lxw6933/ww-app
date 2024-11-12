@@ -1,6 +1,6 @@
-package com.ww.mall.annotation.enable;
+package com.ww.mall.mybatis.annotation;
 
-import com.ww.mall.mybatisplus.MallMybatisPlusAutoConfiguration;
+import com.ww.mall.mybatis.config.MallMybatisPlusAutoConfiguration;
 import org.springframework.context.annotation.Import;
 
 import java.lang.annotation.ElementType;
@@ -16,5 +16,5 @@ import java.lang.annotation.Target;
 @Target({ElementType.TYPE})
 @Retention(RetentionPolicy.RUNTIME)
 @Import({MallMybatisPlusAutoConfiguration.class})
-public @interface EnableMallMybatisPlus {
+public @interface EnableMallMybatis {
 }

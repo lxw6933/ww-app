@@ -1,4 +1,4 @@
-package com.ww.mall.mybatisplus;
+package com.ww.mall.mybatis.common;
 
 import com.baomidou.mybatisplus.annotation.*;
 import lombok.Data;
