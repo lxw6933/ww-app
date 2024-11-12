@@ -43,10 +43,11 @@
             <groupId>net.devh</groupId>
             <artifactId>grpc-server-spring-boot-starter</artifactId>
         </dependency>
-        <!-- sensitive word -->
+        <!-- sensitive starter -->
         <dependency>
-            <groupId>com.github.houbb</groupId>
-            <artifactId>sensitive-word</artifactId>
+            <groupId>com.ww.mall</groupId>
+            <artifactId>mall-spring-boot-starter-sensitive</artifactId>
+            <version>${revision}</version>
         </dependency>
         <!-- test -->
         <dependency>

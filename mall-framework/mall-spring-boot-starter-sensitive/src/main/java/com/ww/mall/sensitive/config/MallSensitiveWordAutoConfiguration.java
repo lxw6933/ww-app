@@ -1,4 +1,4 @@
-package com.ww.mall.sensitive;
+package com.ww.mall.sensitive.config;
 
 import com.github.houbb.sensitive.word.bs.SensitiveWordBs;
 import com.github.houbb.sensitive.word.support.allow.WordAllows;
@@ -6,6 +6,8 @@ import com.github.houbb.sensitive.word.support.deny.WordDenys;
 import com.github.houbb.sensitive.word.support.ignore.SensitiveWordCharIgnores;
 import com.github.houbb.sensitive.word.support.resultcondition.WordResultConditions;
 import com.github.houbb.sensitive.word.support.tag.WordTags;
+import com.ww.mall.sensitive.MallCustomWordAllow;
+import com.ww.mall.sensitive.MallCustomWordDeny;
 import com.ww.mall.sensitive.aspect.SensitiveWordAspect;
 import jdk.nashorn.internal.ir.debug.ObjectSizeCalculator;
 import lombok.extern.slf4j.Slf4j;

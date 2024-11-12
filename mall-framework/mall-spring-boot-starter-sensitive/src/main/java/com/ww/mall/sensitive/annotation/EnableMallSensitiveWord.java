@@ -1,6 +1,6 @@
-package com.ww.mall.annotation.enable;
+package com.ww.mall.sensitive.annotation;
 
-import com.ww.mall.sensitive.MallSensitiveWordAutoConfiguration;
+import com.ww.mall.sensitive.config.MallSensitiveWordAutoConfiguration;
 import org.springframework.context.annotation.Import;
 
 import java.lang.annotation.ElementType;

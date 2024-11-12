@@ -2,6 +2,7 @@ package com.ww.mall.sensitive;
 
 import com.github.houbb.heaven.util.io.StreamUtil;
 import com.github.houbb.sensitive.word.api.IWordAllow;
+import com.ww.mall.sensitive.config.MallSensitiveWordProperties;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.stereotype.Component;
