@@ -79,10 +79,14 @@ public class CodeGeneratorService {
         CountDownLatch doneSignal = new CountDownLatch(taskCount + 1);
 
         List<Future<Integer>> results = new ArrayList<>();
-        for (int i = 0; i < taskCount; i++) {
+        for (int i = 0; i < taskCount + 1; i++) {
             int start = i * BATCH_NUM;
             int end = Math.min(start + BATCH_NUM, totalCount);
             int num = end - start;
+            if (num <= 0) {
+                doneSignal.countDown();
+                continue;
+            }
             // 提交任务到线程池
             Future<Integer> result = codeGeneratorExecutor.submit(() -> {
                 try {
