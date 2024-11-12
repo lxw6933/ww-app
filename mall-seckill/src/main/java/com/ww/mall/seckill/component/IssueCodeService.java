@@ -10,6 +10,7 @@ import org.redisson.api.RList;
 import org.redisson.api.RScript;
 import org.redisson.api.RedissonClient;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnBean;
+import org.springframework.context.annotation.DependsOn;
 import org.springframework.stereotype.Component;
 
 import javax.annotation.PostConstruct;
@@ -26,7 +27,7 @@ import java.util.List;
  */
 @Slf4j
 @Component
-@ConditionalOnBean(MongoBulkDataHandler.class)
+@DependsOn("mongoBulkDataHandler")
 public class IssueCodeService {
 
     @Resource

@@ -12,6 +12,11 @@
     <artifactId>mall-web</artifactId>
 
     <dependencies>
+        <dependency>
+            <groupId>com.ww.mall</groupId>
+            <artifactId>mall-common</artifactId>
+            <version>${revision}</version>
+        </dependency>
         <!-- grpc-api -->
         <dependency>
             <groupId>com.ww.mall</groupId>

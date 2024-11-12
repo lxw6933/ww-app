@@ -4,11 +4,12 @@ import cn.hutool.core.lang.Assert;
 import cn.hutool.core.util.RandomUtil;
 import com.ww.mall.common.exception.ApiException;
 import com.ww.mall.mongodb.handler.MongoBulkDataHandler;
-import com.ww.mall.mongodb.repository.Code;
 import com.ww.mall.redis.service.CodeBloomFilterComponent;
+import com.ww.mall.seckill.entity.Code;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnBean;
+import org.springframework.context.annotation.DependsOn;
 import org.springframework.context.annotation.Import;
 import org.springframework.stereotype.Component;
 
@@ -31,7 +32,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 @Slf4j
 @Component
 @Import(CodeBloomFilterComponent.class)
-@ConditionalOnBean(MongoBulkDataHandler.class)
+@DependsOn("mongoBulkDataHandler")
 public class CodeGeneratorService {
 
     @Autowired

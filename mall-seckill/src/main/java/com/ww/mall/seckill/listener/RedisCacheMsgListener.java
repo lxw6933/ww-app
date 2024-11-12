@@ -2,7 +2,7 @@ package com.ww.mall.seckill.listener;
 
 import cn.hutool.core.collection.CollectionUtil;
 import com.ww.mall.common.constant.RedisChannelConstant;
-import com.ww.mall.redis.MallRedisListener;
+import com.ww.mall.redis.listener.MallRedisListener;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.redis.connection.Message;
 import org.springframework.stereotype.Component;
@@ -35,7 +35,7 @@ public class RedisCacheMsgListener extends MallRedisListener {
     }
 
     @Override
-    protected List<String> channelName() {
+    public List<String> channelName() {
         return CollectionUtil.toList(RedisChannelConstant.MALL_SPU_CHANNEL, RedisChannelConstant.MALL_SKU_CHANNEL, RedisChannelConstant.MALL_SMS_CHANNEL);
     }
 }

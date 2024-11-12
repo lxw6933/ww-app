@@ -2,7 +2,7 @@ package com.ww.mall.admin.view.query;
 
 import com.ww.mall.admin.entity.mongo.OperateLog;
 import com.ww.mall.common.utils.SpecialCharacterUtil;
-import com.ww.mall.mongodb.AbstractMongoPage;
+import com.ww.mall.mongodb.common.AbstractMongoPage;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import org.apache.commons.lang3.StringUtils;

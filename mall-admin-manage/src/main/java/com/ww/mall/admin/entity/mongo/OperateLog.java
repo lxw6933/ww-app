@@ -1,7 +1,7 @@
 package com.ww.mall.admin.entity.mongo;
 
 import com.ww.mall.common.enums.UserType;
-import com.ww.mall.mongodb.BaseDoc;
+import com.ww.mall.mongodb.common.BaseDoc;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import org.springframework.data.mongodb.core.mapping.Document;
