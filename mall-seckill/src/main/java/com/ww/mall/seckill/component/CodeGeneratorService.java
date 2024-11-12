@@ -79,7 +79,7 @@ public class CodeGeneratorService {
         CountDownLatch doneSignal = new CountDownLatch(taskCount + 1);
 
         List<Future<Integer>> results = new ArrayList<>();
-        for (int i = 0; i < taskCount + 1; i++) {
+        for (int i = 0; i < taskCount; i++) {
             int start = i * BATCH_NUM;
             int end = Math.min(start + BATCH_NUM, totalCount);
             int num = end - start;
