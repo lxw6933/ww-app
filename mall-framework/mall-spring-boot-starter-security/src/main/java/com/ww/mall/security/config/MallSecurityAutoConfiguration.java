@@ -1,9 +1,10 @@
-package com.ww.mall.security;
+package com.ww.mall.security.config;
 
 import cn.hutool.core.collection.CollUtil;
 import cn.hutool.extra.spring.SpringUtil;
 import com.google.common.collect.HashMultimap;
 import com.google.common.collect.Multimap;
+import com.ww.mall.common.utils.CollectionUtils;
 import com.ww.mall.security.filter.TokenAuthenticationAuthFilter;
 import com.ww.mall.security.handler.MallAccessDeniedHandler;
 import com.ww.mall.security.handler.MallAuthenticationEntryPoint;
@@ -30,8 +31,6 @@ import javax.annotation.security.PermitAll;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
-
-import static com.ww.mall.common.utils.CollectionUtils.convertList;
 
 /**
  * @author ww
@@ -130,7 +129,7 @@ public class MallSecurityAutoConfiguration {
                 urls.addAll(entry.getKey().getPatternsCondition().getPatterns());
             }
             if (entry.getKey().getPathPatternsCondition() != null) {
-                urls.addAll(convertList(entry.getKey().getPathPatternsCondition().getPatterns(), PathPattern::getPatternString));
+                urls.addAll(CollectionUtils.convertList(entry.getKey().getPathPatternsCondition().getPatterns(), PathPattern::getPatternString));
             }
             if (urls.isEmpty()) {
                 continue;

@@ -1,6 +1,7 @@
 package com.ww.mall.admin;
 
 import com.ww.mall.annotation.enable.*;
+import com.ww.mall.security.annotation.EnableMallSecurity;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.cloud.client.discovery.EnableDiscoveryClient;
