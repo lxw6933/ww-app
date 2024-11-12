@@ -29,11 +29,11 @@ import java.util.concurrent.TimeUnit;
  */
 @Slf4j
 @Configuration
-@EnableConfigurationProperties({MallNettyProperties.class})
+@EnableConfigurationProperties({MallWSProperties.class})
 public class MallWebSocketServerAutoConfiguration {
 
     @Resource
-    private MallNettyProperties mallNettyProperties;
+    private MallWSProperties mallWSProperties;
 
     private final EventLoopGroup bossGroup = new NioEventLoopGroup();
     private final EventLoopGroup workerGroup = new NioEventLoopGroup();
@@ -49,7 +49,7 @@ public class MallWebSocketServerAutoConfiguration {
                 // 设置TCP连接是否启用心跳保活机制。如果启用，操作系统会定期发送心跳包以检测连接是否仍然活跃
                 .childOption(ChannelOption.SO_KEEPALIVE, true)
                 // 设置监听端口
-                .localAddress(mallNettyProperties.getWebsocketPort())
+                .localAddress(mallWSProperties.getWebsocketPort())
                 .childHandler(new ChannelInitializer<SocketChannel>() {
                     @Override
                     protected void initChannel(SocketChannel ch) throws Exception {
@@ -65,16 +65,16 @@ public class MallWebSocketServerAutoConfiguration {
                         // 自定义心跳检测处理器
                         pipeline.addLast(new HeartBeatHandler());
                         // 处理WebSocket握手请求和处理WebSocket协议的帧。它负责处理WebSocket的握手请求，并将请求升级为WebSocket连接
-                        pipeline.addLast(new WebSocketServerProtocolHandler(mallNettyProperties.getWebsocketPath(), "WebSocket", true, 65536 * 10));
+                        pipeline.addLast(new WebSocketServerProtocolHandler(mallWSProperties.getWebsocketPath(), "WebSocket", true, 65536 * 10));
                         // 处理来自客户端的WebSocket消息，并向客户端发送WebSocket消息
                         pipeline.addLast(new MallWebSocketHandler());
                     }
                 });
         ChannelFuture serverStartFuture;
         try {
-            serverStartFuture = serverBootstrap.bind(mallNettyProperties.getWebsocketPort()).sync();
+            serverStartFuture = serverBootstrap.bind(mallWSProperties.getWebsocketPort()).sync();
             if (serverStartFuture.isSuccess()) {
-                log.info("mall websocket server success start port：[{}]", mallNettyProperties.getWebsocketPort());
+                log.info("mall websocket server success start port：[{}]", mallWSProperties.getWebsocketPort());
             } else {
                 log.error("mall websocket server fail start");
             }

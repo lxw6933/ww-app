@@ -11,8 +11,8 @@ import org.springframework.context.annotation.Configuration;
  */
 @Data
 @Configuration
-@ConfigurationProperties(prefix = "netty")
-public class MallNettyProperties {
+@ConfigurationProperties(prefix = "ws")
+public class MallWSProperties {
 
     private Integer serializerType = 2;
 
