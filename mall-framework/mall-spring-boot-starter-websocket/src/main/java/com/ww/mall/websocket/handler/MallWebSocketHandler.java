@@ -1,4 +1,4 @@
-package com.ww.mall.netty.handler;
+package com.ww.mall.websocket.handler;
 
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelHandler;

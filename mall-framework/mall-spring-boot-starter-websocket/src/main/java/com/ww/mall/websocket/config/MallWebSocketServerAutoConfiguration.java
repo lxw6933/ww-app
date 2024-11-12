@@ -1,8 +1,8 @@
-package com.ww.mall.netty.config;
+package com.ww.mall.websocket.config;
 
 import com.ww.mall.common.exception.ApiException;
-import com.ww.mall.netty.handler.HeartBeatHandler;
-import com.ww.mall.netty.handler.MallWebSocketHandler;
+import com.ww.mall.websocket.handler.HeartBeatHandler;
+import com.ww.mall.websocket.handler.MallWebSocketHandler;
 import io.netty.bootstrap.ServerBootstrap;
 import io.netty.channel.*;
 import io.netty.channel.nio.NioEventLoopGroup;

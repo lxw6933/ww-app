@@ -1,6 +1,6 @@
-package com.ww.mall.annotation.enable;
+package com.ww.mall.websocket.annotation;
 
-import com.ww.mall.netty.config.MallWebSocketServerAutoConfiguration;
+import com.ww.mall.websocket.config.MallWebSocketServerAutoConfiguration;
 import org.springframework.context.annotation.Import;
 
 import java.lang.annotation.ElementType;

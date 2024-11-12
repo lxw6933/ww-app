@@ -1,4 +1,4 @@
-package com.ww.mall.netty.config;
+package com.ww.mall.websocket.config;
 
 import lombok.Data;
 import org.springframework.boot.context.properties.ConfigurationProperties;
