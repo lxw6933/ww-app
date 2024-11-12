@@ -3,12 +3,12 @@ package com.ww.mall.seckill.component;
 import cn.hutool.core.lang.Assert;
 import cn.hutool.core.util.RandomUtil;
 import com.ww.mall.common.exception.ApiException;
+import com.ww.mall.common.utils.MallThreadUtil;
 import com.ww.mall.mongodb.handler.MongoBulkDataHandler;
 import com.ww.mall.redis.service.CodeBloomFilterComponent;
 import com.ww.mall.seckill.entity.Code;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnBean;
 import org.springframework.context.annotation.DependsOn;
 import org.springframework.context.annotation.Import;
 import org.springframework.stereotype.Component;
@@ -20,7 +20,6 @@ import java.util.List;
 import java.util.Set;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.atomic.AtomicBoolean;
 
@@ -47,7 +46,7 @@ public class CodeGeneratorService {
     public static final int CODE_GENERATOR_THREAD_POOL_SIZE = 20;
     public static final int MAX_NUM = BATCH_NUM * CODE_GENERATOR_THREAD_POOL_SIZE;
 
-    public static final ExecutorService codeGeneratorExecutor = Executors.newFixedThreadPool(CODE_GENERATOR_THREAD_POOL_SIZE);
+    public static final ExecutorService codeGeneratorExecutor = MallThreadUtil.initFixedThreadPoolExecutor("code-generator", CODE_GENERATOR_THREAD_POOL_SIZE);
 
     /**
      * 生成code
