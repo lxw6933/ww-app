@@ -37,6 +37,7 @@
         <pagehelper.version>6.4</pagehelper.version>
         <okhttp.version>4.12.0</okhttp.version>
         <ip2region.version>2.7.0</ip2region.version>
+        <transmittable-thread-local.version>2.14.5</transmittable-thread-local.version>
         <!-- jdk11 use 3.x -->
         <!--<caffeine.version>3.1.8</caffeine.version>-->
         <caffeine.version>2.9.0</caffeine.version>
@@ -187,6 +188,12 @@
                 <groupId>org.lionsoul</groupId>
                 <artifactId>ip2region</artifactId>
                 <version>${ip2region.version}</version>
+            </dependency>
+            <!-- transmittable-thread-local 解决线程间透传数据问题 -->
+            <dependency>
+                <groupId>com.alibaba</groupId>
+                <artifactId>transmittable-thread-local</artifactId>
+                <version>${transmittable-thread-local.version}</version>
             </dependency>
             <!-- caffeine -->
             <dependency>

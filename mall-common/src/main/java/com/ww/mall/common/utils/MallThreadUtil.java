@@ -1,5 +1,6 @@
 package com.ww.mall.common.utils;
 
+import com.alibaba.ttl.threadpool.TtlExecutors;
 import com.ww.mall.common.thread.DefaultThreadFactoryBuilder;
 import com.ww.mall.common.thread.ThreadPoolExecutorMdcWrapper;
 import lombok.extern.slf4j.Slf4j;
@@ -16,7 +17,17 @@ public class MallThreadUtil {
 
     private MallThreadUtil() {}
 
-    public static ThreadPoolExecutor initThreadPoolExecutor(String threadName,
+    public static ScheduledExecutorService initScheduledExecutorService(int threadSize) {
+        ScheduledExecutorService scheduledExecutorService;
+        if (threadSize == 1) {
+            scheduledExecutorService = Executors.newSingleThreadScheduledExecutor();
+        } else {
+            scheduledExecutorService = Executors.newScheduledThreadPool(threadSize);
+        }
+        return TtlExecutors.getTtlScheduledExecutorService(scheduledExecutorService);
+    }
+
+    public static ExecutorService initThreadPoolExecutor(String threadName,
                                                      Integer coreSize,
                                                      Integer maxSize,
                                                      Integer keepAliveTime,
@@ -24,7 +35,7 @@ public class MallThreadUtil {
                                                      Integer queueLength,
                                                      RejectedExecutionHandler handler) {
         ThreadFactory threadFactory = new DefaultThreadFactoryBuilder().setNamePrefix(threadName).build();
-        return new ThreadPoolExecutorMdcWrapper(coreSize,
+        ThreadPoolExecutorMdcWrapper threadPoolExecutorMdcWrapper = new ThreadPoolExecutorMdcWrapper(coreSize,
                 maxSize,
                 keepAliveTime,
                 timeUnit,
@@ -32,17 +43,19 @@ public class MallThreadUtil {
                 threadFactory,
                 handler
         );
+        return TtlExecutors.getTtlExecutorService(threadPoolExecutorMdcWrapper);
     }
 
-    public static ThreadPoolExecutor initFixedThreadPoolExecutor(String threadName, int threadSize) {
+    public static ExecutorService initFixedThreadPoolExecutor(String threadName, int threadSize) {
         ThreadFactory threadFactory = new DefaultThreadFactoryBuilder().setNamePrefix(threadName).build();
-        return new ThreadPoolExecutorMdcWrapper(threadSize,
+        ThreadPoolExecutorMdcWrapper threadPoolExecutorMdcWrapper = new ThreadPoolExecutorMdcWrapper(threadSize,
                 threadSize,
                 0L,
                 TimeUnit.MILLISECONDS,
                 new LinkedBlockingQueue<>(),
                 threadFactory
         );
+        return TtlExecutors.getTtlExecutorService(threadPoolExecutorMdcWrapper);
     }
 
 }

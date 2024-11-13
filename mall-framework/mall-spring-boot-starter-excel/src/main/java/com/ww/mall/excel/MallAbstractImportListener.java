@@ -10,6 +10,7 @@ import org.apache.commons.collections4.CollectionUtils;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutorService;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -23,7 +24,7 @@ public abstract class MallAbstractImportListener<T> extends AnalysisEventListene
 
     private static final int MAX_COUNT = 10000;
 
-    private static final ThreadPoolExecutor excelThreadPoolExecutor = MallThreadUtil.initFixedThreadPoolExecutor("mall-excel", 20);
+    private static final ExecutorService excelThreadPoolExecutor = MallThreadUtil.initFixedThreadPoolExecutor("mall-excel", 20);
 
     private final ThreadLocal<ArrayList<T>> dataList = ThreadLocal.withInitial(ArrayList::new);
     private final ThreadLocal<ArrayList<T>> errorDataList = ThreadLocal.withInitial(ArrayList::new);
