@@ -6,7 +6,7 @@ import com.ww.mall.common.enums.SensitiveWordHandlerType;
 import com.ww.mall.proto.hello.HelloRequest;
 import com.ww.mall.proto.hello.HelloResponse;
 import com.ww.mall.proto.hello.HelloServiceGrpc;
-import com.ww.mall.annotation.plugs.sensitive.MallSensitiveWordHandler;
+import com.ww.mall.sensitive.annotation.MallSensitiveWordHandler;
 import io.grpc.stub.StreamObserver;
 import lombok.extern.slf4j.Slf4j;
 import net.devh.boot.grpc.server.service.GrpcService;

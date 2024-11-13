@@ -2,7 +2,7 @@ package com.ww.mall.search.view.bo;
 
 import com.ww.mall.common.exception.ApiException;
 import com.ww.mall.common.utils.SpecialCharacterUtil;
-import com.ww.mall.mongodb.AbstractMongoPage;
+import com.ww.mall.mongodb.common.AbstractMongoPage;
 import com.ww.mall.search.entity.ProductSearch;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
