@@ -63,6 +63,7 @@
                     <!-- maven -> plugins -> protobuf -> protobuf:compile-custom 将proto文件中的service 转成 java接口 -->
                     <pluginArtifact>io.grpc:protoc-gen-grpc-java:1.63.0:exe:${os.detected.classifier}</pluginArtifact>
                     <!-- 以上两命令生成的文件放在target generated-sources/protobuf目录下 配置以下参数，就不需要手动复制文件到java目录下-->
+                    <protoSourceRoot>${basedir}/src/main/proto</protoSourceRoot>
                     <!-- basedir:项目根目录 -->
                     <outputDirectory>${basedir}/src/main/java</outputDirectory>
                     <!-- 追加，不重新生成旧文件 -->
