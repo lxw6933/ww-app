@@ -1,9 +1,9 @@
-package com.ww.mall.web.feign;
+package com.ww.mall.member.member;
 
 import com.ww.mall.common.common.Result;
-import com.ww.mall.web.feign.inner.MemberFeignServiceFallBack;
-import com.ww.mall.web.view.bo.AddMemberIntegralBO;
-import com.ww.mall.web.view.dto.MemberDTO;
+import com.ww.mall.member.member.bo.AddMemberIntegralBO;
+import com.ww.mall.member.member.dto.MemberDTO;
+import com.ww.mall.member.member.fallback.MemberApiFallBack;
 import org.springframework.cloud.openfeign.FeignClient;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -12,11 +12,11 @@ import org.springframework.web.bind.annotation.RequestParam;
 
 /**
  * @author ww
- * @create 2023-07-18- 10:31
+ * @create 2024-11-15- 13:59
  * @description:
  */
-@FeignClient(value = "mall-member", fallbackFactory = MemberFeignServiceFallBack.class)
-public interface MemberFeignService {
+@FeignClient(value = "mall-member", fallbackFactory = MemberApiFallBack.class)
+public interface MemberApi {
 
     /**
      * 通过手机号获取用户信息

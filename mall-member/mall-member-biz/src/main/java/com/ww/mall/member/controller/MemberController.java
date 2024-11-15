@@ -14,7 +14,7 @@ import com.ww.mall.common.common.MallPageResult;
 import com.ww.mall.common.utils.AuthorizationContext;
 import com.ww.mall.common.utils.IdUtil;
 import com.ww.mall.mybatis.common.MallPlusPageResult;
-import com.ww.mall.web.view.dto.MemberDTO;
+import com.ww.mall.member.member.dto.MemberDTO;
 import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.GetMapping;

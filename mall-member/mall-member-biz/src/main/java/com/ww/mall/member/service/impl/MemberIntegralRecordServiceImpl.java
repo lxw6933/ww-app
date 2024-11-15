@@ -13,7 +13,7 @@ import com.ww.mall.member.service.MemberService;
 import com.ww.mall.common.common.MallPage;
 import com.ww.mall.common.common.MallPageResult;
 import com.ww.mall.common.utils.AuthorizationContext;
-import com.ww.mall.web.view.bo.AddMemberIntegralBO;
+import com.ww.mall.member.member.bo.AddMemberIntegralBO;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.PageRequest;

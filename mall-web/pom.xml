@@ -132,6 +132,12 @@
             <artifactId>mall-admin-manage-api</artifactId>
             <version>${revision}</version>
         </dependency>
+        <!-- member api -->
+        <dependency>
+            <groupId>com.ww.mall</groupId>
+            <artifactId>mall-member-api</artifactId>
+            <version>${revision}</version>
+        </dependency>
         <!-- test -->
         <dependency>
             <groupId>org.springframework.boot</groupId>

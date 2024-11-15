@@ -2,7 +2,7 @@ package com.ww.mall.auth.serivce;
 
 import com.ww.mall.admin.user.bo.SysUserLoginBO;
 import com.ww.mall.auth.view.vo.LoginResultVO;
-import com.ww.mall.web.view.bo.MemberLoginBO;
+import com.ww.mall.member.member.bo.MemberLoginBO;
 
 /**
  * @author ww

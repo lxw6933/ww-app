@@ -1,4 +1,4 @@
-package com.ww.mall.web.view.bo;
+package com.ww.mall.member.member.bo;
 
 import lombok.Data;
 

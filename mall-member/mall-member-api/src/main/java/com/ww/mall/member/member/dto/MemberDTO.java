@@ -1,4 +1,4 @@
-package com.ww.mall.web.view.dto;
+package com.ww.mall.member.member.dto;
 
 import lombok.Data;
 

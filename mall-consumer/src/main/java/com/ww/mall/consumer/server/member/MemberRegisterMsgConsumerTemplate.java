@@ -2,9 +2,9 @@ package com.ww.mall.consumer.server.member;
 
 import cn.hutool.extra.spring.SpringUtil;
 import com.ww.mall.common.common.Result;
+import com.ww.mall.member.member.MemberApi;
+import com.ww.mall.member.member.bo.AddMemberIntegralBO;
 import com.ww.mall.rabbitmq.template.MsgConsumerTemplate;
-import com.ww.mall.web.feign.MemberFeignService;
-import com.ww.mall.web.view.bo.AddMemberIntegralBO;
 import lombok.extern.slf4j.Slf4j;
 
 /**
@@ -14,7 +14,7 @@ import lombok.extern.slf4j.Slf4j;
  **/
 @Slf4j
 public class MemberRegisterMsgConsumerTemplate extends MsgConsumerTemplate<Long> {
-    private final MemberFeignService memberFeignService = SpringUtil.getBean(MemberFeignService.class);
+    private final MemberApi memberApi = SpringUtil.getBean(MemberApi.class);
 
     @Override
     public boolean serverHandler(Long msg) {
@@ -22,7 +22,7 @@ public class MemberRegisterMsgConsumerTemplate extends MsgConsumerTemplate<Long>
         addMemberIntegralBO.setMemberId(msg);
         addMemberIntegralBO.setIntegralType(true);
         addMemberIntegralBO.setIntegralNum(100);
-        Result<Boolean> booleanResult = memberFeignService.addMemberIntegral(addMemberIntegralBO);
+        Result<Boolean> booleanResult = memberApi.addMemberIntegral(addMemberIntegralBO);
         booleanResult.checkError();
         if (Boolean.TRUE.equals(booleanResult.getData())) {
             log.info("[新用户注册]添加积分成功");

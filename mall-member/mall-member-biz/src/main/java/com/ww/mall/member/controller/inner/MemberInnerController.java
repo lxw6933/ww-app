@@ -2,8 +2,8 @@ package com.ww.mall.member.controller.inner;
 
 import com.ww.mall.member.service.MemberIntegralRecordService;
 import com.ww.mall.member.service.MemberService;
-import com.ww.mall.web.view.bo.AddMemberIntegralBO;
-import com.ww.mall.web.view.dto.MemberDTO;
+import com.ww.mall.member.member.bo.AddMemberIntegralBO;
+import com.ww.mall.member.member.dto.MemberDTO;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 

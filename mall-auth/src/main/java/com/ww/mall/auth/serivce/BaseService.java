@@ -2,7 +2,7 @@ package com.ww.mall.auth.serivce;
 
 import com.ww.mall.admin.user.AdminUserApi;
 import com.ww.mall.auth.config.JwtProperties;
-import com.ww.mall.web.feign.MemberFeignService;
+import com.ww.mall.member.member.MemberApi;
 import com.ww.mall.web.feign.ThirdServerFeignService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.mongodb.core.MongoTemplate;
@@ -29,10 +29,10 @@ public class BaseService {
     @Autowired
     protected ThirdServerFeignService thirdServerFeignService;
 
-    @Autowired
-    protected MemberFeignService memberFeignService;
-
     @Resource
     protected AdminUserApi adminUserApi;
+
+    @Resource
+    protected MemberApi memberApi;
     
 }

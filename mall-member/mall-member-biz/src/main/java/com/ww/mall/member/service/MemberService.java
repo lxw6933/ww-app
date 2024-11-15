@@ -2,7 +2,7 @@ package com.ww.mall.member.service;
 
 import com.baomidou.mybatisplus.extension.service.IService;
 import com.ww.mall.member.entity.Member;
-import com.ww.mall.web.view.dto.MemberDTO;
+import com.ww.mall.member.member.dto.MemberDTO;
 
 /**
  * @author ww

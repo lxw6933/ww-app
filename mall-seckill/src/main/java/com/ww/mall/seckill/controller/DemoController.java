@@ -1,12 +1,12 @@
 package com.ww.mall.seckill.controller;
 
 import com.github.houbb.sensitive.word.bs.SensitiveWordBs;
+import com.ww.mall.member.member.MemberApi;
+import com.ww.mall.member.member.bo.MemberLoginBO;
 import com.ww.mall.seckill.grpc.GrpcClientService;
 import com.ww.mall.seckill.service.DemoService;
 import com.ww.mall.seckill.view.bo.SensitiveWordBO;
 import com.ww.mall.seckill.view.bo.UserInfoVO;
-import com.ww.mall.web.feign.MemberFeignService;
-import com.ww.mall.web.view.bo.MemberLoginBO;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
@@ -114,12 +114,12 @@ public class DemoController {
         return grpcClientService.sendMessage("mall-seckill");
     }
 
-    @Autowired
-    private MemberFeignService memberFeignService;
+    @Resource
+    private MemberApi memberApi;
 
     @GetMapping("/openFeign/hello")
     public String helloOpenFeign() {
-        return memberFeignService.test().getData();
+        return memberApi.test().getData();
     }
 
     @GetMapping("/sensitiveWord")

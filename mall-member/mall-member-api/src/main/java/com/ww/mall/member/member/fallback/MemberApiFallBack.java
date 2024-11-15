@@ -1,25 +1,24 @@
-package com.ww.mall.web.feign.inner;
+package com.ww.mall.member.member.fallback;
 
 import com.ww.mall.common.common.Result;
 import com.ww.mall.common.enums.GlobalResCodeConstants;
-import com.ww.mall.web.feign.MemberFeignService;
-import com.ww.mall.web.view.bo.AddMemberIntegralBO;
-import com.ww.mall.web.view.dto.MemberDTO;
+import com.ww.mall.member.member.MemberApi;
+import com.ww.mall.member.member.bo.AddMemberIntegralBO;
+import com.ww.mall.member.member.dto.MemberDTO;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.cloud.openfeign.FallbackFactory;
 
 /**
  * @author ww
- * @create 2023-07-18- 10:32
+ * @create 2024-11-15- 14:01
  * @description:
  */
 @Slf4j
-public class MemberFeignServiceFallBack implements FallbackFactory<MemberFeignService> {
-
+public class MemberApiFallBack implements FallbackFactory<MemberApi> {
     @Override
-    public MemberFeignService create(Throwable cause) {
+    public MemberApi create(Throwable cause) {
         log.error("第三方服务【MemberFeignService】调用异常：{}", cause.getMessage());
-        return new MemberFeignService() {
+        return new MemberApi() {
             @Override
             public Result<MemberDTO> getMemberByMobile(String mobile) {
                 return Result.error(GlobalResCodeConstants.LIMIT_REQUEST);
@@ -36,4 +35,5 @@ public class MemberFeignServiceFallBack implements FallbackFactory<MemberFeignSe
             }
         };
     }
+
 }

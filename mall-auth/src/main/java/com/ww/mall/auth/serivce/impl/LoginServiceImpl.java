@@ -14,8 +14,8 @@ import com.ww.mall.common.enums.GlobalResCodeConstants;
 import com.ww.mall.common.enums.LoginType;
 import com.ww.mall.common.enums.UserType;
 import com.ww.mall.common.exception.ApiException;
-import com.ww.mall.web.view.bo.MemberLoginBO;
-import com.ww.mall.web.view.dto.MemberDTO;
+import com.ww.mall.member.member.bo.MemberLoginBO;
+import com.ww.mall.member.member.dto.MemberDTO;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.time.DateUtils;
@@ -56,7 +56,7 @@ public class LoginServiceImpl extends BaseService implements LoginService {
         mobileCode = StringUtils.isNotEmpty(mobileCode) ? mobileCode.split("_")[0] : null;
         if (memberLoginBO.getVerifyCode().equals(mobileCode)) {
             // 获取登录用户信息
-            Result<MemberDTO> memberResult = memberFeignService.getMemberByMobile(mobile);
+            Result<MemberDTO> memberResult = memberApi.getMemberByMobile(mobile);
             memberResult.checkError(() -> {
                 LoginLog loginLog = LoginLog.build(memberLoginBO.getMobile(), UserType.CLIENT, LoginType.CODE, memberResult.getMsg());
                 mongoTemplate.save(loginLog);
