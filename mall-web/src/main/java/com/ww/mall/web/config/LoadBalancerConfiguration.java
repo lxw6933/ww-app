@@ -1,6 +1,5 @@
 package com.ww.mall.web.config;
 
-import com.ww.mall.web.feign.rule.GrayFeignLoadBalancer;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.cloud.client.ServiceInstance;
 import org.springframework.cloud.loadbalancer.core.ReactorLoadBalancer;
