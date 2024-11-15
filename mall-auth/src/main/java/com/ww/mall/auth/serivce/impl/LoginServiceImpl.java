@@ -94,7 +94,7 @@ public class LoginServiceImpl extends BaseService implements LoginService {
         redisTemplate.opsForValue()
                 .set(RedisKeyConstant.SMS_CODE_CACHE_PREFIX + mobile, newCodeTime, 3, TimeUnit.MINUTES);
         // 发送验证码短信
-        Result<Boolean> sendSmsResult = thirdServerFeignService.sendSms(mobile, newCode);
+        Result<Boolean> sendSmsResult = smsApi.sendSms(mobile, newCode);
         sendSmsResult.checkError();
         if (Boolean.TRUE.equals(sendSmsResult.getData())) {
             log.info("发送短信验证码成功");

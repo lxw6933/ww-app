@@ -34,13 +34,12 @@ import com.ww.mall.seckill.node.executor.DemoFlowExecutor;
 import com.ww.mall.seckill.service.DemoService;
 import com.ww.mall.seckill.view.bo.SensitiveWordBO;
 import com.ww.mall.sensitive.annotation.MallSensitiveWordHandler;
-import com.ww.mall.web.feign.ThirdServerFeignService;
+import com.ww.mall.third.sms.SmsApi;
 import io.github.linpeilie.Converter;
 import lombok.extern.slf4j.Slf4j;
 import org.redisson.api.RBloomFilter;
 import org.redisson.api.RedissonClient;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.mongodb.core.MongoTemplate;
 import org.springframework.data.mongodb.core.aggregation.Aggregation;
@@ -68,27 +67,27 @@ import java.util.concurrent.atomic.AtomicInteger;
 @Service
 public class DemoServiceImpl implements DemoService {
 
-    @Autowired
+    @Resource
     private MallRedisTemplate mallRedisTemplate;
 
-    @Autowired
-    private ThirdServerFeignService thirdServerFeignService;
+    @Resource
+    private SmsApi smsApi;
 
-    @Autowired
+    @Resource
     private ThreadPoolExecutor defaultThreadPoolExecutor;
 
-    @Autowired
+    @Resource
     private MallPublisher mallPublisher;
 
-    @Autowired
+    @Resource
     private MongoTemplate mongoTemplate;
 
     private final AtomicInteger num = new AtomicInteger(0);
 
-    @Autowired
+    @Resource
     private RedissonClient redissonClient;
 
-    @Autowired
+    @Resource
     private RedisTemplate<String, String> redisTemplate;
 
     @PostConstruct
@@ -109,7 +108,7 @@ public class DemoServiceImpl implements DemoService {
         log.info("耗时：{}", (end - start) / 1000);
     }
 
-    @Autowired
+    @Resource
     private CodeGeneratorService codeGeneratorService;
 
     @Override
@@ -117,7 +116,7 @@ public class DemoServiceImpl implements DemoService {
         return codeGeneratorService.doGeneratorCode(batchNo, length, totalCount);
     }
 
-    @Autowired
+    @Resource
     private IssueCodeService issueCodeService;
 
     @Override
@@ -220,11 +219,11 @@ public class DemoServiceImpl implements DemoService {
         // mq日志
         mallPublisher.publishMsg(ExchangeConstant.MALL_MEMBER_EXCHANGE, RouteKeyConstant.MALL_MEMBER_REGISTER_KEY, 1);
         // feign日志
-        thirdServerFeignService.sendSms("15970191157", "9527");
+        smsApi.sendSms("15970191157", "9527");
         log.info("interface end log");
     }
 
-    @Autowired
+    @Resource
     private RabbitTemplate rabbitTemplate;
 
     @Override
@@ -273,7 +272,7 @@ public class DemoServiceImpl implements DemoService {
         }
     }
 
-    @Autowired
+    @Resource
     private DemoFlowExecutor demoFlowExecutor;
 
     @Override
@@ -375,7 +374,7 @@ public class DemoServiceImpl implements DemoService {
         // https://github.com/alibaba/easyexcel/issues/2358
     }
 
-    @Autowired
+    @Resource
     private Ip2regionSearcher ip2regionSearcher;
 
     public String ip2region(HttpServletRequest request) {
@@ -383,7 +382,7 @@ public class DemoServiceImpl implements DemoService {
         return ipInfo.toString();
     }
 
-    @Autowired
+    @Resource
     private Converter converter;
 
     @Override

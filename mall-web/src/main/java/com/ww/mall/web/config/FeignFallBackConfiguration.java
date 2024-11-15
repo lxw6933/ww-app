@@ -2,7 +2,7 @@ package com.ww.mall.web.config;
 
 import com.ww.mall.admin.user.fallback.AdminUserApiFallBack;
 import com.ww.mall.member.member.fallback.MemberApiFallBack;
-import com.ww.mall.web.feign.inner.ThirdServerFeignServiceFallBack;
+import com.ww.mall.third.sms.fallback.SmsApiFallBack;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
@@ -25,8 +25,8 @@ public class FeignFallBackConfiguration {
     }
 
     @Bean
-    public ThirdServerFeignServiceFallBack thirdServerFeignServiceFallBack() {
-        return new ThirdServerFeignServiceFallBack();
+    public SmsApiFallBack smsApiFallBack() {
+        return new SmsApiFallBack();
     }
 
 }

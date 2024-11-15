@@ -7,46 +7,17 @@
         <artifactId>ww-mall</artifactId>
         <version>${revision}</version>
     </parent>
+    <modules>
+        <module>mall-third-server-api</module>
+        <module>mall-third-server-biz</module>
+    </modules>
 
     <artifactId>mall-third-server</artifactId>
-    <description>第三方服务</description>
+    <packaging>pom</packaging>
 
-    <dependencies>
-        <!-- web -->
-        <dependency>
-            <groupId>com.ww</groupId>
-            <artifactId>mall-web</artifactId>
-            <version>${revision}</version>
-        </dependency>
-        <!-- okHttpClient -->
-        <dependency>
-            <groupId>com.squareup.okhttp3</groupId>
-            <artifactId>okhttp</artifactId>
-            <version>4.10.0</version>
-        </dependency>
-        <!-- test -->
-        <dependency>
-            <groupId>org.springframework.boot</groupId>
-            <artifactId>spring-boot-starter-test</artifactId>
-            <scope>test</scope>
-        </dependency>
-    </dependencies>
-
-    <build>
-        <finalName>${project.artifactId}</finalName>
-        <plugins>
-            <plugin>
-                <groupId>org.springframework.boot</groupId>
-                <artifactId>spring-boot-maven-plugin</artifactId>
-                <executions>
-                    <execution>
-                        <goals>
-                            <goal>repackage</goal>
-                        </goals>
-                    </execution>
-                </executions>
-            </plugin>
-        </plugins>
-    </build>
+    <name>${project.artifactId}</name>
+    <description>
+        第三方业务 模块
+    </description>
 
 </project>
