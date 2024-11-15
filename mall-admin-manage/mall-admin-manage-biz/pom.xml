@@ -1,0 +1,87 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+    <parent>
+        <groupId>com.ww.mall</groupId>
+        <artifactId>mall-admin-manage</artifactId>
+        <version>${revision}</version>
+    </parent>
+
+    <artifactId>mall-admin-manage-biz</artifactId>
+    <packaging>jar</packaging>
+
+    <name>${project.artifactId}</name>
+    <description>
+        后台管理 业务模块
+    </description>
+
+    <dependencies>
+        <!-- admin manage api -->
+        <dependency>
+            <groupId>com.ww.mall</groupId>
+            <artifactId>mall-admin-manage-api</artifactId>
+            <version>${revision}</version>
+        </dependency>
+        <!-- web -->
+        <dependency>
+            <groupId>com.ww</groupId>
+            <artifactId>mall-web</artifactId>
+            <version>${revision}</version>
+        </dependency>
+        <!-- redis starter -->
+        <dependency>
+            <groupId>com.ww.mall</groupId>
+            <artifactId>mall-spring-boot-starter-redis</artifactId>
+            <version>${revision}</version>
+        </dependency>
+        <!-- mongodb starter -->
+        <dependency>
+            <groupId>com.ww.mall</groupId>
+            <artifactId>mall-spring-boot-starter-mongodb</artifactId>
+            <version>${revision}</version>
+        </dependency>
+        <!-- operate log -->
+        <dependency>
+            <groupId>io.github.mouzt</groupId>
+            <artifactId>bizlog-sdk</artifactId>
+            <optional>true</optional>
+        </dependency>
+        <!-- mybatis starter -->
+        <dependency>
+            <groupId>com.ww.mall</groupId>
+            <artifactId>mall-spring-boot-starter-mybatis</artifactId>
+            <version>${revision}</version>
+        </dependency>
+        <!-- spring security starter -->
+        <dependency>
+            <groupId>com.ww.mall</groupId>
+            <artifactId>mall-spring-boot-starter-security</artifactId>
+            <version>${revision}</version>
+        </dependency>
+        <!-- test -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-test</artifactId>
+            <scope>test</scope>
+        </dependency>
+    </dependencies>
+
+    <build>
+        <finalName>${project.artifactId}</finalName>
+        <plugins>
+            <plugin>
+                <groupId>org.springframework.boot</groupId>
+                <artifactId>spring-boot-maven-plugin</artifactId>
+                <executions>
+                    <execution>
+                        <goals>
+                            <goal>repackage</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
+        </plugins>
+    </build>
+
+</project>

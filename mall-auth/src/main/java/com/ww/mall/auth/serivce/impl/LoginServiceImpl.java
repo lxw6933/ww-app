@@ -2,6 +2,8 @@ package com.ww.mall.auth.serivce.impl;
 
 import cn.hutool.core.util.RandomUtil;
 import cn.hutool.jwt.JWTUtil;
+import com.ww.mall.admin.user.bo.SysUserLoginBO;
+import com.ww.mall.admin.user.dto.SysUserDTO;
 import com.ww.mall.auth.entity.LoginLog;
 import com.ww.mall.auth.serivce.BaseService;
 import com.ww.mall.auth.serivce.LoginService;
@@ -13,9 +15,7 @@ import com.ww.mall.common.enums.LoginType;
 import com.ww.mall.common.enums.UserType;
 import com.ww.mall.common.exception.ApiException;
 import com.ww.mall.web.view.bo.MemberLoginBO;
-import com.ww.mall.web.view.bo.SysUserLoginBO;
 import com.ww.mall.web.view.dto.MemberDTO;
-import com.ww.mall.web.view.dto.SysUserDTO;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.time.DateUtils;
@@ -38,7 +38,7 @@ public class LoginServiceImpl extends BaseService implements LoginService {
     @Override
     public LoginResultVO adminLogin(SysUserLoginBO sysUserLoginBO) {
         // 获取登录用户信息
-        Result<SysUserDTO> result = adminFeignService.login(sysUserLoginBO);
+        Result<SysUserDTO> result = adminUserApi.getAdminLoginUserInfo(sysUserLoginBO);
         result.checkError(() -> {
             LoginLog loginLog = LoginLog.build(sysUserLoginBO.getUsername(), UserType.ADMIN, LoginType.USERNAME, result.getMsg());
             mongoTemplate.save(loginLog);

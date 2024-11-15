@@ -126,6 +126,12 @@
             <groupId>io.github.linpeilie</groupId>
             <artifactId>mapstruct-plus-spring-boot-starter</artifactId>
         </dependency>
+        <!-- admin manage api -->
+        <dependency>
+            <groupId>com.ww.mall</groupId>
+            <artifactId>mall-admin-manage-api</artifactId>
+            <version>${revision}</version>
+        </dependency>
         <!-- test -->
         <dependency>
             <groupId>org.springframework.boot</groupId>

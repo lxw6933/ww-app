@@ -78,6 +78,12 @@
             <artifactId>guava</artifactId>
             <scope>provided</scope>
         </dependency>
+        <!-- validation -->
+        <dependency>
+            <groupId>jakarta.validation</groupId>
+            <artifactId>jakarta.validation-api</artifactId>
+            <scope>provided</scope>
+        </dependency>
         <!-- transmittable-thread-local 解决线程间透传数据问题 -->
         <dependency>
             <groupId>com.alibaba</groupId>

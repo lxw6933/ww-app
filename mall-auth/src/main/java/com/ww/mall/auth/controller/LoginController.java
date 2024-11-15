@@ -1,9 +1,9 @@
 package com.ww.mall.auth.controller;
 
+import com.ww.mall.admin.user.bo.SysUserLoginBO;
 import com.ww.mall.auth.serivce.LoginService;
 import com.ww.mall.auth.view.vo.LoginResultVO;
 import com.ww.mall.web.view.bo.MemberLoginBO;
-import com.ww.mall.web.view.bo.SysUserLoginBO;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.validation.annotation.Validated;

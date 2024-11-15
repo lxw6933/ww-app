@@ -10,67 +10,11 @@
 
     <artifactId>mall-admin-manage</artifactId>
     <description>后台管理服务</description>
+    <packaging>pom</packaging>
 
-    <dependencies>
-        <!-- web -->
-        <dependency>
-            <groupId>com.ww</groupId>
-            <artifactId>mall-web</artifactId>
-            <version>${revision}</version>
-        </dependency>
-        <!-- redis starter -->
-        <dependency>
-            <groupId>com.ww.mall</groupId>
-            <artifactId>mall-spring-boot-starter-redis</artifactId>
-            <version>${revision}</version>
-        </dependency>
-        <!-- mongodb starter -->
-        <dependency>
-            <groupId>com.ww.mall</groupId>
-            <artifactId>mall-spring-boot-starter-mongodb</artifactId>
-            <version>${revision}</version>
-        </dependency>
-        <!-- operate log -->
-        <dependency>
-            <groupId>io.github.mouzt</groupId>
-            <artifactId>bizlog-sdk</artifactId>
-            <optional>true</optional>
-        </dependency>
-        <!-- mybatis starter -->
-        <dependency>
-            <groupId>com.ww.mall</groupId>
-            <artifactId>mall-spring-boot-starter-mybatis</artifactId>
-            <version>${revision}</version>
-        </dependency>
-        <!-- spring security starter -->
-        <dependency>
-            <groupId>com.ww.mall</groupId>
-            <artifactId>mall-spring-boot-starter-security</artifactId>
-            <version>${revision}</version>
-        </dependency>
-        <!-- test -->
-        <dependency>
-            <groupId>org.springframework.boot</groupId>
-            <artifactId>spring-boot-starter-test</artifactId>
-            <scope>test</scope>
-        </dependency>
-    </dependencies>
-
-    <build>
-        <finalName>${project.artifactId}</finalName>
-        <plugins>
-            <plugin>
-                <groupId>org.springframework.boot</groupId>
-                <artifactId>spring-boot-maven-plugin</artifactId>
-                <executions>
-                    <execution>
-                        <goals>
-                            <goal>repackage</goal>
-                        </goals>
-                    </execution>
-                </executions>
-            </plugin>
-        </plugins>
-    </build>
+    <modules>
+        <module>mall-admin-manage-api</module>
+        <module>mall-admin-manage-biz</module>
+    </modules>
 
 </project>
