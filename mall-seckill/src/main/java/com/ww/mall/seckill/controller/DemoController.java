@@ -1,6 +1,8 @@
 package com.ww.mall.seckill.controller;
 
 import com.github.houbb.sensitive.word.bs.SensitiveWordBs;
+import com.ww.mall.common.common.Result;
+import com.ww.mall.common.exception.ApiException;
 import com.ww.mall.member.member.MemberApi;
 import com.ww.mall.member.member.bo.MemberLoginBO;
 import com.ww.mall.seckill.grpc.GrpcClientService;
@@ -119,7 +121,11 @@ public class DemoController {
 
     @GetMapping("/openFeign/hello")
     public String helloOpenFeign() {
-        return memberApi.test().getData();
+        Result<String> testResult = memberApi.test();
+        if (testResult.isSuccess()) {
+            return memberApi.test().getData();
+        }
+        throw new ApiException(testResult.getCode(), testResult.getMsg());
     }
 
     @GetMapping("/sensitiveWord")

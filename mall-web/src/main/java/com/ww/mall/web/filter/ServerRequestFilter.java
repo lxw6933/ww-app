@@ -36,7 +36,7 @@ public class ServerRequestFilter extends OncePerRequestFilter {
             filterChain.doFilter(request, response);
         } finally {
             MDC.remove(Constant.TRACE_ID);
-            AuthorizationContext.remove();
+            AuthorizationContext.clear();
         }
     }
 }

@@ -1,6 +1,7 @@
 package com.ww.mall.common.utils;
 
 import com.alibaba.fastjson.JSON;
+import com.alibaba.ttl.TransmittableThreadLocal;
 import com.ww.mall.common.common.MallAdminUser;
 import com.ww.mall.common.common.MallClientUser;
 import com.ww.mall.common.constant.Constant;
@@ -23,8 +24,8 @@ public class AuthorizationContext {
 
     private AuthorizationContext() {}
 
-    private static final ThreadLocal<MallClientUser> CLIENT_USER_THREAD_LOCAL = new ThreadLocal<>();
-    private static final ThreadLocal<MallAdminUser> ADMIN_USER_THREAD_LOCAL = new ThreadLocal<>();
+    private static final TransmittableThreadLocal<MallClientUser> CLIENT_USER_THREAD_LOCAL = new TransmittableThreadLocal<>();
+    private static final TransmittableThreadLocal<MallAdminUser> ADMIN_USER_THREAD_LOCAL = new TransmittableThreadLocal<>();
 
     public static MallClientUser getClientUser() {
         return getClientUser(true);
@@ -75,7 +76,7 @@ public class AuthorizationContext {
         return JSON.parseObject(tokenInfo, tClass);
     }
 
-    public static void remove() {
+    public static void clear() {
         CLIENT_USER_THREAD_LOCAL.remove();
         ADMIN_USER_THREAD_LOCAL.remove();
     }

@@ -1,5 +1,6 @@
 package com.ww.mall.cart.interceptor;
 
+import com.alibaba.ttl.TransmittableThreadLocal;
 import com.ww.mall.cart.to.UserInfoTo;
 import com.ww.mall.common.common.MallClientUser;
 import com.ww.mall.common.constant.Constant;
@@ -24,7 +25,7 @@ import java.util.UUID;
 @Component
 public class CartInterceptor implements HandlerInterceptor {
 
-    public static ThreadLocal<UserInfoTo> cartThreadLocal = new ThreadLocal<>();
+    public static TransmittableThreadLocal<UserInfoTo> cartThreadLocal = new TransmittableThreadLocal<>();
 
     @Override
     public boolean preHandle(@NonNull HttpServletRequest request, @NonNull HttpServletResponse response, @NonNull Object handler) {

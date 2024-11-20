@@ -35,7 +35,7 @@ import java.time.LocalTime;
 @EnableRetry
 @Configuration
 @ComponentModelConfig(componentModel = "default")
-@EnableFeignClients(basePackages = "com.ww.mall.web.feign")
+@EnableFeignClients(basePackages = "com.ww.mall")
 @LoadBalancerClients(defaultConfiguration = {LoadBalancerConfiguration.class})
 public class MallWebApplication {
 
