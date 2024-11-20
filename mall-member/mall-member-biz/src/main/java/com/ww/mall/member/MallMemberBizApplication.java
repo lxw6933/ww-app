@@ -1,5 +1,6 @@
 package com.ww.mall.member;
 
+import com.ww.mall.mongodb.annotation.EnableMallMongodb;
 import com.ww.mall.mybatis.annotation.EnableMallMybatis;
 import com.ww.mall.rabbitmq.annotation.EnableMallRabbitmq;
 import com.ww.mall.redis.annotation.EnableMallRedis;
@@ -12,6 +13,7 @@ import org.springframework.cloud.client.discovery.EnableDiscoveryClient;
 @EnableMallRedisson
 @EnableMallRabbitmq
 @EnableMallMybatis
+@EnableMallMongodb
 @EnableDiscoveryClient
 @SpringBootApplication
 public class MallMemberBizApplication {
