@@ -1,6 +1,5 @@
 package com.ww.mall.mongodb.common;
 
-import cn.hutool.core.collection.CollUtil;
 import cn.hutool.core.collection.ListUtil;
 import cn.hutool.extra.spring.SpringUtil;
 import com.ww.mall.common.common.MallPage;
@@ -17,9 +16,11 @@ import org.springframework.data.mongodb.core.query.Collation;
 import org.springframework.data.mongodb.core.query.Criteria;
 import org.springframework.data.mongodb.core.query.Query;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+import java.util.Locale;
 import java.util.function.Function;
-import java.util.stream.Collectors;
 
 /**
  * @author ww
