@@ -3,6 +3,7 @@ package com.ww.mall.auth.controller;
 import com.ww.mall.admin.user.bo.SysUserLoginBO;
 import com.ww.mall.auth.serivce.LoginService;
 import com.ww.mall.auth.view.vo.LoginResultVO;
+import com.ww.mall.common.utils.ValidationUtils;
 import com.ww.mall.member.member.bo.MemberLoginBO;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -35,7 +36,7 @@ public class LoginController {
     }
 
     @GetMapping("/sendCode")
-    public void sendCode(@Pattern(regexp = "^1[3456789]\\d{9}$", message = "请输入正确的手机号码") @RequestParam("mobile") String mobile) {
+    public void sendCode(@Pattern(regexp = ValidationUtils.MOBILE_REG, message = "请输入正确的手机号码") @RequestParam("mobile") String mobile) {
         loginService.sendCode(mobile);
     }
 

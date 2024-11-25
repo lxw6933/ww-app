@@ -18,8 +18,8 @@ import java.util.regex.Pattern;
  */
 public class ValidationUtils {
 
-    private static final String MOBILE_REG = "^1[3456789]\\d{9}$";
-//    private static final String MOBILE_REG = "^(?:(?:\\+|00)86)?1(?:(?:3[\\d])|(?:4[0,1,4-9])|(?:5[0-3,5-9])|(?:6[2,5-7])|(?:7[0-8])|(?:8[\\d])|(?:9[0-3,5-9]))\\d{8}$";
+    public static final String MOBILE_REG = "^1[3456789]\\d{9}$";
+//    public static final String MOBILE_REG = "^(?:(?:\\+|00)86)?1(?:(?:3[\\d])|(?:4[0,1,4-9])|(?:5[0-3,5-9])|(?:6[2,5-7])|(?:7[0-8])|(?:8[\\d])|(?:9[0-3,5-9]))\\d{8}$";
 
     private static final Pattern PATTERN_MOBILE = Pattern.compile(MOBILE_REG);
 
@@ -49,7 +49,7 @@ public class ValidationUtils {
         return true;
     }
 
-    private static final String URL_REG = "^(https?|ftp|file)://[-a-zA-Z0-9+&@#/%?=~_|!:,.;]*[-a-zA-Z0-9+&@#/%=~_|]";
+    public static final String URL_REG = "^(https?|ftp|file)://[-a-zA-Z0-9+&@#/%?=~_|!:,.;]*[-a-zA-Z0-9+&@#/%=~_|]";
 
     private static final Pattern PATTERN_URL = Pattern.compile(URL_REG);
 
