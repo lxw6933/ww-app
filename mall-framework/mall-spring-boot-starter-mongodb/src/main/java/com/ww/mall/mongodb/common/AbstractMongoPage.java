@@ -1,5 +1,6 @@
 package com.ww.mall.mongodb.common;
 
+import cn.hutool.core.collection.CollUtil;
 import cn.hutool.core.collection.ListUtil;
 import cn.hutool.extra.spring.SpringUtil;
 import com.ww.mall.common.common.MallPage;
@@ -16,11 +17,9 @@ import org.springframework.data.mongodb.core.query.Collation;
 import org.springframework.data.mongodb.core.query.Criteria;
 import org.springframework.data.mongodb.core.query.Query;
 
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
-import java.util.Locale;
+import java.util.*;
 import java.util.function.Function;
+import java.util.stream.Collectors;
 
 /**
  * @author ww
@@ -186,18 +185,27 @@ public abstract class AbstractMongoPage<T> extends MallPage {
      * @param tClass T class
      * @return 分页数据
      */
+    public <R> MallPageResult<R> simplePageResult(Class<T> tClass, Function<T, R> convert) {
+        MongoTemplate mongoTemplate = SpringUtil.getBean(MongoTemplate.class);
+        List<T> dataList = getSimpleDataResult(mongoTemplate, tClass);
+        long total = mongoTemplate.count(Query.query(buildQuery()), tClass);
+        return new MallPageResult<>(getPageNum(), getPageSize(), (int) total, dataList, convert);
+    }
+
     public MallPageResult<T> simplePageResult(Class<T> tClass) {
         MongoTemplate mongoTemplate = SpringUtil.getBean(MongoTemplate.class);
+        List<T> dataList = getSimpleDataResult(mongoTemplate, tClass);
+        long total = mongoTemplate.count(Query.query(buildQuery()), tClass);
+        return new MallPageResult<>(getPageNum(), getPageSize(), (int) total, dataList);
+    }
+
+    private List<T> getSimpleDataResult(MongoTemplate mongoTemplate, Class<T> tClass) {
         Query query = new Query()
                 .addCriteria(buildQuery())
                 .with(buildSort())
                 .skip((long) (getPageNum() - 1) * getPageSize())
                 .limit(getPageSize());
-        // 获取分页数据
-        List<T> dataList = mongoTemplate.find(query, tClass);
-        // 获取总记录数
-        long total = mongoTemplate.count(Query.query(buildQuery()), tClass);
-        return new MallPageResult<>(getPageNum(), getPageSize(), (int) total, dataList);
+        return mongoTemplate.find(query, tClass);
     }
 
 }
