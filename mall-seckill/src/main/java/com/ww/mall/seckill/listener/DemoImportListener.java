@@ -1,13 +1,14 @@
 package com.ww.mall.seckill.listener;
 
 import cn.hutool.core.bean.BeanUtil;
+import cn.hutool.core.lang.TypeReference;
 import cn.hutool.extra.spring.SpringUtil;
 import com.ww.mall.excel.MallAbstractImportListener;
 import com.ww.mall.excel.vo.ExcelResultVO;
+import com.ww.mall.mongodb.handler.MongoBulkDataHandler;
 import com.ww.mall.seckill.entity.Demo;
 import com.ww.mall.seckill.model.DemoModel;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.data.mongodb.core.MongoTemplate;
 
 import java.util.List;
 
@@ -19,7 +20,7 @@ import java.util.List;
 @Slf4j
 public class DemoImportListener extends MallAbstractImportListener<DemoModel> {
 
-    private final MongoTemplate mongoTemplate = SpringUtil.getBean(MongoTemplate.class);
+    private final MongoBulkDataHandler<Demo> mongoBulkDataHandler = SpringUtil.getBean(new TypeReference<MongoBulkDataHandler<Demo>>() {});
 
     private final ExcelResultVO result;
 
@@ -30,7 +31,7 @@ public class DemoImportListener extends MallAbstractImportListener<DemoModel> {
     @Override
     protected void handleData(List<DemoModel> dataList) {
         List<Demo> demoList = BeanUtil.copyToList(dataList, Demo.class);
-        mongoTemplate.insert(demoList, Demo.class);
+        mongoBulkDataHandler.bulkSave(demoList);
     }
 
     @Override
