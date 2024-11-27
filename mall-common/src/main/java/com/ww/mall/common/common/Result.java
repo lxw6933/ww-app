@@ -63,18 +63,16 @@ public class Result<T> implements Serializable {
     }
 
     public void checkError() throws ApiException {
-        if (isSuccess()) {
-            return;
-        }
-        // 业务异常
-        throw new ApiException(code, msg);
+        checkError(null);
     }
 
     public void checkError(Supplier<Void> handler) throws ApiException {
         if (isSuccess()) {
             return;
         }
-        handler.get();
+        if (handler != null) {
+            handler.get();
+        }
         // 业务异常
         throw new ApiException(code, msg);
     }
