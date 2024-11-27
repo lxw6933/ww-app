@@ -31,16 +31,10 @@ public class DemoImportListener extends MallAbstractImportListener<DemoModel> {
     protected void handleData(List<DemoModel> dataList) {
         List<Demo> demoList = BeanUtil.copyToList(dataList, Demo.class);
         mongoTemplate.insert(demoList, Demo.class);
-        synchronized (result) {
-            result.setSuccessNum(dataList.size() + result.getSuccessNum());
-        }
     }
 
     @Override
     protected void handleErrorData(List<DemoModel> errorDataList) {
         System.out.println(errorDataList.size());
-        synchronized (result) {
-            result.setFailNum(errorDataList.size() + result.getFailNum());
-        }
     }
 }
