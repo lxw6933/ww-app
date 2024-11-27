@@ -23,6 +23,7 @@ public class Constant {
     public static final Long SUPER_ADMIN_MANAGER_ID = 1L;
 
     public static final String SPLIT  = ":";
+    public static final String UNDER_LINE_SPLIT  = "_";
     public static final String GRAY_VERSION = "gray-version";
     public static final String PROD_VERSION = "prod-version";
     public static final String GRAY_TAG = "gray-tag";

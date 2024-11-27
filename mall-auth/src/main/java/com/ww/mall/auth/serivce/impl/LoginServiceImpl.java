@@ -9,6 +9,7 @@ import com.ww.mall.auth.serivce.BaseService;
 import com.ww.mall.auth.serivce.LoginService;
 import com.ww.mall.auth.view.vo.LoginResultVO;
 import com.ww.mall.common.common.Result;
+import com.ww.mall.common.constant.Constant;
 import com.ww.mall.common.constant.RedisKeyConstant;
 import com.ww.mall.common.enums.GlobalResCodeConstants;
 import com.ww.mall.common.enums.LoginType;
@@ -53,7 +54,7 @@ public class LoginServiceImpl extends BaseService implements LoginService {
     public LoginResultVO clientMobileLogin(MemberLoginBO memberLoginBO) {
         String mobile = memberLoginBO.getMobile();
         String mobileCode = redisTemplate.opsForValue().get(RedisKeyConstant.SMS_CODE_CACHE_PREFIX + mobile);
-        mobileCode = StringUtils.isNotEmpty(mobileCode) ? mobileCode.split("_")[0] : null;
+        mobileCode = StringUtils.isNotEmpty(mobileCode) ? mobileCode.split(Constant.UNDER_LINE_SPLIT)[0] : null;
         if (memberLoginBO.getVerifyCode().equals(mobileCode)) {
             // 获取登录用户信息
             Result<MemberDTO> memberResult = memberApi.getMemberByMobile(mobile);
@@ -80,7 +81,7 @@ public class LoginServiceImpl extends BaseService implements LoginService {
         String mobileCode = redisTemplate.opsForValue().get(RedisKeyConstant.SMS_CODE_CACHE_PREFIX + mobile);
         if (StringUtils.isNotEmpty(mobileCode)) {
             // 判断是否超过验证码过期时间
-            long mobileCodeTime = Long.parseLong(mobileCode.split("_")[1]);
+            long mobileCodeTime = Long.parseLong(mobileCode.split(Constant.UNDER_LINE_SPLIT)[1]);
             if (System.currentTimeMillis() - mobileCodeTime < 60000) {
                 // 验证码一分钟内不能重发
                 throw new ApiException(GlobalResCodeConstants.TOO_MANY_REQUESTS);
@@ -89,7 +90,7 @@ public class LoginServiceImpl extends BaseService implements LoginService {
         // 生成新的验证码
         String newCode = RandomUtil.randomNumbers(6);
         // 记录验证码生成的时间
-        String newCodeTime =  newCode + "_" + System.currentTimeMillis();
+        String newCodeTime =  newCode + Constant.UNDER_LINE_SPLIT + System.currentTimeMillis();
         // 验证码三分钟内有效
         redisTemplate.opsForValue()
                 .set(RedisKeyConstant.SMS_CODE_CACHE_PREFIX + mobile, newCodeTime, 3, TimeUnit.MINUTES);
