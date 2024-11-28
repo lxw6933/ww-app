@@ -4,6 +4,7 @@ import cn.hutool.core.collection.ListUtil;
 import cn.hutool.extra.spring.SpringUtil;
 import com.ww.mall.common.common.MallPage;
 import com.ww.mall.common.common.MallPageResult;
+import com.ww.mall.common.constant.Constant;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -35,12 +36,14 @@ public abstract class AbstractMongoPage<T> extends MallPage {
     public abstract Criteria buildQuery();
 
     /**
-     * 构建分页排序条件
+     * 构建排序条件【默认id倒叙，需自定义重写即可】
      */
-    public abstract Sort buildSort();
+    protected Sort buildSort() {
+        return Sort.by(Sort.Direction.DESC, Constant.MONGO_PRIMARY_KEY);
+    }
 
     /**
-     * 构建分组条件
+     * 构建分组条件【默认无分组条件，需自定义重写即可】
      */
     protected AggregationOperation buildGroup() {
         return null;
@@ -107,30 +110,6 @@ public abstract class AbstractMongoPage<T> extends MallPage {
     }
 
     /**
-     * 构建查询结果总数量
-     *
-     * @param mongoTemplate mongoTemplate
-     * @param tClass        T class
-     * @return long
-     */
-    @Deprecated
-    private long buildPageQueryResultTotalCount(MongoTemplate mongoTemplate, Class<T> tClass) {
-        // query condition
-        AggregationOperation matchAggregation = Aggregation.match(this.buildQuery());
-
-        List<AggregationOperation> operations = ListUtil.toList(matchAggregation);
-        if (this.buildGroup() != null) {
-            operations.add(buildGroup());
-        }
-        operations.add(Aggregation.count().as("totalCount"));
-        // totalCount
-        Aggregation countAggregation = Aggregation.newAggregation(operations);
-
-        AggregationResults<TotalCount> countResults = mongoTemplate.aggregate(countAggregation, tClass, TotalCount.class);
-        return countResults.getMappedResults().isEmpty() ? 0 : countResults.getMappedResults().get(0).getTotal();
-    }
-
-    /**
      * 构建分页查询结果
      *
      * @param tClass  T class
@@ -161,14 +140,6 @@ public abstract class AbstractMongoPage<T> extends MallPage {
         } else {
             throw new IllegalArgumentException("Class " + tClass.getName() + " does not have @Document annotation.");
         }
-    }
-
-    @Getter
-    @Setter
-    @AllArgsConstructor
-    @NoArgsConstructor
-    private static class TotalCount {
-        private long total;
     }
 
     @Getter
@@ -206,6 +177,19 @@ public abstract class AbstractMongoPage<T> extends MallPage {
                 .with(buildSort())
                 .skip((long) (getPageNum() - 1) * getPageSize())
                 .limit(getPageSize());
+        return mongoTemplate.find(query, tClass);
+    }
+
+    /**
+     * 普通条件查询结果
+     *
+     * @param tClass 条件查询结果class
+     * @return 普通查询结果
+     */
+    public List<T> getSimpleQueryResult(MongoTemplate mongoTemplate, Class<T> tClass) {
+        Query query = new Query()
+                .addCriteria(buildQuery())
+                .with(buildSort());
         return mongoTemplate.find(query, tClass);
     }
 

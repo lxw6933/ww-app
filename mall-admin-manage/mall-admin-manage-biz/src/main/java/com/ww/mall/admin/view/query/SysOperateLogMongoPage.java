@@ -6,7 +6,6 @@ import com.ww.mall.mongodb.common.AbstractMongoPage;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import org.apache.commons.lang3.StringUtils;
-import org.springframework.data.domain.Sort;
 import org.springframework.data.mongodb.core.query.Criteria;
 
 /**
@@ -84,11 +83,6 @@ public class SysOperateLogMongoPage extends AbstractMongoPage<OperateLog> {
             );
         }
         return criteria;
-    }
-
-    @Override
-    public Sort buildSort() {
-        return Sort.by("id");
     }
 
 }
