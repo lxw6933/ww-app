@@ -13,6 +13,7 @@ import org.springframework.web.context.request.RequestContextHolder;
 import org.springframework.web.context.request.ServletRequestAttributes;
 
 import javax.servlet.http.HttpServletRequest;
+import java.util.ArrayList;
 import java.util.List;
 
 /**
@@ -27,7 +28,7 @@ public class AuthorizationContext {
 
     private static final TransmittableThreadLocal<MallClientUser> CLIENT_USER_THREAD_LOCAL = new TransmittableThreadLocal<>();
     private static final TransmittableThreadLocal<MallAdminUser> ADMIN_USER_THREAD_LOCAL = new TransmittableThreadLocal<>();
-    private static final TransmittableThreadLocal<List<String>> ADMIN_USER_SENSITIVE_PERMS_THREAD_LOCAL = new TransmittableThreadLocal<>();
+    private static final TransmittableThreadLocal<List<String>> ADMIN_USER_SENSITIVE_PERMS_THREAD_LOCAL = TransmittableThreadLocal.withInitial(ArrayList::new);
 
     public static MallClientUser getClientUser() {
         return getClientUser(true);

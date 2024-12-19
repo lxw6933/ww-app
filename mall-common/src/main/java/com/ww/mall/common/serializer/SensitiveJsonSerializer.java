@@ -1,6 +1,5 @@
 package com.ww.mall.common.serializer;
 
-import cn.hutool.core.collection.CollectionUtil;
 import com.fasterxml.jackson.core.JsonGenerator;
 import com.fasterxml.jackson.databind.BeanProperty;
 import com.fasterxml.jackson.databind.JsonSerializer;
@@ -60,7 +59,7 @@ public class SensitiveJsonSerializer extends JsonSerializer<String> implements C
         }
         List<String> adminUserSensitivePerms = AuthorizationContext.getAdminUserSensitivePerms();
         // 判断用户是否拥有权限
-        return CollectionUtil.isNotEmpty(adminUserSensitivePerms) && adminUserSensitivePerms.contains(requiredPermission);
+        return adminUserSensitivePerms.contains(requiredPermission);
     }
 
 }
