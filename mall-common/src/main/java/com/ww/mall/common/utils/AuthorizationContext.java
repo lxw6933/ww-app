@@ -82,13 +82,10 @@ public class AuthorizationContext {
         return ADMIN_USER_SENSITIVE_PERMS_THREAD_LOCAL.get();
     }
 
-    public static void removeAdminUserSensitivePerms() {
-        ADMIN_USER_SENSITIVE_PERMS_THREAD_LOCAL.remove();
-    }
-
     public static void clear() {
         CLIENT_USER_THREAD_LOCAL.remove();
         ADMIN_USER_THREAD_LOCAL.remove();
+        ADMIN_USER_SENSITIVE_PERMS_THREAD_LOCAL.remove();
     }
 
 }
