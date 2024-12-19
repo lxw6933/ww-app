@@ -7,6 +7,7 @@ package com.ww.mall.common.constant;
  */
 public class Constant {
 
+    public static final String MYSQL_PRIMARY_KEY = "id";
     public static final String MONGO_PRIMARY_KEY = "_id";
 
     public static final String UTF_8 = "UTF-8";

@@ -4,6 +4,8 @@ import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.core.mapper.BaseMapper;
 import com.baomidou.mybatisplus.core.metadata.OrderItem;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
+import com.ww.mall.common.constant.Constant;
+import com.ww.mall.common.utils.CommonUtils;
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
 
@@ -15,7 +17,7 @@ import java.util.List;
  * @description: mysql游标分页
  */
 @Slf4j
-public class MysqlCursorPageUtils {
+public class MybatisPlusUtils {
 
     /**
      * 通用游标分页查询方法
@@ -28,11 +30,11 @@ public class MysqlCursorPageUtils {
      * @param <T>          实体类型
      * @return 分页结果
      */
-    public static <T> Page<T> pageByCursor(BaseMapper<T> mapper,
-            QueryWrapper<T> queryWrapper,
-            int pageSize,
-            String cursorField,
-            Object cursorValue) {
+    public static <T> Page<T> queryByCursor(BaseMapper<T> mapper,
+                                            QueryWrapper<T> queryWrapper,
+                                            int pageSize,
+                                            String cursorField,
+                                            Object cursorValue) {
         // 如果游标值不为空，则添加大于条件
         if (cursorValue != null) {
             queryWrapper.gt(cursorField, cursorValue);
@@ -53,7 +55,7 @@ public class MysqlCursorPageUtils {
 
         // 设置下一次查询的游标值
         if (!records.isEmpty()) {
-            Object lastCursorValue = getCursorValue(records, cursorField);
+            Object lastCursorValue = CommonUtils.getCursorValue(records, cursorField);
             page.setTotal(records.size());
             page.setSearchCount(false);
             // 添加升序排序信息
@@ -63,30 +65,13 @@ public class MysqlCursorPageUtils {
         return page;
     }
 
-    /**
-     * 获取列表中最后一条记录的游标字段值
-     *
-     * @param records     数据记录列表
-     * @param cursorField 游标字段名称
-     * @param <T>         实体类型
-     * @return 游标值
-     */
-    private static <T> Object getCursorValue(List<T> records, String cursorField) {
-        try {
-            if (!records.isEmpty()) {
-                T lastRecord = records.get(records.size() - 1);
-                return lastRecord.getClass().getDeclaredField(cursorField).get(lastRecord);
-            }
-        } catch (Exception e) {
-            log.error("Error retrieving cursor value: {}", e.getMessage());
-        }
-        return null;
+    public static <T> Page<T> queryByIdCursor(BaseMapper<T> mapper, QueryWrapper<T> queryWrapper, int pageSize, Long cursorValue) {
+        return queryByCursor(mapper, queryWrapper, pageSize, Constant.MYSQL_PRIMARY_KEY, cursorValue);
     }
 
     public static void main(String[] args) {
         int pageSize = 10;
-        String cursorField = "id";
-        Object cursorValue = null;
+        Long cursorValue = null;
 
         // 创建查询条件
         QueryWrapper<A> queryWrapper = new QueryWrapper<>();
@@ -95,7 +80,7 @@ public class MysqlCursorPageUtils {
 
         // 游标分页查询
         do {
-            Page<A> page = MysqlCursorPageUtils.pageByCursor(aMapper, queryWrapper, pageSize, cursorField, cursorValue);
+            Page<A> page = MybatisPlusUtils.queryByIdCursor(aMapper, queryWrapper, pageSize, cursorValue);
 
             // 处理数据
             page.getRecords().forEach(a -> System.out.println("A: " + a));

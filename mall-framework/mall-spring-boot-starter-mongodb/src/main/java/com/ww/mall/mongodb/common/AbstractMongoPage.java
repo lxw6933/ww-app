@@ -1,10 +1,10 @@
 package com.ww.mall.mongodb.common;
 
-import cn.hutool.core.collection.ListUtil;
 import cn.hutool.extra.spring.SpringUtil;
 import com.ww.mall.common.common.MallPage;
 import com.ww.mall.common.common.MallPageResult;
 import com.ww.mall.common.constant.Constant;
+import com.ww.mall.mongodb.utils.MongoUtils;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -99,7 +99,7 @@ public abstract class AbstractMongoPage<T> extends MallPage {
         // build the aggregation pipeline
         Aggregation aggregation = Aggregation.newAggregation(facetOperation).withOptions(options);
         // query aggregation data result
-        AggregationResults<Document> results = mongoTemplate.aggregate(aggregation, getCollectionName(tClass), Document.class);
+        AggregationResults<Document> results = mongoTemplate.aggregate(aggregation, MongoUtils.getCollectionName(tClass), Document.class);
         Document resultDoc = results.getUniqueMappedResult();
         if (resultDoc == null) {
             return new FacetResult<>(Collections.emptyList(), 0);
@@ -131,15 +131,6 @@ public abstract class AbstractMongoPage<T> extends MallPage {
         FacetResult<T> facetResult = this.buildPageQueryResult(mongoTemplate, tClass);
         // return
         return new MallPageResult<>(this.getPageNum(), this.getPageSize(), facetResult.getTotalCount(), facetResult.getDataList());
-    }
-
-    public static <T> String getCollectionName(Class<T> tClass) {
-        if (tClass.isAnnotationPresent(org.springframework.data.mongodb.core.mapping.Document.class)) {
-            org.springframework.data.mongodb.core.mapping.Document document = tClass.getAnnotation(org.springframework.data.mongodb.core.mapping.Document.class);
-            return document.collection();
-        } else {
-            throw new IllegalArgumentException("Class " + tClass.getName() + " does not have @Document annotation.");
-        }
     }
 
     @Getter
