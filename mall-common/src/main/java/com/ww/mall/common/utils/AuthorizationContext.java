@@ -13,6 +13,7 @@ import org.springframework.web.context.request.RequestContextHolder;
 import org.springframework.web.context.request.ServletRequestAttributes;
 
 import javax.servlet.http.HttpServletRequest;
+import java.util.List;
 
 /**
  * @author ww
@@ -26,6 +27,7 @@ public class AuthorizationContext {
 
     private static final TransmittableThreadLocal<MallClientUser> CLIENT_USER_THREAD_LOCAL = new TransmittableThreadLocal<>();
     private static final TransmittableThreadLocal<MallAdminUser> ADMIN_USER_THREAD_LOCAL = new TransmittableThreadLocal<>();
+    private static final TransmittableThreadLocal<List<String>> ADMIN_USER_SENSITIVE_PERMS_THREAD_LOCAL = new TransmittableThreadLocal<>();
 
     public static MallClientUser getClientUser() {
         return getClientUser(true);
@@ -76,9 +78,14 @@ public class AuthorizationContext {
         return JSON.parseObject(tokenInfo, tClass);
     }
 
+    public static List<String> getAdminUserSensitivePerms() {
+        return ADMIN_USER_SENSITIVE_PERMS_THREAD_LOCAL.get();
+    }
+
     public static void clear() {
         CLIENT_USER_THREAD_LOCAL.remove();
         ADMIN_USER_THREAD_LOCAL.remove();
+        ADMIN_USER_SENSITIVE_PERMS_THREAD_LOCAL.remove();
     }
 
 }

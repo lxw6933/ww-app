@@ -22,4 +22,6 @@ import java.lang.annotation.Target;
 public @interface Sensitive {
 
     SensitiveDataType type();
+
+    String permission();
 }
