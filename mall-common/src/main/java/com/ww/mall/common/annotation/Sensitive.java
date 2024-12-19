@@ -23,5 +23,5 @@ public @interface Sensitive {
 
     SensitiveDataType type();
 
-    String permission();
+    String permission() default "";
 }
