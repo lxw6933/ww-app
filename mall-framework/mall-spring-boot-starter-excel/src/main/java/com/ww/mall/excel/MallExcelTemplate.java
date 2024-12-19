@@ -144,7 +144,7 @@ public class MallExcelTemplate {
     }
 
     private void exportErrorReturn(HttpServletResponse response, Exception e) throws IOException {
-        log.error("导出excel失败！！！导出失败原因：[{}]", e.getMessage());
+        log.error("导出excel失败！！！导出失败原因：", e);
         // 重置response
         response.reset();
         response.setContentType("application/json");

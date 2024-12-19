@@ -18,6 +18,7 @@ import com.ww.mall.excel.vo.ExcelResultVO;
 import com.ww.mall.ip.Ip2regionSearcher;
 import com.ww.mall.ip.common.IpInfo;
 import com.ww.mall.member.member.bo.MemberLoginBO;
+import com.ww.mall.mongodb.utils.MongoUtils;
 import com.ww.mall.rabbitmq.MallPublisher;
 import com.ww.mall.rabbitmq.exchange.ExchangeConstant;
 import com.ww.mall.rabbitmq.queue.QueueConstant;
@@ -371,6 +372,36 @@ public class DemoServiceImpl implements DemoService {
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
+        // https://github.com/alibaba/easyexcel/issues/2358
+    }
+
+    @Override
+    @ExcelExportTimer
+    public void exportCursorDate(HttpServletResponse response) {
+        Object cursorValue = null;  // 初始游标值
+        int pageSize = 50000;       // 每页大小
+
+        Map<String, List<Demo>> map = new HashMap<>();
+        while (true) {
+            List<Demo> resultList = MongoUtils.pageByIdCursor(mongoTemplate, new Query(), cursorValue, pageSize, Demo.class);
+
+            System.out.println("cursor size: " + resultList.size());
+            map.put("demo" + cursorValue, resultList);
+            // 更新游标值
+            if (!resultList.isEmpty()) {
+                cursorValue = resultList.get(resultList.size() - 1).getId();
+                System.out.println(cursorValue);
+            } else {
+                break;
+            }
+        }
+//        Set<String> fieldNames = new HashSet<>();
+//        fieldNames.add("empNo");
+//        try {
+//            mallExcelTemplate.exportExcelOfManySheet(response, map, "demo", fieldNames, false);
+//        } catch (IOException e) {
+//            throw new RuntimeException(e);
+//        }
         // https://github.com/alibaba/easyexcel/issues/2358
     }
 

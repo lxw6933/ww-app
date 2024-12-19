@@ -151,6 +151,11 @@ public class DemoController {
         demoService.exportDate(response);
     }
 
+    @PostMapping("/exportCursorDate")
+    public void exportCursorDate(HttpServletResponse response) {
+        demoService.exportCursorDate(response);
+    }
+
     @GetMapping("/ip")
     public String ip2region(HttpServletRequest request) {
         return demoService.ip2region(request);
