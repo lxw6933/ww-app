@@ -2,6 +2,8 @@ package com.ww.mall.mongodb.utils;
 
 import com.ww.mall.common.constant.Constant;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.StringUtils;
+import org.bson.types.ObjectId;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.mongodb.core.MongoTemplate;
 import org.springframework.data.mongodb.core.mapping.Document;
@@ -21,7 +23,7 @@ public class MongoUtils {
     public static <T> String getCollectionName(Class<T> tClass) {
         if (tClass.isAnnotationPresent(Document.class)) {
             Document document = tClass.getAnnotation(Document.class);
-            return document.collection();
+            return StringUtils.isBlank(document.value()) ? document.collection() : document.value();
         } else {
             throw new IllegalArgumentException("Class " + tClass.getName() + " does not have @Document annotation.");
         }
@@ -47,7 +49,7 @@ public class MongoUtils {
                                             Class<T> entityClass) {
         // 如果游标值不为空，则添加大于条件
         if (cursorValue != null) {
-            query.addCriteria(Criteria.where(cursorField).gt(cursorValue));
+            query.addCriteria(Criteria.where(cursorField).gt(new ObjectId(cursorValue.toString())));
         }
 
         // 添加排序和分页
