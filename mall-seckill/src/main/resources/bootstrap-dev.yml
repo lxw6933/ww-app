@@ -46,7 +46,7 @@ spring:
 #      password: admin
 #      authentication-database: admin
   rabbitmq:
-    addresses: localhost:5672
+    addresses: 172.28.174.84:5672
     virtual-host: /
     # 设置发送端到exchange确认回调
     publisher-confirm-type: correlated
