@@ -47,6 +47,8 @@ public interface DemoService {
 
     void exportCursorDate(HttpServletResponse response);
 
+    String exportMinio();
+
     String ip2region(HttpServletRequest request);
 
     void testBeanCopy(int type);

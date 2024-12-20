@@ -1,21 +1,28 @@
 package com.ww.mall.excel;
 
+import cn.hutool.core.io.FileUtil;
+import cn.hutool.core.lang.UUID;
+import com.alibaba.excel.EasyExcel;
 import com.alibaba.excel.EasyExcelFactory;
 import com.alibaba.excel.ExcelWriter;
 import com.alibaba.excel.write.builder.ExcelWriterBuilder;
 import com.alibaba.excel.write.builder.ExcelWriterSheetBuilder;
 import com.alibaba.excel.write.metadata.WriteSheet;
 import com.alibaba.fastjson.JSON;
+import com.ww.mall.common.exception.ApiException;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.CollectionUtils;
 import org.springframework.stereotype.Component;
 import org.springframework.web.multipart.MultipartFile;
 
 import javax.servlet.http.HttpServletResponse;
+import java.io.File;
 import java.io.IOException;
+import java.io.OutputStream;
 import java.io.UnsupportedEncodingException;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -29,6 +36,22 @@ import java.util.Set;
 @Slf4j
 @Component
 public class MallExcelTemplate {
+
+    public <T> File exportExcelOfOneSheetToTempFile(List<T> data, Class<T> pojoClass, String sheetName, String fileSuffix) {
+        File tempFile;
+        try {
+            // 创建临时文件路径
+            tempFile = FileUtil.createTempFile(UUID.randomUUID().toString(), fileSuffix, true);
+            // 导出数据到临时文件
+            try (OutputStream os = Files.newOutputStream(tempFile.toPath())) {
+                EasyExcel.write(os, pojoClass).sheet(sheetName).doWrite(data);
+            }
+            return tempFile;
+        } catch (IOException e) {
+            log.error("生成临时文件失败: ", e);
+            throw new ApiException("导出文件失败");
+        }
+    }
 
     /**
      * 下载excel（导出所有属性字段在一个sheet里）

@@ -106,7 +106,7 @@ public class MallMinioTemplate {
             }
             return items;
         } catch (Exception e) {
-            log.error("查询桶内所有文件异常：{}", e.getMessage());
+            log.error("查询桶内所有文件异常：", e);
             return null;
         }
     }
@@ -156,7 +156,7 @@ public class MallMinioTemplate {
                             .extraQueryParams(queryParams)
                             .build());
         } catch (Exception e) {
-            log.error("获取文件expiry url异常：{}", e.getMessage());
+            log.error("获取文件expiry url异常：", e);
             return null;
         }
     }
@@ -171,7 +171,7 @@ public class MallMinioTemplate {
                             .extraQueryParams(queryParams)
                             .build());
         } catch (Exception e) {
-            log.error("获取文件url异常：{}", e.getMessage());
+            log.error("获取文件url异常：", e);
             return null;
         }
     }
@@ -184,6 +184,7 @@ public class MallMinioTemplate {
      * @param fileName   文件名称
      */
     public boolean upload(MultipartFile file, String bucketName, String fileName) {
+        createBucket(bucketName);
         try (InputStream inputStream = file.getInputStream()) {
             minioClient.putObject(PutObjectArgs.builder()
                     .bucket(bucketName)
@@ -193,12 +194,13 @@ public class MallMinioTemplate {
                     .build());
             return true;
         } catch (Exception e) {
-            log.error("上传文件异常：{}", e.getMessage());
+            log.error("上传文件异常：", e);
             return false;
         }
     }
 
     public boolean upload(byte[] fileBytes, String bucketName, String fileName) {
+        createBucket(bucketName);
         try (ByteArrayInputStream byteArrayInputStream = new ByteArrayInputStream(fileBytes)) {
             minioClient.putObject(PutObjectArgs.builder()
                     .bucket(bucketName)
@@ -208,12 +210,13 @@ public class MallMinioTemplate {
                     .build());
             return true;
         } catch (Exception e) {
-            log.error("上传文件异常：{}", e.getMessage());
+            log.error("上传文件异常：", e);
             return false;
         }
     }
 
     public boolean upload(InputStream fileInputStream, String bucketName, String fileName) {
+        createBucket(bucketName);
         try {
             minioClient.putObject(PutObjectArgs.builder()
                     .bucket(bucketName)
@@ -222,7 +225,7 @@ public class MallMinioTemplate {
                     .build());
             return true;
         } catch (Exception e) {
-            log.error("上传文件异常：{}", e.getMessage());
+            log.error("上传文件异常：", e);
             return false;
         }
     }
@@ -277,7 +280,7 @@ public class MallMinioTemplate {
                     .build());
             return true;
         } catch (Exception e) {
-            log.error("文件删除异常：{}", e.getMessage());
+            log.error("文件删除异常：", e);
             return false;
         }
     }
@@ -303,7 +306,7 @@ public class MallMinioTemplate {
             headers.setAccessControlExposeHeaders(Collections.singletonList("*"));
             responseEntity = new ResponseEntity<>(bytes, headers, HttpStatus.OK);
         } catch (Exception e) {
-            log.error("下载文件异常：{}", e.getMessage());
+            log.error("下载文件异常：", e);
         }
         return responseEntity;
     }

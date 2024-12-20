@@ -156,6 +156,11 @@ public class DemoController {
         demoService.exportCursorDate(response);
     }
 
+    @PostMapping("/exportMinio")
+    public String exportMinio() {
+        return demoService.exportMinio();
+    }
+
     @GetMapping("/ip")
     public String ip2region(HttpServletRequest request) {
         return demoService.ip2region(request);

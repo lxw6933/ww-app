@@ -3,6 +3,7 @@ package com.ww.mall.seckill.service.impl;
 import cn.hutool.core.bean.BeanUtil;
 import cn.hutool.core.date.DatePattern;
 import cn.hutool.core.date.DateUtil;
+import cn.hutool.core.io.FileUtil;
 import com.alibaba.fastjson.JSON;
 import com.github.houbb.sensitive.word.bs.SensitiveWordBs;
 import com.ww.mall.common.constant.Constant;
@@ -18,6 +19,7 @@ import com.ww.mall.excel.vo.ExcelResultVO;
 import com.ww.mall.ip.Ip2regionSearcher;
 import com.ww.mall.ip.common.IpInfo;
 import com.ww.mall.member.member.bo.MemberLoginBO;
+import com.ww.mall.minio.MallMinioTemplate;
 import com.ww.mall.mongodb.utils.MongoUtils;
 import com.ww.mall.rabbitmq.MallPublisher;
 import com.ww.mall.rabbitmq.exchange.ExchangeConstant;
@@ -54,6 +56,8 @@ import javax.annotation.PostConstruct;
 import javax.annotation.Resource;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
+import java.io.File;
+import java.io.FileInputStream;
 import java.io.IOException;
 import java.util.*;
 import java.util.concurrent.*;
@@ -403,6 +407,35 @@ public class DemoServiceImpl implements DemoService {
 //            throw new RuntimeException(e);
 //        }
         // https://github.com/alibaba/easyexcel/issues/2358
+    }
+
+    @Resource
+    private MallMinioTemplate mallMinioTemplate;
+
+    @Override
+    public String exportMinio() {
+        List<Demo> resultList = MongoUtils.pageByIdCursor(mongoTemplate, new Query(), null, 10000, Demo.class);
+        File tempFile = mallExcelTemplate.exportExcelOfOneSheetToTempFile(resultList, Demo.class, "excel-export-minio-sheet01", ".xlsx");
+        try (FileInputStream inputStream = new FileInputStream(tempFile)) {
+            boolean upload = mallMinioTemplate.upload(inputStream, "excel-export-minio", tempFile.getName());
+            if (!upload) {
+                throw new ApiException("上传文件到minio失败");
+            }
+            return mallMinioTemplate.getFileUrl("excel-export-minio", tempFile.getName(), null);
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        } catch (Exception e) {
+            throw new RuntimeException("导出文件异常", e);
+        } finally {
+             if (tempFile != null) {
+                try {
+                    boolean del = FileUtil.del(tempFile);
+                    log.info("临时文件[{}]删除是否成功[{}]", tempFile.getPath(), del);
+                } catch (Exception e) {
+                    log.warn("删除临时文件[{}]删除失败: ", tempFile.getPath(), e);
+                }
+            }
+        }
     }
 
     @Resource
