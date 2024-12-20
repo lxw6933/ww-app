@@ -45,9 +45,9 @@ public interface DemoService {
 
     void exportDate(HttpServletResponse response);
 
-    void exportCursorDate(HttpServletResponse response);
+    String exportCursorDate(HttpServletResponse response);
 
-    <T> String exportMinio(List<T> dataList, Class<T> cls, String bucketName);
+    <T> String exportMinio(List<T> dataList, String bucketName);
 
     String multiFileExportToZip();
 

@@ -383,24 +383,25 @@ public class DemoServiceImpl implements DemoService {
 
     @Override
     @ExcelExportTimer
-    public void exportCursorDate(HttpServletResponse response) {
+    public String exportCursorDate(HttpServletResponse response) {
         Object cursorValue = null;  // 初始游标值
-        int pageSize = 50000;       // 每页大小
-
-        Map<String, List<Demo>> map = new HashMap<>();
-        while (true) {
-            List<Demo> resultList = MongoUtils.pageByIdCursor(mongoTemplate, new Query(), cursorValue, pageSize, Demo.class);
-
-            System.out.println("cursor size: " + resultList.size());
-            map.put("demo" + cursorValue, resultList);
-            // 更新游标值
-            if (!resultList.isEmpty()) {
-                cursorValue = resultList.get(resultList.size() - 1).getId();
-                System.out.println(cursorValue);
-            } else {
-                break;
-            }
-        }
+        int pageSize = 50;       // 每页大小
+        List<Demo> resultList = MongoUtils.pageByIdCursor(mongoTemplate, new Query(), cursorValue, pageSize, Demo.class);
+        return exportMinio(resultList, "test-excel-export");
+//        Map<String, List<Demo>> map = new HashMap<>();
+//        while (true) {
+//            List<Demo> resultList = MongoUtils.pageByIdCursor(mongoTemplate, new Query(), cursorValue, pageSize, Demo.class);
+//
+//            System.out.println("cursor size: " + resultList.size());
+//            map.put("demo" + cursorValue, resultList);
+//            // 更新游标值
+//            if (!resultList.isEmpty()) {
+//                cursorValue = resultList.get(resultList.size() - 1).getId();
+//                System.out.println(cursorValue);
+//            } else {
+//                break;
+//            }
+//        }
 //        Set<String> fieldNames = new HashSet<>();
 //        fieldNames.add("empNo");
 //        try {
@@ -415,8 +416,8 @@ public class DemoServiceImpl implements DemoService {
     private MallMinioTemplate mallMinioTemplate;
 
     @Override
-    public <T> String exportMinio(List<T> dataList, Class<T> cls, String bucketName) {
-        File tempFile = mallExcelTemplate.exportExcelOfOneSheetToTempFile(dataList, cls);
+    public <T> String exportMinio(List<T> dataList, String bucketName) {
+        File tempFile = mallExcelTemplate.exportExcelOfOneSheetToTempFile(dataList);
         try (FileInputStream inputStream = new FileInputStream(tempFile)) {
             boolean upload = mallMinioTemplate.upload(inputStream, bucketName, tempFile.getName());
             if (!upload) {
@@ -469,7 +470,7 @@ public class DemoServiceImpl implements DemoService {
                     List<Demo> resultList = mongoTemplate.aggregate(aggregation, "demo", Demo.class).getMappedResults();
 
                     // 生成临时文件
-                    File file = mallExcelTemplate.exportExcelOfOneSheetToTempFile(resultList, Demo.class, sheetIndex + StrUtil.EMPTY, UUID.randomUUID() + StrUtil.UNDERLINE + sheetIndex);
+                    File file = mallExcelTemplate.exportExcelOfOneSheetToTempFile(resultList, sheetIndex + StrUtil.EMPTY, UUID.randomUUID() + StrUtil.UNDERLINE + sheetIndex);
                     exportFiles.add(file);
                     countDownLatch.countDown();
                 }, executorService).exceptionally(e -> {

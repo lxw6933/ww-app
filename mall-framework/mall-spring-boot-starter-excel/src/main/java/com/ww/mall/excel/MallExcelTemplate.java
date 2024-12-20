@@ -5,9 +5,11 @@ import cn.hutool.core.lang.UUID;
 import com.alibaba.excel.EasyExcel;
 import com.alibaba.excel.EasyExcelFactory;
 import com.alibaba.excel.ExcelWriter;
+import com.alibaba.excel.converters.longconverter.LongStringConverter;
 import com.alibaba.excel.write.builder.ExcelWriterBuilder;
 import com.alibaba.excel.write.builder.ExcelWriterSheetBuilder;
 import com.alibaba.excel.write.metadata.WriteSheet;
+import com.alibaba.excel.write.style.column.LongestMatchColumnWidthStyleStrategy;
 import com.alibaba.fastjson.JSON;
 import com.ww.mall.common.exception.ApiException;
 import lombok.extern.slf4j.Slf4j;
@@ -39,18 +41,28 @@ public class MallExcelTemplate {
 
     private static final String DEFAULT_SUFFIX = ".xlsx";
 
-    public <T> File exportExcelOfOneSheetToTempFile(List<T> data, Class<T> pojoClass) {
-        return this.exportExcelOfOneSheetToTempFile(data, pojoClass, null, DEFAULT_SUFFIX);
+    private <T> ExcelWriterBuilder baseBuilder(OutputStream os, Class<T> pojoClass) {
+        return EasyExcel.write(os, pojoClass)
+                // 不要自动关闭流
+//                .autoCloseStream(false)
+                // 基于column长度，自动适配。最大 255 宽度
+                .registerWriteHandler(new LongestMatchColumnWidthStyleStrategy())
+                // 避免Long类型丢失精度
+                .registerConverter(new LongStringConverter());
     }
 
-    public <T> File exportExcelOfOneSheetToTempFile(List<T> data, Class<T> pojoClass, String sheetName, String fileSuffix) {
+    public <T> File exportExcelOfOneSheetToTempFile(List<T> data) {
+        return this.exportExcelOfOneSheetToTempFile(data,null, DEFAULT_SUFFIX);
+    }
+
+    public <T> File exportExcelOfOneSheetToTempFile(List<T> data, String sheetName, String fileSuffix) {
         File tempFile;
         try {
             // 创建临时文件路径
             tempFile = FileUtil.createTempFile(UUID.randomUUID().toString(), fileSuffix, true);
             // 导出数据到临时文件
             try (OutputStream os = Files.newOutputStream(tempFile.toPath())) {
-                EasyExcel.write(os, pojoClass).sheet(sheetName).doWrite(data);
+                baseBuilder(os, data.get(0).getClass()).sheet(sheetName).doWrite(data);
             }
             return tempFile;
         } catch (IOException e) {
@@ -64,12 +76,11 @@ public class MallExcelTemplate {
      *
      * @param response  web响应
      * @param data      导出数据集合
-     * @param pojoClass 数据类型
      * @param fileName  导出excel文件名称
      * @param sheetName sheet名称
      */
-    public <T> void exportExcelOfOneSheet(HttpServletResponse response, List<T> data, Class<T> pojoClass, String fileName, String sheetName) throws IOException {
-        exportExcelOfOneSheet(response, data, pojoClass, fileName, sheetName, null, true);
+    public <T> void exportExcelOfOneSheet(HttpServletResponse response, List<T> data, String fileName, String sheetName) throws IOException {
+        exportExcelOfOneSheet(response, data, fileName, sheetName, null, true);
     }
 
     /**
@@ -77,16 +88,15 @@ public class MallExcelTemplate {
      *
      * @param response   web响应
      * @param data       导出数据集合
-     * @param pojoClass  数据类型
      * @param fileName   导出excel文件名称
      * @param sheetName  sheet名称
      * @param filedNames 字段名称集合
      * @param include    true: 只显示filedNames false：不包含filedNames
      */
-    public <T> void exportExcelOfOneSheet(HttpServletResponse response, List<T> data, Class<T> pojoClass, String fileName, String sheetName, Set<String> filedNames, boolean include) throws IOException {
+    public <T> void exportExcelOfOneSheet(HttpServletResponse response, List<T> data, String fileName, String sheetName, Set<String> filedNames, boolean include) throws IOException {
         try {
             setResponse(response, fileName);
-            ExcelWriterBuilder excelWriterBuilder = EasyExcelFactory.write(response.getOutputStream(), pojoClass);
+            ExcelWriterBuilder excelWriterBuilder = baseBuilder(response.getOutputStream(), data.get(0).getClass());
             if (CollectionUtils.isNotEmpty(filedNames)) {
                 if (include) {
                     excelWriterBuilder.includeColumnFieldNames(filedNames);
@@ -113,7 +123,7 @@ public class MallExcelTemplate {
 
     public <T> void exportExcelOfManySheet(HttpServletResponse response, Map<String, List<T>> data, String fileName, Set<String> filedNames, boolean include) throws IOException {
         setResponse(response, fileName);
-        try (ExcelWriter excelWriter = EasyExcelFactory.write(response.getOutputStream()).build()) {
+        try (ExcelWriter excelWriter = baseBuilder(response.getOutputStream(), data.values().iterator().next().get(0).getClass()).build()) {
             int i = 0;
             for (Map.Entry<String, List<T>> entry : data.entrySet()) {
                 // 每次都要创建 writeSheet 这里注意必须指定sheetNo 而且sheetName必须不一样。

@@ -152,8 +152,8 @@ public class DemoController {
     }
 
     @PostMapping("/exportCursorDate")
-    public void exportCursorDate(HttpServletResponse response) {
-        demoService.exportCursorDate(response);
+    public String exportCursorDate(HttpServletResponse response) {
+        return demoService.exportCursorDate(response);
     }
 
     @PostMapping("/exportMinio")
