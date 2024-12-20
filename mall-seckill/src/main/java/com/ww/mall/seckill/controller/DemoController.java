@@ -158,7 +158,7 @@ public class DemoController {
 
     @PostMapping("/exportMinio")
     public String exportMinio() {
-        return demoService.exportMinio();
+        return demoService.multiFileExportToZip();
     }
 
     @GetMapping("/ip")

@@ -4,6 +4,8 @@ import cn.hutool.core.bean.BeanUtil;
 import cn.hutool.core.date.DatePattern;
 import cn.hutool.core.date.DateUtil;
 import cn.hutool.core.io.FileUtil;
+import cn.hutool.core.util.StrUtil;
+import cn.hutool.core.util.ZipUtil;
 import com.alibaba.fastjson.JSON;
 import com.github.houbb.sensitive.word.bs.SensitiveWordBs;
 import com.ww.mall.common.constant.Constant;
@@ -413,15 +415,14 @@ public class DemoServiceImpl implements DemoService {
     private MallMinioTemplate mallMinioTemplate;
 
     @Override
-    public String exportMinio() {
-        List<Demo> resultList = MongoUtils.pageByIdCursor(mongoTemplate, new Query(), null, 10000, Demo.class);
-        File tempFile = mallExcelTemplate.exportExcelOfOneSheetToTempFile(resultList, Demo.class, "excel-export-minio-sheet01", ".xlsx");
+    public <T> String exportMinio(List<T> dataList, Class<T> cls, String bucketName) {
+        File tempFile = mallExcelTemplate.exportExcelOfOneSheetToTempFile(dataList, cls);
         try (FileInputStream inputStream = new FileInputStream(tempFile)) {
-            boolean upload = mallMinioTemplate.upload(inputStream, "excel-export-minio", tempFile.getName());
+            boolean upload = mallMinioTemplate.upload(inputStream, bucketName, tempFile.getName());
             if (!upload) {
                 throw new ApiException("上传文件到minio失败");
             }
-            return mallMinioTemplate.getFileUrl("excel-export-minio", tempFile.getName(), null);
+            return mallMinioTemplate.getFileUrl(bucketName, tempFile.getName(), null);
         } catch (IOException e) {
             throw new RuntimeException(e);
         } catch (Exception e) {
@@ -434,6 +435,72 @@ public class DemoServiceImpl implements DemoService {
                 } catch (Exception e) {
                     log.warn("删除临时文件[{}]删除失败: ", tempFile.getPath(), e);
                 }
+            }
+        }
+    }
+
+    @Override
+    @ExcelExportTimer
+    public String multiFileExportToZip() {
+        String bucket = "multi-file-export";
+        long totalCount = 1000000;
+        int sheetNumber = 20;
+        int sheetPageNumber = (int) (totalCount / sheetNumber);
+        // 每个sheet都开启一个线程去写入
+        ExecutorService executorService = Executors.newFixedThreadPool(sheetNumber);
+        CountDownLatch countDownLatch = new CountDownLatch(sheetNumber);
+
+        List<File> exportFiles = new ArrayList<>();
+        File targetFile = null;
+        try {
+            for (int i = 0; i < sheetNumber; i++) {
+                int sheetIndex = i;
+                CompletableFuture.runAsync(() -> {
+                    PageRequest pageRequest = PageRequest.of(sheetIndex, sheetPageNumber);
+                    // 构建聚合管道
+                    List<AggregationOperation> pipeline = Arrays.asList(
+                            // 跳过前面的记录
+                            Aggregation.skip((long) pageRequest.getPageNumber() * pageRequest.getPageSize()),
+                            // 限制返回的记录数
+                            Aggregation.limit(pageRequest.getPageSize())
+                    );
+                    // 执行聚合操作
+                    Aggregation aggregation = Aggregation.newAggregation(pipeline);
+                    List<Demo> resultList = mongoTemplate.aggregate(aggregation, "demo", Demo.class).getMappedResults();
+
+                    // 生成临时文件
+                    File file = mallExcelTemplate.exportExcelOfOneSheetToTempFile(resultList, Demo.class, sheetIndex + StrUtil.EMPTY, UUID.randomUUID() + StrUtil.UNDERLINE + sheetIndex);
+                    exportFiles.add(file);
+                    countDownLatch.countDown();
+                }, executorService).exceptionally(e -> {
+                    countDownLatch.countDown();
+                    throw new RuntimeException("导出临时文件异常", e);
+                });
+            }
+            countDownLatch.await();
+            targetFile = ZipUtil.zip(FileUtil.createTempFile(UUID.randomUUID().toString(), ".zip", true), true, exportFiles.toArray(new File[]{}));
+            log.info("压缩文件完成");
+            try (FileInputStream inputStream = new FileInputStream(targetFile)) {
+                boolean upload = mallMinioTemplate.upload(inputStream, bucket, targetFile.getName());
+                log.info("导出压缩文件上传minio结果[{}]", upload);
+                if (!upload) {
+                    throw new ApiException("上传压缩文件失败");
+                }
+            }
+            log.info("上传压缩文件至Minio完成");
+            return mallMinioTemplate.getFileUrl(bucket, targetFile.getName(), null);
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        } finally {
+            if (targetFile != null) {
+                boolean del = FileUtil.del(targetFile);
+                log.info("导出临时压缩文件删除结果[{}]", del);
+            }
+            if (!exportFiles.isEmpty()) {
+                exportFiles.forEach(res -> {
+                    boolean del = FileUtil.del(res);
+                    log.info("导出临时文件删除结果[{}]", del);
+                });
             }
         }
     }

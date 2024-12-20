@@ -47,7 +47,9 @@ public interface DemoService {
 
     void exportCursorDate(HttpServletResponse response);
 
-    String exportMinio();
+    <T> String exportMinio(List<T> dataList, Class<T> cls, String bucketName);
+
+    String multiFileExportToZip();
 
     String ip2region(HttpServletRequest request);
 

@@ -37,6 +37,12 @@ import java.util.Set;
 @Component
 public class MallExcelTemplate {
 
+    private static final String DEFAULT_SUFFIX = ".xlsx";
+
+    public <T> File exportExcelOfOneSheetToTempFile(List<T> data, Class<T> pojoClass) {
+        return this.exportExcelOfOneSheetToTempFile(data, pojoClass, null, DEFAULT_SUFFIX);
+    }
+
     public <T> File exportExcelOfOneSheetToTempFile(List<T> data, Class<T> pojoClass, String sheetName, String fileSuffix) {
         File tempFile;
         try {
