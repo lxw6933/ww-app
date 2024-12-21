@@ -1,5 +1,6 @@
 package com.ww.mall.admin.service;
 
+import com.ww.mall.admin.component.key.AuthorityRedisKeyBuilder;
 import lombok.Getter;
 import org.springframework.stereotype.Component;
 
@@ -13,6 +14,9 @@ import javax.annotation.Resource;
 @Getter
 @Component
 public class ServiceFactory {
+
+    @Resource
+    private AuthorityRedisKeyBuilder authorityRedisKeyBuilder;
 
     @Resource
     private SysUserService sysUserService;

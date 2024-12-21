@@ -28,15 +28,14 @@ import com.ww.mall.admin.view.vo.CurrentSysUserInfoVO;
 import com.ww.mall.admin.view.vo.SysMenuTreeNodeVO;
 import com.ww.mall.admin.view.vo.SysRoleSelectVO;
 import com.ww.mall.admin.view.vo.SysUserVO;
+import com.ww.mall.common.common.IdForm;
 import com.ww.mall.common.common.MallAdminUser;
 import com.ww.mall.common.common.MallPageResult;
 import com.ww.mall.common.constant.Constant;
-import com.ww.mall.common.constant.RedisKeyConstant;
 import com.ww.mall.common.exception.ApiException;
 import com.ww.mall.common.utils.AuthorizationContext;
 import com.ww.mall.mybatis.common.MallPlusPageResult;
 import com.ww.mall.redis.annotation.MallResubmission;
-import com.ww.mall.common.common.IdForm;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.CollectionUtils;
 import org.springframework.beans.BeanUtils;
@@ -294,7 +293,7 @@ public class SysUserServiceImpl extends BaseService<SysUserMapper, SysUser> impl
         // 加载用户权限到redis
         List<SysMenu> userMenuList = this.queryUserOfMenu(sysUserVO.getId());
         List<String> userAuthorities = convertList(userMenuList, SysMenu::getPermission);
-        redisTemplate.opsForValue().set(RedisKeyConstant.USER_AUTHORITIES + sysUserVO.getId(), userAuthorities);
+        redisTemplate.opsForValue().set(sf.getAuthorityRedisKeyBuilder().buildUserAuthoritiesKey(sysUserVO.getId()), userAuthorities);
         sysUserDTO.setAuthorities(userAuthorities);
         return sysUserDTO;
     }
@@ -332,7 +331,7 @@ public class SysUserServiceImpl extends BaseService<SysUserMapper, SysUser> impl
         // 加载用户权限到redis
         List<SysMenu> userMenuList = this.queryUserOfMenu(sysUser.getId());
         List<String> userAuthorities = convertList(userMenuList, SysMenu::getPermission);
-        redisTemplate.opsForValue().set(RedisKeyConstant.USER_AUTHORITIES + sysUser.getId(), JSON.toJSONString(userAuthorities));
+        redisTemplate.opsForValue().set(sf.getAuthorityRedisKeyBuilder().buildUserAuthoritiesKey(sysUser.getId()), JSON.toJSONString(userAuthorities));
         SysUserDTO sysUserDTO = BeanUtil.toBean(sysUser, SysUserDTO.class);
         sysUserDTO.setAuthorities(userAuthorities);
         return sysUserDTO;

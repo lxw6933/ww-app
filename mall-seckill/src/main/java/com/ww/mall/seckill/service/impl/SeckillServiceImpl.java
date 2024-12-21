@@ -9,7 +9,6 @@ import com.github.benmanes.caffeine.cache.Cache;
 import com.github.benmanes.caffeine.cache.Caffeine;
 import com.wf.captcha.ArithmeticCaptcha;
 import com.ww.mall.common.common.MallClientUser;
-import com.ww.mall.common.constant.RedisKeyConstant;
 import com.ww.mall.common.exception.ApiException;
 import com.ww.mall.common.utils.AuthorizationContext;
 import com.ww.mall.common.utils.IdUtil;
@@ -18,6 +17,7 @@ import com.ww.mall.rabbitmq.exchange.ExchangeConstant;
 import com.ww.mall.rabbitmq.routekey.RouteKeyConstant;
 import com.ww.mall.redis.component.StockRedisComponent;
 import com.ww.mall.redis.key.StockRedisKeyBuilder;
+import com.ww.mall.seckill.component.key.SeckillRedisKeyBuilder;
 import com.ww.mall.seckill.service.SeckillService;
 import com.ww.mall.seckill.view.bo.SecKillOrderReqBO;
 import lombok.extern.slf4j.Slf4j;
@@ -54,6 +54,9 @@ public class SeckillServiceImpl implements SeckillService {
     @Resource
     private StockRedisKeyBuilder stockRedisKeyBuilder;
 
+    @Resource
+    private SeckillRedisKeyBuilder seckillRedisKeyBuilder;
+
     @PostConstruct
     public void init() {
         // 初始化活动数据信息
@@ -80,7 +83,7 @@ public class SeckillServiceImpl implements SeckillService {
 //        ChineseGifCaptcha captcha = new ChineseGifCaptcha(130, 48);
         captcha.setLen(3);
         // 验证码结果存入redis
-        String key = getSecKillVerCodeKey(clientUser, activityCode, skuId);
+        String key = seckillRedisKeyBuilder.buildSeckillCodeKey(activityCode, clientUser.getId(), skuId);
         redisTemplate.opsForValue().set(key, captcha.text(), 1, TimeUnit.MINUTES);
         // 输出图片流
         try {
@@ -95,7 +98,7 @@ public class SeckillServiceImpl implements SeckillService {
         // 获取用户
         MallClientUser clientUser = AuthorizationContext.getClientUser();
 
-        String key = getSecKillPathKey(clientUser, activityCode, skuId);
+        String key = seckillRedisKeyBuilder.buildSeckillPathKey(activityCode, clientUser.getId(), skuId);
         String userSecKillPath = redisTemplate.opsForValue().get(key);
         if (StringUtils.isNotEmpty(userSecKillPath)) {
             return userSecKillPath;
@@ -135,23 +138,15 @@ public class SeckillServiceImpl implements SeckillService {
         if (StringUtils.isEmpty(userSecKillPath)) {
             return false;
         }
-        String key = getSecKillPathKey(clientUser, activityCode, skuId);
+        String key = seckillRedisKeyBuilder.buildSeckillPathKey(activityCode, clientUser.getId(), skuId);
         String userSecKillPathCache = redisTemplate.opsForValue().get(key);
         return userSecKillPath.equals(userSecKillPathCache);
     }
 
     private boolean checkSecKillVerCode(MallClientUser clientUser, String activityCode, Long skuId, String userVerCode) {
-        String key = getSecKillVerCodeKey(clientUser, activityCode, skuId);
+        String key = seckillRedisKeyBuilder.buildSeckillCodeKey(activityCode, clientUser.getId(), skuId);
         String verCodeCache = redisTemplate.opsForValue().get(key);
         return userVerCode.equals(verCodeCache);
-    }
-
-    private String getSecKillPathKey(MallClientUser clientUser, String activityCode, Long skuId) {
-        return RedisKeyConstant.SECKILL_PATH_PREFIX + clientUser.getId() + RedisKeyConstant.SPLIT_KEY + activityCode + RedisKeyConstant.SPLIT_KEY + skuId;
-    }
-
-    private String getSecKillVerCodeKey(MallClientUser clientUser, String activityCode, Long skuId) {
-        return RedisKeyConstant.SECKILL_CODE_PREFIX + clientUser.getId() + RedisKeyConstant.SPLIT_KEY + activityCode + RedisKeyConstant.SPLIT_KEY + skuId;
     }
 
 }

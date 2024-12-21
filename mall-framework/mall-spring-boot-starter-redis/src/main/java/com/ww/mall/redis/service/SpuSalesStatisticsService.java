@@ -1,15 +1,13 @@
 package com.ww.mall.redis.service;
 
-import com.ww.mall.common.constant.Constant;
-import com.ww.mall.common.constant.RedisKeyConstant;
+import com.ww.mall.redis.key.SpuRedisKeyBuilder;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.commons.lang3.StringUtils;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnBean;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Component;
 
 import javax.annotation.PreDestroy;
+import javax.annotation.Resource;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Executors;
@@ -30,8 +28,11 @@ public class SpuSalesStatisticsService {
     private final static Map<String, LongAdder> salesMap = new ConcurrentHashMap<>();
     private final ScheduledExecutorService salesDataSyncScheduler = Executors.newScheduledThreadPool(1);
 
-    @Autowired
+    @Resource
     private RedisTemplate<String, String> redisTemplate;
+
+    @Resource
+    private SpuRedisKeyBuilder spuRedisKeyBuilder;
 
     public SpuSalesStatisticsService() {
         log.info("销量统计业务初始化...");
@@ -49,7 +50,7 @@ public class SpuSalesStatisticsService {
      * @param num 数量【新增：正数  减少：负数】
      */
     public void recordSpuSale(Long spuId, Long channelId, int num) {
-        salesMap.computeIfAbsent(StringUtils.joinWith(Constant.SPLIT, channelId, spuId), k -> new LongAdder()).add(num);
+        salesMap.computeIfAbsent(spuRedisKeyBuilder.buildSpuMapKey(channelId, spuId), k -> new LongAdder()).add(num);
     }
 
     /**
@@ -59,7 +60,7 @@ public class SpuSalesStatisticsService {
         salesMap.forEach((key, longAddr) -> {
             if (longAddr.sum() > 0) {
                 log.info("[{}]销量数据同步到redis, 销量[{}]", key, longAddr.sum());
-                redisTemplate.opsForValue().increment(RedisKeyConstant.SPU_SALE_DATA + key, longAddr.sumThenReset());
+                redisTemplate.opsForValue().increment(spuRedisKeyBuilder.buildSpuSaleKey(key), longAddr.sumThenReset());
             }
         });
     }

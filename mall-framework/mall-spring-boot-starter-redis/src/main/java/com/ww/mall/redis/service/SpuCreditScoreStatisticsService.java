@@ -1,18 +1,18 @@
 package com.ww.mall.redis.service;
 
 import cn.hutool.core.collection.CollectionUtil;
-import com.ww.mall.common.constant.RedisKeyConstant;
+import com.ww.mall.redis.key.RedisKeyBuilder;
+import com.ww.mall.redis.key.SpuRedisKeyBuilder;
 import com.ww.mall.redis.vo.SpuScore;
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.commons.lang3.StringUtils;
 import org.redisson.api.RMap;
 import org.redisson.api.RedissonClient;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnBean;
 import org.springframework.stereotype.Component;
 
 import javax.annotation.PreDestroy;
+import javax.annotation.Resource;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
@@ -33,8 +33,11 @@ public class SpuCreditScoreStatisticsService {
     private final static Map<String, CreditScore> creditScoreMap = new ConcurrentHashMap<>();
     private final ScheduledExecutorService commentDataSyncScheduler = Executors.newScheduledThreadPool(1);
 
-    @Autowired
+    @Resource
     private RedissonClient redissonClient;
+
+    @Resource
+    private SpuRedisKeyBuilder spuRedisKeyBuilder;
 
     public SpuCreditScoreStatisticsService() {
         log.info("评价信用统计业务初始化...");
@@ -56,7 +59,7 @@ public class SpuCreditScoreStatisticsService {
             return;
         }
         log.info("本地缓存渠道[{}]商品[{}]评分信用分[{}]", channelId, spuId, score);
-        String spuKey = StringUtils.joinWith(RedisKeyConstant.SPLIT_KEY, channelId, spuId);
+        String spuKey = spuRedisKeyBuilder.buildSpuMapKey(channelId, spuId);
         creditScoreMap.computeIfAbsent(spuKey, k -> new CreditScore()).addScore(score);
     }
 
@@ -69,10 +72,10 @@ public class SpuCreditScoreStatisticsService {
             int localCount = (int) dataList.get(0);
             if (localCount > 0) {
                 double localTotalScore = (double) dataList.get(1);
-                String[] split = localKey.split(RedisKeyConstant.SPLIT_KEY);
+                String[] split = localKey.split(RedisKeyBuilder.SPLIT_ITEM);
                 String channelIdStr = split[0];
                 String spuIdStr = split[1];
-                String hashKey = RedisKeyConstant.SPU_CREDIT_SCORE + channelIdStr;
+                String hashKey = spuRedisKeyBuilder.buildChannelSpuCreditScoreHashKey(Long.valueOf(channelIdStr));
                 log.info("[{}]评价信用数据同步到redis, 评价信用[{}]【{}】", localKey, localCount, localTotalScore);
                 try {
                     RMap<String, SpuScore> spuScoreMap = redissonClient.getMap(hashKey);

@@ -1,11 +1,10 @@
 package com.ww.mall.redis;
 
-import com.ww.mall.common.constant.RedisKeyConstant;
+import com.ww.mall.redis.key.GeoRedisKeyBuilder;
 import com.ww.mall.redis.vo.ActivityHashStockInitBO;
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.geo.Distance;
 import org.springframework.data.geo.GeoResult;
 import org.springframework.data.geo.GeoResults;
@@ -15,6 +14,7 @@ import org.springframework.data.redis.core.*;
 import org.springframework.data.redis.domain.geo.GeoReference;
 import org.springframework.stereotype.Component;
 
+import javax.annotation.Resource;
 import java.util.*;
 
 import static com.ww.mall.common.utils.CollectionUtils.convertGroupListMap;
@@ -28,8 +28,11 @@ public class MallRedisTemplate {
      */
     private static final Integer DEFAULT_BATCH_NUM = 1000;
 
-    @Autowired
+    @Resource
     private RedisTemplate<String, String> redisTemplate;
+
+    @Resource
+    private GeoRedisKeyBuilder geoRedisKeyBuilder;
 
     /**
      * 批量根据正则表达式扫描匹配的key
@@ -136,7 +139,7 @@ public class MallRedisTemplate {
     public void loadGEOData(List<Location> locations) {
         Map<Long, List<Location>> locationMap = convertGroupListMap(locations, Location::getTypeId);
         locationMap.forEach((typeId, typeIdLocations) -> {
-            String geoKey = RedisKeyConstant.GEO_KEY + typeId;
+            String geoKey = geoRedisKeyBuilder.buildGeoKey(typeId);
             List<RedisGeoCommands.GeoLocation<String>> locationGEOList = new ArrayList<>();
             typeIdLocations.forEach(res -> locationGEOList.add(new RedisGeoCommands.GeoLocation<>(res.getTypeId().toString(), new Point(res.getX(), res.getY()))));
             redisTemplate.opsForGeo().add(geoKey, locationGEOList);
@@ -160,7 +163,7 @@ public class MallRedisTemplate {
         }
         int from = (page - 1) * size;
         int end = page * size;
-        String geoKey = RedisKeyConstant.GEO_KEY + typeId;
+        String geoKey = geoRedisKeyBuilder.buildGeoKey(typeId);
         GeoResults<RedisGeoCommands.GeoLocation<String>> results = redisTemplate.opsForGeo().search(geoKey,
                 GeoReference.fromCoordinate(x, y),
                 new Distance(nearDistance),

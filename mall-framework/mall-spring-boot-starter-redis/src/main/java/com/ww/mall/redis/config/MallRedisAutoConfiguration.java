@@ -3,17 +3,19 @@ package com.ww.mall.redis.config;
 import com.fasterxml.jackson.annotation.JsonAutoDetect;
 import com.fasterxml.jackson.annotation.PropertyAccessor;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.ww.mall.redis.component.StockRedisComponent;
-import com.ww.mall.redis.key.StockRedisKeyBuilder;
-import com.ww.mall.redis.listener.MallRedisListener;
 import com.ww.mall.redis.MallRedisTemplate;
 import com.ww.mall.redis.aspect.MallRateLimitAspect;
 import com.ww.mall.redis.aspect.MallResubmissionAspect;
+import com.ww.mall.redis.component.StockRedisComponent;
 import com.ww.mall.redis.handler.RedisStockHandlerManager;
+import com.ww.mall.redis.key.GeoRedisKeyBuilder;
+import com.ww.mall.redis.key.SpuRedisKeyBuilder;
+import com.ww.mall.redis.key.StockRedisKeyBuilder;
+import com.ww.mall.redis.listener.MallRedisListener;
+import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.BeansException;
 import org.springframework.boot.autoconfigure.cache.CacheProperties;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnBean;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.cache.annotation.EnableCaching;
@@ -23,7 +25,6 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.data.redis.cache.RedisCacheConfiguration;
 import org.springframework.data.redis.connection.RedisConnectionFactory;
 import org.springframework.data.redis.core.RedisTemplate;
-import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.data.redis.listener.RedisMessageListenerContainer;
 import org.springframework.data.redis.serializer.Jackson2JsonRedisSerializer;
 import org.springframework.data.redis.serializer.RedisSerializationContext;
@@ -141,12 +142,22 @@ public class MallRedisAutoConfiguration implements ApplicationContextAware {
     }
 
     @Bean
+    public GeoRedisKeyBuilder geoRedisKeyBuilder() {
+        return new GeoRedisKeyBuilder();
+    }
+
+    @Bean
+    public SpuRedisKeyBuilder spuRedisKeyBuilder() {
+        return new SpuRedisKeyBuilder();
+    }
+
+    @Bean
     public RedisStockHandlerManager redisStockHandlerManager() {
         return new RedisStockHandlerManager();
     }
 
     @Override
-    public void setApplicationContext(ApplicationContext applicationContext) throws BeansException {
+    public void setApplicationContext(@NonNull ApplicationContext applicationContext) throws BeansException {
         this.applicationContext = applicationContext;
     }
 

@@ -4,13 +4,13 @@ import cn.hutool.core.util.RandomUtil;
 import cn.hutool.jwt.JWTUtil;
 import com.ww.mall.admin.user.bo.SysUserLoginBO;
 import com.ww.mall.admin.user.dto.SysUserDTO;
+import com.ww.mall.auth.component.key.SmsCodeRedisKeyBuilder;
 import com.ww.mall.auth.entity.LoginLog;
 import com.ww.mall.auth.serivce.BaseService;
 import com.ww.mall.auth.serivce.LoginService;
 import com.ww.mall.auth.view.vo.LoginResultVO;
 import com.ww.mall.common.common.Result;
 import com.ww.mall.common.constant.Constant;
-import com.ww.mall.common.constant.RedisKeyConstant;
 import com.ww.mall.common.enums.GlobalResCodeConstants;
 import com.ww.mall.common.enums.LoginType;
 import com.ww.mall.common.enums.UserType;
@@ -22,6 +22,7 @@ import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.time.DateUtils;
 import org.springframework.stereotype.Service;
 
+import javax.annotation.Resource;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
@@ -35,6 +36,9 @@ import java.util.concurrent.TimeUnit;
 @Slf4j
 @Service
 public class LoginServiceImpl extends BaseService implements LoginService {
+
+    @Resource
+    private SmsCodeRedisKeyBuilder smsCodeRedisKeyBuilder;
 
     @Override
     public LoginResultVO adminLogin(SysUserLoginBO sysUserLoginBO) {
@@ -53,7 +57,7 @@ public class LoginServiceImpl extends BaseService implements LoginService {
     @Override
     public LoginResultVO clientMobileLogin(MemberLoginBO memberLoginBO) {
         String mobile = memberLoginBO.getMobile();
-        String mobileCode = redisTemplate.opsForValue().get(RedisKeyConstant.SMS_CODE_CACHE_PREFIX + mobile);
+        String mobileCode = redisTemplate.opsForValue().get(smsCodeRedisKeyBuilder.buildSmsCodeKey(mobile));
         mobileCode = StringUtils.isNotEmpty(mobileCode) ? mobileCode.split(Constant.UNDER_LINE_SPLIT)[0] : null;
         if (memberLoginBO.getVerifyCode().equals(mobileCode)) {
             // 获取登录用户信息
@@ -78,7 +82,7 @@ public class LoginServiceImpl extends BaseService implements LoginService {
 
     @Override
     public void sendCode(String mobile) {
-        String mobileCode = redisTemplate.opsForValue().get(RedisKeyConstant.SMS_CODE_CACHE_PREFIX + mobile);
+        String mobileCode = redisTemplate.opsForValue().get(smsCodeRedisKeyBuilder.buildSmsCodeKey(mobile));
         if (StringUtils.isNotEmpty(mobileCode)) {
             // 判断是否超过验证码过期时间
             long mobileCodeTime = Long.parseLong(mobileCode.split(Constant.UNDER_LINE_SPLIT)[1]);
@@ -93,7 +97,7 @@ public class LoginServiceImpl extends BaseService implements LoginService {
         String newCodeTime =  newCode + Constant.UNDER_LINE_SPLIT + System.currentTimeMillis();
         // 验证码三分钟内有效
         redisTemplate.opsForValue()
-                .set(RedisKeyConstant.SMS_CODE_CACHE_PREFIX + mobile, newCodeTime, 3, TimeUnit.MINUTES);
+                .set(smsCodeRedisKeyBuilder.buildSmsCodeKey(mobile), newCodeTime, 3, TimeUnit.MINUTES);
         // 发送验证码短信
         Result<Boolean> sendSmsResult = smsApi.sendSms(mobile, newCode);
         sendSmsResult.checkError();
