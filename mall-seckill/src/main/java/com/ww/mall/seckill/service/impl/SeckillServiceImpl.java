@@ -11,21 +11,22 @@ import com.wf.captcha.ArithmeticCaptcha;
 import com.ww.mall.common.common.MallClientUser;
 import com.ww.mall.common.constant.RedisKeyConstant;
 import com.ww.mall.common.exception.ApiException;
+import com.ww.mall.common.utils.AuthorizationContext;
 import com.ww.mall.common.utils.IdUtil;
 import com.ww.mall.rabbitmq.MallPublisher;
 import com.ww.mall.rabbitmq.exchange.ExchangeConstant;
 import com.ww.mall.rabbitmq.routekey.RouteKeyConstant;
-import com.ww.mall.redis.MallRedisTemplate;
+import com.ww.mall.redis.component.StockRedisComponent;
+import com.ww.mall.redis.key.StockRedisKeyBuilder;
 import com.ww.mall.seckill.service.SeckillService;
 import com.ww.mall.seckill.view.bo.SecKillOrderReqBO;
-import com.ww.mall.common.utils.AuthorizationContext;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
 
 import javax.annotation.PostConstruct;
+import javax.annotation.Resource;
 import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
@@ -41,18 +42,20 @@ import java.util.concurrent.TimeUnit;
 @Service
 public class SeckillServiceImpl implements SeckillService {
 
-    @Autowired
-    private MallRedisTemplate mallRedisTemplate;
-
-    @Autowired
+    @Resource
     private MallPublisher mallPublisher;
 
-    @Autowired
+    @Resource
     private RedisTemplate<String, String> redisTemplate;
+
+    @Resource
+    private StockRedisComponent stockRedisComponent;
+
+    @Resource
+    private StockRedisKeyBuilder stockRedisKeyBuilder;
 
     @PostConstruct
     public void init() {
-        mallRedisTemplate.initStock("skuStock", 1000);
         // 初始化活动数据信息
         activityCache.get("activityRedisCacheKey", key -> redisTemplate.opsForValue().get(key));
     }
@@ -115,7 +118,8 @@ public class SeckillServiceImpl implements SeckillService {
         // 本地缓存存储活动信息，校验活动信息
 
         // 本地缓存商品信息，校验商品信息
-        if (mallRedisTemplate.decrementStock("skuStock", 1)) {
+        String skuStockRedisKey = stockRedisKeyBuilder.buildStockKey(reqBO.getActivityCode(), null, null, reqBO.getSkuId());
+        if (stockRedisComponent.decrementStock(skuStockRedisKey, 1)) {
             String orderDate = DateUtil.format(new Date(), DatePattern.NORM_DATETIME_PATTERN);
             String orderNo = IdUtil.generatorIdStr();
             mallPublisher.publishMsg(ExchangeConstant.MALL_OMS_EXCHANGE, RouteKeyConstant.MALL_CREATE_ORDER_KEY, orderNo);

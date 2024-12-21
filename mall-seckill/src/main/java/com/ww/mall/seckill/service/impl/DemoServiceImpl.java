@@ -28,6 +28,7 @@ import com.ww.mall.rabbitmq.exchange.ExchangeConstant;
 import com.ww.mall.rabbitmq.queue.QueueConstant;
 import com.ww.mall.rabbitmq.routekey.RouteKeyConstant;
 import com.ww.mall.redis.MallRedisTemplate;
+import com.ww.mall.redis.component.StockRedisComponent;
 import com.ww.mall.seckill.component.CodeGeneratorService;
 import com.ww.mall.seckill.component.IssueCodeService;
 import com.ww.mall.seckill.entity.A;
@@ -78,6 +79,9 @@ public class DemoServiceImpl implements DemoService {
     private MallRedisTemplate mallRedisTemplate;
 
     @Resource
+    private StockRedisComponent stockRedisComponent;
+
+    @Resource
     private SmsApi smsApi;
 
     @Resource
@@ -101,9 +105,9 @@ public class DemoServiceImpl implements DemoService {
     public void init() {
         RBloomFilter<Long> bloomFilter = redissonClient.getBloomFilter("testBoomFiler");
         bloomFilter.tryInit(1000000, 0.03);
-        mallRedisTemplate.initHashStock("skuHashStock", 10);
-        mallRedisTemplate.setHashStock("stock1", 10, 2, 2);
-        mallRedisTemplate.setHashStock("stock2", 10, 7, 2);
+        stockRedisComponent.initHashStock("skuHashStock", 10);
+        stockRedisComponent.setHashStock("stock1", 10, 2, 2);
+        stockRedisComponent.setHashStock("stock2", 10, 7, 2);
 
         List<String> codes = new ArrayList<>();
         for (int i = 0; i < 100000; i++) {
@@ -157,15 +161,15 @@ public class DemoServiceImpl implements DemoService {
         map.put("stock2", 1);
         switch (type) {
             case 1:
-                return mallRedisTemplate.a("skuStock", 1);
+                return stockRedisComponent.a("skuStock", 1);
             case 2:
-                return mallRedisTemplate.decrementStock("skuStock", 1);
+                return stockRedisComponent.decrementStock("skuStock", 1);
             case 3:
-                return mallRedisTemplate.multipleLockHashStock(map);
+                return stockRedisComponent.multipleLockHashStock(map);
             case 4:
-                return mallRedisTemplate.batchUseHashStock(map);
+                return stockRedisComponent.batchUseHashStock(map);
             case 5:
-                return mallRedisTemplate.batchRollbackHashStock(map);
+                return stockRedisComponent.batchRollbackHashStock(map);
             default:
                 throw new ApiException("不支持类型");
         }
@@ -176,7 +180,7 @@ public class DemoServiceImpl implements DemoService {
         switch (type) {
             case 1:
                 // 锁定库存
-                if (mallRedisTemplate.lockHashStock("skuHashStock", 1)) {
+                if (stockRedisComponent.lockHashStock("skuHashStock", 1)) {
                     log.info("扣减成功");
                     return true;
                 } else {
@@ -184,7 +188,7 @@ public class DemoServiceImpl implements DemoService {
                 }
             case 2:
                 // 使用库存
-                if (mallRedisTemplate.useHashStock("skuHashStock", 1)) {
+                if (stockRedisComponent.useHashStock("skuHashStock", 1)) {
                     log.info("使用成功");
                     return true;
                 } else {
@@ -192,7 +196,7 @@ public class DemoServiceImpl implements DemoService {
                 }
             case 3:
                 // 回滚库存
-                if (mallRedisTemplate.rollbackHashStock("skuHashStock", 1)) {
+                if (stockRedisComponent.rollbackHashStock("skuHashStock", 1)) {
                     log.info("回滚成功");
                     return true;
                 } else {
@@ -205,7 +209,7 @@ public class DemoServiceImpl implements DemoService {
 
     @Override
     public boolean secKillOrder() {
-        if (mallRedisTemplate.decrementStock("skuStock", 1)) {
+        if (stockRedisComponent.decrementStock("skuStock", 1)) {
             String orderDate = DateUtil.format(new Date(), DatePattern.NORM_DATETIME_PATTERN);
             String orderNo = IdUtil.generatorIdStr();
             int totalOrderNum = num.incrementAndGet();
