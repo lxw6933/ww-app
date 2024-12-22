@@ -191,7 +191,7 @@ public class MoneyUtils {
             throw new IllegalArgumentException("总金额不能小于" + minTotalAmount);
         }
 
-        List<BigDecimal> redPackages = new ArrayList<>();
+        List<BigDecimal> redPackets = new ArrayList<>();
 
         // 可分配的金额
         BigDecimal allocateAmount = totalAmount;
@@ -216,15 +216,15 @@ public class MoneyUtils {
                 }
             }
 
-            redPackages.add(redPackageAllocateAmount);
+            redPackets.add(redPackageAllocateAmount);
             // 重新计算可分配金额
             allocateAmount = allocateAmount.subtract(redPackageAllocateAmount);
             // 重新计算可分配的平均金额
             avgAllocateAmount = allocateAmount.divide(BigDecimal.valueOf(totalCount - i + 1), 2, RoundingMode.DOWN);
         }
         // 最后一个红包，剩余金额全部分配给最后一个红包
-        redPackages.add(allocateAmount);
-        return redPackages;
+        redPackets.add(allocateAmount);
+        return redPackets;
     }
 
     public static List<BigDecimal> splitRedPacket(BigDecimal totalAmount, int totalCount) {
