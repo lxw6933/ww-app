@@ -212,7 +212,6 @@ public class MoneyUtils {
                 if (maxAllocateAmount.compareTo(minAmount) != 0) {
                     // 在[0, maxAllocateAmount]随机生成红包分配金额
                     double randomDouble = RandomUtil.randomDouble(minAmount.doubleValue(), maxAllocateAmount.doubleValue());
-                    System.out.println(randomDouble);
                     redPackageAllocateAmount = BigDecimal.valueOf(randomDouble).setScale(2, RoundingMode.DOWN);
                 }
             }
