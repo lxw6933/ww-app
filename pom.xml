@@ -13,7 +13,6 @@
 
     <modules>
         <module>mall-dependencies</module>
-        <module>mall-common</module>
         <module>mall-coupon</module>
         <module>mall-auth</module>
         <module>mall-third-server</module>
