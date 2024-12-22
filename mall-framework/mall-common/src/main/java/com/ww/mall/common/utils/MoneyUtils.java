@@ -194,34 +194,37 @@ public class MoneyUtils {
         List<BigDecimal> redPackages = new ArrayList<>();
 
         // 可分配的金额
-        BigDecimal allocateAmount = totalAmount.subtract(minTotalAmount);
+        BigDecimal allocateAmount = totalAmount;
 
         // 第一步：计算每个红包可分配金额的均值
-        BigDecimal avgAllocateAmount = allocateAmount.divide(BigDecimal.valueOf(totalCount), 2, RoundingMode.HALF_UP);
+        BigDecimal avgAllocateAmount = allocateAmount.divide(BigDecimal.valueOf(totalCount), 2, RoundingMode.DOWN);
         // 第二步：分配剩余金额
         BigDecimal range = BigDecimal.valueOf(2);
         for (int i = 0; i < totalCount - 1; i++) {
-            boolean isAllocate = allocateAmount.compareTo(BigDecimal.ZERO) > 0;
+//            boolean isAllocate = allocateAmount.compareTo(BigDecimal.ZERO) > 0;
+            boolean isAllocate = avgAllocateAmount.compareTo(minAmount) > 0;
             // 红包分配金额
-            BigDecimal redPackageAllocateAmount = BigDecimal.ZERO;
+            BigDecimal redPackageAllocateAmount = minAmount;
             // 存在可分配金额则进行随机取值，不存在则minAmount
             if (isAllocate) {
                 // 红包可分配最大金额
-                BigDecimal maxAllocateAmount = avgAllocateAmount.multiply(range);
-                if (maxAllocateAmount.compareTo(BigDecimal.ZERO) != 0) {
+                BigDecimal maxAllocateAmount = avgAllocateAmount.subtract(minAmount).multiply(range).add(minAmount);
+                if (maxAllocateAmount.compareTo(minAmount) != 0) {
                     // 在[0, maxAllocateAmount]随机生成红包分配金额
-                    redPackageAllocateAmount = RandomUtil.randomBigDecimal(BigDecimal.ZERO, maxAllocateAmount).setScale(2, RoundingMode.HALF_UP);
+                    double randomDouble = RandomUtil.randomDouble(minAmount.doubleValue(), maxAllocateAmount.doubleValue());
+                    System.out.println(randomDouble);
+                    redPackageAllocateAmount = BigDecimal.valueOf(randomDouble).setScale(2, RoundingMode.DOWN);
                 }
             }
 
-            redPackages.add(redPackageAllocateAmount.add(minAmount));
+            redPackages.add(redPackageAllocateAmount);
             // 重新计算可分配金额
             allocateAmount = allocateAmount.subtract(redPackageAllocateAmount);
             // 重新计算可分配的平均金额
-            avgAllocateAmount = allocateAmount.divide(BigDecimal.valueOf(totalCount - i + 1), 2, RoundingMode.HALF_UP);
+            avgAllocateAmount = allocateAmount.divide(BigDecimal.valueOf(totalCount - i + 1), 2, RoundingMode.DOWN);
         }
         // 最后一个红包，剩余金额全部分配给最后一个红包
-        redPackages.add(minAmount.add(allocateAmount));
+        redPackages.add(allocateAmount);
         return redPackages;
     }
 
@@ -238,12 +241,12 @@ public class MoneyUtils {
     }
 
     private static void testSplitRedPacket() {
-//        BigDecimal min = new BigDecimal("1");
-        BigDecimal min = DEFAULT_MIN_AMOUNT;
+        BigDecimal min = new BigDecimal("5");
+//        BigDecimal min = DEFAULT_MIN_AMOUNT;
 //        BigDecimal totalAmount = new BigDecimal("4.02");
-        BigDecimal totalAmount = new BigDecimal("100");
+        BigDecimal totalAmount = new BigDecimal("100.25");
 //        int count = 10;
-        int count = 20;
+        int count = 2;
 
 //        List<BigDecimal> redPackets = splitRedPacket(totalAmount, count);
         List<BigDecimal> redPackets = splitRedPacket(totalAmount, min, count);
