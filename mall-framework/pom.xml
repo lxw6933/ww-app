@@ -8,6 +8,7 @@
         <version>${revision}</version>
     </parent>
     <modules>
+        <module>mall-spring-boot-starter-web</module>
         <module>mall-spring-boot-starter-es</module>
         <module>mall-spring-boot-starter-excel</module>
         <module>mall-spring-boot-starter-influxdb</module>

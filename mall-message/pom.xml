@@ -13,8 +13,8 @@
 
     <dependencies>
         <dependency>
-            <groupId>com.ww</groupId>
-            <artifactId>mall-web</artifactId>
+            <groupId>com.ww.mall</groupId>
+            <artifactId>mall-spring-boot-starter-web</artifactId>
             <version>${revision}</version>
         </dependency>
         <!-- redis starter -->

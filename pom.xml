@@ -28,8 +28,6 @@
 <!--        <module>mall-code-generator</module>-->
         <!-- 后台管理模块 -->
         <module>mall-admin-manage</module>
-        <!-- 公共模块 -->
-        <module>mall-web</module>
         <!-- 服务监控 -->
         <module>mall-monitor</module>
         <!-- 秒杀服务 -->
