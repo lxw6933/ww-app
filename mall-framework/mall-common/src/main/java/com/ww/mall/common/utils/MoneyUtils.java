@@ -2,6 +2,8 @@ package com.ww.mall.common.utils;
 
 import cn.hutool.core.math.Money;
 import cn.hutool.core.util.NumberUtil;
+import cn.hutool.core.util.RandomUtil;
+import com.ww.mall.common.exception.ApiException;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -176,41 +178,90 @@ public class MoneyUtils {
      * @param totalCount  拆分的红包个数
      * @return 拆分后的红包金额列表
      */
-    public static List<BigDecimal> splitRedPacket(BigDecimal totalAmount, int totalCount) {
-        List<BigDecimal> result = new ArrayList<>();
-        Random random = new Random();
-        BigDecimal remainingAmount = totalAmount;
-
-        for (int i = 0; i < totalCount - 1; i++) {
-            // 最大可分配金额为剩余金额的两倍均值
-            BigDecimal maxAmount = remainingAmount.divide(BigDecimal.valueOf(totalCount - i), 2, RoundingMode.HALF_UP)
-                    .multiply(BigDecimal.valueOf(2));
-            // 生成一个随机金额（0.01到最大金额之间）
-            BigDecimal randomAmount = BigDecimal.valueOf(random.nextDouble()).multiply(maxAmount)
-                    .setScale(2, RoundingMode.HALF_UP);
-            // 保证每个红包至少0.01元
-            if (randomAmount.compareTo(DEFAULT_MIN_AMOUNT) < 0) {
-                randomAmount = DEFAULT_MIN_AMOUNT;
-            }
-            result.add(randomAmount);
-            remainingAmount = remainingAmount.subtract(randomAmount);
+    public static List<BigDecimal> splitRedPacket(BigDecimal totalAmount, BigDecimal minAmount, int totalCount) {
+        // 校验输入数据是否合法
+        if (totalAmount.compareTo(BigDecimal.ZERO) <= 0 || totalCount <= 0) {
+            throw new IllegalArgumentException("总金额和数量必须大于0");
         }
-        // 剩余的金额给最后一个红包
-        result.add(remainingAmount.setScale(2, RoundingMode.HALF_UP));
-        return result;
+        if (minAmount.compareTo(DEFAULT_MIN_AMOUNT) < 0) {
+            throw new IllegalArgumentException("最低金额不能小于" + DEFAULT_MIN_AMOUNT);
+        }
+        BigDecimal minTotalAmount = minAmount.multiply(BigDecimal.valueOf(totalCount));
+        if (totalAmount.compareTo(minTotalAmount) < 0) {
+            throw new IllegalArgumentException("总金额不能小于" + minTotalAmount);
+        }
+
+        List<BigDecimal> redPackages = new ArrayList<>();
+
+        // 可分配的金额
+        BigDecimal allocateAmount = totalAmount.subtract(minTotalAmount);
+
+        // 第一步：计算每个红包可分配金额的均值
+        BigDecimal avgAllocateAmount = allocateAmount.divide(BigDecimal.valueOf(totalCount), 2, RoundingMode.HALF_UP);
+        // 第二步：分配剩余金额
+        BigDecimal range = BigDecimal.valueOf(2);
+        for (int i = 0; i < totalCount - 1; i++) {
+            boolean isAllocate = allocateAmount.compareTo(BigDecimal.ZERO) > 0;
+            // 红包分配金额
+            BigDecimal redPackageAllocateAmount = BigDecimal.ZERO;
+            // 存在可分配金额则进行随机取值，不存在则minAmount
+            if (isAllocate) {
+                // 红包可分配最大金额
+                BigDecimal maxAllocateAmount = avgAllocateAmount.multiply(range);
+                if (maxAllocateAmount.compareTo(BigDecimal.ZERO) != 0) {
+                    // 在[0, maxAllocateAmount]随机生成红包分配金额
+                    redPackageAllocateAmount = RandomUtil.randomBigDecimal(BigDecimal.ZERO, maxAllocateAmount).setScale(2, RoundingMode.HALF_UP);
+                }
+            }
+
+            redPackages.add(redPackageAllocateAmount.add(minAmount));
+            // 重新计算可分配金额
+            allocateAmount = allocateAmount.subtract(redPackageAllocateAmount);
+            // 重新计算可分配的平均金额
+            avgAllocateAmount = allocateAmount.divide(BigDecimal.valueOf(totalCount - i + 1), 2, RoundingMode.HALF_UP);
+        }
+        // 最后一个红包，剩余金额全部分配给最后一个红包
+        redPackages.add(minAmount.add(allocateAmount));
+        return redPackages;
+    }
+
+    public static List<BigDecimal> splitRedPacket(BigDecimal totalAmount, int totalCount) {
+        return splitRedPacket(totalAmount, DEFAULT_MIN_AMOUNT, totalCount);
     }
 
     public static void main(String[] args) {
 //        testAllocateDiscount();
-        testSplitRedPacket();
+//        testSplitRedPacket();
+        for (int i = 0; i < 1; i++) {
+            testSplitRedPacket();
+        }
     }
 
     private static void testSplitRedPacket() {
-        BigDecimal totalAmount = new BigDecimal("100.00");
-        int count = 100;
+//        BigDecimal min = new BigDecimal("1");
+        BigDecimal min = DEFAULT_MIN_AMOUNT;
+//        BigDecimal totalAmount = new BigDecimal("4.02");
+        BigDecimal totalAmount = new BigDecimal("100");
+//        int count = 10;
+        int count = 20;
 
-        List<BigDecimal> redPackets = splitRedPacket(totalAmount, count);
-        redPackets.forEach(amount -> System.out.println("红包金额: " + amount));
+//        List<BigDecimal> redPackets = splitRedPacket(totalAmount, count);
+        List<BigDecimal> redPackets = splitRedPacket(totalAmount, min, count);
+        BigDecimal issueTotalAmount = BigDecimal.ZERO;
+        for (BigDecimal redPacket : redPackets) {
+            if (redPacket.compareTo(BigDecimal.ZERO) <= 0) {
+                throw new ApiException("红包金额异常" + redPacket);
+            }
+            if (redPacket.compareTo(min) < 0) {
+                throw new ApiException("红包金额低于最小金额" + min);
+            }
+            System.out.println("红包金额: " + redPacket);
+            issueTotalAmount = issueTotalAmount.add(redPacket);
+        }
+        if (totalAmount.compareTo(issueTotalAmount) != 0) {
+            throw new ApiException("超发金额");
+        }
+//        System.out.println("发放红包总金额" + issueTotalAmount);
     }
 
     private static void testAllocateDiscount() {
