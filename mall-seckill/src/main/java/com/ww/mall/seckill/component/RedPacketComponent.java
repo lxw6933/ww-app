@@ -3,6 +3,7 @@ package com.ww.mall.seckill.component;
 import cn.hutool.core.collection.ListUtil;
 import com.ww.mall.common.exception.ApiException;
 import com.ww.mall.common.utils.MoneyUtils;
+import com.ww.mall.seckill.component.key.SeckillRedisKeyBuilder;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.redis.core.BoundListOperations;
 import org.springframework.data.redis.core.StringRedisTemplate;
@@ -25,11 +26,15 @@ public class RedPacketComponent {
     @Resource
     private StringRedisTemplate stringRedisTemplate;
 
+    @Resource
+    private SeckillRedisKeyBuilder seckillRedisKeyBuilder;
+
     private static final int RED_PACKET_BATCH_NUM = 100;
 
     public boolean generateRedPacket(String redPacketCode, BigDecimal totalAmount, int totalCount) {
         try {
-            BoundListOperations<String, String> redPacketOperation = stringRedisTemplate.opsForList().getOperations().boundListOps(redPacketCode);
+            String redPacketKey = seckillRedisKeyBuilder.buildRedPacketKey(redPacketCode);
+            BoundListOperations<String, String> redPacketOperation = stringRedisTemplate.opsForList().getOperations().boundListOps(redPacketKey);
             List<BigDecimal> redPacketAmounts = MoneyUtils.splitRedPacket(totalAmount, totalCount);
             ListUtil.page(redPacketAmounts, RED_PACKET_BATCH_NUM, targetList -> {
                 String[] dataArr = targetList.stream().map(BigDecimal::toString)
@@ -43,6 +48,11 @@ public class RedPacketComponent {
             log.error("生成红包异常", e);
             throw new ApiException("生成红包失败");
         }
+    }
+
+    public String receiveRedPacket(String redPacketCode) {
+        String redPacketKey = seckillRedisKeyBuilder.buildRedPacketKey(redPacketCode);
+        return stringRedisTemplate.opsForList().rightPop(redPacketKey);
     }
 
 }

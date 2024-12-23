@@ -32,7 +32,6 @@ import com.ww.mall.redis.component.StockRedisComponent;
 import com.ww.mall.seckill.component.CodeGeneratorService;
 import com.ww.mall.seckill.component.IssueCodeService;
 import com.ww.mall.seckill.component.RedPacketComponent;
-import com.ww.mall.seckill.component.key.SeckillRedisKeyBuilder;
 import com.ww.mall.seckill.entity.A;
 import com.ww.mall.seckill.entity.B;
 import com.ww.mall.seckill.entity.Demo;
@@ -539,12 +538,14 @@ public class DemoServiceImpl implements DemoService {
     @Resource
     private RedPacketComponent redPacketComponent;
 
-    @Resource
-    private SeckillRedisKeyBuilder seckillRedisKeyBuilder;
+    @Override
+    public boolean testGenerateRedPacket(BigDecimal totalAmount, int totalCount) {
+        return redPacketComponent.generateRedPacket(UUID.randomUUID().toString(), totalAmount, totalCount);
+    }
 
     @Override
-    public boolean testRedPacket(BigDecimal totalAmount, int totalCount) {
-        return redPacketComponent.generateRedPacket(seckillRedisKeyBuilder.buildRedPacketKey(UUID.randomUUID().toString()), totalAmount, totalCount);
+    public String testReceiveRedPacket(String redPacketCode) {
+        return redPacketComponent.receiveRedPacket(redPacketCode);
     }
 
 }

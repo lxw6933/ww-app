@@ -35,7 +35,12 @@ public class DemoController {
 
     @GetMapping("/testRedPacket")
     public boolean testRedPacket(@RequestParam BigDecimal totalAmount, @RequestParam int totalCount) {
-        return demoService.testRedPacket(totalAmount, totalCount);
+        return demoService.testGenerateRedPacket(totalAmount, totalCount);
+    }
+
+    @GetMapping("/testReceiveRedPacket")
+    public String testReceiveRedPacket(@RequestParam String redPacketCode) {
+        return demoService.testReceiveRedPacket(redPacketCode);
     }
 
     @GetMapping("/testBeanCopy")

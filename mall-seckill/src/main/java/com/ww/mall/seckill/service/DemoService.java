@@ -56,5 +56,7 @@ public interface DemoService {
 
     void testBeanCopy(int type);
 
-    boolean testRedPacket(BigDecimal totalAmount, int totalCount);
+    boolean testGenerateRedPacket(BigDecimal totalAmount, int totalCount);
+
+    String testReceiveRedPacket(String redPacketCode);
 }
