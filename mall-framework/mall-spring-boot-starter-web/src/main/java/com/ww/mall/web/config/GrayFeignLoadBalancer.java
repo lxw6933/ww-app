@@ -3,8 +3,10 @@ package com.ww.mall.web.config;
 import cn.hutool.core.collection.CollUtil;
 import com.alibaba.cloud.nacos.balancer.NacosBalancer;
 import com.ww.mall.common.constant.Constant;
+import com.ww.mall.common.exception.ApiException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.cloud.client.ServiceInstance;
@@ -15,6 +17,7 @@ import org.springframework.cloud.loadbalancer.core.ServiceInstanceListSupplier;
 import org.springframework.http.HttpHeaders;
 import reactor.core.publisher.Mono;
 
+import java.net.UnknownHostException;
 import java.util.List;
 
 import static com.ww.mall.common.utils.CollectionUtils.filterList;
@@ -77,6 +80,9 @@ public class GrayFeignLoadBalancer implements ReactorServiceInstanceLoadBalancer
         String serverIp = StringUtils.defaultIfBlank(headers.getFirst(Constant.SERVER_IP), null);
         if (StringUtils.isNotBlank(serverIp)) {
             chooseInstances = filterList(chooseInstances, res -> res.getHost().equals(serverIp));
+        }
+        if (CollectionUtils.isEmpty(chooseInstances)) {
+            throw new ApiException("服务不可用");
         }
         // 随机 + 权重获取实例列表
         return new DefaultResponse(NacosBalancer.getHostByRandomWeight3(chooseInstances));
