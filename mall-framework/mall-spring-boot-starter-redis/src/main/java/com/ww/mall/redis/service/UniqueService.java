@@ -17,8 +17,6 @@ public class UniqueService {
 
     private final int shardNum;
 
-    private static final String SET_PREFIX= "set:unique:";
-
     private final RedissonClient redissonClient;
 
     public UniqueService(RedissonClient redissonClient, String uniqueKey) {
@@ -41,7 +39,7 @@ public class UniqueService {
      */
     private String getShardKey(String target) {
         int shardId = Math.abs(target.hashCode()) % shardNum;
-        return SET_PREFIX + KEY + shardId;
+        return KEY + shardId;
     }
 
     /**

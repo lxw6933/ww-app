@@ -5,6 +5,7 @@ import cn.hutool.core.date.DateUtil;
 import com.ww.mall.common.exception.ApiException;
 import com.ww.mall.mongodb.handler.MongoBulkDataHandler;
 import com.ww.mall.redis.service.UniqueService;
+import com.ww.mall.seckill.component.key.CodeRedisKeyBuilder;
 import com.ww.mall.seckill.entity.IssueCodeRecord;
 import lombok.extern.slf4j.Slf4j;
 import org.redisson.api.RList;
@@ -36,14 +37,12 @@ public class IssueCodeService {
     @Resource
     private RedissonClient redissonClient;
 
+    @Resource
+    private CodeRedisKeyBuilder codeRedisKeyBuilder;
+
     private UniqueService uniqueService;
 
     private static RecordQueueComponent codeCurrentQueueComponent;
-
-    private static final String REDIS_SCRIPT_SHA1_KEY = "script:sha1:";
-
-    private static final String OUT_ORDER_CODE_KEY = "outOrderCode";
-    private static final String CONVERT_CODE_LIST = "list:convertCodes:";
 
     private static final String issueScriptName = "issueCodes";
     private static final String issueScript = "local redeemCodeList = KEYS[1]\n" +
@@ -82,7 +81,7 @@ public class IssueCodeService {
      */
     private String preLoadScript(String scriptName, String script) {
         RScript scriptExecutor = redissonClient.getScript();
-        String sha1Key = REDIS_SCRIPT_SHA1_KEY + scriptName;
+        String sha1Key = codeRedisKeyBuilder.buildLuaScriptSha1Key(scriptName);
         Object scriptSha1 = redissonClient.getBucket(sha1Key).get();
 
         if (scriptSha1 != null && !scriptSha1.toString().isEmpty()) {
@@ -99,7 +98,7 @@ public class IssueCodeService {
     @PostConstruct
     public void init() {
         // init outOrderCode uniqueService
-        uniqueService = new UniqueService(redissonClient, OUT_ORDER_CODE_KEY);
+        uniqueService = new UniqueService(redissonClient, codeRedisKeyBuilder.buildOutOrderSetKey());
         // init code result queueComponent
         codeCurrentQueueComponent = new RecordQueueComponent(mongoBulkDataHandler);
         // preload lua script
@@ -122,7 +121,7 @@ public class IssueCodeService {
         }
 
         RScript scriptExecutor = redissonClient.getScript();
-        List<Object> keys = Collections.singletonList(CONVERT_CODE_LIST + actCode);
+        List<Object> keys = Collections.singletonList(codeRedisKeyBuilder.buildCodesListKey(actCode));
         List<String> result = scriptExecutor.evalSha(RScript.Mode.READ_WRITE, issueScriptSha1, RScript.ReturnType.MULTI, keys, quantity);
         log.info("[{}]发放结果：{}", outOrderCode, result);
         // result valid
@@ -146,7 +145,7 @@ public class IssueCodeService {
      * @return 数量
      */
     public boolean addRedeemCodes(String actCode, List<String> newCodes) {
-        RList<Object> list = redissonClient.getList(CONVERT_CODE_LIST + actCode);
+        RList<Object> list = redissonClient.getList(codeRedisKeyBuilder.buildCodesListKey(actCode));
         ListUtil.page(newCodes, DEFAULT_BATCH_NUM, list::addAll);
         return true;
     }
