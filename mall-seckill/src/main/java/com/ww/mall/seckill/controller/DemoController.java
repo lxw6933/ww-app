@@ -17,6 +17,7 @@ import org.springframework.web.multipart.MultipartFile;
 import javax.annotation.Resource;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
+import java.math.BigDecimal;
 import java.util.List;
 
 /**
@@ -31,6 +32,11 @@ public class DemoController {
 
     @Autowired
     private DemoService demoService;
+
+    @GetMapping("/testRedPacket")
+    public boolean testRedPacket(@RequestParam BigDecimal totalAmount, @RequestParam int totalCount) {
+        return demoService.testRedPacket(totalAmount, totalCount);
+    }
 
     @GetMapping("/testBeanCopy")
     public void testBeanCopy(@RequestParam int type) {

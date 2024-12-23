@@ -31,6 +31,7 @@ import com.ww.mall.redis.MallRedisTemplate;
 import com.ww.mall.redis.component.StockRedisComponent;
 import com.ww.mall.seckill.component.CodeGeneratorService;
 import com.ww.mall.seckill.component.IssueCodeService;
+import com.ww.mall.seckill.component.RedPacketComponent;
 import com.ww.mall.seckill.entity.A;
 import com.ww.mall.seckill.entity.B;
 import com.ww.mall.seckill.entity.Demo;
@@ -62,6 +63,7 @@ import javax.servlet.http.HttpServletResponse;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
+import java.math.BigDecimal;
 import java.util.*;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -531,6 +533,14 @@ public class DemoServiceImpl implements DemoService {
                 BeanUtil.toBean(a, B.class);
             }
         }
+    }
+
+    @Resource
+    private RedPacketComponent redPacketComponent;
+
+    @Override
+    public boolean testRedPacket(BigDecimal totalAmount, int totalCount) {
+        return redPacketComponent.generateRedPacket(UUID.randomUUID().toString(), totalAmount, totalCount);
     }
 
 }

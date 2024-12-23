@@ -6,6 +6,7 @@ import org.springframework.web.multipart.MultipartFile;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
+import java.math.BigDecimal;
 import java.util.List;
 
 /**
@@ -54,4 +55,6 @@ public interface DemoService {
     String ip2region(HttpServletRequest request);
 
     void testBeanCopy(int type);
+
+    boolean testRedPacket(BigDecimal totalAmount, int totalCount);
 }
