@@ -1,6 +1,7 @@
 package com.ww.mall.cart.service.impl;
 
 import cn.hutool.core.lang.Assert;
+import com.ww.mall.cart.component.key.CartRedisKeyBuilder;
 import com.ww.mall.cart.entity.Cart;
 import com.ww.mall.cart.entity.CartItem;
 import com.ww.mall.cart.interceptor.CartInterceptor;
@@ -10,14 +11,13 @@ import com.ww.mall.common.exception.ApiException;
 import org.apache.commons.collections4.CollectionUtils;
 import org.redisson.api.RMap;
 import org.redisson.api.RedissonClient;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import javax.annotation.Resource;
 import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.List;
 
-import static com.ww.mall.cart.constant.CartConstant.CART_PREFIX;
 import static com.ww.mall.cart.constant.CartConstant.MAX_CART_NUMBER;
 
 /**
@@ -28,8 +28,11 @@ import static com.ww.mall.cart.constant.CartConstant.MAX_CART_NUMBER;
 @Service
 public class HashCartServiceImpl implements HashCartService {
 
-    @Autowired
+    @Resource
     private RedissonClient redissonClient;
+
+    @Resource
+    private CartRedisKeyBuilder cartRedisKeyBuilder;
 
     @Override
     public CartItem addToCart(Long skuId, Integer num) {
@@ -58,7 +61,7 @@ public class HashCartServiceImpl implements HashCartService {
         UserInfoTo userInfoTo = CartInterceptor.cartThreadLocal.get();
         if (userInfoTo.getUserId() != null) {
             // 获取临时用户购物车数据
-            String tempUserCartKey = CART_PREFIX + userInfoTo.getTempUserKey();
+            String tempUserCartKey = cartRedisKeyBuilder.buildUserCartKey(userInfoTo.getTempUserKey());
             List<CartItem> tempUserCartList = getUserCartItemList(tempUserCartKey);
             if (CollectionUtils.isNotEmpty(tempUserCartList)) {
                 // 合并到当前登录用户购物车
@@ -117,12 +120,7 @@ public class HashCartServiceImpl implements HashCartService {
 
     private RMap<String, CartItem> getUserCart() {
         UserInfoTo userInfoTo = CartInterceptor.cartThreadLocal.get();
-        String userCartKey;
-        if (userInfoTo.getUserId() != null) {
-            userCartKey = CART_PREFIX + userInfoTo.getUserId();
-        } else {
-            userCartKey = CART_PREFIX + userInfoTo.getTempUserKey();
-        }
+        String userCartKey = cartRedisKeyBuilder.buildUserCartKey(userInfoTo.getUserId() != null ? userInfoTo.getUserId() : userInfoTo.getTempUserKey());
         return redissonClient.getMap(userCartKey);
     }
 

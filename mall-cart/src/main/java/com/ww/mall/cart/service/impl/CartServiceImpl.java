@@ -1,6 +1,7 @@
 package com.ww.mall.cart.service.impl;
 
 import com.alibaba.fastjson.JSON;
+import com.ww.mall.cart.component.key.CartRedisKeyBuilder;
 import com.ww.mall.cart.entity.Cart;
 import com.ww.mall.cart.entity.CartItem;
 import com.ww.mall.cart.interceptor.CartInterceptor;
@@ -8,17 +9,15 @@ import com.ww.mall.cart.service.CartService;
 import com.ww.mall.cart.to.UserInfoTo;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.redis.core.BoundHashOperations;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
 
+import javax.annotation.Resource;
 import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.concurrent.ThreadPoolExecutor;
 
-import static com.ww.mall.cart.constant.CartConstant.CART_PREFIX;
 import static com.ww.mall.common.utils.CollectionUtils.convertList;
 
 /**
@@ -29,14 +28,11 @@ import static com.ww.mall.common.utils.CollectionUtils.convertList;
 @Service
 public class CartServiceImpl implements CartService {
 
-//    @Autowired
-//    private StringRedisTemplate stringRedisTemplate;
-
-    @Autowired
+    @Resource
     private RedisTemplate<String, String> stringRedisTemplate;
 
-    @Autowired
-    private ThreadPoolExecutor defaultThreadPoolExecutor;
+    @Resource
+    private CartRedisKeyBuilder cartRedisKeyBuilder;
 
     @Override
     public CartItem addToCart(Long skuId, Integer num) {
@@ -64,37 +60,30 @@ public class CartServiceImpl implements CartService {
     public Cart userCartList() {
         Cart cart = new Cart();
         UserInfoTo userInfoTo = CartInterceptor.cartThreadLocal.get();
-        String tempUserCartKey = CART_PREFIX + userInfoTo.getTempUserKey();
+        String tempUserCartKey = cartRedisKeyBuilder.buildUserCartKey(userInfoTo.getTempUserKey());
         if (userInfoTo.getUserId() != null) {
-            String userCartKey = CART_PREFIX + userInfoTo.getUserId();
-            List<CartItem> tempUserCartList = getUserCartItemList(tempUserCartKey);
+            String userCartKey = cartRedisKeyBuilder.buildUserCartKey(userInfoTo.getUserId());
+            List<CartItem> tempUserCartList = getUserCartItemList();
             if (CollectionUtils.isNotEmpty(tempUserCartList)) {
                 // 合并到当前登录用户购物车
                 tempUserCartList.forEach(tempCartItem -> this.addToCart(tempCartItem.getSkuId(), tempCartItem.getCount()));
                 // 清空临时用户购物车数据
-                clearCart(tempUserCartKey);
+                stringRedisTemplate.delete(tempUserCartKey);
             }
             // 获取用户购物车商品数据
-            cart.setCartItems(getUserCartItemList(userCartKey));
-            return cart;
+            cart.setCartItems(getUserCartItemList());
         } else {
             // 临时购物车商品数据
-            cart.setCartItems(getUserCartItemList(tempUserCartKey));
-            return cart;
+            cart.setCartItems(getUserCartItemList());
         }
+        return cart;
     }
 
     @Override
     public boolean clearUserCart() {
         UserInfoTo userInfoTo = CartInterceptor.cartThreadLocal.get();
-        String userCartKey;
-        if (userInfoTo.getUserId() != null) {
-            userCartKey = CART_PREFIX + userInfoTo.getUserId();
-        } else {
-            userCartKey = CART_PREFIX + userInfoTo.getTempUserKey();
-        }
-        clearCart(userCartKey);
-        return true;
+        String userCartKey = cartRedisKeyBuilder.buildUserCartKey(userInfoTo.getUserId() != null ? userInfoTo.getUserId() : userInfoTo.getTempUserKey());
+        return Boolean.TRUE.equals(stringRedisTemplate.delete(userCartKey));
     }
 
     @Override
@@ -122,16 +111,11 @@ public class CartServiceImpl implements CartService {
         return true;
     }
 
-    private void clearCart(String userCartKey) {
-        stringRedisTemplate.delete(userCartKey);
-    }
-
     /**
      * 获取用户购物车商品明细
-     * @param userCartKey key
      * @return List<CartItem>
      */
-    private List<CartItem> getUserCartItemList(String userCartKey) {
+    private List<CartItem> getUserCartItemList() {
         List<CartItem> userCartList = new ArrayList<>();
         BoundHashOperations<String, Object, Object> userCart = getUserCart();
         if (CollectionUtils.isNotEmpty(userCart.values())) {
@@ -151,12 +135,7 @@ public class CartServiceImpl implements CartService {
      */
     private BoundHashOperations<String, Object, Object> getUserCart() {
         UserInfoTo userInfoTo = CartInterceptor.cartThreadLocal.get();
-        String userCartKey;
-        if (userInfoTo.getUserId() != null) {
-            userCartKey = CART_PREFIX + userInfoTo.getUserId();
-        } else {
-            userCartKey = CART_PREFIX + userInfoTo.getTempUserKey();
-        }
+        String userCartKey = cartRedisKeyBuilder.buildUserCartKey(userInfoTo.getUserId() != null ? userInfoTo.getUserId() : userInfoTo.getTempUserKey());
         return stringRedisTemplate.boundHashOps(userCartKey);
     }
 
