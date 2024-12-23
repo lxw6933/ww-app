@@ -1,18 +1,10 @@
 package com.ww.mall.coupon.controller;
-import com.ww.mall.coupon.eunms.AllowProductRangeType;
-import java.math.BigDecimal;
-import com.ww.mall.coupon.eunms.CouponDiscountType;
-import com.ww.mall.coupon.eunms.CouponUseTimeType;
-import com.ww.mall.coupon.eunms.CouponLimitReceiveTimeType;
-import com.ww.mall.coupon.eunms.AllowMemberRangeType;
-import com.ww.mall.coupon.eunms.CouponType;
-import java.util.Date;
-import com.ww.mall.coupon.eunms.CouponDistributeType;
 
 import com.ww.mall.common.exception.ApiException;
 import com.ww.mall.coupon.config.CouponProperties;
 import com.ww.mall.coupon.dao.CouponMapper;
 import com.ww.mall.coupon.entity.Coupon;
+import com.ww.mall.coupon.eunms.*;
 import com.ww.mall.coupon.service.CouponService;
 import com.ww.mall.coupon.view.bo.CouponPageBO;
 import com.ww.mall.rabbitmq.MallPublisher;
@@ -20,7 +12,6 @@ import com.ww.mall.rabbitmq.exchange.ExchangeConstant;
 import com.ww.mall.rabbitmq.routekey.RouteKeyConstant;
 import com.ww.mall.web.config.SecretProperties;
 import com.ww.mall.web.config.thread.DefaultThreadPoolProperties;
-import com.ww.mall.common.utils.VerificationCodeUtil;
 import lombok.extern.slf4j.Slf4j;
 import org.redisson.api.RedissonClient;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -29,8 +20,9 @@ import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.web.bind.annotation.*;
 
 import javax.servlet.http.HttpServletRequest;
+import java.math.BigDecimal;
 import java.util.Collections;
-import java.util.concurrent.TimeUnit;
+import java.util.Date;
 import java.util.concurrent.atomic.AtomicInteger;
 
 /**
@@ -154,15 +146,6 @@ public class DemoController {
         log.info("main线程执行");
         return "coupon active is opening！！！" + couponProperties;
     }
-
-    @RequestMapping("/test")
-    public String test(){
-        String code = VerificationCodeUtil.generateVerificationCode(4);
-        String key = "test_redis_rate:" + code;
-        stringRedisTemplate.opsForValue().set(key, code, 3, TimeUnit.MINUTES);
-        return "success";
-    }
-
 
 }
 
