@@ -2,9 +2,11 @@ package com.ww.mall.web.interceptor;
 
 import com.ww.mall.common.constant.Constant;
 import com.ww.mall.common.thread.ThreadMdcUtil;
+import com.ww.mall.web.holder.ServerIpContextHolder;
 import feign.RequestInterceptor;
 import feign.RequestTemplate;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.StringUtils;
 import org.springframework.web.context.request.RequestContextHolder;
 import org.springframework.web.context.request.ServletRequestAttributes;
 
@@ -42,5 +44,10 @@ public class FeignRequestInterceptor implements RequestInterceptor {
         String traceId = ThreadMdcUtil.getTraceId();
         requestTemplate.header(Constant.TRACE_ID, traceId);
         requestTemplate.header(Constant.FEIGN_FLAG, "true");
+        // 远程调用是否指定服务
+        String serverIp = ServerIpContextHolder.get();
+        if (StringUtils.isNotBlank(serverIp)) {
+            requestTemplate.header(Constant.SERVER_IP, serverIp);
+        }
     }
 }

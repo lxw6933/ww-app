@@ -12,7 +12,8 @@ import org.springframework.stereotype.Component;
 import javax.annotation.Resource;
 import java.math.BigDecimal;
 import java.util.List;
-import java.util.stream.Collectors;
+
+import static com.ww.mall.common.utils.CollectionUtils.convertList;
 
 /**
  * @author ww
@@ -37,9 +38,7 @@ public class RedPacketComponent {
             BoundListOperations<String, String> redPacketOperation = stringRedisTemplate.opsForList().getOperations().boundListOps(redPacketKey);
             List<BigDecimal> redPacketAmounts = MoneyUtils.splitRedPacket(totalAmount, totalCount);
             ListUtil.page(redPacketAmounts, RED_PACKET_BATCH_NUM, targetList -> {
-                String[] dataArr = targetList.stream().map(BigDecimal::toString)
-                        .collect(Collectors.toList())
-                        .toArray(new String[]{});
+                String[] dataArr = convertList(targetList, BigDecimal::toString).toArray(new String[]{});
                 redPacketOperation.leftPushAll(dataArr);
             });
             Long redPacketCount = redPacketOperation.size();

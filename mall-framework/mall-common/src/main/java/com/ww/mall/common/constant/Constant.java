@@ -45,6 +45,7 @@ public class Constant {
      * 远程调用标识【相应结果不加密】
      */
     public static final String FEIGN_FLAG = "feign_flag";
+    public static final String SERVER_IP = "SERVER_IP";
 
     /**
      * 参数加密key

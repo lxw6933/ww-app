@@ -4,6 +4,7 @@ import cn.hutool.core.util.IdUtil;
 import com.ww.mall.common.constant.Constant;
 import com.ww.mall.common.thread.ThreadMdcUtil;
 import com.ww.mall.common.utils.AuthorizationContext;
+import com.ww.mall.web.holder.ServerIpContextHolder;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import org.slf4j.MDC;
@@ -37,6 +38,7 @@ public class ServerRequestFilter extends OncePerRequestFilter {
         } finally {
             MDC.remove(Constant.TRACE_ID);
             AuthorizationContext.clear();
+            ServerIpContextHolder.clear();
         }
     }
 }

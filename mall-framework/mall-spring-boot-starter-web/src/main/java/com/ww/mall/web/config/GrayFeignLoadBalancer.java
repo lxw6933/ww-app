@@ -74,6 +74,10 @@ public class GrayFeignLoadBalancer implements ReactorServiceInstanceLoadBalancer
                 chooseInstances = instances;
             }
         }
+        String serverIp = StringUtils.defaultIfBlank(headers.getFirst(Constant.SERVER_IP), null);
+        if (StringUtils.isNotBlank(serverIp)) {
+            chooseInstances = filterList(chooseInstances, res -> res.getHost().equals(serverIp));
+        }
         // 随机 + 权重获取实例列表
         return new DefaultResponse(NacosBalancer.getHostByRandomWeight3(chooseInstances));
     }
