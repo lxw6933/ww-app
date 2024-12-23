@@ -25,7 +25,7 @@ public class RedPacketComponent {
     @Resource
     private StringRedisTemplate stringRedisTemplate;
 
-    private static final int RED_PACKET_BATCH_NUM = 10;
+    private static final int RED_PACKET_BATCH_NUM = 100;
 
     public boolean generateRedPacket(String redPacketCode, BigDecimal totalAmount, int totalCount) {
         try {
