@@ -1,5 +1,6 @@
 package com.ww.mall.seckill.component;
 
+import cn.hutool.core.collection.ListUtil;
 import cn.hutool.core.date.DateUtil;
 import com.ww.mall.common.exception.ApiException;
 import com.ww.mall.mongodb.handler.MongoBulkDataHandler;
@@ -9,7 +10,6 @@ import lombok.extern.slf4j.Slf4j;
 import org.redisson.api.RList;
 import org.redisson.api.RScript;
 import org.redisson.api.RedissonClient;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnBean;
 import org.springframework.context.annotation.DependsOn;
 import org.springframework.stereotype.Component;
 
@@ -58,6 +58,11 @@ public class IssueCodeService {
             "return codes";
 
     private String issueScriptSha1;
+
+    /**
+     * 默认批处理命令数量
+     */
+    private static final Integer DEFAULT_BATCH_NUM = 1000;
 
     /**
      * 入队
@@ -142,7 +147,8 @@ public class IssueCodeService {
      */
     public boolean addRedeemCodes(String actCode, List<String> newCodes) {
         RList<Object> list = redissonClient.getList(CONVERT_CODE_LIST + actCode);
-        return list.addAll(newCodes);
+        ListUtil.page(newCodes, DEFAULT_BATCH_NUM, list::addAll);
+        return true;
     }
 
     @PreDestroy
