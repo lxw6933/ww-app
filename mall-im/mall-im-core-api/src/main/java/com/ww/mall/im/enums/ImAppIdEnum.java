@@ -1,0 +1,25 @@
+package com.ww.mall.im.enums;
+
+import lombok.Data;
+import lombok.Getter;
+import lombok.Setter;
+
+/**
+ * @author ww
+ * @create 2024-12-24 20:11
+ * @description:
+ */
+@Getter
+public enum ImAppIdEnum {
+
+    MALL_LIVE_BIZ(10001,"mall直播业务");
+
+    final int code;
+    final String desc;
+
+    ImAppIdEnum(int code, String desc) {
+        this.code = code;
+        this.desc = desc;
+    }
+
+}

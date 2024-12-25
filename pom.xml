@@ -41,6 +41,8 @@
         <module>mall-message</module>
         <!-- framework -->
         <module>mall-framework</module>
+        <!-- im -->
+        <module>mall-im</module>
     </modules>
 
     <properties>

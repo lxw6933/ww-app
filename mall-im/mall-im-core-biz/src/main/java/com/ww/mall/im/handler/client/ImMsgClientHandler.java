@@ -1,0 +1,60 @@
+package com.ww.mall.im.handler.client;
+
+import com.alibaba.fastjson.JSON;
+import com.ww.mall.im.common.ImMsg;
+import com.ww.mall.im.common.ImMsgBody;
+import com.ww.mall.im.enums.ImMsgCodeEnum;
+import com.ww.mall.im.handler.component.ImHandlerComponent;
+import com.ww.mall.im.handler.msg.LogoutMsgHandlerAdapter;
+import com.ww.mall.im.utils.ImContextUtils;
+import io.netty.channel.ChannelHandler;
+import io.netty.channel.ChannelHandlerContext;
+import io.netty.channel.SimpleChannelInboundHandler;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.stereotype.Component;
+
+import javax.annotation.Resource;
+
+/**
+ * @author ww
+ * @create 2024-11-10 16:25
+ * @description: im msg handler
+ */
+@Slf4j
+@Component
+@ChannelHandler.Sharable
+public class ImMsgClientHandler extends SimpleChannelInboundHandler<ImMsg> {
+
+    @Resource
+    private ImHandlerComponent imHandlerComponent;
+
+    @Resource
+    private LogoutMsgHandlerAdapter logoutMsgHandlerAdapter;
+
+    @Override
+    protected void channelRead0(ChannelHandlerContext ctx, ImMsg imMsg) {
+        ImMsgBody respBody = imHandlerComponent.deserializeMsg(imMsg);
+        System.out.println("收到服务端发送的消息" + respBody);
+        if (imMsg.getMsgType() == ImMsgCodeEnum.IM_BIZ_MSG.getCode()) {
+            ImMsgBody ackBody = new ImMsgBody();
+            ackBody.setSeqId(respBody.getSeqId());
+            ackBody.setAppId(respBody.getAppId());
+            ackBody.setUserId(respBody.getUserId());
+            // 通知服务端 客户端确认收到业务消息
+            ImMsg ackMsg = ImMsg.build(ImMsgCodeEnum.IM_ACK_MSG.getCode(), JSON.toJSONString(ackBody));
+            ctx.writeAndFlush(ackMsg);
+        }
+    }
+
+    /**
+     * 正常、异常断线都会触发
+     */
+    @Override
+    public void channelInactive(ChannelHandlerContext ctx) {
+        Long userId = ImContextUtils.getUserId(ctx);
+        Integer appId = ImContextUtils.getAppId(ctx);
+        if (userId != null && appId != null) {
+            logoutMsgHandlerAdapter.logoutHandler(ctx, userId, appId);
+        }
+    }
+}

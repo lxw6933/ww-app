@@ -1,0 +1,37 @@
+package com.ww.mall.im.handler.msg;
+
+import com.ww.mall.im.common.ImMsg;
+import com.ww.mall.im.enums.ImMsgCodeEnum;
+import io.netty.channel.ChannelHandlerContext;
+
+/**
+ * @author ww
+ * @create 2024-11-09 19:27
+ * @description:
+ */
+public interface ImMsgHandlerAdapter {
+
+    /**
+     * 消息处理工厂
+     *
+     * @param ctx ctx
+     * @param imMsg imMsg
+     */
+    void handle(ChannelHandlerContext ctx, ImMsg imMsg);
+
+//    /**
+//     * 消息适配
+//     *
+//     * @param msgType 消息类型
+//     * @return boolean
+//     */
+//    default boolean support(int msgType) {
+//        return getMsgType().getCode() == msgType;
+//    }
+
+    /**
+     * 消息code
+     */
+    ImMsgCodeEnum getMsgType();
+
+}

@@ -1,0 +1,20 @@
+server:
+  port: 17300  #服务端口号
+  servlet:
+    context-path: /mall-im-router
+
+spring:
+  redis:
+    host: localhost
+    password: 123456
+    port: 6379
+  data:
+    mongodb:
+      # 副本集群配置
+      uri: mongodb://ww:admin@172.28.174.84:27001,172.28.174.84:27002,172.28.174.84:27003/ww_mall?replicaSet=rs&readPreference=secondaryPreferred&connectTimeoutMS=300000
+      # 单机配置
+      #      host: localhost:27017
+      #      database: ww_mall
+      #      username: admin
+      #      password: admin
+      #      authentication-database: admin
