@@ -1,4 +1,4 @@
-package com.ww.mall.admin.user;
+package com.ww.mall.admin.user.rpc;
 
 import com.ww.mall.admin.user.bo.SysUserLoginBO;
 import com.ww.mall.admin.user.dto.SysUserDTO;
@@ -25,7 +25,7 @@ public interface AdminUserApi {
      * @return SysUserDTO
      */
     @PostMapping("/mall-admin-manage/admin/inner/getAdminLoginUserInfo")
-    Result<SysUserDTO> getAdminLoginUserInfo(@RequestBody SysUserLoginBO sysUserLoginBO);
+    Result<SysUserDTO> adminLogin(@RequestBody SysUserLoginBO sysUserLoginBO);
 
     /**
      * 【security】加载用户信息

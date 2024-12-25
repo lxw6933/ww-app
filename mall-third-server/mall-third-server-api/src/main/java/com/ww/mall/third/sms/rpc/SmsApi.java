@@ -1,4 +1,4 @@
-package com.ww.mall.third.sms;
+package com.ww.mall.third.sms.rpc;
 
 import com.ww.mall.common.common.Result;
 import com.ww.mall.third.sms.fallback.SmsApiFallBack;

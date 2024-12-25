@@ -43,7 +43,7 @@ public class LoginServiceImpl extends BaseService implements LoginService {
     @Override
     public LoginResultVO adminLogin(SysUserLoginBO sysUserLoginBO) {
         // 获取登录用户信息
-        Result<SysUserDTO> result = adminUserApi.getAdminLoginUserInfo(sysUserLoginBO);
+        Result<SysUserDTO> result = adminUserApi.adminLogin(sysUserLoginBO);
         result.checkError(() -> {
             LoginLog loginLog = LoginLog.build(sysUserLoginBO.getUsername(), UserType.ADMIN, LoginType.USERNAME, result.getMsg());
             mongoTemplate.save(loginLog);

@@ -3,7 +3,7 @@ package com.ww.mall.seckill.controller;
 import com.github.houbb.sensitive.word.bs.SensitiveWordBs;
 import com.ww.mall.common.common.Result;
 import com.ww.mall.common.exception.ApiException;
-import com.ww.mall.member.member.MemberApi;
+import com.ww.mall.member.member.rpc.MemberApi;
 import com.ww.mall.member.member.bo.MemberLoginBO;
 import com.ww.mall.seckill.grpc.GrpcClientService;
 import com.ww.mall.seckill.service.DemoService;

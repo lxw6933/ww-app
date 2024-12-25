@@ -1,4 +1,4 @@
-package com.ww.mall.member.controller.inner;
+package com.ww.mall.member.rpc;
 
 import com.ww.mall.member.service.MemberIntegralRecordService;
 import com.ww.mall.member.service.MemberService;
@@ -14,7 +14,7 @@ import org.springframework.web.bind.annotation.*;
  **/
 @RestController
 @RequestMapping("/member/inner")
-public class MemberInnerController {
+public class MemberApiRpc {
 
     @Autowired
     private MemberService memberService;

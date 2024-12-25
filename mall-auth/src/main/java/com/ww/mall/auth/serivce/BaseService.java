@@ -1,9 +1,9 @@
 package com.ww.mall.auth.serivce;
 
-import com.ww.mall.admin.user.AdminUserApi;
+import com.ww.mall.admin.user.rpc.AdminUserApi;
 import com.ww.mall.auth.config.JwtProperties;
-import com.ww.mall.member.member.MemberApi;
-import com.ww.mall.third.sms.SmsApi;
+import com.ww.mall.member.member.rpc.MemberApi;
+import com.ww.mall.third.sms.rpc.SmsApi;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.mongodb.core.MongoTemplate;
 import org.springframework.data.redis.core.RedisTemplate;

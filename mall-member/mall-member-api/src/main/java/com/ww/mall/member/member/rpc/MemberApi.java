@@ -1,4 +1,4 @@
-package com.ww.mall.member.member;
+package com.ww.mall.member.member.rpc;
 
 import com.ww.mall.common.common.Result;
 import com.ww.mall.member.member.bo.AddMemberIntegralBO;

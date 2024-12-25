@@ -1,6 +1,6 @@
 package com.ww.mall.admin.user.fallback;
 
-import com.ww.mall.admin.user.AdminUserApi;
+import com.ww.mall.admin.user.rpc.AdminUserApi;
 import com.ww.mall.admin.user.bo.SysUserLoginBO;
 import com.ww.mall.admin.user.dto.SysUserDTO;
 import com.ww.mall.common.common.Result;
@@ -20,7 +20,7 @@ public class AdminUserApiFallBack implements FallbackFactory<AdminUserApi> {
         log.error("第三方服务【AdminFeignService】调用异常：{}", cause.getMessage());
         return new AdminUserApi() {
             @Override
-            public Result<SysUserDTO> getAdminLoginUserInfo(SysUserLoginBO sysUserLoginBO) {
+            public Result<SysUserDTO> adminLogin(SysUserLoginBO sysUserLoginBO) {
                 return Result.error(GlobalResCodeConstants.LIMIT_REQUEST);
             }
 

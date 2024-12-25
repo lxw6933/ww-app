@@ -41,7 +41,7 @@ import com.ww.mall.seckill.node.executor.DemoFlowExecutor;
 import com.ww.mall.seckill.service.DemoService;
 import com.ww.mall.seckill.view.bo.SensitiveWordBO;
 import com.ww.mall.sensitive.annotation.MallSensitiveWordHandler;
-import com.ww.mall.third.sms.SmsApi;
+import com.ww.mall.third.sms.rpc.SmsApi;
 import io.github.linpeilie.Converter;
 import lombok.extern.slf4j.Slf4j;
 import org.redisson.api.RBloomFilter;

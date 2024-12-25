@@ -2,7 +2,7 @@ package com.ww.mall.consumer.server.member;
 
 import cn.hutool.extra.spring.SpringUtil;
 import com.ww.mall.common.common.Result;
-import com.ww.mall.member.member.MemberApi;
+import com.ww.mall.member.member.rpc.MemberApi;
 import com.ww.mall.member.member.bo.AddMemberIntegralBO;
 import com.ww.mall.rabbitmq.template.MsgConsumerTemplate;
 import lombok.extern.slf4j.Slf4j;

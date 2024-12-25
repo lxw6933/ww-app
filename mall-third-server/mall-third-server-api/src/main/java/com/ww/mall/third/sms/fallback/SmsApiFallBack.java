@@ -2,7 +2,7 @@ package com.ww.mall.third.sms.fallback;
 
 import com.ww.mall.common.common.Result;
 import com.ww.mall.common.enums.GlobalResCodeConstants;
-import com.ww.mall.third.sms.SmsApi;
+import com.ww.mall.third.sms.rpc.SmsApi;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.cloud.openfeign.FallbackFactory;
 
