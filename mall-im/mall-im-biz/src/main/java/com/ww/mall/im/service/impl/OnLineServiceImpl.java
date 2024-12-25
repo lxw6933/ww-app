@@ -11,7 +11,7 @@ import javax.annotation.Resource;
 /**
  * @author ww
  * @create 2024-12-25 11:41
- * @description:
+ * @description: 判断用户是否在线
  */
 @Slf4j
 @Service

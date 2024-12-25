@@ -35,10 +35,10 @@ public class ImMsgBody implements Serializable {
     /**
      * 消息所属业务code
      */
-    private String bizCode;
+    private int bizCode;
 
     /**
      * 业务消息内容
      */
-    private String msg;
+    private String bizMsg;
 }

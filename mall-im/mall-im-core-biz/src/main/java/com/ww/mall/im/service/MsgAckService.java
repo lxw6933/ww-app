@@ -27,6 +27,6 @@ public interface MsgAckService {
     /**
      * 获取ack消息的重试次数
      */
-    int getMsgAckTimes(String msgId,long userId,int appId);
+    int getMsgAckTimes(String msgId, long userId, int appId);
 
 }

@@ -58,7 +58,7 @@ public class LoginMsgHandlerAdapter implements ImMsgHandlerAdapter {
         ImMsgBody respBody = new ImMsgBody();
         respBody.setAppId(appId);
         respBody.setUserId(userId);
-        respBody.setMsg("true");
+        respBody.setBizMsg("true");
         ImMsg respMsg = ImMsg.build(ImMsgCodeEnum.IM_LOGIN_MSG.getCode(), JSON.toJSONString(respBody));
         ctx.writeAndFlush(respMsg);
         // TODO 广播用户登录消息

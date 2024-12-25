@@ -57,7 +57,7 @@ public class LogoutMsgHandlerAdapter implements ImMsgHandlerAdapter {
         ImMsgBody respBody = new ImMsgBody();
         respBody.setAppId(appId);
         respBody.setUserId(userId);
-        respBody.setMsg("true");
+        respBody.setBizMsg("true");
         ImMsg respMsg = ImMsg.build(ImMsgCodeEnum.IM_LOGOUT_MSG.getCode(), JSON.toJSONString(respBody));
         ctx.writeAndFlush(respMsg);
         ctx.close();

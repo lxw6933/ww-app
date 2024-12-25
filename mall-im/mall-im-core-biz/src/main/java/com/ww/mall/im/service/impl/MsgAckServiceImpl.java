@@ -19,6 +19,8 @@ import java.util.concurrent.TimeUnit;
 @Service
 public class MsgAckServiceImpl implements MsgAckService {
 
+    private static final int ACK_KEY_EXPIRE = 30;
+
     @Resource
     private ImRedisKeyBuilder imRedisKeyBuilder;
 
@@ -29,14 +31,14 @@ public class MsgAckServiceImpl implements MsgAckService {
     public void doMsgAck(ImMsgBody imMsgBody) {
         String ackKey = imRedisKeyBuilder.buildImAckHashKey(imMsgBody.getUserId(), imMsgBody.getAppId());
         redisTemplate.opsForHash().delete(ackKey, imMsgBody.getSeqId());
-        redisTemplate.expire(ackKey,30, TimeUnit.MINUTES);
+        redisTemplate.expire(ackKey, ACK_KEY_EXPIRE, TimeUnit.MINUTES);
     }
 
     @Override
     public void recordMsgAck(ImMsgBody imMsgBody, int times) {
-        String key = imRedisKeyBuilder.buildImAckHashKey(imMsgBody.getUserId(), imMsgBody.getAppId());
-        redisTemplate.opsForHash().put(key, imMsgBody.getSeqId(), times);
-        redisTemplate.expire(key,30, TimeUnit.MINUTES);
+        String ackKey = imRedisKeyBuilder.buildImAckHashKey(imMsgBody.getUserId(), imMsgBody.getAppId());
+        redisTemplate.opsForHash().put(ackKey, imMsgBody.getSeqId(), times);
+        redisTemplate.expire(ackKey, ACK_KEY_EXPIRE, TimeUnit.MINUTES);
     }
 
     @Override

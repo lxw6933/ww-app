@@ -56,7 +56,7 @@ public class HeartBeatMsgHandlerAdapter implements ImMsgHandlerAdapter {
         ImMsgBody msgBody = new ImMsgBody();
         msgBody.setUserId(userId);
         msgBody.setAppId(appId);
-        msgBody.setMsg("true");
+        msgBody.setBizMsg("true");
         ImMsg respMsg = ImMsg.build(ImMsgCodeEnum.IM_HEARTBEAT_MSG.getCode(), JSON.toJSONString(msgBody));
         log.debug("[heartbeat] imMsg is {}", imMsg);
         ctx.writeAndFlush(respMsg);
