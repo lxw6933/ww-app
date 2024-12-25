@@ -1,17 +1,11 @@
 package com.ww.mall.im.handler.msg;
 
-import com.alibaba.fastjson.JSON;
 import com.ww.mall.im.common.ImMsg;
-import com.ww.mall.im.common.ImMsgBody;
 import com.ww.mall.im.enums.ImMsgCodeEnum;
-import com.ww.mall.im.service.MsgAckService;
 import com.ww.mall.im.utils.ImContextUtils;
 import io.netty.channel.ChannelHandlerContext;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
-
-import javax.annotation.Resource;
-import javax.websocket.SendResult;
 
 /**
  * @author ww

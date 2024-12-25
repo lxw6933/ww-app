@@ -15,14 +15,13 @@ import java.util.List;
  * @create 2024-12-24 21:29
  * @description:
  */
-@RequestMapping("/mall-im-core/im/inner")
 @FeignClient(value = "mall-im-core", fallbackFactory = ImMsgRouterApiFallback.class)
 public interface ImMsgRouterApi {
 
-    @PostMapping("/sendMsg")
+    @PostMapping("/mall-im-core/im/inner/sendMsg")
     Result<Boolean> sendMsg(@RequestBody ImMsgBody imMsgBody);
 
-    @PostMapping("/batchSendMsg")
+    @PostMapping("/mall-im-core/im/inner/batchSendMsg")
     Result<Boolean> batchSendMsg(@RequestBody List<ImMsgBody> imMsgBodyList);
 
 }

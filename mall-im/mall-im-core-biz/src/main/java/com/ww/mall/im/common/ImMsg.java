@@ -1,7 +1,5 @@
 package com.ww.mall.im.common;
 
-import com.ww.mall.im.enums.ImMsgCodeEnum;
-import com.ww.mall.im.enums.ImMsgSerializerEnum;
 import lombok.Data;
 
 import java.io.Serializable;

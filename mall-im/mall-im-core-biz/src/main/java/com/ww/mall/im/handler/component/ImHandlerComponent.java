@@ -10,7 +10,6 @@ import com.ww.mall.im.handler.msg.ImMsgHandlerAdapter;
 import com.ww.mall.im.serialize.ImMsgSerializer;
 import com.ww.mall.im.serialize.JsonSerializer;
 import io.netty.channel.ChannelHandlerContext;
-import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.InitializingBean;
 import org.springframework.stereotype.Component;

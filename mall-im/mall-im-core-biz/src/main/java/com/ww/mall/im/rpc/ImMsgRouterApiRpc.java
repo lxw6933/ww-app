@@ -14,7 +14,7 @@ import java.util.List;
  * @description:
  */
 @RestController
-public class ImCoreRpc implements ImMsgRouterApi {
+public class ImMsgRouterApiRpc implements ImMsgRouterApi {
 
     @Resource
     private MsgRouterService msgRouterService;

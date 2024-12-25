@@ -1,8 +1,6 @@
 package com.ww.mall.im.enums;
 
-import lombok.Data;
 import lombok.Getter;
-import lombok.Setter;
 
 /**
  * @author ww
