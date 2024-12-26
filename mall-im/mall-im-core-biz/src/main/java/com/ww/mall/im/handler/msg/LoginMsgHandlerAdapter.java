@@ -6,9 +6,8 @@ import com.ww.mall.common.exception.ApiException;
 import com.ww.mall.im.common.ImConstant;
 import com.ww.mall.im.common.ImMsg;
 import com.ww.mall.im.common.ImMsgBody;
-import com.ww.mall.im.component.key.ImRedisKeyBuilder;
 import com.ww.mall.im.enums.ImMsgCodeEnum;
-import com.ww.mall.im.handler.component.ImHandlerComponent;
+import com.ww.mall.im.handler.component.ImMsgSerializerComponent;
 import com.ww.mall.im.utils.ImChannelHandlerContextUtils;
 import com.ww.mall.im.utils.ImContextUtils;
 import com.ww.mall.im.utils.ImUtils;
@@ -30,10 +29,7 @@ import java.util.concurrent.TimeUnit;
 public class LoginMsgHandlerAdapter implements ImMsgHandlerAdapter {
 
     @Resource
-    private ImHandlerComponent imHandlerComponent;
-
-    @Resource
-    private ImRedisKeyBuilder imRedisKeyBuilder;
+    private ImMsgSerializerComponent imMsgSerializerComponent;
 
     @Resource
     private StringRedisTemplate stringRedisTemplate;
@@ -41,7 +37,7 @@ public class LoginMsgHandlerAdapter implements ImMsgHandlerAdapter {
     @Override
     public void handle(ChannelHandlerContext ctx, ImMsg imMsg) {
         Assert.isTrue(imMsg.validData(), () -> new IllegalArgumentException("body error"));
-        ImMsgBody imMsgBody = imHandlerComponent.deserializeMsg(imMsg);
+        ImMsgBody imMsgBody = imMsgSerializerComponent.deserializeMsg(imMsg);
         log.info("收到客户端发送的登录消息: {}", imMsgBody);
         Long userId = imMsgBody.getUserId();
         int appId = imMsgBody.getAppId();

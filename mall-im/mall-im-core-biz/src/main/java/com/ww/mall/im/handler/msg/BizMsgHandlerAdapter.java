@@ -1,11 +1,16 @@
 package com.ww.mall.im.handler.msg;
 
 import com.ww.mall.im.common.ImMsg;
+import com.ww.mall.im.common.ImMsgBody;
 import com.ww.mall.im.enums.ImMsgCodeEnum;
+import com.ww.mall.im.handler.component.ImMsgSerializerComponent;
+import com.ww.mall.im.rpc.BizMsgHandlerApi;
 import com.ww.mall.im.utils.ImContextUtils;
 import io.netty.channel.ChannelHandlerContext;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
+
+import javax.annotation.Resource;
 
 /**
  * @author ww
@@ -15,6 +20,12 @@ import org.springframework.stereotype.Component;
 @Slf4j
 @Component
 public class BizMsgHandlerAdapter implements ImMsgHandlerAdapter {
+
+    @Resource
+    private BizMsgHandlerApi bizMsgHandlerApi;
+
+    @Resource
+    private ImMsgSerializerComponent imMsgSerializerComponent;
 
     @Override
     public void handle(ChannelHandlerContext ctx, ImMsg imMsg) {
@@ -30,8 +41,11 @@ public class BizMsgHandlerAdapter implements ImMsgHandlerAdapter {
             log.error("body error,imMsg is {}", imMsg);
             return;
         }
+        // 解析消息body
+        ImMsgBody imMsgBody = imMsgSerializerComponent.deserializeMsg(imMsg);
         // TODO 发送mq消费处理消息推送
-
+        // 临时使用rpc测试
+        bizMsgHandlerApi.handleImMsg(imMsgBody);
     }
 
     @Override

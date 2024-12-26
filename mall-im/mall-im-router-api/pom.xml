@@ -22,5 +22,17 @@
             <artifactId>mall-common</artifactId>
             <version>${revision}</version>
         </dependency>
+        <!-- im core server api -->
+        <dependency>
+            <groupId>com.ww.mall</groupId>
+            <artifactId>mall-im-core-api</artifactId>
+            <version>${revision}</version>
+        </dependency>
+        <!-- openFeign 远程调用相关 -->
+        <dependency>
+            <groupId>org.springframework.cloud</groupId>
+            <artifactId>spring-cloud-starter-openfeign</artifactId>
+            <optional>true</optional>
+        </dependency>
     </dependencies>
 </project>

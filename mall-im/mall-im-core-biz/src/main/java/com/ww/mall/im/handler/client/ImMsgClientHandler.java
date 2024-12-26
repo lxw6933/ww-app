@@ -4,7 +4,7 @@ import com.alibaba.fastjson.JSON;
 import com.ww.mall.im.common.ImMsg;
 import com.ww.mall.im.common.ImMsgBody;
 import com.ww.mall.im.enums.ImMsgCodeEnum;
-import com.ww.mall.im.handler.component.ImHandlerComponent;
+import com.ww.mall.im.handler.component.ImMsgSerializerComponent;
 import com.ww.mall.im.handler.msg.LogoutMsgHandlerAdapter;
 import com.ww.mall.im.utils.ImContextUtils;
 import io.netty.channel.ChannelHandler;
@@ -26,14 +26,14 @@ import javax.annotation.Resource;
 public class ImMsgClientHandler extends SimpleChannelInboundHandler<ImMsg> {
 
     @Resource
-    private ImHandlerComponent imHandlerComponent;
+    private ImMsgSerializerComponent imMsgSerializerComponent;
 
     @Resource
     private LogoutMsgHandlerAdapter logoutMsgHandlerAdapter;
 
     @Override
     protected void channelRead0(ChannelHandlerContext ctx, ImMsg imMsg) {
-        ImMsgBody respBody = imHandlerComponent.deserializeMsg(imMsg);
+        ImMsgBody respBody = imMsgSerializerComponent.deserializeMsg(imMsg);
         System.out.println("收到服务端发送的消息" + respBody);
         if (imMsg.getMsgType() == ImMsgCodeEnum.IM_BIZ_MSG.getCode()) {
             ImMsgBody ackBody = new ImMsgBody();

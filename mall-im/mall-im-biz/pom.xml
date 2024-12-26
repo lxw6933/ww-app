@@ -22,9 +22,16 @@
             <artifactId>mall-im-api</artifactId>
             <version>${revision}</version>
         </dependency>
+        <!-- im core server api -->
         <dependency>
             <groupId>com.ww.mall</groupId>
             <artifactId>mall-im-core-api</artifactId>
+            <version>${revision}</version>
+        </dependency>
+        <!-- im router api -->
+        <dependency>
+            <groupId>com.ww.mall</groupId>
+            <artifactId>mall-im-router-api</artifactId>
             <version>${revision}</version>
         </dependency>
         <!-- web -->

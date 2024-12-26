@@ -1,0 +1,24 @@
+package com.ww.mall.im.router.api.rpc;
+
+import com.ww.mall.im.common.ImMsgBody;
+import org.springframework.cloud.openfeign.FeignClient;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+
+import java.util.List;
+
+/**
+ * @author ww
+ * @create 2024-12-26- 10:47
+ * @description:
+ */
+@FeignClient(value = "mall-im-router")
+public interface ImRouterApi {
+
+    @PostMapping("/mall-im-router/im/inner/sendMsg")
+    boolean sendMsg(@RequestBody ImMsgBody imMsgBody);
+
+    @PostMapping("/mall-im-router/im/inner/batchSendMsg")
+    void batchSendMsg(@RequestBody List<ImMsgBody> imMsgBodyList);
+
+}

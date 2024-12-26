@@ -2,7 +2,7 @@ package com.ww.mall.im.handler.codec;
 
 import com.ww.mall.im.common.ImConstant;
 import com.ww.mall.im.common.ImMsg;
-import com.ww.mall.im.handler.component.ImHandlerComponent;
+import com.ww.mall.im.handler.component.ImMsgSerializerComponent;
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.ChannelHandler;
 import io.netty.channel.ChannelHandlerContext;
@@ -24,7 +24,7 @@ import java.util.List;
 public class ImMsgCodecHandler extends MessageToMessageCodec<ByteBuf, ImMsg> {
 
     @Resource
-    private ImHandlerComponent imHandlerComponent;
+    private ImMsgSerializerComponent imMsgSerializerComponent;
 
     @Override
     protected void encode(ChannelHandlerContext ctx, ImMsg msg, List<Object> out) throws Exception {
@@ -41,7 +41,7 @@ public class ImMsgCodecHandler extends MessageToMessageCodec<ByteBuf, ImMsg> {
         byteBuf.writeByte(0xff);
         byteBuf.writeByte(0xff);
         // 获取消息内容的字节数组
-        byte[] bytes = imHandlerComponent.getDefaultSerializer().serialize(msg);
+        byte[] bytes = imMsgSerializerComponent.getDefaultSerializer().serialize(msg);
         // 7. 写入4字节消息长度
         byteBuf.writeInt(bytes.length);
         // 8. 写入消息内容

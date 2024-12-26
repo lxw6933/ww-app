@@ -2,8 +2,11 @@ package com.ww.mall.im.handler;
 
 import com.ww.mall.im.common.ImMsgBody;
 import com.ww.mall.im.enums.ImMsgBizCodeEnum;
+import com.ww.mall.im.router.api.rpc.ImRouterApi;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
+
+import javax.annotation.Resource;
 
 /**
  * @author ww
@@ -14,9 +17,13 @@ import org.springframework.stereotype.Component;
 @Component
 public class ChatMsgHandler implements MsgHandler {
 
+    @Resource
+    private ImRouterApi imRouterApi;
+
     @Override
     public void handle(ImMsgBody imMsgBody) {
-
+        log.info("处理消息:{}", imMsgBody);
+        imRouterApi.sendMsg(imMsgBody);
     }
 
     @Override

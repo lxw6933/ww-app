@@ -3,7 +3,6 @@ package com.ww.mall.im.handler.msg;
 import com.alibaba.fastjson.JSON;
 import com.ww.mall.im.common.ImMsg;
 import com.ww.mall.im.common.ImMsgBody;
-import com.ww.mall.im.component.key.ImRedisKeyBuilder;
 import com.ww.mall.im.enums.ImMsgCodeEnum;
 import com.ww.mall.im.utils.ImChannelHandlerContextUtils;
 import com.ww.mall.im.utils.ImContextUtils;
@@ -26,9 +25,6 @@ public class LogoutMsgHandlerAdapter implements ImMsgHandlerAdapter {
 
     @Resource
     private StringRedisTemplate stringRedisTemplate;
-
-    @Resource
-    private ImRedisKeyBuilder imRedisKeyBuilder;
 
     @Override
     public void handle(ChannelHandlerContext ctx, ImMsg imMsg) {
