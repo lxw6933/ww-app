@@ -3,7 +3,7 @@ package com.ww.mall.third.sms.rpc;
 import com.ww.mall.common.common.Result;
 import com.ww.mall.third.sms.fallback.SmsApiFallBack;
 import org.springframework.cloud.openfeign.FeignClient;
-import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 
 /**
@@ -21,7 +21,7 @@ public interface SmsApi {
      * @param code 验证码
      * @return boolean
      */
-    @RequestMapping("/mall-third-server/sms/sendCode")
+    @GetMapping("/mall-third-server/sms/sendCode")
     Result<Boolean> sendSms(@RequestParam("mobile") String mobile, @RequestParam("code") String code);
 
 }

@@ -1,5 +1,7 @@
 package com.ww.mall.member.rpc;
 
+import com.ww.mall.common.common.Result;
+import com.ww.mall.member.member.rpc.MemberApi;
 import com.ww.mall.member.service.MemberIntegralRecordService;
 import com.ww.mall.member.service.MemberService;
 import com.ww.mall.member.member.bo.AddMemberIntegralBO;
@@ -14,7 +16,7 @@ import org.springframework.web.bind.annotation.*;
  **/
 @RestController
 @RequestMapping("/member/inner")
-public class MemberApiRpc {
+public class MemberApiRpc implements MemberApi {
 
     @Autowired
     private MemberService memberService;
@@ -22,19 +24,22 @@ public class MemberApiRpc {
     @Autowired
     private MemberIntegralRecordService memberIntegralRecordService;
 
+    @Override
     @GetMapping("/getMemberByMobile")
-    public MemberDTO getMemberByMobile(@RequestParam("mobile") String mobile) {
-        return memberService.getMemberByMobile(mobile);
+    public Result<MemberDTO> getMemberByMobile(@RequestParam("mobile") String mobile) {
+        return Result.success(memberService.getMemberByMobile(mobile));
     }
 
+    @Override
     @PostMapping("/addNewMemberIntegral")
-    public Boolean addNewMemberIntegral(@RequestBody AddMemberIntegralBO addMemberIntegralBO) {
-        return memberIntegralRecordService.addNewMemberIntegral(addMemberIntegralBO);
+    public Result<Boolean> addMemberIntegral(AddMemberIntegralBO addMemberIntegralBO) {
+        return Result.success(memberIntegralRecordService.addNewMemberIntegral(addMemberIntegralBO));
     }
 
+    @Override
     @GetMapping("/test")
-    public String test() {
-        return "member openFeign hello";
+    public Result<String> test() {
+        return Result.success("member openFeign hello");
     }
 
 }

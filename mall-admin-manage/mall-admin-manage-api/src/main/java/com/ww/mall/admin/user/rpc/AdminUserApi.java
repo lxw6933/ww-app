@@ -24,7 +24,7 @@ public interface AdminUserApi {
      * @param sysUserLoginBO bo
      * @return SysUserDTO
      */
-    @PostMapping("/mall-admin-manage/admin/inner/getAdminLoginUserInfo")
+    @PostMapping("/mall-admin-manage/admin/inner/adminLogin")
     Result<SysUserDTO> adminLogin(@RequestBody SysUserLoginBO sysUserLoginBO);
 
     /**
