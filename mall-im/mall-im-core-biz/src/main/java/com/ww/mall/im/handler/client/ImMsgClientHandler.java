@@ -4,9 +4,7 @@ import com.alibaba.fastjson.JSON;
 import com.ww.mall.im.common.ImMsg;
 import com.ww.mall.im.common.ImMsgBody;
 import com.ww.mall.im.enums.ImMsgCodeEnum;
-import com.ww.mall.im.handler.component.ImMsgSerializerComponent;
-import com.ww.mall.im.handler.msg.LogoutMsgHandlerAdapter;
-import com.ww.mall.im.utils.ImContextUtils;
+import com.ww.mall.im.component.ImMsgSerializerComponent;
 import io.netty.channel.ChannelHandler;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.SimpleChannelInboundHandler;
@@ -28,9 +26,6 @@ public class ImMsgClientHandler extends SimpleChannelInboundHandler<ImMsg> {
     @Resource
     private ImMsgSerializerComponent imMsgSerializerComponent;
 
-    @Resource
-    private LogoutMsgHandlerAdapter logoutMsgHandlerAdapter;
-
     @Override
     protected void channelRead0(ChannelHandlerContext ctx, ImMsg imMsg) {
         ImMsgBody respBody = imMsgSerializerComponent.deserializeMsg(imMsg);
@@ -46,15 +41,4 @@ public class ImMsgClientHandler extends SimpleChannelInboundHandler<ImMsg> {
         }
     }
 
-    /**
-     * 正常、异常断线都会触发
-     */
-    @Override
-    public void channelInactive(ChannelHandlerContext ctx) {
-        Long userId = ImContextUtils.getUserId(ctx);
-        Integer appId = ImContextUtils.getAppId(ctx);
-        if (userId != null && appId != null) {
-            logoutMsgHandlerAdapter.logoutHandler(ctx, userId, appId);
-        }
-    }
 }

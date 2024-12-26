@@ -1,8 +1,7 @@
 package com.ww.mall.im.handler.initializer;
 
-import com.ww.mall.im.configuration.ImProperties;
-import com.ww.mall.im.handler.server.ImMsgServerHandler;
 import com.ww.mall.im.handler.codec.ImMsgCodecHandler;
+import com.ww.mall.im.handler.server.ImMsgServerHandler;
 import com.ww.mall.im.protocol.ImProtocolFrameDecoder;
 import io.netty.channel.ChannelInitializer;
 import io.netty.channel.socket.SocketChannel;
@@ -22,12 +21,6 @@ public class ImServerHandlerInitializer extends ChannelInitializer<SocketChannel
 
     @Resource
     private ImMsgServerHandler imMsgServerHandler;
-
-    @Resource
-    private ImProperties imProperties;
-
-    @Resource
-    private ImMsgCodecHandler imMsgCodecHandler;
 
     @Override
     protected void initChannel(SocketChannel ch) throws Exception {
@@ -58,7 +51,7 @@ public class ImServerHandlerInitializer extends ChannelInitializer<SocketChannel
         // 日志
 //        ch.pipeline().addLast(new LoggingHandler(LogLevel.DEBUG));
         // 自定义协议编解码器
-        ch.pipeline().addLast(imMsgCodecHandler);
+        ch.pipeline().addLast(new ImMsgCodecHandler());
         // im 消息处理器
         ch.pipeline().addLast(imMsgServerHandler);
     }

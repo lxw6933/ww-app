@@ -1,4 +1,4 @@
-package com.ww.mall.im.handler.component;
+package com.ww.mall.im.component;
 
 import cn.hutool.extra.spring.SpringUtil;
 import com.ww.mall.common.exception.ApiException;

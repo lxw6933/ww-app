@@ -1,4 +1,4 @@
-package com.ww.mall.im.handler.component;
+package com.ww.mall.im.component;
 
 import cn.hutool.core.lang.Assert;
 import cn.hutool.extra.spring.SpringUtil;

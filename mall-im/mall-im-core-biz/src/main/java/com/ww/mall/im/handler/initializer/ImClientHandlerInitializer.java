@@ -22,9 +22,6 @@ public class ImClientHandlerInitializer extends ChannelInitializer<SocketChannel
     @Resource
     private ImMsgClientHandler imMsgClientHandler;
 
-    @Resource
-    private ImMsgCodecHandler imMsgCodecHandler;
-
     @Override
     protected void initChannel(SocketChannel ch) throws Exception {
         // 用来判断是不是读空闲时间过长，或写空闲时间过长 (读，写，读写空闲时间限制) 0表示不关心
@@ -54,7 +51,7 @@ public class ImClientHandlerInitializer extends ChannelInitializer<SocketChannel
         // 日志
 //        ch.pipeline().addLast(new LoggingHandler(LogLevel.DEBUG));
         // 自定义协议编解码器
-        ch.pipeline().addLast(imMsgCodecHandler);
+        ch.pipeline().addLast(new ImMsgCodecHandler());
         // im 消息处理器
         ch.pipeline().addLast(imMsgClientHandler);
     }

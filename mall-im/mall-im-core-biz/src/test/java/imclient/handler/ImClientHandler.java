@@ -19,17 +19,14 @@ import io.netty.channel.socket.nio.NioSocketChannel;
 import org.springframework.beans.factory.InitializingBean;
 import org.springframework.stereotype.Service;
 
-import javax.annotation.Resource;
 import java.util.Scanner;
 
 @Service
 public class ImClientHandler implements InitializingBean {
 
-    @Resource
-    private ImMsgCodecHandler imMsgCodecHandler;
-
     @Override
-    public void afterPropertiesSet() {
+    public void afterPropertiesSet() throws InterruptedException {
+        Thread.sleep(3000);
         Thread clientThread = new Thread(() -> {
             EventLoopGroup clientGroup = new NioEventLoopGroup();
             Bootstrap bootstrap = new Bootstrap();
@@ -39,14 +36,14 @@ public class ImClientHandler implements InitializingBean {
                 @Override
                 protected void initChannel(SocketChannel ch) {
                     System.out.println("初始化连接建立");
-                    ch.pipeline().addLast(imMsgCodecHandler);
+                    ch.pipeline().addLast(new ImMsgCodecHandler());
                     ch.pipeline().addLast(new ClientHandler());
                 }
             });
 
             ChannelFuture channelFuture;
             try {
-                channelFuture = bootstrap.connect("localhost", 8085).sync();
+                channelFuture = bootstrap.connect("localhost", 8765).sync();
                 Channel channel = channelFuture.channel();
                 Scanner scanner = new Scanner(System.in);
                 System.out.println("请输入userId");

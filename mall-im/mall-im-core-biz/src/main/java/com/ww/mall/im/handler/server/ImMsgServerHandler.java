@@ -2,7 +2,9 @@ package com.ww.mall.im.handler.server;
 
 import com.ww.mall.common.exception.ApiException;
 import com.ww.mall.im.common.ImMsg;
-import com.ww.mall.im.handler.component.ImHandlerComponent;
+import com.ww.mall.im.component.ImHandlerComponent;
+import com.ww.mall.im.handler.msg.LogoutMsgHandlerAdapter;
+import com.ww.mall.im.utils.ImContextUtils;
 import io.netty.channel.ChannelHandler;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInboundHandlerAdapter;
@@ -24,8 +26,12 @@ public class ImMsgServerHandler extends ChannelInboundHandlerAdapter {
     @Resource
     protected ImHandlerComponent imHandlerComponent;
 
+    @Resource
+    private LogoutMsgHandlerAdapter logoutMsgHandlerAdapter;
+
     @Override
     public void channelRead(ChannelHandlerContext channelHandlerContext, Object imMsg) {
+        log.info("ImMsgFlag[{}] 收到客户端消息: {}", imMsg instanceof ImMsg, imMsg);
         if (imMsg instanceof ImMsg) {
             imHandlerComponent.handle(channelHandlerContext, (ImMsg) imMsg);
         } else {
@@ -33,15 +39,21 @@ public class ImMsgServerHandler extends ChannelInboundHandlerAdapter {
         }
     }
 
+    /**
+     * 正常、异常断线都会触发
+     */
     @Override
-    public void channelInactive(ChannelHandlerContext ctx) throws Exception {
+    public void channelInactive(ChannelHandlerContext ctx) {
         log.info("客户端断开连接: {}", ctx.channel());
-        super.channelActive(ctx);
+        Long userId = ImContextUtils.getUserId(ctx);
+        Integer appId = ImContextUtils.getAppId(ctx);
+        if (userId != null && appId != null) {
+            logoutMsgHandlerAdapter.logoutHandler(ctx, userId, appId);
+        }
     }
 
     @Override
     public void channelActive(ChannelHandlerContext ctx) throws Exception {
         log.info("客户端建立连接: {}", ctx.channel());
-        super.channelActive(ctx);
     }
 }

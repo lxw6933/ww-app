@@ -20,7 +20,9 @@ public class ClientHandler extends SimpleChannelInboundHandler<ImMsg> {
             ImMsg ackMsg = ImMsg.build(ImMsgCodeEnum.IM_ACK_MSG.getCode(), JSON.toJSONString(ackBody));
             ctx.writeAndFlush(ackMsg);
         }
-        System.out.println("【服务端响应数据】result is " + new String(imMsg.getBody()));
+        if (imMsg.getMsgType() != ImMsgCodeEnum.IM_HEARTBEAT_MSG.getCode()) {
+            System.out.println("【服务端响应数据】" + JSON.parseObject(imMsg.getBody(), ImMsgBody.class));
+        }
     }
 
 }

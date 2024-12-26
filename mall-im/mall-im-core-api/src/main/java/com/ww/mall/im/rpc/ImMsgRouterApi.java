@@ -15,7 +15,7 @@ import java.util.List;
  * @create 2024-12-24 21:29
  * @description:
  */
-@FeignClient(value = "mall-im-core", fallbackFactory = ImMsgRouterApiFallback.class)
+@FeignClient(value = "mall-im-core")
 public interface ImMsgRouterApi {
 
     @PostMapping("/mall-im-core/im/inner/sendMsg")

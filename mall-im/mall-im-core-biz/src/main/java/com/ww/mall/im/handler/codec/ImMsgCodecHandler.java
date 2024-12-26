@@ -2,7 +2,6 @@ package com.ww.mall.im.handler.codec;
 
 import com.ww.mall.im.common.ImConstant;
 import com.ww.mall.im.common.ImMsg;
-import com.ww.mall.im.handler.component.ImMsgSerializerComponent;
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.ChannelHandler;
 import io.netty.channel.ChannelHandlerContext;
@@ -10,7 +9,6 @@ import io.netty.handler.codec.MessageToMessageCodec;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 
-import javax.annotation.Resource;
 import java.util.List;
 
 /**
@@ -19,12 +17,8 @@ import java.util.List;
  * @description: 消息编解码处理器
  */
 @Slf4j
-@Component
 @ChannelHandler.Sharable
 public class ImMsgCodecHandler extends MessageToMessageCodec<ByteBuf, ImMsg> {
-
-    @Resource
-    private ImMsgSerializerComponent imMsgSerializerComponent;
 
     @Override
     protected void encode(ChannelHandlerContext ctx, ImMsg msg, List<Object> out) throws Exception {
@@ -41,11 +35,10 @@ public class ImMsgCodecHandler extends MessageToMessageCodec<ByteBuf, ImMsg> {
         byteBuf.writeByte(0xff);
         byteBuf.writeByte(0xff);
         // 获取消息内容的字节数组
-        byte[] bytes = imMsgSerializerComponent.getDefaultSerializer().serialize(msg);
         // 7. 写入4字节消息长度
-        byteBuf.writeInt(bytes.length);
+        byteBuf.writeInt(msg.getBody().length);
         // 8. 写入消息内容
-        byteBuf.writeBytes(bytes);
+        byteBuf.writeBytes(msg.getBody());
         out.add(byteBuf);
     }
 

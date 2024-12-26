@@ -7,7 +7,7 @@ import com.ww.mall.im.common.ImConstant;
 import com.ww.mall.im.common.ImMsg;
 import com.ww.mall.im.common.ImMsgBody;
 import com.ww.mall.im.enums.ImMsgCodeEnum;
-import com.ww.mall.im.handler.component.ImMsgSerializerComponent;
+import com.ww.mall.im.component.ImMsgSerializerComponent;
 import com.ww.mall.im.utils.ImChannelHandlerContextUtils;
 import com.ww.mall.im.utils.ImContextUtils;
 import com.ww.mall.im.utils.ImUtils;

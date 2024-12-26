@@ -3,7 +3,7 @@ package com.ww.mall.im.handler.msg;
 import com.ww.mall.im.common.ImMsg;
 import com.ww.mall.im.common.ImMsgBody;
 import com.ww.mall.im.enums.ImMsgCodeEnum;
-import com.ww.mall.im.handler.component.ImMsgSerializerComponent;
+import com.ww.mall.im.component.ImMsgSerializerComponent;
 import com.ww.mall.im.rpc.BizMsgHandlerApi;
 import com.ww.mall.im.utils.ImContextUtils;
 import io.netty.channel.ChannelHandlerContext;
@@ -43,6 +43,7 @@ public class BizMsgHandlerAdapter implements ImMsgHandlerAdapter {
         }
         // 解析消息body
         ImMsgBody imMsgBody = imMsgSerializerComponent.deserializeMsg(imMsg);
+        log.info("收到客户端发来的业务消息：{}", imMsgBody);
         // TODO 发送mq消费处理消息推送
         // 临时使用rpc测试
         bizMsgHandlerApi.handleImMsg(imMsgBody);

@@ -13,7 +13,6 @@ import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.channel.socket.nio.NioSocketChannel;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.InitializingBean;
-import org.springframework.stereotype.Component;
 
 import javax.annotation.Resource;
 import java.util.concurrent.TimeUnit;
@@ -24,10 +23,8 @@ import java.util.concurrent.TimeUnit;
  * @description:
  */
 @Slf4j
-@Component
+//@Component
 public class ImClientStarter implements InitializingBean {
-
-    private Channel socketChannel;
 
     private final EventLoopGroup group = new NioEventLoopGroup();
 
