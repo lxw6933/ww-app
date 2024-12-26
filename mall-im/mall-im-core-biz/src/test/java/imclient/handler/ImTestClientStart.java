@@ -10,24 +10,28 @@ import com.ww.mall.im.enums.ImMsgBizCodeEnum;
 import com.ww.mall.im.enums.ImMsgCodeEnum;
 import com.ww.mall.im.handler.codec.ImMsgCodecHandler;
 import io.netty.bootstrap.Bootstrap;
-import io.netty.channel.Channel;
-import io.netty.channel.ChannelFuture;
-import io.netty.channel.ChannelInitializer;
-import io.netty.channel.EventLoopGroup;
+import io.netty.channel.*;
 import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.channel.socket.SocketChannel;
 import io.netty.channel.socket.nio.NioSocketChannel;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.InitializingBean;
 import org.springframework.stereotype.Service;
 
 import java.util.Date;
 import java.util.Scanner;
+import java.util.concurrent.TimeUnit;
 
+@Slf4j
 @Service
-public class ImClientHandler implements InitializingBean {
+public class ImTestClientStart implements InitializingBean {
 
     @Override
     public void afterPropertiesSet() {
+        start();
+    }
+
+    public void start() {
         Thread clientThread = new Thread(() -> {
             EventLoopGroup clientGroup = new NioEventLoopGroup();
             Bootstrap bootstrap = new Bootstrap();
@@ -42,9 +46,20 @@ public class ImClientHandler implements InitializingBean {
                 }
             });
 
-            ChannelFuture channelFuture;
+            ChannelFuture channelFuture = bootstrap.connect("localhost", 8765);
             try {
-                channelFuture = bootstrap.connect("localhost", 8765).sync();
+                log.info("开始连接im server");
+                channelFuture.sync();
+
+                channelFuture.addListener((ChannelFutureListener) future -> {
+                    if (future.isSuccess()) {
+                        log.info("成功连接im server");
+                    } else {
+                        log.error("连接im server服务失败，三秒后尝试重连...");
+                        future.channel().eventLoop().schedule(this::start, 3, TimeUnit.SECONDS);
+                    }
+                });
+
                 Channel channel = channelFuture.channel();
                 Scanner scanner = new Scanner(System.in);
                 System.out.println("请输入userId");
@@ -78,8 +93,9 @@ public class ImClientHandler implements InitializingBean {
                     ImMsg heartBeatMsg = ImMsg.build(ImMsgCodeEnum.IM_BIZ_MSG.getCode(), JSON.toJSONString(bizBody));
                     channel.writeAndFlush(heartBeatMsg);
                 }
-            } catch (InterruptedException e) {
-                throw new RuntimeException(e);
+            } catch (Exception e) {
+                log.error("连接im server服务失败，三秒后尝试重连...", e);
+                clientGroup.schedule(this::start, 3, TimeUnit.SECONDS);
             }
         });
         clientThread.start();

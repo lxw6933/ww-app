@@ -1,10 +1,12 @@
 package com.ww.mall.im.handler.client;
 
+import cn.hutool.extra.spring.SpringUtil;
 import com.alibaba.fastjson.JSON;
 import com.ww.mall.im.common.ImMsg;
 import com.ww.mall.im.common.ImMsgBody;
-import com.ww.mall.im.enums.ImMsgCodeEnum;
 import com.ww.mall.im.component.ImMsgSerializerComponent;
+import com.ww.mall.im.enums.ImMsgCodeEnum;
+import com.ww.mall.im.starter.ImClientStarter;
 import io.netty.channel.ChannelHandler;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.SimpleChannelInboundHandler;
@@ -12,6 +14,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 
 import javax.annotation.Resource;
+import java.util.concurrent.TimeUnit;
 
 /**
  * @author ww
@@ -39,6 +42,13 @@ public class ImMsgClientHandler extends SimpleChannelInboundHandler<ImMsg> {
             ImMsg ackMsg = ImMsg.build(ImMsgCodeEnum.IM_ACK_MSG.getCode(), JSON.toJSONString(ackBody));
             ctx.writeAndFlush(ackMsg);
         }
+    }
+
+    @Override
+    public void channelInactive(ChannelHandlerContext ctx) {
+        log.warn("im server 异常，三秒后重连");
+        ImClientStarter imClientStarter = SpringUtil.getBean(ImClientStarter.class);
+        ctx.channel().eventLoop().schedule(imClientStarter::start, 3, TimeUnit.SECONDS);
     }
 
 }

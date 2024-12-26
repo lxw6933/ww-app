@@ -1,5 +1,6 @@
 package imclient.handler;
 
+import cn.hutool.extra.spring.SpringUtil;
 import com.alibaba.fastjson.JSON;
 import com.ww.mall.im.common.ImMsg;
 import com.ww.mall.im.common.ImMsgBody;
@@ -7,7 +8,11 @@ import com.ww.mall.im.dto.MessageDTO;
 import com.ww.mall.im.enums.ImMsgCodeEnum;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.SimpleChannelInboundHandler;
+import lombok.extern.slf4j.Slf4j;
 
+import java.util.concurrent.TimeUnit;
+
+@Slf4j
 public class ClientHandler extends SimpleChannelInboundHandler<ImMsg> {
 
     @Override
@@ -26,6 +31,13 @@ public class ClientHandler extends SimpleChannelInboundHandler<ImMsg> {
             MessageDTO message = JSON.parseObject(bizMsg, MessageDTO.class);
             System.out.println("[" + message.getUserId() + "]: " + message.getContent());
         }
+    }
+
+    @Override
+    public void channelInactive(ChannelHandlerContext ctx) {
+        log.warn("im server 异常，三秒后重连");
+        ImTestClientStart imClientStarter = SpringUtil.getBean(ImTestClientStart.class);
+        ctx.channel().eventLoop().schedule(imClientStarter::start, 3, TimeUnit.SECONDS);
     }
 
 }

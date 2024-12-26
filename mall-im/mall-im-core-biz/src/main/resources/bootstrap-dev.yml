@@ -1,5 +1,5 @@
 server:
-  port: 17201  #服务端口号
+  port: 17200  #服务端口号
   servlet:
     context-path: /mall-im-core
 
