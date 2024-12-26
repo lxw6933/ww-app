@@ -24,8 +24,8 @@ public class ImRouterApiRpc implements ImRouterApi {
 
     @Override
     @PostMapping("/sendMsg")
-    public boolean sendMsg(ImMsgBody imMsgBody) {
-        return imRouterService.sendMsg(imMsgBody);
+    public void sendMsg(ImMsgBody imMsgBody) {
+        imRouterService.sendMsg(imMsgBody);
     }
 
     @Override

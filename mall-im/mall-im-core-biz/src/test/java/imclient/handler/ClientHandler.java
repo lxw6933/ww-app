@@ -3,6 +3,7 @@ package imclient.handler;
 import com.alibaba.fastjson.JSON;
 import com.ww.mall.im.common.ImMsg;
 import com.ww.mall.im.common.ImMsgBody;
+import com.ww.mall.im.dto.MessageDTO;
 import com.ww.mall.im.enums.ImMsgCodeEnum;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.SimpleChannelInboundHandler;
@@ -11,8 +12,8 @@ public class ClientHandler extends SimpleChannelInboundHandler<ImMsg> {
 
     @Override
     protected void channelRead0(ChannelHandlerContext ctx, ImMsg imMsg) {
+        ImMsgBody respBody = JSON.parseObject(new String(imMsg.getBody()), ImMsgBody.class);
         if (imMsg.getMsgType() == ImMsgCodeEnum.IM_BIZ_MSG.getCode()) {
-            ImMsgBody respBody = JSON.parseObject(new String(imMsg.getBody()), ImMsgBody.class);
             ImMsgBody ackBody = new ImMsgBody();
             ackBody.setSeqId(respBody.getSeqId());
             ackBody.setAppId(respBody.getAppId());
@@ -20,8 +21,10 @@ public class ClientHandler extends SimpleChannelInboundHandler<ImMsg> {
             ImMsg ackMsg = ImMsg.build(ImMsgCodeEnum.IM_ACK_MSG.getCode(), JSON.toJSONString(ackBody));
             ctx.writeAndFlush(ackMsg);
         }
-        if (imMsg.getMsgType() != ImMsgCodeEnum.IM_HEARTBEAT_MSG.getCode()) {
-            System.out.println("【服务端响应数据】" + JSON.parseObject(imMsg.getBody(), ImMsgBody.class));
+        if (imMsg.getMsgType() == ImMsgCodeEnum.IM_BIZ_MSG.getCode()) {
+            String bizMsg = respBody.getBizMsg();
+            MessageDTO message = JSON.parseObject(bizMsg, MessageDTO.class);
+            System.out.println("[" + message.getUserId() + "]: " + message.getContent());
         }
     }
 

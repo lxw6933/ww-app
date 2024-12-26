@@ -1,6 +1,8 @@
 package com.ww.mall.im.handler;
 
+import com.alibaba.fastjson.JSON;
 import com.ww.mall.im.common.ImMsgBody;
+import com.ww.mall.im.dto.MessageDTO;
 import com.ww.mall.im.enums.ImMsgBizCodeEnum;
 import com.ww.mall.im.router.api.rpc.ImRouterApi;
 import lombok.extern.slf4j.Slf4j;
@@ -22,7 +24,7 @@ public class ChatMsgHandler implements MsgHandler {
 
     @Override
     public void handle(ImMsgBody imMsgBody) {
-        log.info("处理消息:{}", imMsgBody);
+        log.info("接收到[{}]发来的消息:{}", imMsgBody.getUserId(), JSON.parseObject(imMsgBody.getBizMsg(), MessageDTO.class).getContent());
         imRouterApi.sendMsg(imMsgBody);
     }
 

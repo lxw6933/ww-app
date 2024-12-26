@@ -16,7 +16,7 @@ import java.util.List;
 public interface ImRouterApi {
 
     @PostMapping("/mall-im-router/im/inner/sendMsg")
-    boolean sendMsg(@RequestBody ImMsgBody imMsgBody);
+    void sendMsg(@RequestBody ImMsgBody imMsgBody);
 
     @PostMapping("/mall-im-router/im/inner/batchSendMsg")
     void batchSendMsg(@RequestBody List<ImMsgBody> imMsgBodyList);

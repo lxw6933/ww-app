@@ -2,10 +2,11 @@ package imclient.handler;
 
 import cn.hutool.core.util.StrUtil;
 import com.alibaba.fastjson.JSON;
-import com.alibaba.fastjson.JSONObject;
 import com.ww.mall.im.common.ImMsg;
 import com.ww.mall.im.common.ImMsgBody;
+import com.ww.mall.im.dto.MessageDTO;
 import com.ww.mall.im.enums.ImAppIdEnum;
+import com.ww.mall.im.enums.ImMsgBizCodeEnum;
 import com.ww.mall.im.enums.ImMsgCodeEnum;
 import com.ww.mall.im.handler.codec.ImMsgCodecHandler;
 import io.netty.bootstrap.Bootstrap;
@@ -19,14 +20,14 @@ import io.netty.channel.socket.nio.NioSocketChannel;
 import org.springframework.beans.factory.InitializingBean;
 import org.springframework.stereotype.Service;
 
+import java.util.Date;
 import java.util.Scanner;
 
 @Service
 public class ImClientHandler implements InitializingBean {
 
     @Override
-    public void afterPropertiesSet() throws InterruptedException {
-        Thread.sleep(3000);
+    public void afterPropertiesSet() {
         Thread clientThread = new Thread(() -> {
             EventLoopGroup clientGroup = new NioEventLoopGroup();
             Bootstrap bootstrap = new Bootstrap();
@@ -66,13 +67,14 @@ public class ImClientHandler implements InitializingBean {
                     }
                     ImMsgBody bizBody = new ImMsgBody();
                     bizBody.setAppId(ImAppIdEnum.MALL_LIVE_BIZ.getCode());
-                    bizBody.setUserId(userId);
-                    bizBody.setBizCode(5555);
-                    JSONObject jsonObject = new JSONObject();
-                    jsonObject.put("userId", userId);
-                    jsonObject.put("objectId", objectId);
-                    jsonObject.put("content", content);
-                    bizBody.setBizMsg(JSON.toJSONString(jsonObject));
+                    bizBody.setUserId(objectId);
+                    bizBody.setBizCode(ImMsgBizCodeEnum.CHAT_MSG_BIZ.getCode());
+                    MessageDTO message = new MessageDTO();
+                    message.setUserId(userId);
+                    message.setRoomId(null);
+                    message.setContent(content);
+                    message.setCreateTime(new Date());
+                    bizBody.setBizMsg(JSON.toJSONString(message));
                     ImMsg heartBeatMsg = ImMsg.build(ImMsgCodeEnum.IM_BIZ_MSG.getCode(), JSON.toJSONString(bizBody));
                     channel.writeAndFlush(heartBeatMsg);
                 }

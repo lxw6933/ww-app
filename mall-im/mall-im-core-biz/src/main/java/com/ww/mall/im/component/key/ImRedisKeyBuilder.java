@@ -18,20 +18,20 @@ public class ImRedisKeyBuilder extends RedisKeyBuilder {
     private static final String IM_ACK_MAP = "im_ack_map";
 
     private static final int ACK_SHARD_NUM = 100;
-    private static final int ONLINE_SHARD_NUM = 10000;
+    private static final int HEARTBEAT_SHARD_NUM = 10000;
 
     /**
      * 消息ack key
      */
     public String buildImAckHashKey(Long userId, int appId) {
-        return StringUtils.joinWith(SPLIT_ITEM, super.getPrefix(), IM_ACK_MAP, appId, userId % ACK_SHARD_NUM);
+        return super.getPrefix() + StringUtils.joinWith(SPLIT_ITEM,IM_ACK_MAP, appId, userId % ACK_SHARD_NUM);
     }
 
     /**
      * 构建im连接用户心跳 key
      */
     public String buildImLoginUserHeartbeatKey(Long userId, int appId) {
-        return StringUtils.joinWith(SPLIT_ITEM, super.getPrefix(), IM_ONLINE_ZSET, appId, userId % ONLINE_SHARD_NUM);
+        return super.getPrefix() + StringUtils.joinWith(SPLIT_ITEM,IM_ONLINE_ZSET, appId, userId % HEARTBEAT_SHARD_NUM);
     }
 
 }
