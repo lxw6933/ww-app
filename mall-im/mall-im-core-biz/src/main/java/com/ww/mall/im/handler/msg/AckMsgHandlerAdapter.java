@@ -1,8 +1,7 @@
 package com.ww.mall.im.handler.msg;
 
-import com.alibaba.fastjson.JSON;
 import com.ww.mall.im.common.ImMsg;
-import com.ww.mall.im.common.ImMsgBody;
+import com.ww.mall.im.component.ImMsgSerializerComponent;
 import com.ww.mall.im.enums.ImMsgCodeEnum;
 import com.ww.mall.im.service.MsgAckService;
 import com.ww.mall.im.utils.ImContextUtils;
@@ -24,6 +23,9 @@ public class AckMsgHandlerAdapter implements ImMsgHandlerAdapter {
     @Resource
     private MsgAckService msgAckService;
 
+    @Resource
+    private ImMsgSerializerComponent imMsgSerializerComponent;
+
     @Override
     public void handle(ChannelHandlerContext ctx, ImMsg imMsg) {
         Long userId = ImContextUtils.getUserId(ctx);
@@ -32,7 +34,7 @@ public class AckMsgHandlerAdapter implements ImMsgHandlerAdapter {
             ctx.close();
             throw new IllegalArgumentException("消息ack消息参数异常");
         }
-        msgAckService.doMsgAck(JSON.parseObject(imMsg.getBody(), ImMsgBody.class));
+        msgAckService.doMsgAck(imMsgSerializerComponent.deserializeMsg(imMsg));
     }
 
     @Override

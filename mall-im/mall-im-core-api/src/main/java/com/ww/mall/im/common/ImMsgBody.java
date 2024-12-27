@@ -23,7 +23,7 @@ public class ImMsgBody implements Serializable {
     private int appId;
 
     /**
-     * 用户id
+     * 用户id[业务消息：接收方用户id，非业务消息发送方用户id]
      */
     private Long userId;
 

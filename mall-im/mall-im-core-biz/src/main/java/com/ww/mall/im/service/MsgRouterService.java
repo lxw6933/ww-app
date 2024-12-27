@@ -1,6 +1,7 @@
 package com.ww.mall.im.service;
 
 import com.ww.mall.im.common.ImMsgBody;
+import com.ww.mall.im.enums.ImMsgCodeEnum;
 
 /**
  * @author ww
@@ -20,4 +21,5 @@ public interface MsgRouterService {
      */
     boolean sendMsgToClient(ImMsgBody imMsgBody);
 
+    boolean sendMsgToClient(ImMsgCodeEnum msgCodeEnum, ImMsgBody imMsgBody);
 }

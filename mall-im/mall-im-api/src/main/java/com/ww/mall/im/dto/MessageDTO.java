@@ -14,7 +14,7 @@ import java.util.Date;
 public class MessageDTO implements Serializable {
 
     /**
-     * 接受人id
+     * 发送人id
      */
     private Long userId;
 

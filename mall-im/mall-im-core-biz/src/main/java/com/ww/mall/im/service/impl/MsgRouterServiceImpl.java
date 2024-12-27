@@ -11,7 +11,6 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
 import javax.annotation.Resource;
-import java.util.UUID;
 
 /**
  * @author ww
@@ -32,18 +31,25 @@ public class MsgRouterServiceImpl implements MsgRouterService {
             // 成功发送消息给到客户端，等待客户端接收消息ack
             msgAckService.recordMsgAck(imMsgBody, 1);
             msgAckService.sendDelayMsg(imMsgBody);
+        } else {
+            log.error("用户[{}]已下线，消息[{}]发送失败", imMsgBody.getUserId(), imMsgBody);
+            // TODO 业务处理
         }
     }
 
     @Override
     public boolean sendMsgToClient(ImMsgBody imMsgBody) {
+        return sendMsgToClient(ImMsgCodeEnum.IM_BIZ_MSG, imMsgBody);
+    }
+
+    @Override
+    public boolean sendMsgToClient(ImMsgCodeEnum msgCodeEnum, ImMsgBody imMsgBody) {
         // 接收消息的用户id
         Long userId = imMsgBody.getUserId();
         // 获取用户对应的渠道信息
         ChannelHandlerContext ctx = ImChannelHandlerContextUtils.get(userId);
         if (ctx != null) {
-            imMsgBody.setSeqId(UUID.randomUUID().toString());
-            ImMsg respMsg = ImMsg.build(ImMsgCodeEnum.IM_BIZ_MSG.getCode(), imMsgBody);
+            ImMsg respMsg = ImMsg.build(msgCodeEnum.getCode(), imMsgBody);
             ctx.writeAndFlush(respMsg);
             return true;
         }

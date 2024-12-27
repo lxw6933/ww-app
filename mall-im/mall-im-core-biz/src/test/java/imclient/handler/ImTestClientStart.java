@@ -22,6 +22,7 @@ import org.springframework.stereotype.Service;
 
 import java.util.Date;
 import java.util.Scanner;
+import java.util.UUID;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 
@@ -82,6 +83,7 @@ public class ImTestClientStart implements InitializingBean {
                     bizBody.setAppId(ImAppIdEnum.MALL_LIVE_BIZ.getCode());
                     bizBody.setUserId(objectId);
                     bizBody.setBizCode(ImMsgBizCodeEnum.CHAT_MSG_BIZ.getCode());
+                    bizBody.setSeqId(UUID.randomUUID().toString());
                     // 构建业务消息对象
                     MessageDTO message = new MessageDTO();
                     message.setUserId(userId);
@@ -89,8 +91,9 @@ public class ImTestClientStart implements InitializingBean {
                     message.setContent(content);
                     message.setCreateTime(new Date());
                     bizBody.setBizMsg(JSON.toJSONString(message));
-                    ImMsg heartBeatMsg = ImMsg.buildTestClient(ImMsgCodeEnum.IM_BIZ_MSG.getCode(), ImConstant.DEFAULT_SERIALIZER, JSON.toJSONBytes(bizBody));
-                    channel.writeAndFlush(heartBeatMsg);
+                    ImMsg bizMsg = ImMsg.buildTestClient(ImMsgCodeEnum.IM_BIZ_MSG.getCode(), ImConstant.DEFAULT_SERIALIZER, JSON.toJSONBytes(bizBody));
+                    channel.writeAndFlush(bizMsg);
+                    System.out.println("[" + bizBody.getSeqId() + "]消息发送");
                 }
             } catch (Exception e) {
                 reConnection(clientGroup.next(), e);
@@ -99,7 +102,7 @@ public class ImTestClientStart implements InitializingBean {
         clientThread.start();
     }
 
-    private void sendImMsg(Long userId, ImMsgCodeEnum imLoginMsg, Channel channel) {
+    public static void sendImMsg(Long userId, ImMsgCodeEnum imLoginMsg, Channel channel) {
         ImMsgBody imMsgBody = new ImMsgBody();
         imMsgBody.setAppId(ImAppIdEnum.MALL_LIVE_BIZ.getCode());
         imMsgBody.setUserId(userId);
