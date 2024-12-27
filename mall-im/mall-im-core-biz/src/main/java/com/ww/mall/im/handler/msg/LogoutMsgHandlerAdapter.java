@@ -1,6 +1,5 @@
 package com.ww.mall.im.handler.msg;
 
-import com.alibaba.fastjson.JSON;
 import com.ww.mall.im.common.ImMsg;
 import com.ww.mall.im.common.ImMsgBody;
 import com.ww.mall.im.enums.ImMsgCodeEnum;
@@ -54,7 +53,7 @@ public class LogoutMsgHandlerAdapter implements ImMsgHandlerAdapter {
         respBody.setAppId(appId);
         respBody.setUserId(userId);
         respBody.setBizMsg("true");
-        ImMsg respMsg = ImMsg.build(ImMsgCodeEnum.IM_LOGOUT_MSG.getCode(), JSON.toJSONString(respBody));
+        ImMsg respMsg = ImMsg.build(ImMsgCodeEnum.IM_LOGOUT_MSG.getCode(), respBody);
         ctx.writeAndFlush(respMsg);
         ctx.close();
         // 清除渠道与用户的缓存

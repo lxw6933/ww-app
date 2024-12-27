@@ -1,6 +1,5 @@
 package com.ww.mall.im.handler.msg;
 
-import com.alibaba.fastjson.JSON;
 import com.ww.mall.im.common.ImConstant;
 import com.ww.mall.im.common.ImMsg;
 import com.ww.mall.im.common.ImMsgBody;
@@ -57,7 +56,7 @@ public class HeartBeatMsgHandlerAdapter implements ImMsgHandlerAdapter {
         msgBody.setUserId(userId);
         msgBody.setAppId(appId);
         msgBody.setBizMsg("true");
-        ImMsg respMsg = ImMsg.build(ImMsgCodeEnum.IM_HEARTBEAT_MSG.getCode(), JSON.toJSONString(msgBody));
+        ImMsg respMsg = ImMsg.build(ImMsgCodeEnum.IM_HEARTBEAT_MSG.getCode(), msgBody);
         log.debug("[heartbeat] imMsg is {}", imMsg);
         ctx.writeAndFlush(respMsg);
     }

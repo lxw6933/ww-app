@@ -1,6 +1,5 @@
 package com.ww.mall.im.service.impl;
 
-import com.alibaba.fastjson.JSON;
 import com.ww.mall.im.common.ImMsg;
 import com.ww.mall.im.common.ImMsgBody;
 import com.ww.mall.im.enums.ImMsgCodeEnum;
@@ -44,7 +43,7 @@ public class MsgRouterServiceImpl implements MsgRouterService {
         ChannelHandlerContext ctx = ImChannelHandlerContextUtils.get(userId);
         if (ctx != null) {
             imMsgBody.setSeqId(UUID.randomUUID().toString());
-            ImMsg respMsg = ImMsg.build(ImMsgCodeEnum.IM_BIZ_MSG.getCode(), JSON.toJSONString(imMsgBody));
+            ImMsg respMsg = ImMsg.build(ImMsgCodeEnum.IM_BIZ_MSG.getCode(), imMsgBody);
             ctx.writeAndFlush(respMsg);
             return true;
         }

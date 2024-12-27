@@ -1,13 +1,12 @@
 package com.ww.mall.im.handler.msg;
 
 import cn.hutool.core.lang.Assert;
-import com.alibaba.fastjson.JSON;
 import com.ww.mall.common.exception.ApiException;
 import com.ww.mall.im.common.ImConstant;
 import com.ww.mall.im.common.ImMsg;
 import com.ww.mall.im.common.ImMsgBody;
-import com.ww.mall.im.enums.ImMsgCodeEnum;
 import com.ww.mall.im.component.ImMsgSerializerComponent;
+import com.ww.mall.im.enums.ImMsgCodeEnum;
 import com.ww.mall.im.utils.ImChannelHandlerContextUtils;
 import com.ww.mall.im.utils.ImContextUtils;
 import com.ww.mall.im.utils.ImUtils;
@@ -55,7 +54,7 @@ public class LoginMsgHandlerAdapter implements ImMsgHandlerAdapter {
         respBody.setAppId(appId);
         respBody.setUserId(userId);
         respBody.setBizMsg("true");
-        ImMsg respMsg = ImMsg.build(ImMsgCodeEnum.IM_LOGIN_MSG.getCode(), JSON.toJSONString(respBody));
+        ImMsg respMsg = ImMsg.build(ImMsgCodeEnum.IM_LOGIN_MSG.getCode(), respBody);
         ctx.writeAndFlush(respMsg);
         // TODO 广播用户登录消息
 

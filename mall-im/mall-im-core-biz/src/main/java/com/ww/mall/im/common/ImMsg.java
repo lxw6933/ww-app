@@ -1,5 +1,7 @@
 package com.ww.mall.im.common;
 
+import cn.hutool.extra.spring.SpringUtil;
+import com.ww.mall.im.component.ImMsgSerializerComponent;
 import lombok.Data;
 
 import java.io.Serializable;
@@ -42,14 +44,27 @@ public class ImMsg implements Serializable {
      */
     private byte[] body;
 
-    public static ImMsg build(int msgType, String msg) {
+    public static ImMsg buildTestClient(int msgType, short serializeType, byte[] bytes) {
+        ImMsg imMsg = new ImMsg();
+        imMsg.setMagic(ImConstant.DEFAULT_MAGIC);
+        imMsg.setVersion(ImConstant.DEFAULT_VERSION);
+        imMsg.setSerializeType(serializeType);
+        imMsg.setMsgType(msgType);
+        imMsg.setLength(bytes.length);
+        imMsg.setBody(bytes);
+        return imMsg;
+    }
+
+    public static ImMsg build(int msgType, ImMsgBody msgBody) {
         ImMsg imMsg = new ImMsg();
         imMsg.setMagic(ImConstant.DEFAULT_MAGIC);
         imMsg.setVersion(ImConstant.DEFAULT_VERSION);
         imMsg.setSerializeType(ImConstant.DEFAULT_SERIALIZER);
         imMsg.setMsgType(msgType);
-        imMsg.setLength(msg.getBytes().length);
-        imMsg.setBody(msg.getBytes());
+        ImMsgSerializerComponent imMsgSerializerComponent = SpringUtil.getBean(ImMsgSerializerComponent.class);
+        byte[] bytes = imMsgSerializerComponent.serializeMsg(ImConstant.DEFAULT_SERIALIZER, msgBody);
+        imMsg.setLength(bytes.length);
+        imMsg.setBody(bytes);
         return imMsg;
     }
 

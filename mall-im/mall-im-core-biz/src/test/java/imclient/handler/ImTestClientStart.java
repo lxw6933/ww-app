@@ -89,7 +89,7 @@ public class ImTestClientStart implements InitializingBean {
                     message.setContent(content);
                     message.setCreateTime(new Date());
                     bizBody.setBizMsg(JSON.toJSONString(message));
-                    ImMsg heartBeatMsg = ImMsg.build(ImMsgCodeEnum.IM_BIZ_MSG.getCode(), JSON.toJSONString(bizBody));
+                    ImMsg heartBeatMsg = ImMsg.buildTestClient(ImMsgCodeEnum.IM_BIZ_MSG.getCode(), ImConstant.DEFAULT_SERIALIZER, JSON.toJSONBytes(bizBody));
                     channel.writeAndFlush(heartBeatMsg);
                 }
             } catch (Exception e) {
@@ -103,7 +103,7 @@ public class ImTestClientStart implements InitializingBean {
         ImMsgBody imMsgBody = new ImMsgBody();
         imMsgBody.setAppId(ImAppIdEnum.MALL_LIVE_BIZ.getCode());
         imMsgBody.setUserId(userId);
-        ImMsg loginMsg = ImMsg.build(imLoginMsg.getCode(), JSON.toJSONString(imMsgBody));
+        ImMsg loginMsg = ImMsg.buildTestClient(imLoginMsg.getCode(), ImConstant.DEFAULT_SERIALIZER, JSON.toJSONBytes(imMsgBody));
         channel.writeAndFlush(loginMsg);
     }
 

@@ -2,6 +2,7 @@ package imclient.handler;
 
 import cn.hutool.extra.spring.SpringUtil;
 import com.alibaba.fastjson.JSON;
+import com.ww.mall.im.common.ImConstant;
 import com.ww.mall.im.common.ImMsg;
 import com.ww.mall.im.common.ImMsgBody;
 import com.ww.mall.im.dto.MessageDTO;
@@ -21,7 +22,7 @@ public class ClientHandler extends SimpleChannelInboundHandler<ImMsg> {
             ackBody.setSeqId(respBody.getSeqId());
             ackBody.setAppId(respBody.getAppId());
             ackBody.setUserId(respBody.getUserId());
-            ImMsg ackMsg = ImMsg.build(ImMsgCodeEnum.IM_ACK_MSG.getCode(), JSON.toJSONString(ackBody));
+            ImMsg ackMsg = ImMsg.buildTestClient(ImMsgCodeEnum.IM_ACK_MSG.getCode(), ImConstant.DEFAULT_SERIALIZER, JSON.toJSONBytes(ackBody));
             ctx.writeAndFlush(ackMsg);
         }
         if (imMsg.getMsgType() == ImMsgCodeEnum.IM_BIZ_MSG.getCode()) {
