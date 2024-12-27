@@ -7,13 +7,11 @@ import com.fasterxml.jackson.databind.SerializerProvider;
 import com.fasterxml.jackson.databind.ser.ContextualSerializer;
 import com.ww.mall.common.annotation.Sensitive;
 import com.ww.mall.common.enums.SensitiveDataType;
-import com.ww.mall.common.utils.AuthorizationContext;
+import com.ww.mall.common.utils.SensitiveUtils;
 import lombok.Getter;
 import lombok.Setter;
-import org.apache.commons.lang3.StringUtils;
 
 import java.io.IOException;
-import java.util.List;
 import java.util.Objects;
 
 /**
@@ -45,21 +43,12 @@ public class SensitiveJsonSerializer extends JsonSerializer<String> implements C
     @Override
     public void serialize(String value, JsonGenerator gen, SerializerProvider serializers) throws IOException {
         // 判断用户是否有权限【没有权限，敏感序列化，有权限正常序列化】
-        if (hasPermission(requiredPermission)) {
+        if (SensitiveUtils.hasPermission(requiredPermission)) {
             gen.writeObject(value);
         } else {
             // 序列化敏感数据字段
             gen.writeString(sensitiveDataType.desensitizer.apply(value));
         }
-    }
-
-    private boolean hasPermission(String requiredPermission) {
-        if (StringUtils.isBlank(requiredPermission)) {
-            return false;
-        }
-        List<String> adminUserSensitivePerms = AuthorizationContext.getAdminUserSensitivePerms();
-        // 判断用户是否拥有权限
-        return adminUserSensitivePerms.contains(requiredPermission);
     }
 
 }
