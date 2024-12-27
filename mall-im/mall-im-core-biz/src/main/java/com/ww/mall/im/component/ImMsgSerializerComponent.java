@@ -5,7 +5,7 @@ import cn.hutool.extra.spring.SpringUtil;
 import com.ww.mall.im.common.ImMsg;
 import com.ww.mall.im.common.ImMsgBody;
 import com.ww.mall.im.configuration.ImProperties;
-import com.ww.mall.im.serialize.ImMsgSerializer;
+import com.ww.mall.im.serializer.ImMsgSerializer;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.InitializingBean;
 import org.springframework.stereotype.Component;

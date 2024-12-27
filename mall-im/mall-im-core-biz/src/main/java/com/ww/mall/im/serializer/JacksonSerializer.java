@@ -1,4 +1,4 @@
-package com.ww.mall.im.serialize;
+package com.ww.mall.im.serializer;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;

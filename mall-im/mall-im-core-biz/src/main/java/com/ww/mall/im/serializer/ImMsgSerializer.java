@@ -1,4 +1,4 @@
-package com.ww.mall.im.serialize;
+package com.ww.mall.im.serializer;
 
 import com.ww.mall.im.enums.ImMsgSerializerEnum;
 
