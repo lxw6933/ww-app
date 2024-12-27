@@ -7,7 +7,7 @@ import com.ww.mall.im.handler.msg.LogoutMsgHandlerAdapter;
 import com.ww.mall.im.utils.ImContextUtils;
 import io.netty.channel.ChannelHandler;
 import io.netty.channel.ChannelHandlerContext;
-import io.netty.channel.ChannelInboundHandlerAdapter;
+import io.netty.channel.SimpleChannelInboundHandler;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 
@@ -21,7 +21,7 @@ import javax.annotation.Resource;
 @Slf4j
 @Component
 @ChannelHandler.Sharable
-public class ImMsgServerHandler extends ChannelInboundHandlerAdapter {
+public class ImMsgServerHandler extends SimpleChannelInboundHandler<Object> {
 
     @Resource
     protected ImHandlerComponent imHandlerComponent;
@@ -30,7 +30,7 @@ public class ImMsgServerHandler extends ChannelInboundHandlerAdapter {
     private LogoutMsgHandlerAdapter logoutMsgHandlerAdapter;
 
     @Override
-    public void channelRead(ChannelHandlerContext channelHandlerContext, Object imMsg) {
+    public void channelRead0(ChannelHandlerContext channelHandlerContext, Object imMsg) {
         log.info("ImMsgFlag[{}] 收到客户端消息: {}", imMsg instanceof ImMsg, imMsg);
         if (imMsg instanceof ImMsg) {
             imHandlerComponent.handle(channelHandlerContext, (ImMsg) imMsg);
