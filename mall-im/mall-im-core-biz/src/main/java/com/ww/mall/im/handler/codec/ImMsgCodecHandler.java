@@ -20,7 +20,7 @@ import java.util.List;
 public class ImMsgCodecHandler extends MessageToMessageCodec<ByteBuf, ImMsg> {
 
     @Override
-    protected void encode(ChannelHandlerContext ctx, ImMsg msg, List<Object> out) throws Exception {
+    protected void encode(ChannelHandlerContext ctx, ImMsg msg, List<Object> out) {
         ByteBuf byteBuf = ctx.alloc().buffer();
         // 写入4字节的魔数
         byteBuf.writeInt(ImConstant.DEFAULT_MAGIC);
@@ -42,7 +42,7 @@ public class ImMsgCodecHandler extends MessageToMessageCodec<ByteBuf, ImMsg> {
     }
 
     @Override
-    protected void decode(ChannelHandlerContext ctx, ByteBuf byteBuf, List<Object> out) throws Exception {
+    protected void decode(ChannelHandlerContext ctx, ByteBuf byteBuf, List<Object> out) {
         // 读取4字节的魔数
         int magic = byteBuf.readInt();
         // 读取1字节的版本号

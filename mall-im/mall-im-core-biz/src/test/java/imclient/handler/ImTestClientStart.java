@@ -11,6 +11,7 @@ import com.ww.mall.im.enums.ImAppIdEnum;
 import com.ww.mall.im.enums.ImMsgBizCodeEnum;
 import com.ww.mall.im.enums.ImMsgCodeEnum;
 import com.ww.mall.im.handler.codec.ImMsgCodecHandler;
+import com.ww.mall.im.protocol.ImProtocolFrameDecoder;
 import io.netty.bootstrap.Bootstrap;
 import io.netty.channel.*;
 import io.netty.channel.nio.NioEventLoopGroup;
@@ -46,6 +47,8 @@ public class ImTestClientStart implements InitializingBean {
             bootstrap.handler(new ChannelInitializer<SocketChannel>() {
                 @Override
                 protected void initChannel(SocketChannel ch) {
+                    // 自定义协议
+                    ch.pipeline().addLast(new ImProtocolFrameDecoder());
                     ch.pipeline().addLast(new ImMsgCodecHandler());
                     ch.pipeline().addLast(new ClientHandler());
                 }
@@ -72,8 +75,8 @@ public class ImTestClientStart implements InitializingBean {
                 sendImMsg(userId, ImMsgCodeEnum.IM_LOGIN_MSG, channel);
                 // 心跳包机制
                 initHeartBeatTask(userId, channel);
+                System.out.println("请输入聊天内容");
                 while (true) {
-                    System.out.println("请输入聊天内容");
                     String content = scanner.nextLine();
                     if (StrUtil.isEmpty(content)) {
                         continue;
