@@ -10,8 +10,6 @@ import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.SimpleChannelInboundHandler;
 import lombok.extern.slf4j.Slf4j;
 
-import java.util.concurrent.TimeUnit;
-
 @Slf4j
 public class ClientHandler extends SimpleChannelInboundHandler<ImMsg> {
 
@@ -35,9 +33,8 @@ public class ClientHandler extends SimpleChannelInboundHandler<ImMsg> {
 
     @Override
     public void channelInactive(ChannelHandlerContext ctx) {
-        log.warn("im server 异常，三秒后重连");
         ImTestClientStart imClientStarter = SpringUtil.getBean(ImTestClientStart.class);
-        ctx.channel().eventLoop().schedule(imClientStarter::start, 3, TimeUnit.SECONDS);
+        imClientStarter.reConnection(ctx.channel().eventLoop(), null);
     }
 
 }
