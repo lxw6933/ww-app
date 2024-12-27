@@ -113,6 +113,6 @@ public class ImTestClientStart implements InitializingBean {
     }
 
     public void initHeartBeatTask(Long userId, Channel channel) {
-        heartbeatExecutor.schedule(() -> sendImMsg(userId, ImMsgCodeEnum.IM_HEARTBEAT_MSG, channel), ImConstant.DEFAULT_HEART_BEAT_GAP, TimeUnit.SECONDS);
+        heartbeatExecutor.scheduleAtFixedRate(() -> sendImMsg(userId, ImMsgCodeEnum.IM_HEARTBEAT_MSG, channel), 1, ImConstant.DEFAULT_HEART_BEAT_GAP, TimeUnit.SECONDS);
     }
 }
