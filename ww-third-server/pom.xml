@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+    <parent>
+        <groupId>com.ww.app</groupId>
+        <artifactId>ww-app</artifactId>
+        <version>${revision}</version>
+    </parent>
+    <modules>
+        <module>ww-third-server-api</module>
+        <module>ww-third-server-biz</module>
+    </modules>
+
+    <artifactId>ww-third-server</artifactId>
+    <packaging>pom</packaging>
+
+    <name>${project.artifactId}</name>
+    <description>
+        第三方业务 模块
+    </description>
+
+</project>

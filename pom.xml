@@ -3,43 +3,41 @@
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
 
-    <groupId>com.ww.mall</groupId>
-    <artifactId>ww-mall</artifactId>
+    <groupId>com.ww.app</groupId>
+    <artifactId>ww-app</artifactId>
     <version>${revision}</version>
 
-    <name>ww-mall</name>
     <description>聚合服务</description>
     <packaging>pom</packaging>
 
     <modules>
-        <module>mall-dependencies</module>
-        <module>mall-coupon</module>
-        <module>mall-auth</module>
-        <module>mall-third-server</module>
-        <module>mall-member</module>
-        <module>mall-cart</module>
-        <module>mall-consumer</module>
-        <module>mall-order</module>
-        <module>mall-product</module>
-        <module>mall-search</module>
-        <module>mall-pay</module>
-        <module>mall-api-gateway</module>
-<!--        <module>mall-code-generator</module>-->
+        <module>ww-dependencies</module>
+        <module>ww-coupon</module>
+        <module>ww-auth</module>
+        <module>ww-third-server</module>
+        <module>ww-member</module>
+        <module>ww-cart</module>
+        <module>ww-consumer</module>
+        <module>ww-order</module>
+        <module>ww-product</module>
+        <module>ww-search</module>
+        <module>ww-pay</module>
+        <module>ww-api-gateway</module>
         <!-- 后台管理模块 -->
-        <module>mall-admin-manage</module>
+        <module>ww-admin-manage</module>
         <!-- 服务监控 -->
-        <module>mall-monitor</module>
+        <module>ww-monitor</module>
         <!-- 秒杀服务 -->
-        <module>mall-seckill</module>
-        <module>mall-flink</module>
+        <module>ww-seckill</module>
+        <module>ww-flink</module>
         <!-- grpc -->
-        <module>mall-grpc</module>
+        <module>ww-grpc</module>
         <!-- 开发平台 -->
-        <module>mall-open-platform</module>
+        <module>ww-open-platform</module>
         <!-- framework -->
-        <module>mall-framework</module>
+        <module>ww-framework</module>
         <!-- im -->
-        <module>mall-im</module>
+        <module>ww-im</module>
     </modules>
 
     <properties>
@@ -62,8 +60,8 @@
         <dependencies>
             <!-- 统一依赖管理 -->
             <dependency>
-                <groupId>com.ww.mall</groupId>
-                <artifactId>mall-dependencies</artifactId>
+                <groupId>com.ww.app</groupId>
+                <artifactId>ww-dependencies</artifactId>
                 <version>${revision}</version>
                 <type>pom</type>
                 <scope>import</scope>

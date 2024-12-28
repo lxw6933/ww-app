@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+    <parent>
+        <groupId>com.ww.app</groupId>
+        <artifactId>ww-app</artifactId>
+        <version>${revision}</version>
+    </parent>
+    <modules>
+        <module>ww-common</module>
+        <module>ww-spring-boot-starter-web</module>
+        <module>ww-spring-boot-starter-es</module>
+        <module>ww-spring-boot-starter-excel</module>
+        <module>ww-spring-boot-starter-influxdb</module>
+        <module>ww-spring-boot-starter-ip</module>
+        <module>ww-spring-boot-starter-minio</module>
+        <module>ww-spring-boot-starter-mongodb</module>
+        <module>ww-spring-boot-starter-mybatis</module>
+        <module>ww-spring-boot-starter-rabbitmq</module>
+        <module>ww-spring-boot-starter-redis</module>
+        <module>ww-spring-boot-starter-security</module>
+        <module>ww-spring-boot-starter-sensitive</module>
+        <module>ww-spring-boot-starter-websocket</module>
+        <module>ww-spring-boot-starter-job</module>
+    </modules>
+
+    <artifactId>ww-framework</artifactId>
+    <packaging>pom</packaging>
+
+    <name>${project.artifactId}</name>
+    <description>
+        技术组件 framework 模块
+    </description>
+</project>

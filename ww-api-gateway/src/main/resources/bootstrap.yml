@@ -1,0 +1,29 @@
+spring:
+  application:
+    name: ww-api-gateway
+  profiles:
+    active: dev
+  # cloud配置
+  cloud:
+    sentinel:
+      transport:
+        dashboard: localhost:8080
+    nacos:
+      discovery:
+        server-addr: localhost:8848
+        namespace: ww-${spring.profiles.active}
+        username: nacos
+        password: nacos
+      config:
+        server-addr: ${spring.cloud.nacos.discovery.server-addr}
+        namespace: ww-${spring.profiles.active}
+        username: ${spring.cloud.nacos.discovery.username}
+        password: ${spring.cloud.nacos.discovery.password}
+        file-extension: yml
+        shared-configs:
+          - data-Id: ww-common.yml
+            refresh: true
+          - data-id: sentinel-rules.yml
+            refresh: true
+          - data-id: gateway-sentinel-rules.yml
+            refresh: true

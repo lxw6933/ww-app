@@ -1,0 +1,37 @@
+server:
+  port: 12345  #服务端口号
+  servlet:
+    context-path: /ww-admin-manage
+spring:
+  datasource:
+    driver-class-name: com.mysql.cj.jdbc.Driver
+#    url: jdbc:mysql://192.168.10.141:3306/mall_basic?characterEncoding=UTF-8&autoReconnect=true&useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=Asia/Shanghai
+    url: jdbc:mysql://localhost:3307/ww_mall?characterEncoding=UTF-8&autoReconnect=true&useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=Asia/Shanghai
+    username: root
+    password: admin
+#    password: adminlxw
+  redis:
+    host: localhost
+    password: 123456
+    port: 6379
+  data:
+    mongodb:
+      # 副本集群配置
+      uri: mongodb://ww:admin@172.28.174.84:27001,172.28.174.84:27002,172.28.174.84:27003/ww_mall?replicaSet=rs&readPreference=secondaryPreferred&connectTimeoutMS=300000
+      # 单机配置
+#      host: localhost:27017
+#      database: ww_mall
+#      username: admin
+#      password: admin
+#      authentication-database: admin
+
+ip2region:
+  enabled: true
+
+mybatis-plus:
+  mapper-locations: classpath:mapper/*Mapper.xml
+  configuration:
+    map-underscore-to-camel-case: true
+  global-config:
+    db-config:
+      id-type: auto

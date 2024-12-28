@@ -1,0 +1,100 @@
+server:
+  port: 8888
+  servlet:
+    context-path: /api
+
+spring:
+  cloud:
+    gateway:
+      discovery:
+        locator:
+          # 开启通过微服务名动态路由
+          enabled: true
+      routes:
+        # 优惠券服务路由
+        - id: coupon_route
+          uri: lb://ww-coupon
+          predicates:
+            - Path=/api/ww-coupon/**
+          filters:
+            # /api/foo  =>  /foo
+            - RewritePath=/api(?<segment>/?.*), $\{segment}
+        # 认证服务路由
+        - id: auth_route
+          uri: lb://ww-auth
+          predicates:
+            - Path=/api/ww-auth/**
+          filters:
+            # /api/foo  =>  /foo
+            - RewritePath=/api(?<segment>/?.*), $\{segment}
+        # 会员服务路由
+        - id: member_route
+          uri: lb://ww-member
+          predicates:
+            - Path=/api/ww-member/**
+          filters:
+            # /api/foo  =>  /foo
+            - RewritePath=/api(?<segment>/?.*), $\{segment}
+        # 商品服务路由
+        - id: product_route
+          uri: lb://ww-product
+          predicates:
+            - Path=/api/ww-product/**
+          filters:
+            # /api/foo  =>  /foo
+            - RewritePath=/api(?<segment>/?.*), $\{segment}
+        # 购物车服务路由
+        - id: cart_route
+          uri: lb://ww-cart
+          predicates:
+            - Path=/api/ww-cart/**
+          filters:
+            # /api/foo  =>  /foo
+            - RewritePath=/api(?<segment>/?.*), $\{segment}
+        # 搜索服务路由
+        - id: search_route
+          uri: lb://ww-search
+          predicates:
+            - Path=/api/ww-search/**
+          filters:
+            # /api/foo  =>  /foo
+            - RewritePath=/api(?<segment>/?.*), $\{segment}
+        # 订单服务路由
+        - id: order_route
+          uri: lb://ww-order
+          predicates:
+            - Path=/api/ww-order/**
+          filters:
+            # /api/foo  =>  /foo
+            - RewritePath=/api(?<segment>/?.*), $\{segment}
+        # 秒杀服务路由
+        - id: seckill_route
+          uri: lb://ww-seckill
+          predicates:
+            - Path=/api/ww-seckill/**
+          filters:
+            # /api/foo  =>  /foo
+            - RewritePath=/api(?<segment>/?.*), $\{segment}
+
+
+        # 代码生成服务路由
+        - id: generator_route
+          uri: lb://ww-code-generator
+          predicates:
+            - Path=/api/generator/**
+          filters:
+            # /api/foo  =>  /foo
+            - RewritePath=/api(?<segment>/?.*), $\{segment}
+        # 后台管理服务路由
+        - id: admin_route
+          uri: lb://ww-admin-manage
+          predicates:
+            - Path=/api/ww-admin-manage/**
+          filters:
+            - RewritePath=/api(?<segment>/?.*), $\{segment}
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: "*"

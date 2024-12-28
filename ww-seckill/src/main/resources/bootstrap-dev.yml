@@ -1,0 +1,62 @@
+grpc:
+  client:
+    mall-member:
+      # 是否开启保持连接（长连接）
+      enableKeepAlive: true
+      # 保持连接时长（默认20s）
+      keepAliveTimeout: 20
+      # 没有RPC调用时是否保持连接（默认false，可禁用避免额外消耗CPU）
+      keepAliveWithoutCalls: false
+      # 客户端负载均衡策略(round_robin（默认）, pick_first)
+      defaultLoadBalancingPolicy: round_robin
+      # 通信类型
+      # plaintext | plaintext_upgrade | tls
+      # 明文通信且http/2 | 明文通信且升级http/1.1为http/2 | 使用TLS（ALPN/NPN）通信
+      negotiation-type: plaintext
+  server:
+    port: 19001
+    # 是否开启保持连接（长连接）
+    enableKeepAlive: true
+    # 保持连接时长（默认20s）
+    keep-alive-timeout: 5s
+    #表示当grpc连接没有数据传递时，多久之后开始向client发送ping packet
+    keep-alive-time: 10s
+    #是否允许客户端发送保持活跃的HTTP/2 ping，即使在连接上没有未完成的rpc。默认为false
+    permit-keep-alive-without-calls: true
+    # 10Mb 该参数控制服务端可以接收的最大消息大小。对于高并发场景，建议将其设置为较小的值，以减少网络延迟和内存占用
+    max-inbound-message-size: 10485760
+
+server:
+  port: 9100  #服务端口号
+  servlet:
+    context-path: /ww-seckill
+spring:
+  redis:
+    host: localhost
+    password: 123456
+    port: 6379
+  data:
+    mongodb:
+      # 副本集群配置
+      uri: mongodb://ww:admin@172.28.174.84:27001,172.28.174.84:27002,172.28.174.84:27003/ww_mall?replicaSet=rs&readPreference=secondaryPreferred&connectTimeoutMS=300000
+      # 单机配置
+#      host: localhost:27017
+#      database: ww_mall
+#      username: admin
+#      password: admin
+#      authentication-database: admin
+  rabbitmq:
+    addresses: 172.28.174.84:5672
+    virtual-host: /
+    # 设置发送端到exchange确认回调
+    publisher-confirm-type: correlated
+    # 设置发送端到queue确认回调
+    publisher-returns: true
+    # 设置消息抵达queue，以异步方式回调 publisher-returns
+    template:
+      mandatory: true
+
+# 开启sentinel feign支持【调用方（调用服务方）的熔断保护、被调用方（服务提供方）的降级保护】
+feign:
+  sentinel:
+    enabled: true

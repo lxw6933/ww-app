@@ -1,0 +1,36 @@
+grpc:
+  client:
+    mall-member:
+      # 是否开启保持连接（长连接）
+      enableKeepAlive: true
+      # 保持连接时长（默认20s）
+      keepAliveTimeout: 20
+      # 没有RPC调用时是否保持连接（默认false，可禁用避免额外消耗CPU）
+      keepAliveWithoutCalls: false
+      # 客户端负载均衡策略(round_robin（默认）, pick_first)
+      defaultLoadBalancingPolicy: round_robin
+      # 通信类型
+      # plaintext | plaintext_upgrade | tls
+      # 明文通信且http/2 | 明文通信且升级http/1.1为http/2 | 使用TLS（ALPN/NPN）通信
+      negotiation-type: plaintext
+
+server:
+  port: 20000  #服务端口号
+  servlet:
+    context-path: /ww-open-server
+spring:
+  data:
+    mongodb:
+      # 副本集群配置
+#      uri: mongodb://ww:admin@172.28.174.84:27001,172.28.174.84:27002,172.28.174.84:27003/ww_mall?replicaSet=rs&readPreference=secondaryPreferred&connectTimeoutMS=300000
+      # 单机配置
+      host: localhost:27017
+      database: ww_mall
+      username: admin
+      password: admin
+      authentication-database: admin
+
+# 开启sentinel feign支持【调用方（调用服务方）的熔断保护、被调用方（服务提供方）的降级保护】
+feign:
+  sentinel:
+    enabled: true
