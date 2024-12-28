@@ -4,7 +4,7 @@ import com.ww.mall.coupon.entity.Coupon;
 import com.ww.mall.coupon.service.CouponService;
 import com.ww.mall.coupon.view.bo.CouponPageBO;
 import com.ww.mall.coupon.view.vo.CouponPageVO;
-import com.ww.mall.common.common.MallPageResult;
+import com.ww.mall.common.common.AppPageResult;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
@@ -21,7 +21,7 @@ public class CouponController {
     private CouponService couponService;
 
     @GetMapping("/activity")
-    public MallPageResult<CouponPageVO> pageList(CouponPageBO couponPageBO) {
+    public AppPageResult<CouponPageVO> pageList(CouponPageBO couponPageBO) {
         return couponService.pageList(couponPageBO);
     }
 

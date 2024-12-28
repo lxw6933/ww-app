@@ -13,7 +13,7 @@ import com.ww.mall.admin.view.vo.SysMenuParentVO;
 import com.ww.mall.admin.view.vo.SysMenuTreeNodeVO;
 import com.ww.mall.admin.view.vo.SysMenuVO;
 import com.ww.mall.common.exception.ApiException;
-import com.ww.mall.redis.annotation.MallResubmission;
+import com.ww.mall.redis.annotation.Resubmission;
 import com.ww.mall.common.common.IdForm;
 import org.springframework.beans.BeanUtils;
 import org.springframework.stereotype.Service;
@@ -47,7 +47,7 @@ public class SysMenuServiceImpl extends BaseService<SysMenuMapper, SysMenu> impl
     }
 
     @Override
-    @MallResubmission
+    @Resubmission
     public boolean save(SysMenuForm form) {
         SysMenu sysMenu = new SysMenu();
         BeanUtils.copyProperties(form, sysMenu);
@@ -55,7 +55,7 @@ public class SysMenuServiceImpl extends BaseService<SysMenuMapper, SysMenu> impl
     }
 
     @Override
-    @MallResubmission
+    @Resubmission
     public boolean update(SysMenuForm form) {
         SysMenu sysMenu = this.getById(form.getId());
         Assert.notNull(sysMenu, () -> new ApiException("信息不存在"));
@@ -64,7 +64,7 @@ public class SysMenuServiceImpl extends BaseService<SysMenuMapper, SysMenu> impl
     }
 
     @Override
-    @MallResubmission
+    @Resubmission
     public boolean delete(IdForm idForm) {
         return this.removeById(idForm.getId());
     }

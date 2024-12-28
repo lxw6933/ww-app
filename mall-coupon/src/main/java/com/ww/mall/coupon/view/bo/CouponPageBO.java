@@ -2,7 +2,7 @@ package com.ww.mall.coupon.view.bo;
 
 import com.ww.mall.coupon.eunms.CouponDiscountType;
 import com.ww.mall.coupon.eunms.CouponType;
-import com.ww.mall.common.common.MallPage;
+import com.ww.mall.common.common.AppPage;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 
@@ -13,7 +13,7 @@ import lombok.EqualsAndHashCode;
  */
 @Data
 @EqualsAndHashCode(callSuper = true)
-public class CouponPageBO extends MallPage {
+public class CouponPageBO extends AppPage {
 
     /**
      * 优惠券名称

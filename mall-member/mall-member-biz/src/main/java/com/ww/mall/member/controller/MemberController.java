@@ -3,17 +3,17 @@ package com.ww.mall.member.controller;
 import cn.hutool.core.util.RandomUtil;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
-import com.ww.mall.common.common.MallClientUser;
+import com.ww.mall.common.common.ClientUser;
 import com.ww.mall.common.enums.GlobalResCodeConstants;
 import com.ww.mall.common.exception.ApiException;
 import com.ww.mall.member.entity.Member;
 import com.ww.mall.member.service.MemberService;
 import com.ww.mall.member.view.vo.MemberVO;
-import com.ww.mall.common.common.MallPage;
-import com.ww.mall.common.common.MallPageResult;
+import com.ww.mall.common.common.AppPage;
+import com.ww.mall.common.common.AppPageResult;
 import com.ww.mall.common.utils.AuthorizationContext;
 import com.ww.mall.common.utils.IdUtil;
-import com.ww.mall.mybatis.common.MallPlusPageResult;
+import com.ww.mall.mybatis.common.AppPlusPageResult;
 import com.ww.mall.member.member.dto.MemberDTO;
 import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -52,14 +52,14 @@ public class MemberController {
     }
 
     @GetMapping("/list")
-    public MallPageResult<MemberVO> pageList(MallPage mallPage) {
-        MallClientUser clientUser = AuthorizationContext.getClientUser();
+    public AppPageResult<MemberVO> pageList(AppPage appPage) {
+        ClientUser clientUser = AuthorizationContext.getClientUser();
         if (clientUser == null) {
             throw new ApiException(GlobalResCodeConstants.ILLEGAL_REQUEST);
         }
-        IPage<Member> page = new Page<>(mallPage.getPageNum(), mallPage.getPageSize());
+        IPage<Member> page = new Page<>(appPage.getPageNum(), appPage.getPageSize());
         memberService.page(page);
-        return new MallPlusPageResult<>(page, result -> {
+        return new AppPlusPageResult<>(page, result -> {
             MemberVO memberVO = new MemberVO();
             BeanUtils.copyProperties(result, memberVO);
             return memberVO;

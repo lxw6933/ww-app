@@ -14,20 +14,20 @@ import com.ww.mall.common.enums.SensitiveWordHandlerType;
 import com.ww.mall.common.exception.ApiException;
 import com.ww.mall.common.utils.IdUtil;
 import com.ww.mall.common.utils.IpUtil;
-import com.ww.mall.excel.MallExcelTemplate;
+import com.ww.mall.excel.ExcelTemplate;
 import com.ww.mall.excel.annotation.ExcelExportTimer;
 import com.ww.mall.excel.annotation.ExcelImportTimer;
 import com.ww.mall.excel.vo.ExcelResultVO;
 import com.ww.mall.ip.Ip2regionSearcher;
 import com.ww.mall.ip.common.IpInfo;
 import com.ww.mall.member.member.bo.MemberLoginBO;
-import com.ww.mall.minio.MallMinioTemplate;
+import com.ww.mall.minio.MinioTemplate;
 import com.ww.mall.mongodb.utils.MongoUtils;
-import com.ww.mall.rabbitmq.MallPublisher;
+import com.ww.mall.rabbitmq.RabbitMqPublisher;
 import com.ww.mall.rabbitmq.exchange.ExchangeConstant;
 import com.ww.mall.rabbitmq.queue.QueueConstant;
 import com.ww.mall.rabbitmq.routekey.RouteKeyConstant;
-import com.ww.mall.redis.MallRedisTemplate;
+import com.ww.mall.redis.AppRedisTemplate;
 import com.ww.mall.redis.component.StockRedisComponent;
 import com.ww.mall.seckill.component.CodeGeneratorService;
 import com.ww.mall.seckill.component.IssueCodeService;
@@ -40,7 +40,7 @@ import com.ww.mall.seckill.model.DemoModel;
 import com.ww.mall.seckill.node.executor.DemoFlowExecutor;
 import com.ww.mall.seckill.service.DemoService;
 import com.ww.mall.seckill.view.bo.SensitiveWordBO;
-import com.ww.mall.sensitive.annotation.MallSensitiveWordHandler;
+import com.ww.mall.sensitive.annotation.SensitiveWordHandler;
 import com.ww.mall.third.sms.rpc.SmsApi;
 import io.github.linpeilie.Converter;
 import lombok.extern.slf4j.Slf4j;
@@ -78,7 +78,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 public class DemoServiceImpl implements DemoService {
 
     @Resource
-    private MallRedisTemplate mallRedisTemplate;
+    private AppRedisTemplate appRedisTemplate;
 
     @Resource
     private StockRedisComponent stockRedisComponent;
@@ -90,7 +90,7 @@ public class DemoServiceImpl implements DemoService {
     private ThreadPoolExecutor defaultThreadPoolExecutor;
 
     @Resource
-    private MallPublisher mallPublisher;
+    private RabbitMqPublisher rabbitMqPublisher;
 
     @Resource
     private MongoTemplate mongoTemplate;
@@ -215,7 +215,7 @@ public class DemoServiceImpl implements DemoService {
             String orderDate = DateUtil.format(new Date(), DatePattern.NORM_DATETIME_PATTERN);
             String orderNo = IdUtil.generatorIdStr();
             int totalOrderNum = num.incrementAndGet();
-            mallPublisher.publishMsg(ExchangeConstant.MALL_OMS_EXCHANGE, RouteKeyConstant.MALL_CREATE_ORDER_KEY, orderNo);
+            rabbitMqPublisher.publishMsg(ExchangeConstant.OMS_EXCHANGE, RouteKeyConstant.CREATE_ORDER_KEY, orderNo);
             log.info("下单总数[{}]订单[{}]下单成功[{}]", totalOrderNum, orderNo, orderDate);
         }
         return true;
@@ -230,7 +230,7 @@ public class DemoServiceImpl implements DemoService {
             defaultThreadPoolExecutor.submit(() -> log.info("thread pool log"));
         }
         // mq日志
-        mallPublisher.publishMsg(ExchangeConstant.MALL_MEMBER_EXCHANGE, RouteKeyConstant.MALL_MEMBER_REGISTER_KEY, 1);
+        rabbitMqPublisher.publishMsg(ExchangeConstant.MEMBER_EXCHANGE, RouteKeyConstant.MEMBER_REGISTER_KEY, 1);
         // feign日志
         smsApi.sendSms("15970191157", "9527");
         log.info("interface end log");
@@ -242,12 +242,12 @@ public class DemoServiceImpl implements DemoService {
     @Override
     public void msg() {
         log.info("seckill msg");
-        rabbitTemplate.convertAndSend(QueueConstant.MALL_TEST_QUEUE, "1");
+        rabbitTemplate.convertAndSend(QueueConstant.TEST_QUEUE, "1");
     }
 
     @Override
     public void cache(String msg) {
-        mallRedisTemplate.publishMessage(RedisChannelConstant.MALL_SPU_CHANNEL, msg);
+        appRedisTemplate.publishMessage(RedisChannelConstant.SPU_CHANNEL, msg);
     }
 
     private int number = 0;
@@ -275,7 +275,7 @@ public class DemoServiceImpl implements DemoService {
                 for (int i = number * 50000; i < (number + 1) * 50000; i++) {
                     dataList.add(i);
                 }
-                mallRedisTemplate.initializeBitmap("bitMapTest", dataList);
+                appRedisTemplate.initializeBitmap("bitMapTest", dataList);
                 number++;
                 log.info("number: {}", number);
                 break;
@@ -297,13 +297,13 @@ public class DemoServiceImpl implements DemoService {
     private SensitiveWordBs sensitiveWordBs;
 
     @Override
-    @MallSensitiveWordHandler(content = {"#content.word", "#content.content"}, handlerType = SensitiveWordHandlerType.REPLACE)
+    @SensitiveWordHandler(content = {"#content.word", "#content.content"}, handlerType = SensitiveWordHandlerType.REPLACE)
     public String sensitiveWord(SensitiveWordBO content) {
         return JSON.toJSONString(content);
     }
 
     @Resource
-    private MallExcelTemplate mallExcelTemplate;
+    private ExcelTemplate excelTemplate;
 
     private final ExecutorService executorService = Executors.newFixedThreadPool(20);
 
@@ -317,7 +317,7 @@ public class DemoServiceImpl implements DemoService {
                 int num = i;
                 tasks.add(() -> {
                     log.info("线程{}执行任务{}", Thread.currentThread().getName(), num);
-                    mallExcelTemplate.readExcel(file, num, DemoModel.class, new DemoImportListener(excelResult));
+                    excelTemplate.readExcel(file, num, DemoModel.class, new DemoImportListener(excelResult));
                     return num;
                 });
             } catch (Exception e) {
@@ -380,7 +380,7 @@ public class DemoServiceImpl implements DemoService {
         Set<String> fieldNames = new HashSet<>();
         fieldNames.add("empNo");
         try {
-            mallExcelTemplate.exportExcelOfManySheet(response, map, "demo", fieldNames, false);
+            excelTemplate.exportExcelOfManySheet(response, map, "demo", fieldNames, false);
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
@@ -419,17 +419,17 @@ public class DemoServiceImpl implements DemoService {
     }
 
     @Resource
-    private MallMinioTemplate mallMinioTemplate;
+    private MinioTemplate minioTemplate;
 
     @Override
     public <T> String exportMinio(List<T> dataList, String bucketName) {
-        File tempFile = mallExcelTemplate.exportExcelOfOneSheetToTempFile(dataList);
+        File tempFile = excelTemplate.exportExcelOfOneSheetToTempFile(dataList);
         try (FileInputStream inputStream = new FileInputStream(tempFile)) {
-            boolean upload = mallMinioTemplate.upload(inputStream, bucketName, tempFile.getName());
+            boolean upload = minioTemplate.upload(inputStream, bucketName, tempFile.getName());
             if (!upload) {
                 throw new ApiException("上传文件到minio失败");
             }
-            return mallMinioTemplate.getFileUrl(bucketName, tempFile.getName(), null);
+            return minioTemplate.getFileUrl(bucketName, tempFile.getName(), null);
         } catch (IOException e) {
             throw new RuntimeException(e);
         } catch (Exception e) {
@@ -476,7 +476,7 @@ public class DemoServiceImpl implements DemoService {
                     List<Demo> resultList = mongoTemplate.aggregate(aggregation, "demo", Demo.class).getMappedResults();
 
                     // 生成临时文件
-                    File file = mallExcelTemplate.exportExcelOfOneSheetToTempFile(resultList, sheetIndex + StrUtil.EMPTY, UUID.randomUUID() + StrUtil.UNDERLINE + sheetIndex);
+                    File file = excelTemplate.exportExcelOfOneSheetToTempFile(resultList, sheetIndex + StrUtil.EMPTY, UUID.randomUUID() + StrUtil.UNDERLINE + sheetIndex);
                     exportFiles.add(file);
                     countDownLatch.countDown();
                 }, executorService).exceptionally(e -> {
@@ -488,14 +488,14 @@ public class DemoServiceImpl implements DemoService {
             targetFile = ZipUtil.zip(FileUtil.createTempFile(UUID.randomUUID().toString(), ".zip", true), true, exportFiles.toArray(new File[]{}));
             log.info("压缩文件完成");
             try (FileInputStream inputStream = new FileInputStream(targetFile)) {
-                boolean upload = mallMinioTemplate.upload(inputStream, bucket, targetFile.getName());
+                boolean upload = minioTemplate.upload(inputStream, bucket, targetFile.getName());
                 log.info("导出压缩文件上传minio结果[{}]", upload);
                 if (!upload) {
                     throw new ApiException("上传压缩文件失败");
                 }
             }
             log.info("上传压缩文件至Minio完成");
-            return mallMinioTemplate.getFileUrl(bucket, targetFile.getName(), null);
+            return minioTemplate.getFileUrl(bucket, targetFile.getName(), null);
         } catch (Exception e) {
             throw new RuntimeException(e);
         } finally {

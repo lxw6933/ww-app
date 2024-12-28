@@ -1,6 +1,6 @@
 package com.ww.mall.search.service.impl;
 
-import com.ww.mall.common.common.MallPageResult;
+import com.ww.mall.common.common.AppPageResult;
 import com.ww.mall.search.entity.ProductSearch;
 import com.ww.mall.search.service.ProductSearchService;
 import com.ww.mall.search.view.bo.PortalProductPageBO;
@@ -19,7 +19,7 @@ import org.springframework.stereotype.Service;
 public class ProductSearchServiceImpl implements ProductSearchService {
 
     @Override
-    public MallPageResult<PortalProductSearchVO> portalProductSearch(PortalProductPageBO portalProductPageBO, String curAppKey) {
+    public AppPageResult<PortalProductSearchVO> portalProductSearch(PortalProductPageBO portalProductPageBO, String curAppKey) {
         return portalProductPageBO.buildPageResult(ProductSearch.class, productSearch -> {
             try {
                 // data handler

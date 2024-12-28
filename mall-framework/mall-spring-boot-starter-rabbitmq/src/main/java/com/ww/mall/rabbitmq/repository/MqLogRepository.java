@@ -1,7 +1,7 @@
 package com.ww.mall.rabbitmq.repository;
 
 import com.ww.mall.rabbitmq.common.BaseMqLog;
-import com.ww.mall.rabbitmq.common.MallCorrelationData;
+import com.ww.mall.rabbitmq.common.MyCorrelationData;
 import com.ww.mall.common.enums.MqMsgStatus;
 
 /**
@@ -14,10 +14,10 @@ public interface MqLogRepository<ID, T extends BaseMqLog> {
     /**
      * 保存mq日志
      *
-     * @param mallCorrelationData 消息
+     * @param myCorrelationData 消息
      * @return boolean
      */
-    boolean save(MallCorrelationData<?> mallCorrelationData, MqMsgStatus status);
+    boolean save(MyCorrelationData<?> myCorrelationData, MqMsgStatus status);
 
     /**
      * 更新mq日志状态和重试次数

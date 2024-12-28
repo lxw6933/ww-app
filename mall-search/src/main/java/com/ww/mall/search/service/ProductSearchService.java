@@ -2,7 +2,7 @@ package com.ww.mall.search.service;
 
 import com.ww.mall.search.view.bo.PortalProductPageBO;
 import com.ww.mall.search.view.vo.PortalProductSearchVO;
-import com.ww.mall.common.common.MallPageResult;
+import com.ww.mall.common.common.AppPageResult;
 
 /**
  * @author ww
@@ -18,6 +18,6 @@ public interface ProductSearchService {
      * @param curAppKey 当前搜索渠道appKey
      * @return PageResult<PortalSearchVO>
      */
-    MallPageResult<PortalProductSearchVO> portalProductSearch(PortalProductPageBO portalProductPageBO, String curAppKey);
+    AppPageResult<PortalProductSearchVO> portalProductSearch(PortalProductPageBO portalProductPageBO, String curAppKey);
 
 }

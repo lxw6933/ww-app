@@ -6,7 +6,7 @@ import com.ww.mall.admin.view.form.SysRoleForm;
 import com.ww.mall.admin.view.query.SysRolePageQuery;
 import com.ww.mall.admin.view.vo.SysRoleSelectVO;
 import com.ww.mall.admin.view.vo.SysRoleVO;
-import com.ww.mall.common.common.MallPageResult;
+import com.ww.mall.common.common.AppPageResult;
 import com.ww.mall.common.common.IdForm;
 
 import java.util.List;
@@ -24,7 +24,7 @@ public interface SysRoleService extends IService<SysRole> {
      * @param query 查询条件
      * @return MallPageResult
      */
-    MallPageResult<SysRoleVO> page(SysRolePageQuery query);
+    AppPageResult<SysRoleVO> page(SysRolePageQuery query);
 
     /**
      * 详情

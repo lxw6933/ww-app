@@ -25,7 +25,7 @@ public class CouponConsumer {
         System.out.println("初始化CouponConsumer消费者");
     }
 
-    @RabbitListener(queues = {QueueConstant.MALL_COUPON_TEST_QUEUE})
+    @RabbitListener(queues = {QueueConstant.COUPON_TEST_QUEUE})
     public void memberRegisterMessage(Message message, Integer msg, Channel channel) throws IOException {
         log.info("收到mall_coupon服务发送traceId测试的消息：{}", msg);
         MsgConsumerTemplate<Integer> couponTraceIdTestMsgConsumer = new CouponTraceIdTestMsgConsumerTemplate();

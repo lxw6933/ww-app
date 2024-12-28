@@ -1,6 +1,6 @@
 package com.ww.mall.admin.rpc;
 
-import com.ww.mall.admin.controller.MallAbstractController;
+import com.ww.mall.admin.controller.AbstractController;
 import com.ww.mall.admin.user.bo.SysUserLoginBO;
 import com.ww.mall.admin.user.dto.SysUserDTO;
 import com.ww.mall.admin.user.rpc.AdminUserApi;
@@ -17,7 +17,7 @@ import org.springframework.web.bind.annotation.RestController;
  **/
 @RestController
 @RequestMapping("/admin/inner")
-public class AdminUserApiRpc extends MallAbstractController implements AdminUserApi {
+public class AdminUserApiRpc extends AbstractController implements AdminUserApi {
 
     @Override
     @PostMapping("/getAdminLoginUserInfo")

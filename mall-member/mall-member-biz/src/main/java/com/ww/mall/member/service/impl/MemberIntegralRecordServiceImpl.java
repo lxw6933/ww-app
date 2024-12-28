@@ -3,15 +3,15 @@ package com.ww.mall.member.service.impl;
 import cn.hutool.core.date.DatePattern;
 import cn.hutool.core.date.DateUtil;
 import com.baomidou.mybatisplus.core.conditions.update.UpdateWrapper;
-import com.ww.mall.common.common.MallClientUser;
+import com.ww.mall.common.common.ClientUser;
 import com.ww.mall.member.entity.Member;
 import com.ww.mall.member.entity.mongo.MemberIntegralRecord;
 import com.ww.mall.member.enums.IntegralSource;
 import com.ww.mall.member.enums.IntegralType;
 import com.ww.mall.member.service.MemberIntegralRecordService;
 import com.ww.mall.member.service.MemberService;
-import com.ww.mall.common.common.MallPage;
-import com.ww.mall.common.common.MallPageResult;
+import com.ww.mall.common.common.AppPage;
+import com.ww.mall.common.common.AppPageResult;
 import com.ww.mall.common.utils.AuthorizationContext;
 import com.ww.mall.member.member.bo.AddMemberIntegralBO;
 import lombok.extern.slf4j.Slf4j;
@@ -49,10 +49,10 @@ public class MemberIntegralRecordServiceImpl implements MemberIntegralRecordServ
     }
 
     @Override
-    public MallPageResult<MemberIntegralRecord> page(MallPage mallPage) {
-        MallClientUser clientUser = AuthorizationContext.getClientUser();
+    public AppPageResult<MemberIntegralRecord> page(AppPage appPage) {
+        ClientUser clientUser = AuthorizationContext.getClientUser();
         // 创建分页信息对象
-        Pageable pageable = PageRequest.of(mallPage.getPageNum() - 1, mallPage.getPageSize());
+        Pageable pageable = PageRequest.of(appPage.getPageNum() - 1, appPage.getPageSize());
         // 创建排序条件对象，根据字段进行倒序排序
         Sort sort = Sort.by(Sort.Direction.DESC, "createTime");
         // 创建查询条件
@@ -63,12 +63,12 @@ public class MemberIntegralRecordServiceImpl implements MemberIntegralRecordServ
         // 在查询条件中添加分页信息，并执行查询
         query.with(pageable).with(sort);
         List<MemberIntegralRecord> memberIntegralRecordList = mongoTemplate.find(query, MemberIntegralRecord.class);
-        return new MallPageResult<>(mallPage, memberIntegralRecordList, (int) totalCount);
+        return new AppPageResult<>(appPage, memberIntegralRecordList, (int) totalCount);
     }
 
     @Override
     public MemberIntegralRecord memberIntegralRecordDetail(String integralRecordId) {
-        MallClientUser clientUser = AuthorizationContext.getClientUser();
+        ClientUser clientUser = AuthorizationContext.getClientUser();
         Query query = new Query();
         Criteria criteria = Criteria.where("id").is(integralRecordId)
                 .and("memberId").is(clientUser.getId());

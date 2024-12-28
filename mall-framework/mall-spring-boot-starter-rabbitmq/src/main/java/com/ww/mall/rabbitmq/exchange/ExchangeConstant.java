@@ -12,7 +12,7 @@ public class ExchangeConstant {
     /**
      * 缓存更新通知广播交换机
      */
-    public static final String MALL_CACHE_NOTICE_FANOUT_EXCHANGE = "mall.cache.notice.fanout.exchange";
+    public static final String CACHE_NOTICE_FANOUT_EXCHANGE = "cache.notice.fanout.exchange";
 
     /**
      * 通用【定制】延时交换机
@@ -24,26 +24,26 @@ public class ExchangeConstant {
      * 将插件放入rabbitmq-server里的plugins包里
      * 执行 rabbitmq-plugins enable rabbitmq_delayed_message_exchange 重启
      */
-    public static final String MALL_COMMON_DELAY_EXCHANGE = "mall.common.delay.exchange";
+    public static final String COMMON_DELAY_EXCHANGE = "common.delay.exchange";
 
     /**
      * 优惠券服务交换机
      */
-    public static final String MALL_COUPON_EXCHANGE = "mall.coupon.exchange";
+    public static final String COUPON_EXCHANGE = "coupon.exchange";
 
     /**
      * 会员服务交换机
      */
-    public static final String MALL_MEMBER_EXCHANGE = "mall.member.exchange";
+    public static final String MEMBER_EXCHANGE = "member.exchange";
 
     /**
      * canal exchange
      */
-    public static final String MALL_CANAL_EXCHANGE = "mall.canal.exchange";
+    public static final String CANAL_EXCHANGE = "canal.exchange";
 
     /**
      * oms exchange
      */
-    public static final String MALL_OMS_EXCHANGE = "mall.oms.exchange";
+    public static final String OMS_EXCHANGE = "oms.exchange";
 
 }

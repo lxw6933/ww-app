@@ -1,8 +1,8 @@
 package com.ww.mall.member.service;
 
 import com.ww.mall.member.entity.mongo.MemberIntegralRecord;
-import com.ww.mall.common.common.MallPage;
-import com.ww.mall.common.common.MallPageResult;
+import com.ww.mall.common.common.AppPage;
+import com.ww.mall.common.common.AppPageResult;
 import com.ww.mall.member.member.bo.AddMemberIntegralBO;
 
 /**
@@ -21,10 +21,10 @@ public interface MemberIntegralRecordService {
 
     /**
      * 获取用户积分记录
-     * @param mallPage page
+     * @param appPage page
      * @return MallPageResult
      */
-    MallPageResult<MemberIntegralRecord> page(MallPage mallPage);
+    AppPageResult<MemberIntegralRecord> page(AppPage appPage);
 
     /**
      * 查看用户积分使用记录

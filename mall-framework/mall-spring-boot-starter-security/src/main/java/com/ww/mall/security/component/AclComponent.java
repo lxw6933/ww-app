@@ -1,6 +1,6 @@
 package com.ww.mall.security.component;
 
-import com.ww.mall.common.common.MallBaseUser;
+import com.ww.mall.common.common.BaseUser;
 import com.ww.mall.common.enums.UserType;
 import com.ww.mall.common.utils.HttpContextUtils;
 import lombok.extern.slf4j.Slf4j;
@@ -24,14 +24,14 @@ public class AclComponent {
     private final AntPathMatcher antPathMatcher = new AntPathMatcher();
 
     public boolean hasPermission(Authentication authentication) {
-        MallBaseUser mallBaseUser;
+        BaseUser baseUser;
         try {
-            mallBaseUser = (MallBaseUser) authentication.getPrincipal();
+            baseUser = (BaseUser) authentication.getPrincipal();
         } catch (Exception e) {
             log.error("用户信息异常：{}", e.getMessage());
             return false;
         }
-        if (UserType.ADMIN.equals(mallBaseUser.getUserType()) && mallBaseUser.getId().equals(1L)) {
+        if (UserType.ADMIN.equals(baseUser.getUserType()) && baseUser.getId().equals(1L)) {
             return true;
         }
         HttpServletRequest request = HttpContextUtils.getHttpServletRequest();

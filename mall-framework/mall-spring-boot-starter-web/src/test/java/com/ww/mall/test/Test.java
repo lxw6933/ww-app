@@ -1,17 +1,10 @@
 package com.ww.mall.test;
 
-import cn.hutool.core.date.DateUnit;
-import cn.hutool.core.date.DateUtil;
-import cn.hutool.core.util.StrUtil;
 import com.github.benmanes.caffeine.cache.Cache;
-import com.ww.mall.common.utils.MallCaffeineUtil;
+import com.ww.mall.common.utils.CaffeineUtil;
 import lombok.AllArgsConstructor;
 import lombok.Data;
-import org.checkerframework.checker.units.qual.A;
 
-import java.math.BigDecimal;
-import java.math.RoundingMode;
-import java.util.Date;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
@@ -29,7 +22,7 @@ public class Test {
 //        System.out.println(new BigDecimal("4799.99").divide(BigDecimal.valueOf(12), 2, RoundingMode.DOWN));
 //        String str = "ds";
 //        System.out.println(StrUtil.hide(str, 0, str.length() - 3));
-        Cache<Object, Object> cache = MallCaffeineUtil.initCaffeine();
+        Cache<Object, Object> cache = CaffeineUtil.initCaffeine();
 //        Object key = new Object();
         ExecutorService executor = Executors.newFixedThreadPool(10);
 

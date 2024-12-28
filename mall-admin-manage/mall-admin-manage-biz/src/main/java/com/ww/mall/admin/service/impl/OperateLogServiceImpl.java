@@ -8,7 +8,7 @@ import com.ww.mall.admin.service.SysUserService;
 import com.ww.mall.admin.view.dto.OperateLogDTO;
 import com.ww.mall.admin.view.query.SysOperateLogMongoPage;
 import com.ww.mall.admin.view.vo.OperateLogVO;
-import com.ww.mall.common.common.MallPageResult;
+import com.ww.mall.common.common.AppPageResult;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.BeanUtils;
 import org.springframework.data.mongodb.core.MongoTemplate;
@@ -41,7 +41,7 @@ public class OperateLogServiceImpl implements OperateLogService {
     }
 
     @Override
-    public MallPageResult<OperateLogVO> page(SysOperateLogMongoPage query) {
+    public AppPageResult<OperateLogVO> page(SysOperateLogMongoPage query) {
         return query.buildPageResult(OperateLog.class, operateLog -> {
             OperateLogVO vo = new OperateLogVO();
             BeanUtils.copyProperties(operateLog, vo);

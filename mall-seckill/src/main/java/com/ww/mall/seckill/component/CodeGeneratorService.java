@@ -3,7 +3,7 @@ package com.ww.mall.seckill.component;
 import cn.hutool.core.lang.Assert;
 import cn.hutool.core.util.RandomUtil;
 import com.ww.mall.common.exception.ApiException;
-import com.ww.mall.common.utils.MallThreadUtil;
+import com.ww.mall.common.utils.ThreadUtil;
 import com.ww.mall.mongodb.handler.MongoBulkDataHandler;
 import com.ww.mall.redis.service.CodeBloomFilterComponent;
 import com.ww.mall.seckill.entity.Code;
@@ -46,7 +46,7 @@ public class CodeGeneratorService {
     public static final int CODE_GENERATOR_THREAD_POOL_SIZE = 20;
     public static final int MAX_NUM = BATCH_NUM * CODE_GENERATOR_THREAD_POOL_SIZE;
 
-    public static final ExecutorService codeGeneratorExecutor = MallThreadUtil.initFixedThreadPoolExecutor("code-generator", CODE_GENERATOR_THREAD_POOL_SIZE);
+    public static final ExecutorService codeGeneratorExecutor = ThreadUtil.initFixedThreadPoolExecutor("code-generator", CODE_GENERATOR_THREAD_POOL_SIZE);
 
     /**
      * 生成code

@@ -10,7 +10,7 @@ import lombok.Getter;
 @Getter
 public enum ImAppIdEnum {
 
-    MALL_LIVE_BIZ(10001,"mall直播业务");
+    LIVE_BIZ(10001,"mall直播业务");
 
     final int code;
     final String desc;

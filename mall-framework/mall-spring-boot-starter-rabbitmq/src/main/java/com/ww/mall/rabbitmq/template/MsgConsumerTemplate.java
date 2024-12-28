@@ -29,7 +29,7 @@ public abstract class MsgConsumerTemplate<T> {
     public final void consumer(Message message, T msg, Channel channel) throws IOException {
         MessageProperties properties = message.getMessageProperties();
         String traceId = properties.getHeader(Constant.TRACE_ID);
-        boolean msgMode = properties.getHeader(Constant.MALL_MSG_MODE);
+        boolean msgMode = properties.getHeader(Constant.MSG_MODE);
         ThreadMdcUtil.setTraceId(traceId);
         log.info("消费消息【{}】", msg);
         long tag = properties.getDeliveryTag();

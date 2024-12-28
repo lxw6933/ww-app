@@ -1,8 +1,8 @@
 package com.ww.mall.mongodb.common;
 
 import cn.hutool.extra.spring.SpringUtil;
-import com.ww.mall.common.common.MallPage;
-import com.ww.mall.common.common.MallPageResult;
+import com.ww.mall.common.common.AppPage;
+import com.ww.mall.common.common.AppPageResult;
 import com.ww.mall.common.constant.Constant;
 import com.ww.mall.mongodb.utils.MongoUtils;
 import lombok.AllArgsConstructor;
@@ -28,7 +28,7 @@ import java.util.function.Function;
  * @create 2024-10-25- 16:28
  * @description:
  */
-public abstract class AbstractMongoPage<T> extends MallPage {
+public abstract class AbstractMongoPage<T> extends AppPage {
 
     /**
      * 构建分页查询条件
@@ -117,20 +117,20 @@ public abstract class AbstractMongoPage<T> extends MallPage {
      * @param <R>     目标类型
      * @return MallPageResult<R>
      */
-    public <R> MallPageResult<R> buildPageResult(Class<T> tClass, Function<T, R> convert) {
+    public <R> AppPageResult<R> buildPageResult(Class<T> tClass, Function<T, R> convert) {
         MongoTemplate mongoTemplate = SpringUtil.getBean(MongoTemplate.class);
         // query aggregation data result
         FacetResult<T> facetResult = this.buildPageQueryResult(mongoTemplate, tClass);
         // return
-        return new MallPageResult<>(this.getPageNum(), this.getPageSize(), facetResult.getTotalCount(), facetResult.getDataList(), convert);
+        return new AppPageResult<>(this.getPageNum(), this.getPageSize(), facetResult.getTotalCount(), facetResult.getDataList(), convert);
     }
 
-    public MallPageResult<T> buildPageResult(Class<T> tClass) {
+    public AppPageResult<T> buildPageResult(Class<T> tClass) {
         MongoTemplate mongoTemplate = SpringUtil.getBean(MongoTemplate.class);
         // query aggregation data result
         FacetResult<T> facetResult = this.buildPageQueryResult(mongoTemplate, tClass);
         // return
-        return new MallPageResult<>(this.getPageNum(), this.getPageSize(), facetResult.getTotalCount(), facetResult.getDataList());
+        return new AppPageResult<>(this.getPageNum(), this.getPageSize(), facetResult.getTotalCount(), facetResult.getDataList());
     }
 
     @Getter
@@ -148,18 +148,18 @@ public abstract class AbstractMongoPage<T> extends MallPage {
      * @param tClass T class
      * @return 分页数据
      */
-    public <R> MallPageResult<R> simplePageResult(Class<T> tClass, Function<T, R> convert) {
+    public <R> AppPageResult<R> simplePageResult(Class<T> tClass, Function<T, R> convert) {
         MongoTemplate mongoTemplate = SpringUtil.getBean(MongoTemplate.class);
         List<T> dataList = getSimpleDataResult(mongoTemplate, tClass);
         long total = mongoTemplate.count(Query.query(buildQuery()), tClass);
-        return new MallPageResult<>(getPageNum(), getPageSize(), (int) total, dataList, convert);
+        return new AppPageResult<>(getPageNum(), getPageSize(), (int) total, dataList, convert);
     }
 
-    public MallPageResult<T> simplePageResult(Class<T> tClass) {
+    public AppPageResult<T> simplePageResult(Class<T> tClass) {
         MongoTemplate mongoTemplate = SpringUtil.getBean(MongoTemplate.class);
         List<T> dataList = getSimpleDataResult(mongoTemplate, tClass);
         long total = mongoTemplate.count(Query.query(buildQuery()), tClass);
-        return new MallPageResult<>(getPageNum(), getPageSize(), (int) total, dataList);
+        return new AppPageResult<>(getPageNum(), getPageSize(), (int) total, dataList);
     }
 
     private List<T> getSimpleDataResult(MongoTemplate mongoTemplate, Class<T> tClass) {

@@ -2,7 +2,7 @@ package imclient.handler;
 
 import cn.hutool.core.util.StrUtil;
 import com.alibaba.fastjson.JSON;
-import com.ww.mall.common.utils.MallThreadUtil;
+import com.ww.mall.common.utils.ThreadUtil;
 import com.ww.mall.im.common.ImConstant;
 import com.ww.mall.im.common.ImMsg;
 import com.ww.mall.im.common.ImMsgBody;
@@ -31,7 +31,7 @@ import java.util.concurrent.TimeUnit;
 @Service
 public class ImTestClientStart implements InitializingBean {
 
-    private final ScheduledExecutorService heartbeatExecutor = MallThreadUtil.initScheduledExecutorService(1);
+    private final ScheduledExecutorService heartbeatExecutor = ThreadUtil.initScheduledExecutorService(1);
 
     @Override
     public void afterPropertiesSet() {
@@ -83,7 +83,7 @@ public class ImTestClientStart implements InitializingBean {
                     }
                     // 发送业务消息
                     ImMsgBody bizBody = new ImMsgBody();
-                    bizBody.setAppId(ImAppIdEnum.MALL_LIVE_BIZ.getCode());
+                    bizBody.setAppId(ImAppIdEnum.LIVE_BIZ.getCode());
                     bizBody.setUserId(objectId);
                     bizBody.setBizCode(ImMsgBizCodeEnum.CHAT_MSG_BIZ.getCode());
                     bizBody.setSeqId(UUID.randomUUID().toString());
@@ -107,7 +107,7 @@ public class ImTestClientStart implements InitializingBean {
 
     public static void sendImMsg(Long userId, ImMsgCodeEnum imLoginMsg, Channel channel) {
         ImMsgBody imMsgBody = new ImMsgBody();
-        imMsgBody.setAppId(ImAppIdEnum.MALL_LIVE_BIZ.getCode());
+        imMsgBody.setAppId(ImAppIdEnum.LIVE_BIZ.getCode());
         imMsgBody.setUserId(userId);
         ImMsg loginMsg = ImMsg.buildTestClient(imLoginMsg.getCode(), ImConstant.DEFAULT_SERIALIZER, JSON.toJSONBytes(imMsgBody));
         channel.writeAndFlush(loginMsg);

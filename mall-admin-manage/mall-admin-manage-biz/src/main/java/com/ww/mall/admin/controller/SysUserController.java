@@ -5,7 +5,7 @@ import com.ww.mall.admin.view.form.SysUserForm;
 import com.ww.mall.admin.view.query.SysUserPageQuery;
 import com.ww.mall.admin.view.vo.CurrentSysUserInfoVO;
 import com.ww.mall.admin.view.vo.SysUserVO;
-import com.ww.mall.common.common.MallPageResult;
+import com.ww.mall.common.common.AppPageResult;
 import com.ww.mall.common.valid.group.DeleteGroup;
 import com.ww.mall.common.valid.group.UpdateGroup;
 import com.ww.mall.common.common.IdForm;
@@ -21,10 +21,10 @@ import javax.annotation.security.PermitAll;
  */
 @RestController
 @RequestMapping("/sysUser")
-public class SysUserController extends MallAbstractController {
+public class SysUserController extends AbstractController {
 
     @GetMapping("/user/page")
-    public MallPageResult<SysUserVO> page(SysUserPageQuery query) {
+    public AppPageResult<SysUserVO> page(SysUserPageQuery query) {
         return sf.getSysUserService().page(query);
     }
 

@@ -8,11 +8,11 @@ import cn.hutool.crypto.digest.MD5;
 import com.github.benmanes.caffeine.cache.Cache;
 import com.github.benmanes.caffeine.cache.Caffeine;
 import com.wf.captcha.ArithmeticCaptcha;
-import com.ww.mall.common.common.MallClientUser;
+import com.ww.mall.common.common.ClientUser;
 import com.ww.mall.common.exception.ApiException;
 import com.ww.mall.common.utils.AuthorizationContext;
 import com.ww.mall.common.utils.IdUtil;
-import com.ww.mall.rabbitmq.MallPublisher;
+import com.ww.mall.rabbitmq.RabbitMqPublisher;
 import com.ww.mall.rabbitmq.exchange.ExchangeConstant;
 import com.ww.mall.rabbitmq.routekey.RouteKeyConstant;
 import com.ww.mall.redis.component.StockRedisComponent;
@@ -43,7 +43,7 @@ import java.util.concurrent.TimeUnit;
 public class SeckillServiceImpl implements SeckillService {
 
     @Resource
-    private MallPublisher mallPublisher;
+    private RabbitMqPublisher rabbitMqPublisher;
 
     @Resource
     private RedisTemplate<String, String> redisTemplate;
@@ -71,7 +71,7 @@ public class SeckillServiceImpl implements SeckillService {
     @Override
     public void captcha(HttpServletResponse response, String activityCode, Long skuId) {
         // 获取用户
-        MallClientUser clientUser = AuthorizationContext.getClientUser();
+        ClientUser clientUser = AuthorizationContext.getClientUser();
         // 算术类型
         ArithmeticCaptcha captcha = new ArithmeticCaptcha(130, 48);
         captcha.getArithmeticString();
@@ -96,7 +96,7 @@ public class SeckillServiceImpl implements SeckillService {
     @Override
     public String getSecKillPath(String activityCode, Long skuId) {
         // 获取用户
-        MallClientUser clientUser = AuthorizationContext.getClientUser();
+        ClientUser clientUser = AuthorizationContext.getClientUser();
 
         String key = seckillRedisKeyBuilder.buildSeckillPathKey(activityCode, clientUser.getId(), skuId);
         String userSecKillPath = redisTemplate.opsForValue().get(key);
@@ -113,7 +113,7 @@ public class SeckillServiceImpl implements SeckillService {
     @Override
     public Boolean doSecKillOrder(String userSecKillPath, SecKillOrderReqBO reqBO) {
         // 校验用户是否存在秒杀资格
-        MallClientUser clientUser = AuthorizationContext.getClientUser();
+        ClientUser clientUser = AuthorizationContext.getClientUser();
         // 校验地址是否正确
         Assert.isFalse(checkSecKillPath(clientUser, userSecKillPath, reqBO.getActivityCode(), reqBO.getSkuId()), () -> new ApiException("秒杀路径异常"));
         // 校验图形验证码是否正确
@@ -125,7 +125,7 @@ public class SeckillServiceImpl implements SeckillService {
         if (stockRedisComponent.decrementStock(skuStockRedisKey, 1)) {
             String orderDate = DateUtil.format(new Date(), DatePattern.NORM_DATETIME_PATTERN);
             String orderNo = IdUtil.generatorIdStr();
-            mallPublisher.publishMsg(ExchangeConstant.MALL_OMS_EXCHANGE, RouteKeyConstant.MALL_CREATE_ORDER_KEY, orderNo);
+            rabbitMqPublisher.publishMsg(ExchangeConstant.OMS_EXCHANGE, RouteKeyConstant.CREATE_ORDER_KEY, orderNo);
             log.info("订单[{}]下单成功[{}]", orderNo, orderDate);
             return true;
         } else {
@@ -134,7 +134,7 @@ public class SeckillServiceImpl implements SeckillService {
         }
     }
 
-    private boolean checkSecKillPath(MallClientUser clientUser, String userSecKillPath, String activityCode, Long skuId) {
+    private boolean checkSecKillPath(ClientUser clientUser, String userSecKillPath, String activityCode, Long skuId) {
         if (StringUtils.isEmpty(userSecKillPath)) {
             return false;
         }
@@ -143,7 +143,7 @@ public class SeckillServiceImpl implements SeckillService {
         return userSecKillPath.equals(userSecKillPathCache);
     }
 
-    private boolean checkSecKillVerCode(MallClientUser clientUser, String activityCode, Long skuId, String userVerCode) {
+    private boolean checkSecKillVerCode(ClientUser clientUser, String activityCode, Long skuId, String userVerCode) {
         String key = seckillRedisKeyBuilder.buildSeckillCodeKey(activityCode, clientUser.getId(), skuId);
         String verCodeCache = redisTemplate.opsForValue().get(key);
         return userVerCode.equals(verCodeCache);

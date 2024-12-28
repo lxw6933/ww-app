@@ -3,8 +3,8 @@ package com.ww.mall.member.controller;
 import com.ww.mall.member.entity.mongo.MemberIntegralRecord;
 import com.ww.mall.member.service.MemberIntegralRecordService;
 import com.ww.mall.member.view.bo.MemberIntegralRecordBO;
-import com.ww.mall.common.common.MallPage;
-import com.ww.mall.common.common.MallPageResult;
+import com.ww.mall.common.common.AppPage;
+import com.ww.mall.common.common.AppPageResult;
 import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.validation.annotation.Validated;
@@ -31,7 +31,7 @@ public class MemberIntegralRecordController {
     }
 
     @GetMapping("/page")
-    public MallPageResult<MemberIntegralRecord> page(MallPage page) {
+    public AppPageResult<MemberIntegralRecord> page(AppPage page) {
         return memberIntegralRecordService.page(page);
     }
 

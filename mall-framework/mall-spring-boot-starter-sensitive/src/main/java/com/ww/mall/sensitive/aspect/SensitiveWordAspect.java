@@ -3,7 +3,7 @@ package com.ww.mall.sensitive.aspect;
 import com.github.houbb.sensitive.word.bs.SensitiveWordBs;
 import com.ww.mall.common.exception.ApiException;
 import com.ww.mall.common.utils.SpringExpressionUtils;
-import com.ww.mall.sensitive.annotation.MallSensitiveWordHandler;
+import com.ww.mall.sensitive.annotation.SensitiveWordHandler;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.aspectj.lang.ProceedingJoinPoint;
@@ -31,12 +31,12 @@ public class SensitiveWordAspect {
     @Resource
     private SensitiveWordBs sensitiveWordBs;
 
-    @Around("@annotation(com.ww.mall.sensitive.annotation.MallSensitiveWordHandler)")
+    @Around("@annotation(com.ww.mall.sensitive.annotation.SensitiveWordHandler)")
     public Object mallSensitiveWordAdvice(ProceedingJoinPoint joinPoint) throws Throwable {
         MethodSignature signature = (MethodSignature) joinPoint.getSignature();
         Method method = signature.getMethod();
-        MallSensitiveWordHandler mallSensitiveWordHandler = method.getAnnotation(MallSensitiveWordHandler.class);
-        String[] filterContents = mallSensitiveWordHandler.content();
+        SensitiveWordHandler sensitiveWordHandler = method.getAnnotation(SensitiveWordHandler.class);
+        String[] filterContents = sensitiveWordHandler.content();
         if (filterContents == null) {
             return joinPoint.proceed();
         }
@@ -44,7 +44,7 @@ public class SensitiveWordAspect {
         SpringExpressionUtils.parseExpressions(joinPoint, Arrays.asList(filterContents), (expression, expressContext, elValue) -> {
             boolean includeSensitiveWord = sensitiveWordBs.contains(elValue);
             if (includeSensitiveWord) {
-                switch (mallSensitiveWordHandler.handlerType()) {
+                switch (sensitiveWordHandler.handlerType()) {
                     case EXCEPTION:
                         log.error("[异常]内容包含敏感词,content:[{}]", elValue);
                         throw new ApiException("内容存在非法字符");

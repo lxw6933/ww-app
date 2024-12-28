@@ -3,7 +3,7 @@ package com.ww.mall.seckill.listener;
 import cn.hutool.core.bean.BeanUtil;
 import cn.hutool.core.lang.TypeReference;
 import cn.hutool.extra.spring.SpringUtil;
-import com.ww.mall.excel.MallAbstractImportListener;
+import com.ww.mall.excel.AbstractImportListener;
 import com.ww.mall.excel.vo.ExcelResultVO;
 import com.ww.mall.mongodb.handler.MongoBulkDataHandler;
 import com.ww.mall.seckill.entity.Demo;
@@ -18,7 +18,7 @@ import java.util.List;
  * @description:
  */
 @Slf4j
-public class DemoImportListener extends MallAbstractImportListener<DemoModel> {
+public class DemoImportListener extends AbstractImportListener<DemoModel> {
 
     private final MongoBulkDataHandler<Demo> mongoBulkDataHandler = SpringUtil.getBean(new TypeReference<MongoBulkDataHandler<Demo>>() {});
 

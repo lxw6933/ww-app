@@ -2,7 +2,7 @@ package com.ww.mall.influxdb.config;
 
 import com.influxdb.client.InfluxDBClient;
 import com.influxdb.client.InfluxDBClientFactory;
-import com.ww.mall.influxdb.MallInfluxDBTemplate;
+import com.ww.mall.influxdb.InfluxDBTemplate;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
@@ -25,8 +25,8 @@ public class InfluxDBAutoConfiguration {
     }
 
     @Bean
-    public MallInfluxDBTemplate mallInfluxDBTemplate(InfluxDBClient influxDBClient) {
-        return new MallInfluxDBTemplate(influxDBClient);
+    public InfluxDBTemplate mallInfluxDBTemplate(InfluxDBClient influxDBClient) {
+        return new InfluxDBTemplate(influxDBClient);
     }
 
 }

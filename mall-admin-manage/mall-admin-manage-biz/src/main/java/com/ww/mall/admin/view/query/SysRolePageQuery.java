@@ -2,7 +2,7 @@ package com.ww.mall.admin.view.query;
 
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.ww.mall.admin.entity.SysRole;
-import com.ww.mall.common.common.MallPage;
+import com.ww.mall.common.common.AppPage;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import org.apache.commons.lang3.StringUtils;
@@ -14,7 +14,7 @@ import org.apache.commons.lang3.StringUtils;
  */
 @Data
 @EqualsAndHashCode(callSuper = true)
-public class SysRolePageQuery extends MallPage {
+public class SysRolePageQuery extends AppPage {
 
     private String name;
 

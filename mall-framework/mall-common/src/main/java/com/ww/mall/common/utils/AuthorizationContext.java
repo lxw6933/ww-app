@@ -2,8 +2,8 @@ package com.ww.mall.common.utils;
 
 import com.alibaba.fastjson.JSON;
 import com.alibaba.ttl.TransmittableThreadLocal;
-import com.ww.mall.common.common.MallAdminUser;
-import com.ww.mall.common.common.MallClientUser;
+import com.ww.mall.common.common.AdminUser;
+import com.ww.mall.common.common.ClientUser;
 import com.ww.mall.common.constant.Constant;
 import com.ww.mall.common.enums.GlobalResCodeConstants;
 import com.ww.mall.common.exception.ApiException;
@@ -26,34 +26,34 @@ public class AuthorizationContext {
 
     private AuthorizationContext() {}
 
-    private static final TransmittableThreadLocal<MallClientUser> CLIENT_USER_THREAD_LOCAL = new TransmittableThreadLocal<>();
-    private static final TransmittableThreadLocal<MallAdminUser> ADMIN_USER_THREAD_LOCAL = new TransmittableThreadLocal<>();
+    private static final TransmittableThreadLocal<ClientUser> CLIENT_USER_THREAD_LOCAL = new TransmittableThreadLocal<>();
+    private static final TransmittableThreadLocal<AdminUser> ADMIN_USER_THREAD_LOCAL = new TransmittableThreadLocal<>();
     private static final TransmittableThreadLocal<List<String>> ADMIN_USER_SENSITIVE_PERMS_THREAD_LOCAL = TransmittableThreadLocal.withInitial(ArrayList::new);
 
-    public static MallClientUser getClientUser() {
+    public static ClientUser getClientUser() {
         return getClientUser(true);
     }
 
-    public static MallClientUser getClientUser(boolean ex) {
-        MallClientUser mallClientUser = CLIENT_USER_THREAD_LOCAL.get();
+    public static ClientUser getClientUser(boolean ex) {
+        ClientUser mallClientUser = CLIENT_USER_THREAD_LOCAL.get();
         // 获取当前线程是否有用户信息
         if (mallClientUser != null) {
             return mallClientUser;
         }
-        return getUserTokenInfo(ex, MallClientUser.class);
+        return getUserTokenInfo(ex, ClientUser.class);
     }
 
-    public static MallAdminUser getAdminUser() {
+    public static AdminUser getAdminUser() {
         return getAdminUser(true);
     }
 
-    public static MallAdminUser getAdminUser(boolean ex) {
-        MallAdminUser mallAdminUser = ADMIN_USER_THREAD_LOCAL.get();
+    public static AdminUser getAdminUser(boolean ex) {
+        AdminUser adminUser = ADMIN_USER_THREAD_LOCAL.get();
         // 获取当前线程是否有用户信息
-        if (mallAdminUser != null) {
-            return mallAdminUser;
+        if (adminUser != null) {
+            return adminUser;
         }
-        return getUserTokenInfo(ex, MallAdminUser.class);
+        return getUserTokenInfo(ex, AdminUser.class);
     }
 
     private static <T> T getUserTokenInfo(boolean ex, Class<T> tClass) {

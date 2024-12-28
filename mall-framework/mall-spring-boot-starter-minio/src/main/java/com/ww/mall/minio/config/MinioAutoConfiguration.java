@@ -1,7 +1,7 @@
 package com.ww.mall.minio.config;
 
-import com.ww.mall.minio.MallMinioS3Client;
-import com.ww.mall.minio.MallMinioTemplate;
+import com.ww.mall.minio.MinioS3Client;
+import com.ww.mall.minio.MinioTemplate;
 import io.minio.MinioAsyncClient;
 import io.minio.MinioClient;
 import lombok.extern.slf4j.Slf4j;
@@ -14,29 +14,29 @@ import org.springframework.data.mongodb.core.MongoTemplate;
 @Slf4j
 @Configuration(proxyBeanMethods = false)
 @ConditionalOnClass({MinioClient.class, MongoTemplate.class})
-@EnableConfigurationProperties({MallMinioProperties.class})
+@EnableConfigurationProperties({MinioProperties.class})
 public class MinioAutoConfiguration {
 
     @Bean
-    public MallMinioS3Client mallMinioS3Client(MallMinioProperties mallMinioProperties) {
+    public MinioS3Client mallMinioS3Client(MinioProperties minioProperties) {
         MinioAsyncClient minioAsyncClient = MinioAsyncClient.builder()
-                .endpoint(mallMinioProperties.getEndpoint())
-                .credentials(mallMinioProperties.getAccessKey(), mallMinioProperties.getSecretKey())
+                .endpoint(minioProperties.getEndpoint())
+                .credentials(minioProperties.getAccessKey(), minioProperties.getSecretKey())
                 .build();
-        return new MallMinioS3Client(minioAsyncClient);
+        return new MinioS3Client(minioAsyncClient);
     }
 
     @Bean
-    public MinioClient minioClient(MallMinioProperties mallMinioProperties) {
+    public MinioClient minioClient(MinioProperties minioProperties) {
         return MinioClient.builder()
-                .endpoint(mallMinioProperties.getEndpoint())
-                .credentials(mallMinioProperties.getAccessKey(), mallMinioProperties.getSecretKey())
+                .endpoint(minioProperties.getEndpoint())
+                .credentials(minioProperties.getAccessKey(), minioProperties.getSecretKey())
                 .build();
     }
 
     @Bean
-    public MallMinioTemplate mallMinioTemplate(MinioClient minioClient, MallMinioS3Client mallMinioS3Client) {
-        return new MallMinioTemplate(minioClient, mallMinioS3Client);
+    public MinioTemplate mallMinioTemplate(MinioClient minioClient, MinioS3Client minioS3Client) {
+        return new MinioTemplate(minioClient, minioS3Client);
     }
 
 }

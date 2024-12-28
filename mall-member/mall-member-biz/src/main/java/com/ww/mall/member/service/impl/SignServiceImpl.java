@@ -3,11 +3,11 @@ package com.ww.mall.member.service.impl;
 import cn.hutool.core.date.DatePattern;
 import cn.hutool.core.date.DateUtil;
 import cn.hutool.core.date.LocalDateTimeUtil;
-import com.ww.mall.common.common.MallClientUser;
+import com.ww.mall.common.common.ClientUser;
 import com.ww.mall.common.enums.GlobalResCodeConstants;
 import com.ww.mall.common.exception.ApiException;
 import com.ww.mall.member.service.SignService;
-import com.ww.mall.redis.annotation.MallDistributedLock;
+import com.ww.mall.redis.annotation.DistributedLock;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -35,8 +35,8 @@ public class SignServiceImpl implements SignService {
     private RedisTemplate<String, String> redisTemplate;
 
     @Override
-    @MallDistributedLock(userId = "#clientUser.MemberId", operationKey = "'sign'", waitTime = 3, leaseTime = 3)
-    public int doSign(String dateStr, MallClientUser clientUser) {
+    @DistributedLock(userId = "#clientUser.MemberId", operationKey = "'sign'", waitTime = 3, leaseTime = 3)
+    public int doSign(String dateStr, ClientUser clientUser) {
         Date now = new Date();
         Date date = getDate(dateStr);
         // 获得指定日期是所在月份的第几天：2023-06-14，返回14，代表这个月份的第14天
@@ -66,7 +66,7 @@ public class SignServiceImpl implements SignService {
     }
 
     @Override
-    public int getContinuousSignCount(String dateStr, MallClientUser clientUser) {
+    public int getContinuousSignCount(String dateStr, ClientUser clientUser) {
         Date date = getDate(dateStr);
         // 获取日期对应的天数，多少号，假设是 30
         int dayOfMonth = DateUtil.dayOfMonth(date);
@@ -101,7 +101,7 @@ public class SignServiceImpl implements SignService {
     }
 
     @Override
-    public int getSignCount(String dateStr, MallClientUser clientUser) {
+    public int getSignCount(String dateStr, ClientUser clientUser) {
         Date date = getDate(dateStr);
         // 构建 Key
         String signKey = buildSignKey(clientUser.getId(), date);
@@ -113,7 +113,7 @@ public class SignServiceImpl implements SignService {
     }
 
     @Override
-    public Map<String, Boolean> getSignInfo(String dateStr, MallClientUser clientUser) {
+    public Map<String, Boolean> getSignInfo(String dateStr, ClientUser clientUser) {
         Date date = getDate(dateStr);
         // 构建 Key
         String signKey = buildSignKey(clientUser.getId(), date);

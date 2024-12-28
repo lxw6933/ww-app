@@ -29,13 +29,13 @@ import com.ww.mall.admin.view.vo.SysMenuTreeNodeVO;
 import com.ww.mall.admin.view.vo.SysRoleSelectVO;
 import com.ww.mall.admin.view.vo.SysUserVO;
 import com.ww.mall.common.common.IdForm;
-import com.ww.mall.common.common.MallAdminUser;
-import com.ww.mall.common.common.MallPageResult;
+import com.ww.mall.common.common.AdminUser;
+import com.ww.mall.common.common.AppPageResult;
 import com.ww.mall.common.constant.Constant;
 import com.ww.mall.common.exception.ApiException;
 import com.ww.mall.common.utils.AuthorizationContext;
-import com.ww.mall.mybatis.common.MallPlusPageResult;
-import com.ww.mall.redis.annotation.MallResubmission;
+import com.ww.mall.mybatis.common.AppPlusPageResult;
+import com.ww.mall.redis.annotation.Resubmission;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.CollectionUtils;
 import org.springframework.beans.BeanUtils;
@@ -61,10 +61,10 @@ import static com.ww.mall.common.utils.CollectionUtils.convertList;
 public class SysUserServiceImpl extends BaseService<SysUserMapper, SysUser> implements SysUserService {
 
     @Override
-    public MallPageResult<SysUserVO> page(SysUserPageQuery query) {
+    public AppPageResult<SysUserVO> page(SysUserPageQuery query) {
         IPage<SysUser> page = new Page<>(query.getPageNum(), query.getPageSize());
         this.page(page, query.getQueryWrapper());
-        return new MallPlusPageResult<>(page, sysUser -> {
+        return new AppPlusPageResult<>(page, sysUser -> {
             SysUserVO vo = new SysUserVO();
             BeanUtils.copyProperties(sysUser, vo);
             return vo;
@@ -73,7 +73,7 @@ public class SysUserServiceImpl extends BaseService<SysUserMapper, SysUser> impl
 
     @Override
     @Transactional
-    @MallResubmission
+    @Resubmission
     @LogRecord(type = SYSTEM_USER_TYPE, subType = SYSTEM_USER_CREATE_SUB_TYPE, bizNo = "{{#user.id}}", success = SYSTEM_USER_CREATE_SUCCESS)
     public boolean save(SysUserForm form) {
         SysUser sysUser = this.getOne(new QueryWrapper<SysUser>().eq("username", form.getUsername()));
@@ -94,7 +94,7 @@ public class SysUserServiceImpl extends BaseService<SysUserMapper, SysUser> impl
 
     @Override
     @Transactional
-    @MallResubmission
+    @Resubmission
     @LogRecord(type = SYSTEM_USER_TYPE, subType = SYSTEM_USER_UPDATE_SUB_TYPE, bizNo = "{{#form.id}}", success = SYSTEM_USER_UPDATE_SUCCESS)
     public boolean update(SysUserForm form) {
         SysUser oldSysUser = this.getById(form.getId());
@@ -151,9 +151,9 @@ public class SysUserServiceImpl extends BaseService<SysUserMapper, SysUser> impl
     }
 
     @Override
-    @MallResubmission(expire = 1)
+    @Resubmission(expire = 1)
     public boolean modifySysUserStatus(Long userId, boolean status) {
-        MallAdminUser adminUser = AuthorizationContext.getAdminUser();
+        AdminUser adminUser = AuthorizationContext.getAdminUser();
         if (Objects.equals(adminUser.getId(), userId)) {
             throw new ApiException("禁止修改自己账号的状态");
         }
@@ -167,10 +167,10 @@ public class SysUserServiceImpl extends BaseService<SysUserMapper, SysUser> impl
     }
 
     @Override
-    @MallResubmission
+    @Resubmission
     @LogRecord(type = SYSTEM_USER_TYPE, subType = SYSTEM_USER_DELETE_SUB_TYPE, bizNo = "{{#form.id}}", success = SYSTEM_USER_DELETE_SUCCESS)
     public boolean delete(IdForm form) {
-        MallAdminUser adminUser = AuthorizationContext.getAdminUser();
+        AdminUser adminUser = AuthorizationContext.getAdminUser();
         if (Objects.equals(adminUser.getId(), form.getId())) {
             throw new ApiException("禁止删除自己账号");
         }
@@ -190,9 +190,9 @@ public class SysUserServiceImpl extends BaseService<SysUserMapper, SysUser> impl
 
     @Override
     @Transactional
-    @MallResubmission
+    @Resubmission
     public boolean modifyPassword(ModifyPasswordForm modifyPasswordForm) {
-        MallAdminUser adminUser = AuthorizationContext.getAdminUser();
+        AdminUser adminUser = AuthorizationContext.getAdminUser();
         Assert.isTrue(modifyPasswordForm.getNewPassword().equals(modifyPasswordForm.getConfirmNewPassword()), () -> new ApiException("新密码前后两次不一致"));
         // 校验旧密码是否一致
         SysUser sysUser = this.getById(adminUser.getId());
@@ -209,7 +209,7 @@ public class SysUserServiceImpl extends BaseService<SysUserMapper, SysUser> impl
     }
 
     @Override
-    @MallResubmission(expire = 1)
+    @Resubmission(expire = 1)
     @LogRecord(type = SYSTEM_USER_TYPE, subType = SYSTEM_USER_UPDATE_PASSWORD_SUB_TYPE, bizNo = "{{#userId}}", success = SYSTEM_USER_UPDATE_PASSWORD_SUCCESS)
     public boolean resetPassword(Long userId) {
         SysUser sysUser = this.getById(userId);
@@ -281,7 +281,7 @@ public class SysUserServiceImpl extends BaseService<SysUserMapper, SysUser> impl
     }
 
     @Override
-    @MallResubmission
+    @Resubmission
     public SysUserDTO login(SysUserLoginBO form) {
         SysUserVO sysUserVO = this.info(form.getUsername(), form.getPassword());
         SysUserDTO sysUserDTO = new SysUserDTO();
@@ -300,7 +300,7 @@ public class SysUserServiceImpl extends BaseService<SysUserMapper, SysUser> impl
 
     @Override
     public CurrentSysUserInfoVO selfInfo() {
-        MallAdminUser adminUser = AuthorizationContext.getAdminUser();
+        AdminUser adminUser = AuthorizationContext.getAdminUser();
         SysUserVO sysUserVO = this.info(adminUser.getId());
         CurrentSysUserInfoVO currentSysUserInfoVO = new CurrentSysUserInfoVO();
         BeanUtils.copyProperties(sysUserVO, currentSysUserInfoVO);
@@ -314,7 +314,7 @@ public class SysUserServiceImpl extends BaseService<SysUserMapper, SysUser> impl
     }
 
     @Override
-    @MallResubmission
+    @Resubmission
     public boolean modifyStatus(Long userId) {
         if (Objects.equals(Constant.SUPER_ADMIN_MANAGER_ID, userId)) {
             throw new ApiException("禁止修改超管账号的信息");

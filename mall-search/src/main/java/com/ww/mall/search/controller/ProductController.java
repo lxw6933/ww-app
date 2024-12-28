@@ -4,7 +4,7 @@ import com.ww.mall.search.entity.Product;
 import com.ww.mall.search.service.ProductSearchService;
 import com.ww.mall.search.view.bo.PortalProductPageBO;
 import com.ww.mall.search.view.vo.PortalProductSearchVO;
-import com.ww.mall.common.common.MallPageResult;
+import com.ww.mall.common.common.AppPageResult;
 import org.elasticsearch.index.query.BoolQueryBuilder;
 import org.elasticsearch.index.query.QueryBuilders;
 import org.elasticsearch.search.fetch.subphase.highlight.HighlightBuilder;
@@ -37,7 +37,7 @@ public class ProductController {
     private ProductSearchService productSearchService;
 
     @PostMapping("/portal/product/search")
-    public MallPageResult<PortalProductSearchVO> portalProductSearch(@RequestBody @Validated PortalProductPageBO portalProductPageBO, @RequestHeader("appkey") String appKey) {
+    public AppPageResult<PortalProductSearchVO> portalProductSearch(@RequestBody @Validated PortalProductPageBO portalProductPageBO, @RequestHeader("appkey") String appKey) {
         return productSearchService.portalProductSearch(portalProductPageBO, appKey);
     }
 

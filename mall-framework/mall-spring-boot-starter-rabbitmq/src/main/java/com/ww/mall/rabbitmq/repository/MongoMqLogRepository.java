@@ -2,12 +2,11 @@ package com.ww.mall.rabbitmq.repository;
 
 import com.alibaba.fastjson.JSON;
 import com.ww.mall.common.enums.MqMsgStatus;
-import com.ww.mall.rabbitmq.common.MallCorrelationData;
+import com.ww.mall.rabbitmq.common.MyCorrelationData;
 import org.springframework.data.mongodb.core.MongoTemplate;
 import org.springframework.data.mongodb.core.query.Criteria;
 import org.springframework.data.mongodb.core.query.Query;
 import org.springframework.data.mongodb.core.query.Update;
-import org.springframework.stereotype.Component;
 
 import javax.annotation.Resource;
 
@@ -22,12 +21,12 @@ public class MongoMqLogRepository implements MqLogRepository<String, MqMsgLogEnt
     private MongoTemplate mongoTemplate;
 
     @Override
-    public boolean save(MallCorrelationData<?> mallCorrelationData, MqMsgStatus status) {
+    public boolean save(MyCorrelationData<?> myCorrelationData, MqMsgStatus status) {
         MqMsgLogEntity mqLog = new MqMsgLogEntity();
-        mqLog.setRoutingKey(mallCorrelationData.getRoutingKey());
-        mqLog.setExchange(mallCorrelationData.getExchange());
-        mqLog.setMessage(JSON.toJSONString(mallCorrelationData.getMessage()));
-        mqLog.setMsgId(mallCorrelationData.getId());
+        mqLog.setRoutingKey(myCorrelationData.getRoutingKey());
+        mqLog.setExchange(myCorrelationData.getExchange());
+        mqLog.setMessage(JSON.toJSONString(myCorrelationData.getMessage()));
+        mqLog.setMsgId(myCorrelationData.getId());
         mqLog.setTryCount(0);
         mqLog.setStatus(status);
         mongoTemplate.save(mqLog);

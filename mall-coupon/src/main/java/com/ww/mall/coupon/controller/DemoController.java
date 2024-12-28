@@ -4,7 +4,7 @@ import com.ww.mall.common.exception.ApiException;
 import com.ww.mall.coupon.config.CouponProperties;
 import com.ww.mall.coupon.service.CouponService;
 import com.ww.mall.coupon.view.bo.CouponPageBO;
-import com.ww.mall.rabbitmq.MallPublisher;
+import com.ww.mall.rabbitmq.RabbitMqPublisher;
 import com.ww.mall.rabbitmq.exchange.ExchangeConstant;
 import com.ww.mall.rabbitmq.routekey.RouteKeyConstant;
 import lombok.extern.slf4j.Slf4j;
@@ -35,11 +35,11 @@ public class DemoController {
     private CouponService couponService;
 
     @Autowired
-    private MallPublisher mallPublisher;
+    private RabbitMqPublisher rabbitMqPublisher;
 
     @GetMapping("/testMsg")
     public void testMsg(String msg) {
-        mallPublisher.publishMsg(ExchangeConstant.MALL_COUPON_EXCHANGE, RouteKeyConstant.MALL_COUPON_TEST_KEY, msg);
+        rabbitMqPublisher.publishMsg(ExchangeConstant.COUPON_EXCHANGE, RouteKeyConstant.COUPON_TEST_KEY, msg);
     }
 
     private final AtomicInteger num = new AtomicInteger(0);

@@ -17,9 +17,9 @@ import com.ww.mall.admin.view.query.SysRolePageQuery;
 import com.ww.mall.admin.view.vo.SysRoleSelectVO;
 import com.ww.mall.admin.view.vo.SysRoleVO;
 import com.ww.mall.common.exception.ApiException;
-import com.ww.mall.common.common.MallPageResult;
-import com.ww.mall.mybatis.common.MallPlusPageResult;
-import com.ww.mall.redis.annotation.MallResubmission;
+import com.ww.mall.common.common.AppPageResult;
+import com.ww.mall.mybatis.common.AppPlusPageResult;
+import com.ww.mall.redis.annotation.Resubmission;
 import com.ww.mall.common.common.IdForm;
 import org.apache.commons.collections4.CollectionUtils;
 import org.springframework.beans.BeanUtils;
@@ -40,10 +40,10 @@ import static com.ww.mall.admin.constant.LogRecordConstants.*;
 public class SysRoleServiceImpl extends BaseService<SysRoleMapper, SysRole> implements SysRoleService {
 
     @Override
-    public MallPageResult<SysRoleVO> page(SysRolePageQuery query) {
+    public AppPageResult<SysRoleVO> page(SysRolePageQuery query) {
         IPage<SysRole> page = new Page<>(query.getPageNum(), query.getPageSize());
         this.page(page, query.getQueryWrapper());
-        return new MallPlusPageResult<>(page, sysRole -> {
+        return new AppPlusPageResult<>(page, sysRole -> {
             SysRoleVO vo = new SysRoleVO();
             BeanUtils.copyProperties(sysRole, vo);
             return vo;
@@ -63,7 +63,7 @@ public class SysRoleServiceImpl extends BaseService<SysRoleMapper, SysRole> impl
 
     @Override
     @Transactional
-    @MallResubmission
+    @Resubmission
     @LogRecord(type = SYSTEM_ROLE_TYPE, subType = SYSTEM_ROLE_CREATE_SUB_TYPE, bizNo = "{{#form.id}}", success = SYSTEM_ROLE_CREATE_SUCCESS)
     public boolean save(SysRoleForm form) {
         SysRole sysRole = new SysRole();
@@ -78,7 +78,7 @@ public class SysRoleServiceImpl extends BaseService<SysRoleMapper, SysRole> impl
 
     @Override
     @Transactional
-    @MallResubmission
+    @Resubmission
     @LogRecord(type = SYSTEM_ROLE_TYPE, subType = SYSTEM_ROLE_UPDATE_SUB_TYPE, bizNo = "{{#form.id}}", success = SYSTEM_ROLE_UPDATE_SUCCESS)
     public boolean update(SysRoleForm form) {
         SysRole oldSysRole = this.getById(form.getId());
@@ -104,7 +104,7 @@ public class SysRoleServiceImpl extends BaseService<SysRoleMapper, SysRole> impl
     }
 
     @Override
-    @MallResubmission
+    @Resubmission
     @LogRecord(type = SYSTEM_ROLE_TYPE, subType = SYSTEM_ROLE_DELETE_SUB_TYPE, bizNo = "{{#idForm.id}}", success = SYSTEM_ROLE_DELETE_SUCCESS)
     public boolean delete(IdForm idForm) {
         SysRole sysRole = this.getById(idForm.getId());
@@ -116,7 +116,7 @@ public class SysRoleServiceImpl extends BaseService<SysRoleMapper, SysRole> impl
     }
 
     @Override
-    @MallResubmission(expire = 1)
+    @Resubmission(expire = 1)
     public boolean modifyStatus(Long roleId) {
         SysRole sysRole = this.getById(roleId);
         Assert.notNull(sysRole, () -> new ApiException("角色信息异常"));

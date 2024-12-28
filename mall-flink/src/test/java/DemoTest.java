@@ -1,4 +1,4 @@
-import com.ww.mall.minio.MallMinioTemplate;
+import com.ww.mall.minio.MinioTemplate;
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.SpringBootTest;
 
@@ -8,7 +8,7 @@ import javax.annotation.Resource;
 public class DemoTest {
 
     @Resource
-    private MallMinioTemplate mallMinioTemplate;
+    private MinioTemplate minioTemplate;
 
     @Test
     void contextLoads() {

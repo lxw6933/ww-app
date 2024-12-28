@@ -4,7 +4,7 @@ import cn.hutool.core.util.IdUtil;
 import com.ww.mall.common.constant.Constant;
 import com.ww.mall.common.enums.GlobalResCodeConstants;
 import com.ww.mall.common.thread.ThreadMdcUtil;
-import com.ww.mall.gateway.properties.MallGatewayProperties;
+import com.ww.mall.gateway.properties.GatewayProperties;
 import com.ww.mall.gateway.properties.ServerGrayProperties;
 import com.ww.mall.gateway.utils.GatewayIpUtil;
 import com.ww.mall.gateway.utils.WebFluxResultUtils;
@@ -37,7 +37,7 @@ public class IpFilter implements GlobalFilter, Ordered {
      */
     private final ServerGrayProperties serverGrayProperties;
 
-    private final MallGatewayProperties mallGatewayProperties;
+    private final GatewayProperties gatewayProperties;
 
     @Override
     public Mono<Void> filter(ServerWebExchange exchange, GatewayFilterChain chain) {
@@ -47,7 +47,7 @@ public class IpFilter implements GlobalFilter, Ordered {
 
         String userRealIp = GatewayIpUtil.getIpAddress(exchange.getRequest());
         // ip黑名单校验
-        if (CollectionUtils.isNotEmpty(mallGatewayProperties.getBlackIpList()) && mallGatewayProperties.getBlackIpList().contains(userRealIp)) {
+        if (CollectionUtils.isNotEmpty(gatewayProperties.getBlackIpList()) && gatewayProperties.getBlackIpList().contains(userRealIp)) {
             return WebFluxResultUtils.result(exchange, GlobalResCodeConstants.IP_LIMITED, HttpStatus.FORBIDDEN);
         }
         // 是否开启灰度

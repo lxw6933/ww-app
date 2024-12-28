@@ -1,7 +1,7 @@
 package com.ww.mall.rabbitmq.repository;
 
 import com.ww.mall.rabbitmq.common.BaseMqLog;
-import com.ww.mall.rabbitmq.common.MallCorrelationData;
+import com.ww.mall.rabbitmq.common.MyCorrelationData;
 import com.ww.mall.common.enums.MqMsgStatus;
 import lombok.extern.slf4j.Slf4j;
 
@@ -14,8 +14,8 @@ import lombok.extern.slf4j.Slf4j;
 public class DefaultMqLogRepository implements MqLogRepository<String, BaseMqLog> {
 
     @Override
-    public boolean save(MallCorrelationData<?> mallCorrelationData, MqMsgStatus status) {
-        log.info("save mq log: {} status: {}", mallCorrelationData, status);
+    public boolean save(MyCorrelationData<?> myCorrelationData, MqMsgStatus status) {
+        log.info("save mq log: {} status: {}", myCorrelationData, status);
         return true;
     }
 

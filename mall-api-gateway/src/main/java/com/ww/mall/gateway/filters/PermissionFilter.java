@@ -7,7 +7,7 @@ import cn.hutool.jwt.JWTUtil;
 import com.ww.mall.common.constant.Constant;
 import com.ww.mall.common.enums.GlobalResCodeConstants;
 import com.ww.mall.common.enums.UserType;
-import com.ww.mall.gateway.properties.MallGatewayProperties;
+import com.ww.mall.gateway.properties.GatewayProperties;
 import com.ww.mall.gateway.utils.WebFluxResultUtils;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
@@ -45,7 +45,7 @@ public class PermissionFilter implements GlobalFilter, Ordered {
     public String jwtSecret = Constant.SECRET_KEY;
 
     @Autowired
-    private MallGatewayProperties mallGatewayProperties;
+    private GatewayProperties gatewayProperties;
 
     @Override
     public Mono<Void> filter(ServerWebExchange exchange, GatewayFilterChain chain) {
@@ -58,7 +58,7 @@ public class PermissionFilter implements GlobalFilter, Ordered {
         if (token == null) {
             // 接口白名单校验
             String urlPath = request.getURI().getPath();
-            for (String path : mallGatewayProperties.getWhiteUriList()) {
+            for (String path : gatewayProperties.getWhiteUriList()) {
                 if (matcher.match(path, urlPath)) {
                     isWhite = true;
                     break;

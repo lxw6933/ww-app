@@ -3,7 +3,7 @@ package com.ww.mall.client.controller;
 import com.ww.mall.proto.hello.HelloRequest;
 import com.ww.mall.proto.hello.HelloResponse;
 import com.ww.mall.proto.hello.HelloServiceGrpc;
-import com.ww.mall.rabbitmq.MallPublisher;
+import com.ww.mall.rabbitmq.RabbitMqPublisher;
 import com.ww.mall.rabbitmq.exchange.ExchangeConstant;
 import com.ww.mall.rabbitmq.routekey.RouteKeyConstant;
 import net.devh.boot.grpc.client.inject.GrpcClient;
@@ -32,11 +32,11 @@ public class ClientController {
     }
 
     @Resource
-    private MallPublisher mallPublisher;
+    private RabbitMqPublisher rabbitMqPublisher;
 
     @RequestMapping("/test")
     public String test(@RequestParam("msg") Integer msg) {
-        mallPublisher.publishMsg(ExchangeConstant.MALL_COUPON_EXCHANGE, RouteKeyConstant.MALL_COUPON_TEST_KEY, msg);
+        rabbitMqPublisher.publishMsg(ExchangeConstant.COUPON_EXCHANGE, RouteKeyConstant.COUPON_TEST_KEY, msg);
         return "success";
     }
 

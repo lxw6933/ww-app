@@ -2,7 +2,7 @@ package com.ww.mall.cart.interceptor;
 
 import com.alibaba.ttl.TransmittableThreadLocal;
 import com.ww.mall.cart.to.UserInfoTo;
-import com.ww.mall.common.common.MallClientUser;
+import com.ww.mall.common.common.ClientUser;
 import com.ww.mall.common.constant.Constant;
 import com.ww.mall.common.utils.AuthorizationContext;
 import lombok.NonNull;
@@ -30,7 +30,7 @@ public class CartInterceptor implements HandlerInterceptor {
     @Override
     public boolean preHandle(@NonNull HttpServletRequest request, @NonNull HttpServletResponse response, @NonNull Object handler) {
         UserInfoTo userInfoTo = new UserInfoTo();
-        MallClientUser clientUser = AuthorizationContext.getClientUser(false);
+        ClientUser clientUser = AuthorizationContext.getClientUser(false);
         if (clientUser != null) {
             Long userId = clientUser.getId();
             // 用户登录

@@ -5,10 +5,10 @@ import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.ww.mall.member.dao.MemberMapper;
 import com.ww.mall.member.entity.Member;
 import com.ww.mall.member.service.MemberService;
-import com.ww.mall.rabbitmq.MallPublisher;
+import com.ww.mall.rabbitmq.RabbitMqPublisher;
 import com.ww.mall.rabbitmq.exchange.ExchangeConstant;
 import com.ww.mall.rabbitmq.routekey.RouteKeyConstant;
-import com.ww.mall.redis.annotation.MallResubmission;
+import com.ww.mall.redis.annotation.Resubmission;
 import com.ww.mall.member.member.dto.MemberDTO;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.BeanUtils;
@@ -27,10 +27,10 @@ import java.util.UUID;
 public class MemberServiceImpl extends ServiceImpl<MemberMapper, Member> implements MemberService {
 
     @Autowired
-    private MallPublisher mallPublisher;
+    private RabbitMqPublisher rabbitMqPublisher;
 
     @Override
-    @MallResubmission
+    @Resubmission
     public MemberDTO getMemberByMobile(String mobile) {
         // 查询当前手机号用户
         Member member = this.getOne(new QueryWrapper<Member>().eq("mobile", mobile));
@@ -41,7 +41,7 @@ public class MemberServiceImpl extends ServiceImpl<MemberMapper, Member> impleme
             member.setNickName(UUID.randomUUID().toString());
             this.save(member);
             // 发送用户注册消息
-            mallPublisher.publishMsg(ExchangeConstant.MALL_MEMBER_EXCHANGE, RouteKeyConstant.MALL_MEMBER_REGISTER_KEY, member.getId());
+            rabbitMqPublisher.publishMsg(ExchangeConstant.MEMBER_EXCHANGE, RouteKeyConstant.MEMBER_REGISTER_KEY, member.getId());
         }
         MemberDTO memberDTO = new MemberDTO();
         BeanUtils.copyProperties(member, memberDTO);

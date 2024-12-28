@@ -20,7 +20,7 @@ import java.util.List;
  */
 @RestController
 @RequestMapping("/sysMenu")
-public class SysMenuController extends MallAbstractController {
+public class SysMenuController extends AbstractController {
 
     @GetMapping("/menu/tree")
     public List<Tree<Long>> menuTree() {

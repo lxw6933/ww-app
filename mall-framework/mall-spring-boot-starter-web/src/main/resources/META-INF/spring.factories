@@ -1,7 +1,7 @@
 org.springframework.boot.autoconfigure.EnableAutoConfiguration=\
   com.ww.mall.web.config.WebMvcConfiguration, \
   com.ww.mall.web.config.SecretProperties, \
-  com.ww.mall.web.MallWebApplication, \
+  com.ww.mall.web.WebApplication, \
   com.ww.mall.web.config.thread.DefaultThreadPoolConfiguration, \
   com.ww.mall.web.config.sentinel.SentinelNacosDataSourceAutoConfiguration, \
   com.ww.mall.web.config.FeignFallBackConfiguration, \

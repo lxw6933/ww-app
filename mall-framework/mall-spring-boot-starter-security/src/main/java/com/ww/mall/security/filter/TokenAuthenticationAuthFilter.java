@@ -1,8 +1,8 @@
 package com.ww.mall.security.filter;
 
-import com.ww.mall.common.common.MallAdminUser;
-import com.ww.mall.common.common.MallBaseUser;
-import com.ww.mall.common.common.MallClientUser;
+import com.ww.mall.common.common.AdminUser;
+import com.ww.mall.common.common.BaseUser;
+import com.ww.mall.common.common.ClientUser;
 import com.ww.mall.common.constant.Constant;
 import com.ww.mall.common.enums.UserType;
 import com.ww.mall.common.exception.ApiException;
@@ -47,12 +47,12 @@ public class TokenAuthenticationAuthFilter extends OncePerRequestFilter {
         if (StringUtils.isNotEmpty(token)) {
             String userType = request.getHeader(Constant.USER_TYPE);
             if (UserType.ADMIN.name().equals(userType)) {
-                MallAdminUser adminUser = AuthorizationContext.getAdminUser();
+                AdminUser adminUser = AuthorizationContext.getAdminUser();
                 Authentication authentication = buildAuthentication(request, adminUser);
                 // 告诉security此用户jwt已经认证过了
                 SecurityContextHolder.getContext().setAuthentication(authentication);
             } else if (UserType.CLIENT.name().equals(userType)) {
-                MallClientUser clientUser = AuthorizationContext.getClientUser();
+                ClientUser clientUser = AuthorizationContext.getClientUser();
                 Authentication authentication = buildAuthentication(request, clientUser);
                 // 告诉security此用户jwt已经认证过了
                 SecurityContextHolder.getContext().setAuthentication(authentication);
@@ -64,9 +64,9 @@ public class TokenAuthenticationAuthFilter extends OncePerRequestFilter {
         filterChain.doFilter(request, response);
     }
 
-    private Authentication buildAuthentication(HttpServletRequest request, MallBaseUser mallBaseUser) {
-        List<GrantedAuthority> grantedAuthorities = authorityStore == null ? null : authorityStore.loadCurrentUserAuthorities(mallBaseUser.getId());
-        UsernamePasswordAuthenticationToken authenticationToken = new UsernamePasswordAuthenticationToken(mallBaseUser, null, grantedAuthorities);
+    private Authentication buildAuthentication(HttpServletRequest request, BaseUser baseUser) {
+        List<GrantedAuthority> grantedAuthorities = authorityStore == null ? null : authorityStore.loadCurrentUserAuthorities(baseUser.getId());
+        UsernamePasswordAuthenticationToken authenticationToken = new UsernamePasswordAuthenticationToken(baseUser, null, grantedAuthorities);
         authenticationToken.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
         return authenticationToken;
     }

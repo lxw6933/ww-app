@@ -1,8 +1,8 @@
 package com.ww.mall.open.respository;
 
 import com.ww.mall.open.entity.BusinessClientInfo;
-import com.ww.mall.common.common.MallPage;
-import com.ww.mall.common.common.MallPageResult;
+import com.ww.mall.common.common.AppPage;
+import com.ww.mall.common.common.AppPageResult;
 
 /**
  * @author ww
@@ -22,9 +22,9 @@ public interface BusinessClientInfoRepository {
     /**
      * 开放平台商户列表
      *
-     * @param mallPage pageQuery
+     * @param appPage pageQuery
      * @return MallPageResult
      */
-    MallPageResult<BusinessClientInfo> page(MallPage mallPage);
+    AppPageResult<BusinessClientInfo> page(AppPage appPage);
 
 }

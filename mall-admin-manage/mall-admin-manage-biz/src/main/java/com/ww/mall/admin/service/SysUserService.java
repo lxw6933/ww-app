@@ -10,7 +10,7 @@ import com.ww.mall.admin.view.query.SysUserPageQuery;
 import com.ww.mall.admin.view.vo.CurrentSysUserInfoVO;
 import com.ww.mall.admin.view.vo.SysRoleSelectVO;
 import com.ww.mall.admin.view.vo.SysUserVO;
-import com.ww.mall.common.common.MallPageResult;
+import com.ww.mall.common.common.AppPageResult;
 import com.ww.mall.common.common.IdForm;
 
 import java.util.List;
@@ -28,7 +28,7 @@ public interface SysUserService extends IService<SysUser> {
      * @param query query
      * @return page
      */
-    MallPageResult<SysUserVO> page(SysUserPageQuery query);
+    AppPageResult<SysUserVO> page(SysUserPageQuery query);
 
     /**
      * 新增用户

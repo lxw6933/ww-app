@@ -4,7 +4,7 @@ import com.ww.mall.admin.view.form.SysRoleForm;
 import com.ww.mall.admin.view.query.SysRolePageQuery;
 import com.ww.mall.admin.view.vo.SysRoleSelectVO;
 import com.ww.mall.admin.view.vo.SysRoleVO;
-import com.ww.mall.common.common.MallPageResult;
+import com.ww.mall.common.common.AppPageResult;
 import com.ww.mall.common.valid.group.DeleteGroup;
 import com.ww.mall.common.valid.group.UpdateGroup;
 import com.ww.mall.common.common.IdForm;
@@ -20,10 +20,10 @@ import java.util.List;
  */
 @RestController
 @RequestMapping("/sysRole")
-public class SysRoleController extends MallAbstractController {
+public class SysRoleController extends AbstractController {
 
     @GetMapping("/role/page")
-    public MallPageResult<SysRoleVO> page(SysRolePageQuery query) {
+    public AppPageResult<SysRoleVO> page(SysRolePageQuery query) {
         return sf.getSysRoleService().page(query);
     }
 

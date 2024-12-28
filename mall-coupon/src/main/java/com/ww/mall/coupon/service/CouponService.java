@@ -4,7 +4,7 @@ import com.baomidou.mybatisplus.extension.service.IService;
 import com.ww.mall.coupon.entity.Coupon;
 import com.ww.mall.coupon.view.bo.CouponPageBO;
 import com.ww.mall.coupon.view.vo.CouponPageVO;
-import com.ww.mall.common.common.MallPageResult;
+import com.ww.mall.common.common.AppPageResult;
 
 /**
  * @author ww
@@ -21,7 +21,7 @@ public interface CouponService extends IService<Coupon> {
      * @param couponPageBO pageBO
      * @return MallPageResult
      */
-    MallPageResult<CouponPageVO> pageList(CouponPageBO couponPageBO);
+    AppPageResult<CouponPageVO> pageList(CouponPageBO couponPageBO);
 
     /**
      * 新增优惠券活动

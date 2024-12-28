@@ -8,7 +8,7 @@ import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
-import com.ww.mall.common.common.MallClientUser;
+import com.ww.mall.common.common.ClientUser;
 import com.ww.mall.common.exception.ApiException;
 import com.ww.mall.coupon.config.CouponProperties;
 import com.ww.mall.coupon.constant.LockConstant;
@@ -19,11 +19,11 @@ import com.ww.mall.coupon.eunms.*;
 import com.ww.mall.coupon.service.CouponService;
 import com.ww.mall.coupon.view.bo.CouponPageBO;
 import com.ww.mall.coupon.view.vo.CouponPageVO;
-import com.ww.mall.common.common.MallPageResult;
+import com.ww.mall.common.common.AppPageResult;
 import com.ww.mall.common.utils.AuthorizationContext;
 import com.ww.mall.common.utils.IdUtil;
-import com.ww.mall.mybatis.common.MallPlusPageResult;
-import com.ww.mall.redis.annotation.MallDistributedLock;
+import com.ww.mall.mybatis.common.AppPlusPageResult;
+import com.ww.mall.redis.annotation.DistributedLock;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
@@ -118,7 +118,7 @@ public class CouponServiceImpl extends ServiceImpl<CouponMapper, Coupon> impleme
     }
 
     @Override
-    public MallPageResult<CouponPageVO> pageList(CouponPageBO couponPageBO) {
+    public AppPageResult<CouponPageVO> pageList(CouponPageBO couponPageBO) {
         QueryWrapper<Coupon> couponQueryWrapper = new QueryWrapper<>();
         if (StringUtils.isNotEmpty(couponPageBO.getTitle())) {
             couponQueryWrapper.like("title", couponPageBO.getTitle());
@@ -131,7 +131,7 @@ public class CouponServiceImpl extends ServiceImpl<CouponMapper, Coupon> impleme
         }
         IPage<Coupon> page = new Page<>(couponPageBO.getPageNum(), couponPageBO.getPageSize());
         this.page(page, couponQueryWrapper);
-        return new MallPlusPageResult<>(page, coupon -> {
+        return new AppPlusPageResult<>(page, coupon -> {
             CouponPageVO couponPageVO = new CouponPageVO();
             BeanUtils.copyProperties(coupon, couponPageVO);
             Query query = new Query();
@@ -191,9 +191,9 @@ public class CouponServiceImpl extends ServiceImpl<CouponMapper, Coupon> impleme
     }
 
     @Override
-    @MallDistributedLock(value = LockConstant.RECEIVE_COUPON_LOCK, operationKey = "#activityCode")
+    @DistributedLock(value = LockConstant.RECEIVE_COUPON_LOCK, operationKey = "#activityCode")
     public boolean receiveCoupon(String activityCode) {
-        MallClientUser clientUser = AuthorizationContext.getClientUser();
+        ClientUser clientUser = AuthorizationContext.getClientUser();
         Coupon coupon = getCouponByCode(activityCode);
         // 优惠券校验
         validReceiveCoupon(clientUser, coupon);
@@ -232,7 +232,7 @@ public class CouponServiceImpl extends ServiceImpl<CouponMapper, Coupon> impleme
         }
     }
 
-    private void validReceiveCoupon(MallClientUser clientUser, Coupon coupon) {
+    private void validReceiveCoupon(ClientUser clientUser, Coupon coupon) {
         Date now = new Date();
         // 活动是否正常
         if (Boolean.FALSE.equals(coupon.getState())) {
@@ -313,7 +313,7 @@ public class CouponServiceImpl extends ServiceImpl<CouponMapper, Coupon> impleme
         }
     }
 
-    private MemberCoupon buildMemberCoupon(MallClientUser clientUser, Coupon coupon) {
+    private MemberCoupon buildMemberCoupon(ClientUser clientUser, Coupon coupon) {
         Date now = new Date();
         MemberCoupon memberCoupon = new MemberCoupon();
         memberCoupon.setMemberId(clientUser.getId());
