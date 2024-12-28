@@ -23,14 +23,14 @@ public class ImRouterApiRpc implements ImRouterApi {
     private ImRouterService imRouterService;
 
     @Override
-    @PostMapping("/sendMsg")
-    public void sendMsg(ImMsgBody imMsgBody) {
+    @PostMapping("/routeMsg")
+    public void routeMsg(ImMsgBody imMsgBody) {
         imRouterService.sendMsg(imMsgBody);
     }
 
     @Override
-    @PostMapping("/batchSendMsg")
-    public void batchSendMsg(List<ImMsgBody> imMsgBodyList) {
+    @PostMapping("/batchRouteMsg")
+    public void batchRouteMsg(List<ImMsgBody> imMsgBodyList) {
         imRouterService.batchSendMsg(imMsgBodyList);
     }
 }

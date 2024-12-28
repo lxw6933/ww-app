@@ -24,4 +24,13 @@
         im 模块
     </description>
 
+    <dependencies>
+        <!-- grpc-api -->
+        <dependency>
+            <groupId>com.ww.mall</groupId>
+            <artifactId>mall-grpc-api</artifactId>
+            <version>${revision}</version>
+        </dependency>
+    </dependencies>
+
 </project>

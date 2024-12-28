@@ -1,0 +1,19 @@
+// 语法选用proto3
+syntax = "proto3";
+
+// 生成的java是一个源文件还是多个源文件
+option java_multiple_files = true;
+// 指定生成的java类放哪个包中
+option java_package = "com.ww.mall.proto.im.router";
+// proto java结构：外部类名称[内部类是真正开发使用的]
+option java_outer_classname = "ImRouterProto";
+
+import "im/im.proto";
+import "google/protobuf/empty.proto";
+
+service ImRouterService {
+  // 路由消息给IM server
+  rpc routeMsg(ImMsgBodyRequest) returns (google.protobuf.Empty);
+  // 批量路由消息给IM server
+  rpc batchRouteMsg(ImMsgBodyListRequest) returns (google.protobuf.Empty);
+}

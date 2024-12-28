@@ -1,5 +1,6 @@
 package com.ww.mall.im.common;
 
+import com.ww.mall.proto.im.ImMsgBodyRequest;
 import lombok.Data;
 
 import java.io.Serializable;
@@ -41,4 +42,16 @@ public class ImMsgBody implements Serializable {
      * 业务消息内容
      */
     private String bizMsg;
+
+    public static ImMsgBody build(ImMsgBodyRequest request) {
+        ImMsgBody imMsgBody = new ImMsgBody();
+        imMsgBody.setSeqId(request.getSeqId());
+        imMsgBody.setAppId(request.getAppId());
+        imMsgBody.setUserId(request.getUserId());
+        imMsgBody.setToken(request.getToken());
+        imMsgBody.setBizCode(request.getBizCode());
+        imMsgBody.setBizMsg(request.getBizMsg());
+        return imMsgBody;
+    }
+
 }

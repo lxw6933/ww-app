@@ -1,0 +1,18 @@
+// 语法选用proto3
+syntax = "proto3";
+
+// 生成的java是一个源文件还是多个源文件
+option java_multiple_files = true;
+// 指定生成的java类放哪个包中
+option java_package = "com.ww.mall.proto.im.biz";
+// proto java结构：外部类名称[内部类是真正开发使用的]
+option java_outer_classname = "ImMsgBizProto";
+
+import "im/im.proto";
+import "google/protobuf/empty.proto";
+
+service ImMsgBizService {
+  // 简单rpc 请求消息：ImMsgBodyRequest 响应消息：void
+  // 处理业务消息
+  rpc handleImMsg(ImMsgBodyRequest) returns (google.protobuf.Empty);
+}

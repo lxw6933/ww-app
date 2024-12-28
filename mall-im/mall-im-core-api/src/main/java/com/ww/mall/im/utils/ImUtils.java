@@ -3,6 +3,11 @@ package com.ww.mall.im.utils;
 import cn.hutool.core.util.StrUtil;
 import com.ww.mall.common.constant.Constant;
 import com.ww.mall.im.common.ImConstant;
+import com.ww.mall.im.common.ImMsgBody;
+import com.ww.mall.proto.im.ImMsgBodyListRequest;
+import com.ww.mall.proto.im.ImMsgBodyRequest;
+
+import java.util.List;
 
 /**
  * @author ww
@@ -25,6 +30,26 @@ public class ImUtils {
 
     public static String getImBindUserId(String imBindIpCache) {
         return StrUtil.subAfter(imBindIpCache, ImConstant.AT, false);
+    }
+
+    public static ImMsgBodyRequest buildImMsgBodyRequest(ImMsgBody imMsgBody) {
+        ImMsgBodyRequest.Builder builder = ImMsgBodyRequest.newBuilder();
+        builder.setSeqId(imMsgBody.getSeqId());
+        builder.setAppId(imMsgBody.getAppId());
+        builder.setUserId(imMsgBody.getUserId());
+        builder.setToken(imMsgBody.getToken());
+        builder.setBizCode(imMsgBody.getBizCode());
+        builder.setBizMsg(imMsgBody.getBizMsg());
+        return builder.build();
+    }
+
+    public static ImMsgBodyListRequest buildImMsgBodyListRequest(List<ImMsgBody> imMsgBodyList) {
+        ImMsgBodyListRequest.Builder builder = ImMsgBodyListRequest.newBuilder();
+        imMsgBodyList.forEach(imMsgBody -> {
+            ImMsgBodyRequest imMsgBodyRequest = buildImMsgBodyRequest(imMsgBody);
+            builder.addImMsgBodyList(imMsgBodyRequest);
+        });
+        return builder.build();
     }
 
 }

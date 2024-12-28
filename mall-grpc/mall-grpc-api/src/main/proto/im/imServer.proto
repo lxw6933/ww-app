@@ -1,0 +1,18 @@
+// 语法选用proto3
+syntax = "proto3";
+
+// 生成的java是一个源文件还是多个源文件
+option java_multiple_files = true;
+// 指定生成的java类放哪个包中
+option java_package = "com.ww.mall.proto.im.core";
+// proto java结构：外部类名称[内部类是真正开发使用的]
+option java_outer_classname = "ImMsgBizProto";
+
+import "im/im.proto";
+
+service ImServerService {
+  // 发送消息给客户端
+  rpc sendMsg(ImMsgBodyRequest) returns (ImCommonResponse) {};
+  // 批量发送消息给客户端
+  rpc batchSendMsg(ImMsgBodyListRequest) returns (ImCommonResponse) {};
+}

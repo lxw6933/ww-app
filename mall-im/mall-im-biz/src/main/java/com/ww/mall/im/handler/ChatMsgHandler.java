@@ -25,7 +25,9 @@ public class ChatMsgHandler implements MsgHandler {
     @Override
     public void handle(ImMsgBody imMsgBody) {
         log.info("接收到[{}]发来的消息:{}", imMsgBody.getUserId(), JSON.parseObject(imMsgBody.getBizMsg(), MessageDTO.class).getContent());
-        imRouterApi.sendMsg(imMsgBody);
+        // TODO 消息处理、发送消息队列转发消费
+        // 临时使用远程调用来转发
+        imRouterApi.routeMsg(imMsgBody);
     }
 
     @Override

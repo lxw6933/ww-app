@@ -15,10 +15,10 @@ import java.util.List;
 @FeignClient(value = "mall-im-router")
 public interface ImRouterApi {
 
-    @PostMapping("/mall-im-router/im/inner/sendMsg")
-    void sendMsg(@RequestBody ImMsgBody imMsgBody);
+    @PostMapping("/mall-im-router/im/inner/routeMsg")
+    void routeMsg(@RequestBody ImMsgBody imMsgBody);
 
-    @PostMapping("/mall-im-router/im/inner/batchSendMsg")
-    void batchSendMsg(@RequestBody List<ImMsgBody> imMsgBodyList);
+    @PostMapping("/mall-im-router/im/inner/batchRouteMsg")
+    void batchRouteMsg(@RequestBody List<ImMsgBody> imMsgBodyList);
 
 }
