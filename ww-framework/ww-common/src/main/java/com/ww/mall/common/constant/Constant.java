@@ -52,7 +52,7 @@ public class Constant {
      */
     public static final String SECRET_KEY = "ww6933@sina.com.";
 
-    public static final String GATEWAY_REQUEST_FLAG = "ww-mall-gateway";
+    public static final String GATEWAY_REQUEST_FLAG = "ww-app-gateway";
     public static final String GATEWAY_REQUEST_FLAG_VALUE = "true";
 
     /**

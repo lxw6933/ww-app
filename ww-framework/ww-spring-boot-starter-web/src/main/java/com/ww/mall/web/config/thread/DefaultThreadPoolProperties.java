@@ -17,7 +17,7 @@ public class DefaultThreadPoolProperties {
     /**
      * 线程名称
      */
-    private String threadName = "ww-mall";
+    private String threadName = "ww-app";
 
     /**
      * 核心线程数量
