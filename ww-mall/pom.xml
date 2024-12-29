@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+    <parent>
+        <groupId>com.ww.app</groupId>
+        <artifactId>ww-app</artifactId>
+        <version>${revision}</version>
+    </parent>
+
+    <modules>
+        <!-- 购物车服务 -->
+        <module>ww-cart</module>
+        <!-- 优惠券服务 -->
+        <module>ww-coupon</module>
+        <!-- 订单服务 -->
+        <module>ww-order</module>
+        <!-- 支付服务 -->
+        <module>ww-pay</module>
+        <!-- 会员服务 -->
+        <module>ww-member</module>
+        <!-- 搜索服务 -->
+        <module>ww-search</module>
+        <!-- 商品服务 -->
+        <module>ww-product</module>
+        <!-- 秒杀服务 -->
+        <module>ww-seckill</module>
+    </modules>
+
+    <artifactId>ww-mall</artifactId>
+    <packaging>pom</packaging>
+
+    <name>${project.artifactId}</name>
+    <description>
+        mall 模块
+    </description>
+</project>
