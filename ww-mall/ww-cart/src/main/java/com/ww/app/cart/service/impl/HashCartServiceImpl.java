@@ -1,0 +1,145 @@
+package com.ww.app.cart.service.impl;
+
+import cn.hutool.core.lang.Assert;
+import com.ww.app.cart.component.key.CartRedisKeyBuilder;
+import com.ww.app.cart.entity.Cart;
+import com.ww.app.cart.entity.CartItem;
+import com.ww.app.cart.interceptor.CartInterceptor;
+import com.ww.app.cart.service.HashCartService;
+import com.ww.app.cart.to.UserInfoTo;
+import com.ww.app.common.exception.ApiException;
+import org.apache.commons.collections4.CollectionUtils;
+import org.redisson.api.RMap;
+import org.redisson.api.RedissonClient;
+import org.springframework.stereotype.Service;
+
+import javax.annotation.Resource;
+import java.math.BigDecimal;
+import java.util.ArrayList;
+import java.util.List;
+
+import static com.ww.app.cart.constant.CartConstant.MAX_CART_NUMBER;
+
+/**
+ * @author ww
+ * @create 2024-04-08- 09:35
+ * @description:
+ */
+@Service
+public class HashCartServiceImpl implements HashCartService {
+
+    @Resource
+    private RedissonClient redissonClient;
+
+    @Resource
+    private CartRedisKeyBuilder cartRedisKeyBuilder;
+
+    @Override
+    public CartItem addToCart(Long skuId, Integer num) {
+        RMap<String, CartItem> userCart = getUserCart();
+        // 是否达到购物车最大容量
+        Assert.isTrue(userCart.size() > MAX_CART_NUMBER, () -> new ApiException("超出购物车最大容量"));
+        // 判断购物车是否存在当前商品
+        CartItem cartItem = userCart.get(skuId.toString());
+        if (cartItem == null) {
+            cartItem = new CartItem();
+            // TODO: 2023/7/17 远程查询商品信息
+            cartItem.setSkuId(skuId);
+            cartItem.setCount(num);
+            cartItem.setChecked(true);
+            cartItem.setPrice(BigDecimal.ONE);
+        } else {
+            cartItem.setCount(cartItem.getCount() + num);
+        }
+        userCart.put(skuId.toString(), cartItem);
+        return cartItem;
+    }
+
+    @Override
+    public Cart userCartList() {
+        Cart cart = new Cart();
+        UserInfoTo userInfoTo = CartInterceptor.cartThreadLocal.get();
+        if (userInfoTo.getUserId() != null) {
+            // 获取临时用户购物车数据
+            String tempUserCartKey = cartRedisKeyBuilder.buildUserCartKey(userInfoTo.getTempUserKey());
+            List<CartItem> tempUserCartList = getUserCartItemList(tempUserCartKey);
+            if (CollectionUtils.isNotEmpty(tempUserCartList)) {
+                // 合并到当前登录用户购物车
+                tempUserCartList.forEach(tempCartItem -> this.addToCart(tempCartItem.getSkuId(), tempCartItem.getCount()));
+                // 清空临时用户购物车数据
+                redissonClient.getMap(tempUserCartKey).clear();
+            }
+        }
+        cart.setCartItems(getUserCartItemList());
+        return cart;
+    }
+
+    @Override
+    public boolean clearUserCart() {
+        RMap<String, CartItem> userCart = getUserCart();
+        userCart.clear();
+        return true;
+    }
+
+    @Override
+    public boolean checkItem(Long skuId) {
+        RMap<String, CartItem> userCart = getUserCart();
+        CartItem userCartItem = userCart.get(skuId.toString());
+        Assert.isNull(userCartItem);
+        userCartItem.setChecked(!userCartItem.getChecked());
+        userCart.put(skuId.toString(), userCartItem);
+        return true;
+    }
+
+    @Override
+    public boolean modifyItemCount(Long skuId, Integer num) {
+        RMap<String, CartItem> userCart = getUserCart();
+        CartItem userCartItem = userCart.get(skuId.toString());
+        Assert.isNull(userCartItem);
+        if (num < 1) {
+            return false;
+        }
+        userCartItem.setCount(num);
+        userCart.put(skuId.toString(), userCartItem);
+        return true;
+    }
+
+    @Override
+    public boolean deleteItem(Long skuId) {
+        RMap<String, CartItem> userCart = getUserCart();
+        userCart.remove(skuId.toString());
+        return true;
+    }
+
+    @Override
+    public boolean batchDeleteItem(List<Long> skuIdList) {
+        RMap<String, CartItem> userCart = getUserCart();
+        skuIdList.forEach(skuId -> userCart.remove(skuId.toString()));
+        return true;
+    }
+
+    private RMap<String, CartItem> getUserCart() {
+        UserInfoTo userInfoTo = CartInterceptor.cartThreadLocal.get();
+        String userCartKey = cartRedisKeyBuilder.buildUserCartKey(userInfoTo.getUserId() != null ? userInfoTo.getUserId() : userInfoTo.getTempUserKey());
+        return redissonClient.getMap(userCartKey);
+    }
+
+    private List<CartItem> getUserCartItemList() {
+        List<CartItem> userCartList = new ArrayList<>();
+        RMap<String, CartItem> userCart = getUserCart();
+        if (CollectionUtils.isNotEmpty(userCart.values())) {
+            userCartList = new ArrayList<>(userCart.values());
+        }
+        return userCartList;
+    }
+
+    private List<CartItem> getUserCartItemList(String userCartKey) {
+        List<CartItem> userCartList = new ArrayList<>();
+        RMap<String, CartItem> userCart = redissonClient.getMap(userCartKey);
+        if (CollectionUtils.isNotEmpty(userCart.values())) {
+            userCartList = new ArrayList<>(userCart.values());
+        }
+        return userCartList;
+    }
+
+}

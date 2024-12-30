@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
-<mapper namespace="com.ww.mall.coupon.dao.CouponMapper">
+<mapper namespace="com.ww.app.coupon.dao.CouponMapper">
 
     <update id="lineLockTest">
         update t_coupon set init_total_coupon_number = init_total_coupon_number - #{buyNumber} where activity_code = #{activityCode} and init_total_coupon_number - #{buyNumber} >= 0

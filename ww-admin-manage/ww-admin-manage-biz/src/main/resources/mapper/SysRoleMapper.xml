@@ -1,8 +1,8 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
-<mapper namespace="com.ww.mall.admin.dao.SysRoleMapper">
+<mapper namespace="com.ww.app.admin.dao.SysRoleMapper">
 
-    <resultMap type="com.ww.mall.admin.entity.SysRole" id="SysRoleMap">
+    <resultMap type="com.ww.app.admin.entity.SysRole" id="SysRoleMap">
         <result property="id" column="id" jdbcType="INTEGER"/>
         <result property="name" column="name" jdbcType="VARCHAR"/>
         <result property="roleNo" column="role_no" jdbcType="VARCHAR"/>

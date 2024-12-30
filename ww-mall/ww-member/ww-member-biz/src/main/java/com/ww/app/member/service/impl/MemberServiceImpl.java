@@ -1,0 +1,50 @@
+package com.ww.app.member.service.impl;
+
+import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
+import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
+import com.ww.app.member.dao.MemberMapper;
+import com.ww.app.member.entity.Member;
+import com.ww.app.member.service.MemberService;
+import com.ww.app.rabbitmq.RabbitMqPublisher;
+import com.ww.app.rabbitmq.exchange.ExchangeConstant;
+import com.ww.app.rabbitmq.routekey.RouteKeyConstant;
+import com.ww.app.redis.annotation.Resubmission;
+import com.ww.app.member.member.dto.MemberDTO;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.BeanUtils;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
+
+import java.util.UUID;
+
+/**
+ * @author ww
+ * @create 2023-07-17- 11:11
+ * @description:
+ */
+@Slf4j
+@Service
+public class MemberServiceImpl extends ServiceImpl<MemberMapper, Member> implements MemberService {
+
+    @Autowired
+    private RabbitMqPublisher rabbitMqPublisher;
+
+    @Override
+    @Resubmission
+    public MemberDTO getMemberByMobile(String mobile) {
+        // 查询当前手机号用户
+        Member member = this.getOne(new QueryWrapper<Member>().eq("mobile", mobile));
+        if (member == null) {
+            // 自动注册用户
+            member = new Member();
+            member.setMobile(mobile);
+            member.setNickName(UUID.randomUUID().toString());
+            this.save(member);
+            // 发送用户注册消息
+            rabbitMqPublisher.publishMsg(ExchangeConstant.MEMBER_EXCHANGE, RouteKeyConstant.MEMBER_REGISTER_KEY, member.getId());
+        }
+        MemberDTO memberDTO = new MemberDTO();
+        BeanUtils.copyProperties(member, memberDTO);
+        return memberDTO;
+    }
+}

@@ -1,4 +1,4 @@
-import com.ww.mall.minio.MinioTemplate;
+import com.ww.app.minio.MinioTemplate;
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.SpringBootTest;
 

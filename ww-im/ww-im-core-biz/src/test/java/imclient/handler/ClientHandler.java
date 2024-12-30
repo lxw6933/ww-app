@@ -2,11 +2,11 @@ package imclient.handler;
 
 import cn.hutool.extra.spring.SpringUtil;
 import com.alibaba.fastjson.JSON;
-import com.ww.mall.im.common.ImConstant;
-import com.ww.mall.im.common.ImMsg;
-import com.ww.mall.im.common.ImMsgBody;
-import com.ww.mall.im.dto.MessageDTO;
-import com.ww.mall.im.enums.ImMsgCodeEnum;
+import com.ww.app.im.common.ImConstant;
+import com.ww.app.im.common.ImMsg;
+import com.ww.app.im.common.ImMsgBody;
+import com.ww.app.im.dto.MessageDTO;
+import com.ww.app.im.enums.ImMsgCodeEnum;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.SimpleChannelInboundHandler;
 import lombok.extern.slf4j.Slf4j;
