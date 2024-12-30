@@ -1,10 +1,10 @@
 org.springframework.boot.autoconfigure.EnableAutoConfiguration=\
-  com.ww.mall.web.config.WebMvcConfiguration, \
-  com.ww.mall.web.config.SecretProperties, \
-  com.ww.mall.web.WebApplication, \
-  com.ww.mall.web.config.thread.DefaultThreadPoolConfiguration, \
-  com.ww.mall.web.config.sentinel.SentinelNacosDataSourceAutoConfiguration, \
-  com.ww.mall.web.config.FeignFallBackConfiguration, \
-  com.ww.mall.web.config.LoadBalancerConfiguration, \
-  com.ww.mall.web.filter.ServerRequestFilter, \
-  com.ww.mall.web.config.GracefulShutdownConfiguration
+  com.ww.app.web.config.WebMvcConfiguration, \
+  com.ww.app.web.config.SecretProperties, \
+  com.ww.app.web.WebApplication, \
+  com.ww.app.web.config.thread.DefaultThreadPoolConfiguration, \
+  com.ww.app.web.config.sentinel.SentinelNacosDataSourceAutoConfiguration, \
+  com.ww.app.web.config.FeignFallBackConfiguration, \
+  com.ww.app.web.config.LoadBalancerConfiguration, \
+  com.ww.app.web.filter.ServerRequestFilter, \
+  com.ww.app.web.config.GracefulShutdownConfiguration

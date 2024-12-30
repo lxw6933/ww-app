@@ -1,0 +1,137 @@
+package com.ww.app.admin.service;
+
+import com.baomidou.mybatisplus.extension.service.IService;
+import com.ww.app.admin.entity.SysUser;
+import com.ww.app.admin.user.bo.SysUserLoginBO;
+import com.ww.app.admin.user.dto.SysUserDTO;
+import com.ww.app.admin.view.form.ModifyPasswordForm;
+import com.ww.app.admin.view.form.SysUserForm;
+import com.ww.app.admin.view.query.SysUserPageQuery;
+import com.ww.app.admin.view.vo.CurrentSysUserInfoVO;
+import com.ww.app.admin.view.vo.SysRoleSelectVO;
+import com.ww.app.admin.view.vo.SysUserVO;
+import com.ww.app.common.common.AppPageResult;
+import com.ww.app.common.common.IdForm;
+
+import java.util.List;
+
+/**
+ * @author ww
+ * @create 2024-05-20 14:02:20
+ * @description:
+ */
+public interface SysUserService extends IService<SysUser> {
+
+    /**
+     * 用户分页查询
+     *
+     * @param query query
+     * @return page
+     */
+    AppPageResult<SysUserVO> page(SysUserPageQuery query);
+
+    /**
+     * 新增用户
+     *
+     * @param form form
+     * @return boolean
+     */
+    boolean save(SysUserForm form);
+
+    /**
+     * 编辑用户
+     *
+     * @param form form
+     * @return boolean
+     */
+    boolean update(SysUserForm form);
+
+    /**
+     * 获取用户信息
+     *
+     * @param userId 用户id
+     * @return sysUserVO
+     */
+    SysUserVO info(Long userId);
+
+    /**
+     * 删除用户
+     *
+     * @param form form
+     * @return boolean
+     */
+    boolean delete(IdForm form);
+
+    /**
+     * 修改用户密码
+     *
+     * @param modifyPasswordForm bo
+     * @return boolean
+     */
+    boolean modifyPassword(ModifyPasswordForm modifyPasswordForm);
+
+    /**
+     * 重置用户密码
+     *
+     * @param userId 用户id
+     * @return boolean
+     */
+    boolean resetPassword(Long userId);
+
+    /**
+     * 修改用户状态
+     *
+     * @param userId 修改状态用户
+     * @return boolean
+     */
+    boolean modifySysUserStatus(Long userId, boolean status);
+
+    /**
+     * 账号密码获取用户信息
+     *
+     * @param username 账号
+     * @param password 密码
+     * @return sysUser
+     */
+    SysUserVO info(String username, String password);
+
+    /**
+     * 查询用户下所有的角色
+     *
+     * @param userId userId
+     * @return List<SysRoleVO>
+     */
+    List<SysRoleSelectVO> queryUserOfRole(Long userId);
+
+    /**
+     * 后台登录
+     *
+     * @param form 登录form
+     * @return SysUserDTO
+     */
+    SysUserDTO login(SysUserLoginBO form);
+
+    /**
+     * 获取登录者信息
+     *
+     * @return SysUserVO
+     */
+    CurrentSysUserInfoVO selfInfo();
+
+    /**
+     * 修改用户状态信息
+     *
+     * @param userId 用户id
+     * @return boolean
+     */
+    boolean modifyStatus(Long userId);
+
+    /**
+     * 根据username加载用户信息
+     *
+     * @param username 账号
+     * @return SysUserDTO
+     */
+    SysUserDTO loadUserDetails(String username);
+}
+

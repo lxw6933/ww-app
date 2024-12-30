@@ -1,0 +1,15 @@
+package com.ww.app.open.infrastructure;
+
+import com.baomidou.mybatisplus.core.mapper.BaseMapper;
+import com.ww.app.open.entity.BusinessClientInfo;
+import org.apache.ibatis.annotations.Mapper;
+
+/**
+ * @author ww
+ * @create 2024-05-25 15:26
+ * @description:
+ */
+@Mapper
+public interface BusinessClientInfoMapper extends BaseMapper<BusinessClientInfo> {
+
+}

@@ -1,0 +1,27 @@
+package com.ww.app.common.annotation;
+
+import com.fasterxml.jackson.annotation.JacksonAnnotationsInside;
+import com.fasterxml.jackson.databind.annotation.JsonSerialize;
+import com.ww.app.common.enums.SensitiveDataType;
+import com.ww.app.common.serializer.SensitiveJsonSerializer;
+
+import java.lang.annotation.ElementType;
+import java.lang.annotation.Retention;
+import java.lang.annotation.RetentionPolicy;
+import java.lang.annotation.Target;
+
+/**
+ * @author ww
+ * @create 2024-04-26- 10:46
+ * @description:
+ */
+@JacksonAnnotationsInside
+@JsonSerialize(using = SensitiveJsonSerializer.class)
+@Target(ElementType.FIELD)
+@Retention(RetentionPolicy.RUNTIME)
+public @interface Sensitive {
+
+    SensitiveDataType type();
+
+    String permission() default "";
+}
