@@ -5,6 +5,7 @@ import com.ww.app.rabbitmq.common.MyCorrelationData;
 import com.ww.app.common.enums.MqMsgStatus;
 import com.ww.app.rabbitmq.repository.MqLogRepository;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.amqp.core.MessageDeliveryMode;
 import org.springframework.amqp.core.MessagePostProcessor;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.stereotype.Component;
@@ -50,6 +51,31 @@ public class RabbitMqPublisher {
         }
         // 发送用户对象信息到broker
         rabbitTemplate.convertAndSend(exchange, routeKey, msg, correlationIdProcessor, msgData);
+    }
+
+    public <T> void sendDelayMsg(String exchange, String routeKey, T msg, int delayTime) {
+        sendDelayMsg(exchange, routeKey, msg, delayTime, false);
+    }
+
+    /**
+     * 延迟消息发送
+     * @param delayTime 延时时长 【单位：秒】
+     */
+    public <T> void sendDelayMsg(String exchange, String routeKey, T msg, int delayTime, boolean msgMode) {
+        // 自定义消息id
+        MyCorrelationData<T> msgData = new MyCorrelationData<>();
+        msgData.setExchange(exchange);
+        msgData.setMessage(msg);
+        msgData.setRoutingKey(routeKey);
+        msgData.setMsgMode(msgMode);
+        rabbitTemplate.convertAndSend(exchange, routeKey, msg, message -> {
+            // 消息持久化
+            message.getMessageProperties().setDeliveryMode(MessageDeliveryMode.PERSISTENT);
+            // 单位为毫秒
+            int time = delayTime * 1000;
+            message.getMessageProperties().setDelay(time);
+            return message;
+        }, msgData);
     }
 
 }
