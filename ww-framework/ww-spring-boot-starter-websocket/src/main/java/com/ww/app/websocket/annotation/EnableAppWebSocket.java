@@ -13,6 +13,7 @@ import java.lang.annotation.Target;
  * @create 2024-05-15- 15:24
  * @description:
  */
+@Deprecated
 @Target({ElementType.TYPE})
 @Retention(RetentionPolicy.RUNTIME)
 @Import({WebSocketServerAutoConfiguration.class})

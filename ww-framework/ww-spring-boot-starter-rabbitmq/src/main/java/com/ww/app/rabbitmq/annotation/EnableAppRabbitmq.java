@@ -16,6 +16,7 @@ import java.lang.annotation.Target;
  * @author: ww
  * @create: 2023/7/15 22:11
  **/
+@Deprecated
 @Target({ElementType.TYPE})
 @Retention(RetentionPolicy.RUNTIME)
 @Import({RabbitmqAutoConfiguration.class,

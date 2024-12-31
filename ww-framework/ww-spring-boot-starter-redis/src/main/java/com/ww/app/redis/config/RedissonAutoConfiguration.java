@@ -21,7 +21,7 @@ import org.springframework.data.redis.core.RedisTemplate;
 @Slf4j
 @ConditionalOnClass({RedisTemplate.class})
 @EnableConfigurationProperties(RedisProperties.class)
-public class RedissonAutoConfig {
+public class RedissonAutoConfiguration {
 
     /**
      * "redis://"正常连接

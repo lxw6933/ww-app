@@ -13,6 +13,7 @@ import java.lang.annotation.Target;
  * @create 2023-07-15- 17:32
  * @description:
  */
+@Deprecated
 @Target({ElementType.TYPE})
 @Retention(RetentionPolicy.RUNTIME)
 @Import({ElasticsearchAutoConfiguration.class})

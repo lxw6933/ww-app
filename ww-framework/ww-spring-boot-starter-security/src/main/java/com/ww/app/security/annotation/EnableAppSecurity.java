@@ -16,6 +16,7 @@ import java.lang.annotation.Target;
  * @create 2024-09-21 11:07
  * @description:
  */
+@Deprecated
 @Target({ElementType.TYPE})
 @Retention(RetentionPolicy.RUNTIME)
 @Import({AclComponent.class,

@@ -13,6 +13,7 @@ import java.lang.annotation.Target;
  * @create 2023-07-15- 16:15
  * @description:
  */
+@Deprecated
 @Target({ElementType.TYPE})
 @Retention(RetentionPolicy.RUNTIME)
 @Import({MongodbAutoConfiguration.class})

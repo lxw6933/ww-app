@@ -13,6 +13,7 @@ import java.lang.annotation.Target;
  * @create 2024-06-01 19:26
  * @description:
  */
+@Deprecated
 @Target({ElementType.TYPE})
 @Retention(RetentionPolicy.RUNTIME)
 @Import({Ip2RegionAutoConfiguration.class})

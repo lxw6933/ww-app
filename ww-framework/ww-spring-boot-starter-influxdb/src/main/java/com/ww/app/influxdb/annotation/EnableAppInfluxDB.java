@@ -13,6 +13,7 @@ import java.lang.annotation.Target;
  * @create 2024-07-27- 09:37
  * @description:
  */
+@Deprecated
 @Target({ElementType.TYPE})
 @Retention(RetentionPolicy.RUNTIME)
 @Import({InfluxDBAutoConfiguration.class})

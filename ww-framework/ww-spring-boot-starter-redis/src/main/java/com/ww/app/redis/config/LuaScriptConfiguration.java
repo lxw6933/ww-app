@@ -15,7 +15,7 @@ import org.springframework.scripting.support.ResourceScriptSource;
  */
 @Slf4j
 @Configuration
-public class LuaScriptConfig {
+public class LuaScriptConfiguration {
 
     @Bean
     public DefaultRedisScript<Long> decrementStockScript() {

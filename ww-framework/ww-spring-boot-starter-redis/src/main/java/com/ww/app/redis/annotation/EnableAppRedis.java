@@ -1,6 +1,6 @@
 package com.ww.app.redis.annotation;
 
-import com.ww.app.redis.config.LuaScriptConfig;
+import com.ww.app.redis.config.LuaScriptConfiguration;
 import com.ww.app.redis.config.RedisAutoConfiguration;
 import org.springframework.context.annotation.Import;
 
@@ -14,8 +14,9 @@ import java.lang.annotation.Target;
  * @create 2023-07-15- 15:18
  * @description:
  */
+@Deprecated
 @Target({ElementType.TYPE})
 @Retention(RetentionPolicy.RUNTIME)
-@Import({RedisAutoConfiguration.class, LuaScriptConfig.class})
+@Import({RedisAutoConfiguration.class, LuaScriptConfiguration.class})
 public @interface EnableAppRedis {
 }
