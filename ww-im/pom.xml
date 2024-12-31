@@ -14,6 +14,7 @@
         <module>ww-im-router-biz</module>
         <module>ww-im-core-api</module>
         <module>ww-im-core-biz</module>
+        <module>ww-im-redpacket-api</module>
         <module>ww-im-redpacket-biz</module>
     </modules>
 
