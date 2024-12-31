@@ -16,7 +16,7 @@ import com.ww.app.rabbitmq.RabbitMqPublisher;
 import com.ww.app.rabbitmq.exchange.ExchangeConstant;
 import com.ww.app.rabbitmq.routekey.RouteKeyConstant;
 import com.ww.app.redis.component.StockRedisComponent;
-import com.ww.app.redis.key.StockRedisKeyBuilder;
+import com.ww.app.redis.component.key.StockRedisKeyBuilder;
 import com.ww.app.seckill.component.key.SeckillRedisKeyBuilder;
 import com.ww.app.seckill.service.SeckillService;
 import com.ww.app.seckill.view.bo.SecKillOrderReqBO;

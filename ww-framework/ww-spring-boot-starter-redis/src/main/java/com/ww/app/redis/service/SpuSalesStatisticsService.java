@@ -1,6 +1,6 @@
 package com.ww.app.redis.service;
 
-import com.ww.app.redis.key.SpuRedisKeyBuilder;
+import com.ww.app.redis.component.key.SpuRedisKeyBuilder;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnBean;
 import org.springframework.data.redis.core.RedisTemplate;

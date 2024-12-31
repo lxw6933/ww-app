@@ -13,7 +13,7 @@ import java.util.List;
  */
 @Data
 @Configuration
-@ConfigurationProperties(prefix = "mall")
+@ConfigurationProperties(prefix = "ww")
 public class GatewayProperties {
 
     /**

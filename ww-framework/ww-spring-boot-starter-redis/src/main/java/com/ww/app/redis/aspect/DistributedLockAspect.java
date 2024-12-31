@@ -1,12 +1,12 @@
 package com.ww.app.redis.aspect;
 
-import cn.hutool.core.util.StrUtil;
 import cn.hutool.crypto.SecureUtil;
 import com.ww.app.common.constant.Constant;
 import com.ww.app.common.enums.GlobalResCodeConstants;
 import com.ww.app.common.exception.ApiException;
 import com.ww.app.common.utils.SpringExpressionUtils;
 import com.ww.app.redis.annotation.DistributedLock;
+import com.ww.app.redis.component.key.AppLockRedisKeyBuilder;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.aspectj.lang.ProceedingJoinPoint;
@@ -15,9 +15,9 @@ import org.aspectj.lang.annotation.Aspect;
 import org.aspectj.lang.reflect.MethodSignature;
 import org.redisson.api.RLock;
 import org.redisson.api.RedissonClient;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
+import javax.annotation.Resource;
 import java.lang.reflect.Method;
 
 /**
@@ -30,10 +30,11 @@ import java.lang.reflect.Method;
 @Component
 public class DistributedLockAspect {
 
-    @Autowired
+    @Resource
     private RedissonClient redissonClient;
 
-    private static final String LOCK_PREFIX = "mall:lock";
+    @Resource
+    private AppLockRedisKeyBuilder appLockRedisKeyBuilder;
 
     @Around("@annotation(com.ww.app.redis.annotation.DistributedLock)")
     public Object mallDistributedLockAdvise(ProceedingJoinPoint joinPoint) throws Throwable {
@@ -55,7 +56,7 @@ public class DistributedLockAspect {
         if (StringUtils.isNotEmpty(distributedLock.operationKey())) {
             sb.append(Constant.SPLIT).append(SpringExpressionUtils.parseExpression(joinPoint, distributedLock.operationKey()));
         }
-        String lockKey = StrUtil.join(Constant.SPLIT, LOCK_PREFIX, SecureUtil.md5(sb.toString()));
+        String lockKey = appLockRedisKeyBuilder.buildLock(SecureUtil.md5(sb.toString()));
         RLock lock = redissonClient.getLock(lockKey);
         try {
             log.info("线程[{}]尝试获取锁key：{}", Thread.currentThread().getId(), lockKey);

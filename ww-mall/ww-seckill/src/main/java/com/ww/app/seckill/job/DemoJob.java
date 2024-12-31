@@ -13,7 +13,7 @@ public class DemoJob {
     @XxlJob("demoJobHandler")
     public void demoJobHandler() {
         log.info("demo job log");
-        XxlJobHelper.log("mall xxl-job demo");
+        XxlJobHelper.log("xxl-job demo");
     }
 
 }

@@ -74,16 +74,16 @@ public class WebSocketServerAutoConfiguration {
         try {
             serverStartFuture = serverBootstrap.bind(WSProperties.getWebsocketPort()).sync();
             if (serverStartFuture.isSuccess()) {
-                log.info("mall websocket server success start port：[{}]", WSProperties.getWebsocketPort());
+                log.info("websocket server success start port：[{}]", WSProperties.getWebsocketPort());
             } else {
-                log.error("mall websocket server fail start");
+                log.error("websocket server fail start");
             }
             ChannelFuture serverChannelFuture = serverStartFuture.channel().closeFuture();
             serverChannelFuture.addListener((ChannelFutureListener) channelFuture ->
-                log.warn("mall websocket server channel close")
+                log.warn("websocket server channel close")
             );
         } catch (Exception e) {
-            throw new ApiException("mall websocket server exception start");
+            throw new ApiException("websocket server exception start");
         }
     }
 

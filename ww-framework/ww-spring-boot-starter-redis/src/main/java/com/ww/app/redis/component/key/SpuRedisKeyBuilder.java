@@ -1,5 +1,6 @@
-package com.ww.app.redis.key;
+package com.ww.app.redis.component.key;
 
+import com.ww.app.redis.key.RedisKeyBuilder;
 import org.springframework.stereotype.Component;
 
 /**

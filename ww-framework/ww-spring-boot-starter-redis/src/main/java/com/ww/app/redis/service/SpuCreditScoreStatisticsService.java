@@ -2,7 +2,7 @@ package com.ww.app.redis.service;
 
 import cn.hutool.core.collection.CollectionUtil;
 import com.ww.app.redis.key.RedisKeyBuilder;
-import com.ww.app.redis.key.SpuRedisKeyBuilder;
+import com.ww.app.redis.component.key.SpuRedisKeyBuilder;
 import com.ww.app.redis.vo.SpuScore;
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;

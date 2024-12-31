@@ -32,16 +32,16 @@ import java.util.Set;
  */
 @Slf4j
 @Configuration
-@ConditionalOnProperty(name = "mall.sentinel.cluster.enabled", havingValue = "true", matchIfMissing = true)
+@ConditionalOnProperty(name = "ww.sentinel.cluster.enabled", havingValue = "true", matchIfMissing = true)
 public class SentinelClusterConfiguration {
 
-    @Value("${mall.sentinel.cluster.nacos.host:127.0.0.1}")
+    @Value("${ww.sentinel.cluster.nacos.host:127.0.0.1}")
     private String nacosHost;
-    @Value("${mall.sentinel.cluster.nacos.namespace:mall-dev}")
+    @Value("${ww.sentinel.cluster.nacos.namespace:ww-dev}")
     private String nacosNamespace;
-    @Value("${mall.sentinel.cluster.nacos.username:nacos}")
+    @Value("${ww.sentinel.cluster.nacos.username:nacos}")
     private String nacosUsername;
-    @Value("${mall.sentinel.cluster.nacos.password:nacos}")
+    @Value("${ww.sentinel.cluster.nacos.password:nacos}")
     private String nacosPassword;
 
     private final static String FLOW_POSTFIX = "-sentinel-flow.json";

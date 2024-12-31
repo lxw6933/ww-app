@@ -3,7 +3,7 @@ package com.ww.app.seckill.stock;
 import cn.hutool.core.lang.Assert;
 import com.ww.app.common.exception.ApiException;
 import com.ww.app.redis.component.StockRedisComponent;
-import com.ww.app.redis.key.StockRedisKeyBuilder;
+import com.ww.app.redis.component.key.StockRedisKeyBuilder;
 import com.ww.app.redis.vo.ActivityStockVO;
 import lombok.extern.slf4j.Slf4j;
 import org.junit.jupiter.api.Test;

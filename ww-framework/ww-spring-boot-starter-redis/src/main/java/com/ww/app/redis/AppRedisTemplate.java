@@ -1,6 +1,6 @@
 package com.ww.app.redis;
 
-import com.ww.app.redis.key.GeoRedisKeyBuilder;
+import com.ww.app.redis.component.key.GeoRedisKeyBuilder;
 import com.ww.app.redis.vo.ActivityHashStockInitBO;
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
