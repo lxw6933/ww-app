@@ -1,0 +1,45 @@
+server:
+  port: 17400  #服务端口号
+  servlet:
+    context-path: /ww-im-redpacket
+spring:
+  redis:
+    host: localhost
+    password: 123456
+    port: 6379
+  data:
+    mongodb:
+      # 副本集群配置
+      uri: mongodb://ww:admin@172.28.174.84:27001,172.28.174.84:27002,172.28.174.84:27003/ww_mall?replicaSet=rs&readPreference=secondaryPreferred&connectTimeoutMS=300000
+      # 单机配置
+#      host: localhost:27017
+#      database: ww_mall
+#      username: admin
+#      password: admin
+#      authentication-database: admin
+  rabbitmq:
+    addresses: 172.28.174.84:5672
+    virtual-host: /
+    # 设置发送端到exchange确认回调
+    publisher-confirm-type: correlated
+    # 设置发送端到queue确认回调
+    publisher-returns: true
+    # 设置消息抵达queue，以异步方式回调 publisher-returns
+    template:
+      mandatory: true
+    # 消费者配置
+    listener:
+      simple:
+        # 手动ack消息
+        acknowledge-mode: manual
+        # 每个消费者一次获取10条消息
+        prefetch: 10
+        # 最小并发消费者数量
+        concurrency: 10
+        # 最大并发消费者数量
+        max-concurrency: 20
+
+# 开启sentinel feign支持【调用方（调用服务方）的熔断保护、被调用方（服务提供方）的降级保护】
+feign:
+  sentinel:
+    enabled: true

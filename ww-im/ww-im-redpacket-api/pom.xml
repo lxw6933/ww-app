@@ -4,33 +4,29 @@
     <modelVersion>4.0.0</modelVersion>
     <parent>
         <groupId>com.ww.app</groupId>
-        <artifactId>ww-app</artifactId>
+        <artifactId>ww-im</artifactId>
         <version>${revision}</version>
     </parent>
-    <modules>
-        <module>ww-im-api</module>
-        <module>ww-im-biz</module>
-        <module>ww-im-router-api</module>
-        <module>ww-im-router-biz</module>
-        <module>ww-im-core-api</module>
-        <module>ww-im-core-biz</module>
-        <module>ww-im-redpacket-biz</module>
-    </modules>
 
-    <artifactId>ww-im</artifactId>
-    <packaging>pom</packaging>
+    <artifactId>ww-im-redpacket-api</artifactId>
+    <packaging>jar</packaging>
 
     <name>${project.artifactId}</name>
     <description>
-        im 模块
+        im 红包 API 模块
     </description>
 
     <dependencies>
-        <!-- grpc-api -->
         <dependency>
             <groupId>com.ww.app</groupId>
-            <artifactId>ww-grpc-api</artifactId>
+            <artifactId>ww-common</artifactId>
             <version>${revision}</version>
+        </dependency>
+        <!-- openFeign 远程调用相关 -->
+        <dependency>
+            <groupId>org.springframework.cloud</groupId>
+            <artifactId>spring-cloud-starter-openfeign</artifactId>
+            <optional>true</optional>
         </dependency>
     </dependencies>
 
