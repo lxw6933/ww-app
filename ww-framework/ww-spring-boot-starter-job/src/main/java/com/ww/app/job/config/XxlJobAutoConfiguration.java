@@ -14,7 +14,7 @@ public class XxlJobAutoConfiguration {
     @Value("${xxl.job.admin.address}")
     private String adminAddress;
 
-    @Value("${xxl.job.accessToken:}")
+    @Value("${xxl.job.accessToken:default_token}")
     private String accessToken;
 
     @Value("${xxl.job.executor.appName:'xxl-job-executor-sample'}")
