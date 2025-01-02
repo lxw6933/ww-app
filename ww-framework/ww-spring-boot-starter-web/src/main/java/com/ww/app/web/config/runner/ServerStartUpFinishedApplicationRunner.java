@@ -37,9 +37,11 @@ public class ServerStartUpFinishedApplicationRunner implements ApplicationRunner
             log.info("\n----------------------------------------------------------\n\t" +
                             "项目:\t[ww-app]-[{}]服务模块,启动成功！\n\t" +
                             "接口路径:\t{} \n" +
+                            "prometheus metrics:\t{} \n" +
                             "----------------------------------------------------------",
                     serverName,
-                    serverReqPath);
+                    serverReqPath,
+                    serverReqPath + "actuator/prometheus");
         });
     }
 }

@@ -10,6 +10,7 @@
     <modules>
         <module>ww-common</module>
         <module>ww-spring-boot-starter-web</module>
+        <module>ww-spring-boot-starter-monitor</module>
         <module>ww-spring-boot-starter-es</module>
         <module>ww-spring-boot-starter-excel</module>
         <module>ww-spring-boot-starter-influxdb</module>

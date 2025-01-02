@@ -27,8 +27,6 @@
         <module>ww-api-gateway</module>
         <!-- 后台管理模块 -->
         <module>ww-admin-manage</module>
-        <!-- 服务监控 -->
-        <module>ww-monitor</module>
         <!-- grpc -->
         <module>ww-grpc</module>
         <!-- 开发平台 -->
