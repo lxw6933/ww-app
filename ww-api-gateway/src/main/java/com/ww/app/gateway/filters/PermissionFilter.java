@@ -7,11 +7,10 @@ import cn.hutool.jwt.JWTUtil;
 import com.ww.app.common.constant.Constant;
 import com.ww.app.common.enums.GlobalResCodeConstants;
 import com.ww.app.common.enums.UserType;
-import com.ww.app.gateway.properties.GatewayProperties;
+import com.ww.app.gateway.properties.AppGatewayProperties;
 import com.ww.app.gateway.utils.WebFluxResultUtils;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.cloud.context.config.annotation.RefreshScope;
 import org.springframework.cloud.gateway.filter.GatewayFilterChain;
@@ -26,6 +25,7 @@ import org.springframework.util.PathMatcher;
 import org.springframework.web.server.ServerWebExchange;
 import reactor.core.publisher.Mono;
 
+import javax.annotation.Resource;
 import java.util.Date;
 
 /**
@@ -44,8 +44,8 @@ public class PermissionFilter implements GlobalFilter, Ordered {
     @Value("${jwt.secret}")
     public String jwtSecret = Constant.SECRET_KEY;
 
-    @Autowired
-    private GatewayProperties gatewayProperties;
+    @Resource
+    private AppGatewayProperties appGatewayProperties;
 
     @Override
     public Mono<Void> filter(ServerWebExchange exchange, GatewayFilterChain chain) {
@@ -58,7 +58,7 @@ public class PermissionFilter implements GlobalFilter, Ordered {
         if (token == null) {
             // 接口白名单校验
             String urlPath = request.getURI().getPath();
-            for (String path : gatewayProperties.getWhiteUriList()) {
+            for (String path : appGatewayProperties.getWhiteUriList()) {
                 if (matcher.match(path, urlPath)) {
                     isWhite = true;
                     break;

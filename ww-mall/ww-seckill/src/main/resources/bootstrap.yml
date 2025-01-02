@@ -24,3 +24,4 @@ spring:
             refresh: true
           - data-id: sentinel-rules.yml
             refresh: true
+

@@ -7,6 +7,7 @@ import com.ww.app.redis.AppRedisTemplate;
 import com.ww.app.redis.aspect.RateLimitAspect;
 import com.ww.app.redis.aspect.ResubmissionAspect;
 import com.ww.app.redis.component.StockRedisComponent;
+import com.ww.app.redis.component.key.AppLockRedisKeyBuilder;
 import com.ww.app.redis.handler.RedisStockHandlerManager;
 import com.ww.app.redis.component.key.GeoRedisKeyBuilder;
 import com.ww.app.redis.component.key.SpuRedisKeyBuilder;
@@ -139,6 +140,11 @@ public class RedisAutoConfiguration implements ApplicationContextAware {
     @Bean
     public StockRedisKeyBuilder stockRedisKeyBuilder() {
         return new StockRedisKeyBuilder();
+    }
+
+    @Bean
+    public AppLockRedisKeyBuilder appLockRedisKeyBuilder() {
+        return new AppLockRedisKeyBuilder();
     }
 
     @Bean

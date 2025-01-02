@@ -14,7 +14,7 @@ import java.util.List;
 @Data
 @Configuration
 @ConfigurationProperties(prefix = "ww")
-public class GatewayProperties {
+public class AppGatewayProperties {
 
     /**
      * 不需要用户登录信息的uri集合
