@@ -3,7 +3,7 @@ package com.ww.app.search.view.bo;
 import com.ww.app.common.exception.ApiException;
 import com.ww.app.common.utils.SpecialCharacterUtil;
 import com.ww.app.mongodb.common.AbstractMongoPage;
-import com.ww.app.search.entity.ProductSearch;
+import com.ww.app.search.entity.mongo.ProductDoc;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import org.apache.commons.lang3.StringUtils;
@@ -23,7 +23,7 @@ import java.util.List;
  */
 @Data
 @EqualsAndHashCode(callSuper = true)
-public class PortalProductPageBO extends AbstractMongoPage<ProductSearch> {
+public class MongoSearchPageBO extends AbstractMongoPage<ProductDoc> {
 
     /**
      * 搜索关键词
@@ -44,7 +44,7 @@ public class PortalProductPageBO extends AbstractMongoPage<ProductSearch> {
     /**
      * 适用范围BO
      */
-    private SearchRangeBO searchRangeBO;
+    private SearchScopeBO searchScopeBO;
 
     /**
      * 排序BO
@@ -54,7 +54,7 @@ public class PortalProductPageBO extends AbstractMongoPage<ProductSearch> {
     /**
      * 区间BO
      */
-    private SearchScopeBO searchScopeBO;
+    private SearchRangeBO searchRangeBO;
 
     /**
      * 是否积分渠道
@@ -80,35 +80,35 @@ public class PortalProductPageBO extends AbstractMongoPage<ProductSearch> {
         if (this.merchantId != null) {
             criteria.and("merchantId").is(this.merchantId);
         }
-        if (this.searchRangeBO != null && this.searchRangeBO.support()) {
-            switch (this.searchRangeBO.getRangeType()) {
+        if (this.searchScopeBO != null && this.searchScopeBO.support()) {
+            switch (this.searchScopeBO.getRangeType()) {
                 case SMS:
-                    criteria.and("smsId").in(this.searchRangeBO.getIdList());
+                    criteria.and("smsId").in(this.searchScopeBO.getIdList());
                     break;
                 case SPU:
-                    criteria.and("spuId").in(this.searchRangeBO.getIdList());
+                    criteria.and("spuId").in(this.searchScopeBO.getIdList());
                     break;
                 case BRAND:
-                    criteria.and("brandId").in(this.searchRangeBO.getIdList());
+                    criteria.and("brandId").in(this.searchScopeBO.getIdList());
                     break;
                 case CATEGORY:
-                    criteria.and("categoryId").in(this.searchRangeBO.getIdList());
+                    criteria.and("categoryId").in(this.searchScopeBO.getIdList());
                     break;
                 default:
             }
         }
-        if (this.searchScopeBO != null && this.searchScopeBO.support()) {
-            switch (this.searchScopeBO.getScopeType()) {
+        if (this.searchRangeBO != null && this.searchRangeBO.support()) {
+            switch (this.searchRangeBO.getRangeType()) {
                 case INTEGRAL:
                     criteria.andOperator(
-                            Criteria.where("integral").gte(this.searchScopeBO.getMin()),
-                            Criteria.where("integral").lte(this.searchScopeBO.getMax())
+                            Criteria.where("integral").gte(this.searchRangeBO.getMin()),
+                            Criteria.where("integral").lte(this.searchRangeBO.getMax())
                     );
                     break;
                 case PRICE:
                     criteria.andOperator(
-                            Criteria.where("salePrice").gte(this.searchScopeBO.getMin()),
-                            Criteria.where("salePrice").lte(this.searchScopeBO.getMax())
+                            Criteria.where("salePrice").gte(this.searchRangeBO.getMin()),
+                            Criteria.where("salePrice").lte(this.searchRangeBO.getMax())
                     );
                     break;
                 default:

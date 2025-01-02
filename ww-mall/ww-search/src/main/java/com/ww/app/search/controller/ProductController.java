@@ -1,14 +1,16 @@
 package com.ww.app.search.controller;
 
-import com.ww.app.search.entity.Product;
-import com.ww.app.search.service.ProductSearchService;
-import com.ww.app.search.view.bo.PortalProductPageBO;
-import com.ww.app.search.view.vo.PortalProductSearchVO;
 import com.ww.app.common.common.AppPageResult;
+import com.ww.app.search.entity.Product;
+import com.ww.app.search.entity.es.ProductDoc;
+import com.ww.app.search.service.MongoProductSearchService;
+import com.ww.app.search.service.ProductSearchService;
+import com.ww.app.search.view.bo.MongoSearchPageBO;
+import com.ww.app.search.view.dto.ProductSearchPageDTO;
+import com.ww.app.search.view.vo.PortalProductSearchVO;
 import org.elasticsearch.index.query.BoolQueryBuilder;
 import org.elasticsearch.index.query.QueryBuilders;
 import org.elasticsearch.search.fetch.subphase.highlight.HighlightBuilder;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.elasticsearch.core.ElasticsearchRestTemplate;
 import org.springframework.data.elasticsearch.core.SearchHit;
 import org.springframework.data.elasticsearch.core.SearchHits;
@@ -17,6 +19,7 @@ import org.springframework.data.elasticsearch.core.query.NativeSearchQueryBuilde
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
+import javax.annotation.Resource;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -30,15 +33,23 @@ import java.util.Map;
 @RequestMapping("/product")
 public class ProductController {
 
-    @Autowired
+    @Resource
     private ElasticsearchRestTemplate elasticsearchRestTemplate;
 
-    @Autowired
+    @Resource
+    private MongoProductSearchService mongoProductSearchService;
+
+    @Resource
     private ProductSearchService productSearchService;
 
-    @PostMapping("/portal/product/search")
-    public AppPageResult<PortalProductSearchVO> portalProductSearch(@RequestBody @Validated PortalProductPageBO portalProductPageBO, @RequestHeader("appkey") String appKey) {
-        return productSearchService.portalProductSearch(portalProductPageBO, appKey);
+    @PostMapping("/portal/mongo/product/search")
+    public AppPageResult<PortalProductSearchVO> portalProductSearch(@RequestBody @Validated MongoSearchPageBO mongoSearchPageBO, @RequestHeader("appkey") String appKey) {
+        return mongoProductSearchService.portalProductSearch(mongoSearchPageBO, appKey);
+    }
+
+    @GetMapping("/portal/es/product/search")
+    public AppPageResult<ProductDoc> search(ProductSearchPageDTO query) {
+        return productSearchService.search(query);
     }
 
     @GetMapping("/query")

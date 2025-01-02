@@ -1,6 +1,10 @@
 package com.ww.app.search.view.bo;
 
+import cn.hutool.core.collection.CollectionUtil;
+import com.ww.app.search.enums.ScopeTypeEnum;
 import lombok.Data;
+
+import java.util.List;
 
 /**
  * @author ww
@@ -10,20 +14,19 @@ import lombok.Data;
 @Data
 public class SearchScopeBO implements BaseSearch {
 
-    private ScopeType scopeType;
+    /**
+     * 范围类型
+     */
+    private ScopeTypeEnum rangeType;
 
-    private Integer min;
-
-    private Integer max;
+    /**
+     * id集合
+     */
+    private List<Long> idList;
 
     @Override
     public boolean support() {
-        return this.scopeType != null && this.min != null && this.max != null && this.max > this.min;
-    }
-
-    enum ScopeType {
-        INTEGRAL,
-        PRICE
+        return CollectionUtil.isNotEmpty(this.idList) && this.rangeType != null;
     }
 
 }

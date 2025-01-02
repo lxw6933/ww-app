@@ -1,4 +1,4 @@
-package com.ww.app.search.entity;
+package com.ww.app.search.entity.mongo;
 
 import lombok.Data;
 import org.springframework.data.annotation.Id;
@@ -11,7 +11,7 @@ import org.springframework.data.mongodb.core.mapping.Document;
  */
 @Data
 @Document("v2_product_search")
-public class ProductSearch {
+public class ProductDoc {
 
     @Id
     private String id;

@@ -1,9 +1,7 @@
 package com.ww.app.search.view.bo;
 
-import cn.hutool.core.collection.CollectionUtil;
+import com.ww.app.search.enums.RangeTypeEnum;
 import lombok.Data;
-
-import java.util.List;
 
 /**
  * @author ww
@@ -13,26 +11,15 @@ import java.util.List;
 @Data
 public class SearchRangeBO implements BaseSearch {
 
-    /**
-     * 范围类型
-     */
-    private RangeType rangeType;
+    private RangeTypeEnum rangeType;
 
-    /**
-     * id集合
-     */
-    private List<Long> idList;
+    private Integer min;
+
+    private Integer max;
 
     @Override
     public boolean support() {
-        return CollectionUtil.isNotEmpty(this.idList) && this.rangeType != null;
-    }
-
-    enum RangeType {
-        SPU,
-        SMS,
-        CATEGORY,
-        BRAND
+        return this.rangeType != null && this.min != null && this.max != null && this.max > this.min;
     }
 
 }

@@ -1,5 +1,6 @@
 package com.ww.app.search.view.bo;
 
+import com.ww.app.search.enums.SortTypeEnum;
 import lombok.Data;
 
 /**
@@ -13,7 +14,7 @@ public class SearchSortBO implements BaseSearch {
     /**
      * 排序类型
      */
-    private SortType sortType;
+    private SortTypeEnum sortType;
 
     /**
      * true：顺序  false：倒叙
@@ -23,13 +24,6 @@ public class SearchSortBO implements BaseSearch {
     @Override
     public boolean support() {
         return this.sortType!= null && this.sort != null;
-    }
-
-    enum SortType {
-        INTEGRAL,
-        SALE_NUMBER,
-        TIME,
-        PRICE
     }
 
 }
