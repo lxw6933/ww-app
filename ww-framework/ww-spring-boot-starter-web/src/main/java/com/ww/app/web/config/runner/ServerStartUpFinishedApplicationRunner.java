@@ -31,12 +31,12 @@ public class ServerStartUpFinishedApplicationRunner implements ApplicationRunner
     public void run(ApplicationArguments args) throws Exception {
         ThreadUtil.execute(() -> {
             String ip = IpUtil.getLocalIp();
-            String serverReqPath = ip + StrUtil.COLON + serverPort + StrUtil.SLASH + serverContextPath + StrUtil.SLASH;
+            String serverReqPath = "http://" + ip + StrUtil.COLON + serverPort + serverContextPath + StrUtil.SLASH;
             // 延迟 1 秒，保证输出到结尾
             ThreadUtil.sleep(1, TimeUnit.SECONDS);
             log.info("\n----------------------------------------------------------\n\t" +
-                            "[ww-app]-[{}] 项目启动成功！\n\t" +
-                            "接口路径: \t{} \n\t" +
+                            "项目:\t[ww-app]-[{}]服务模块,启动成功！\n\t" +
+                            "接口路径:\t{} \n" +
                             "----------------------------------------------------------",
                     serverName,
                     serverReqPath);
