@@ -8,6 +8,7 @@ import com.fasterxml.jackson.datatype.jsr310.ser.LocalDateSerializer;
 import com.fasterxml.jackson.datatype.jsr310.ser.LocalDateTimeSerializer;
 import com.fasterxml.jackson.datatype.jsr310.ser.LocalTimeSerializer;
 import com.ww.app.web.config.LoadBalancerConfiguration;
+import com.ww.app.web.config.runner.ServerStartUpFinishedApplicationRunner;
 import com.ww.app.web.handler.RequestBodyHandler;
 import com.ww.app.web.handler.ResExceptionHandler;
 import com.ww.app.web.handler.ResponseBodyHandler;
@@ -88,6 +89,11 @@ public class WebApplication {
     @Bean
     public ResponseBodyHandler responseBodyHandler() {
         return new ResponseBodyHandler();
+    }
+
+    @Bean
+    public ServerStartUpFinishedApplicationRunner serverStartUpFinishedApplicationRunner() {
+        return new ServerStartUpFinishedApplicationRunner();
     }
 
 }

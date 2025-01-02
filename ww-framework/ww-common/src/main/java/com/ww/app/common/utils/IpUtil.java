@@ -105,4 +105,14 @@ public class IpUtil {
         }
     }
 
+    public static String getLocalIp() {
+        try {
+            InetAddress localHost = InetAddress.getLocalHost();
+            return localHost.getHostAddress();
+        } catch (UnknownHostException e) {
+            log.error("获取本地ip异常", e);
+            return UNKNOWN;
+        }
+    }
+
 }
