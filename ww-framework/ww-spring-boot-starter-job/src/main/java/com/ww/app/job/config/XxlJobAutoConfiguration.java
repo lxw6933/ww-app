@@ -17,7 +17,7 @@ public class XxlJobAutoConfiguration {
     @Value("${xxl.job.accessToken:default_token}")
     private String accessToken;
 
-    @Value("${xxl.job.executor.appName:'xxl-job-executor-sample'}")
+    @Value("${xxl.job.executor.appName:xxl-job-executor-sample}")
     private String executorAppName;
 
     @Value("${xxl.job.executor.address:}")
@@ -29,7 +29,7 @@ public class XxlJobAutoConfiguration {
     @Value("${xxl.job.executor.port:9999}")
     private int executorPort;
 
-    @Value("${xxl.job.executor.logPath:'/data/applogs/xxl-job/jobhandler'}")
+    @Value("${xxl.job.executor.logPath:/data/applogs/xxl-job/jobhandler}")
     private String executorLogPath;
 
     @Value("${xxl.job.executor.logRetentionDays:30}")
