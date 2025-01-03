@@ -24,9 +24,6 @@ spring:
     publisher-confirm-type: correlated
     # 设置发送端到queue确认回调
     publisher-returns: true
-    # 设置消息抵达queue，以异步方式回调 publisher-returns
-    template:
-      mandatory: true
     # 消费者配置
     listener:
       simple:

@@ -40,7 +40,7 @@ public class RabbitMqPublisher {
 
     private <T> void publishMsg(String exchange, String routeKey, T msg, boolean msgMode) {
         // 自定义消息id
-        MyCorrelationData<T> msgData = new MyCorrelationData<>();
+        MyCorrelationData<T> msgData = new MyCorrelationData<>(true);
         msgData.setExchange(exchange);
         msgData.setMessage(msg);
         msgData.setRoutingKey(routeKey);
@@ -63,7 +63,7 @@ public class RabbitMqPublisher {
      */
     public <T> void sendDelayMsg(String exchange, String routeKey, T msg, int delayTime, boolean msgMode) {
         // 自定义消息id
-        MyCorrelationData<T> msgData = new MyCorrelationData<>();
+        MyCorrelationData<T> msgData = new MyCorrelationData<>(true);
         msgData.setExchange(exchange);
         msgData.setMessage(msg);
         msgData.setRoutingKey(routeKey);

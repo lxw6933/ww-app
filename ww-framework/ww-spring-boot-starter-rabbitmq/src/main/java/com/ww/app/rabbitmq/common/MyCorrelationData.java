@@ -41,9 +41,16 @@ public class MyCorrelationData<T> extends CorrelationData {
      */
     private boolean msgMode;
 
-    public MyCorrelationData() {
-        this.setId(UUID.randomUUID().toString().replaceAll("-", ""));
-        this.traceId = ThreadMdcUtil.getTraceId();
+    /**
+     * 消息失败原因
+     */
+    private String failCause;
+
+    public MyCorrelationData(boolean init) {
+        if (init) {
+            this.setId(UUID.randomUUID().toString());
+            this.traceId = ThreadMdcUtil.getTraceId();
+        }
     }
 
 }

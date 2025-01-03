@@ -1,13 +1,13 @@
 package com.ww.app.rabbitmq.config;
 
 import cn.hutool.extra.spring.SpringUtil;
-import com.ww.app.rabbitmq.common.BaseMqLog;
 import com.ww.app.common.constant.Constant;
+import com.ww.app.common.enums.MqMsgStatus;
 import com.ww.app.common.exception.ApiException;
 import com.ww.app.common.thread.ThreadMdcUtil;
 import com.ww.app.rabbitmq.RabbitMqPublisher;
+import com.ww.app.rabbitmq.common.BaseMqLog;
 import com.ww.app.rabbitmq.common.MyCorrelationData;
-import com.ww.app.common.enums.MqMsgStatus;
 import com.ww.app.rabbitmq.repository.DefaultMqLogRepository;
 import com.ww.app.rabbitmq.repository.MongoMqLogRepository;
 import com.ww.app.rabbitmq.repository.MqLogRepository;
@@ -90,7 +90,8 @@ public class RabbitmqAutoConfiguration {
                 }
             }
         });
-
+        // 是否到达队列回调
+        rabbitTemplate.setMandatory(true);
         /**
          * 只要消息没有投递到指定的queue，就会触发回调，成功投递不会触发
          *
@@ -101,14 +102,16 @@ public class RabbitmqAutoConfiguration {
          * @param routingKey 交换机通过哪个路由键发送到queue
          */
         rabbitTemplate.setReturnsCallback(returned -> {
+            Object traceId = returned.getMessage().getMessageProperties().getHeader(Constant.TRACE_ID);
+            ThreadMdcUtil.setTraceId(traceId.toString());
             // 消息到达queue失败
-            log.error("\n" +
-                            "发送信息  >>>  {}\n" +
+            log.error("消息发送到Queue失败\n" +
+                            "[消息]  >>>  {}\n" +
                             "[replyCode]  >>>  {}\n" +
-                            "replyText]  >>>  {}\n" +
-                            "交换机  >>>  {}\n" +
-                            "路由key  >>>  {}\n",
-                    returned.getMessage(),
+                            "[replyText]  >>>  {}\n" +
+                            "[交换机]  >>>  {}\n" +
+                            "[路由key]  >>>  {}\n",
+                    new String(returned.getMessage().getBody()),
                     returned.getReplyCode(),
                     returned.getReplyText(),
                     returned.getExchange(),

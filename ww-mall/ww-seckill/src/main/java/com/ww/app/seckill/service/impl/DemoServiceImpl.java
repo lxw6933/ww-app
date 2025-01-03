@@ -25,7 +25,6 @@ import com.ww.app.minio.MinioTemplate;
 import com.ww.app.mongodb.utils.MongoUtils;
 import com.ww.app.rabbitmq.RabbitMqPublisher;
 import com.ww.app.rabbitmq.exchange.ExchangeConstant;
-import com.ww.app.rabbitmq.queue.QueueConstant;
 import com.ww.app.rabbitmq.routekey.RouteKeyConstant;
 import com.ww.app.redis.AppRedisTemplate;
 import com.ww.app.redis.component.StockRedisComponent;
@@ -241,7 +240,9 @@ public class DemoServiceImpl implements DemoService {
     @Override
     public void msg() {
         log.info("seckill msg");
-        rabbitTemplate.convertAndSend(QueueConstant.TEST_QUEUE, "1");
+//        rabbitTemplate.convertAndSend(QueueConstant.TEST_QUEUE, "1");
+        rabbitMqPublisher.publishSimpleMsg(ExchangeConstant.MEMBER_EXCHANGE, "321", "321");
+        log.info("发送完成");
     }
 
     @Override

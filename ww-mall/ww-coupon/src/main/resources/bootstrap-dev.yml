@@ -31,9 +31,6 @@ spring:
     publisher-confirm-type: correlated
     # 设置发送端到queue确认回调
     publisher-returns: true
-    # 设置消息抵达queue，以异步方式回调 publisher-returns
-    template:
-      mandatory: true
 
 # 开启sentinel feign支持【调用方（调用服务方）的熔断保护、被调用方（服务提供方）的降级保护】
 feign:
