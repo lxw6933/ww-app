@@ -6,7 +6,7 @@ spring:
   cloud:
     sentinel:
       transport:
-        dashboard: localhost:8080
+        dashboard: localhost:8000
     nacos:
       discovery:
         server-addr: localhost:8848

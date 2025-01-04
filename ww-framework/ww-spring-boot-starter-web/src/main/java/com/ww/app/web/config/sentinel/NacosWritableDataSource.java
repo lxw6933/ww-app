@@ -86,7 +86,7 @@ public class NacosWritableDataSource<T> implements WritableDataSource<T> {
                 log.error("configServer is null, can not continue.");
                 return;
             }
-            // 将sentinel dashborad配置的规则写入nacos对应的配置文件
+            // 将sentinel dashboard配置的规则写入nacos对应的配置文件
             boolean published = configService.publishConfig(nacosDataSourceProperties.getDataId(), nacosDataSourceProperties.getGroupId(), convertResult);
             if (!published) {
                 log.error("sentinel {} publish to nacos failed.", nacosDataSourceProperties.getRuleType());
