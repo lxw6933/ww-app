@@ -14,7 +14,7 @@ import java.lang.annotation.Target;
  */
 @Target(value = {ElementType.METHOD})
 @Retention(value = RetentionPolicy.RUNTIME)
-public @interface SensitiveWordHandler {
+public @interface SensitiveWord {
 
     /**
      * 内容
@@ -25,6 +25,11 @@ public @interface SensitiveWordHandler {
      * 过滤类型
      */
     SensitiveWordHandlerType handlerType() default SensitiveWordHandlerType.EXCEPTION;
+
+    /**
+     * 异常提示语
+     */
+    String msg() default "内容存在非法字符";
 
 }
 

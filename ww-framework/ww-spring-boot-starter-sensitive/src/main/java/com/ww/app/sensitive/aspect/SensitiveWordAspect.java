@@ -3,7 +3,7 @@ package com.ww.app.sensitive.aspect;
 import com.github.houbb.sensitive.word.bs.SensitiveWordBs;
 import com.ww.app.common.exception.ApiException;
 import com.ww.app.common.utils.SpringExpressionUtils;
-import com.ww.app.sensitive.annotation.SensitiveWordHandler;
+import com.ww.app.sensitive.annotation.SensitiveWord;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.aspectj.lang.ProceedingJoinPoint;
@@ -31,12 +31,13 @@ public class SensitiveWordAspect {
     @Resource
     private SensitiveWordBs sensitiveWordBs;
 
-    @Around("@annotation(com.ww.app.sensitive.annotation.SensitiveWordHandler)")
+    @Around("@annotation(com.ww.app.sensitive.annotation.SensitiveWord)")
     public Object mallSensitiveWordAdvice(ProceedingJoinPoint joinPoint) throws Throwable {
         MethodSignature signature = (MethodSignature) joinPoint.getSignature();
         Method method = signature.getMethod();
-        SensitiveWordHandler sensitiveWordHandler = method.getAnnotation(SensitiveWordHandler.class);
-        String[] filterContents = sensitiveWordHandler.content();
+        SensitiveWord sensitiveWord = method.getAnnotation(SensitiveWord.class);
+        String[] filterContents = sensitiveWord.content();
+        String msg = sensitiveWord.msg();
         if (filterContents == null) {
             return joinPoint.proceed();
         }
@@ -44,10 +45,10 @@ public class SensitiveWordAspect {
         SpringExpressionUtils.parseExpressions(joinPoint, Arrays.asList(filterContents), (expression, expressContext, elValue) -> {
             boolean includeSensitiveWord = sensitiveWordBs.contains(elValue);
             if (includeSensitiveWord) {
-                switch (sensitiveWordHandler.handlerType()) {
+                switch (sensitiveWord.handlerType()) {
                     case EXCEPTION:
                         log.error("[异常]内容包含敏感词,content:[{}]", elValue);
-                        throw new ApiException("内容存在非法字符");
+                        throw new ApiException(msg);
                     case REPLACE:
                         expression.setValue(expressContext, sensitiveWordBs.replace(StringUtils.deleteWhitespace(elValue)));
                         log.error("[脱敏]内容包含敏感词,content:[{}]", elValue);

@@ -38,7 +38,7 @@ import com.ww.app.seckill.listener.DemoImportListener;
 import com.ww.app.seckill.model.DemoModel;
 import com.ww.app.seckill.service.DemoService;
 import com.ww.app.seckill.view.bo.SensitiveWordBO;
-import com.ww.app.sensitive.annotation.SensitiveWordHandler;
+import com.ww.app.sensitive.annotation.SensitiveWord;
 import com.ww.app.third.sms.rpc.SmsApi;
 import io.github.linpeilie.Converter;
 import lombok.extern.slf4j.Slf4j;
@@ -289,7 +289,7 @@ public class DemoServiceImpl implements DemoService {
     private SensitiveWordBs sensitiveWordBs;
 
     @Override
-    @SensitiveWordHandler(content = {"#content.word", "#content.content"}, handlerType = SensitiveWordHandlerType.REPLACE)
+    @SensitiveWord(content = {"#content.word", "#content.content"}, handlerType = SensitiveWordHandlerType.REPLACE)
     public String sensitiveWord(SensitiveWordBO content) {
         return JSON.toJSONString(content);
     }

@@ -6,7 +6,7 @@ import com.ww.app.common.enums.SensitiveWordHandlerType;
 import com.ww.app.proto.hello.HelloRequest;
 import com.ww.app.proto.hello.HelloResponse;
 import com.ww.app.proto.hello.HelloServiceGrpc;
-import com.ww.app.sensitive.annotation.SensitiveWordHandler;
+import com.ww.app.sensitive.annotation.SensitiveWord;
 import io.grpc.stub.StreamObserver;
 import lombok.extern.slf4j.Slf4j;
 import net.devh.boot.grpc.server.service.GrpcService;
@@ -32,7 +32,7 @@ public class HelloServiceImpl extends HelloServiceGrpc.HelloServiceImplBase {
      * @param responseObserver server返回client响应
      */
     @Override
-    @SensitiveWordHandler(content = {"#request.name", "#request.name"}, handlerType = SensitiveWordHandlerType.REPLACE)
+    @SensitiveWord(content = {"#request.name", "#request.name"}, handlerType = SensitiveWordHandlerType.REPLACE)
     public void hello(HelloRequest request, StreamObserver<HelloResponse> responseObserver) {
         // 接受客户端请求参数
         String content = request.getName();
