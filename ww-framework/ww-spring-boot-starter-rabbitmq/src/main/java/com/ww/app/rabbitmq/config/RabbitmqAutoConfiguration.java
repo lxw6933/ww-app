@@ -100,6 +100,11 @@ public class RabbitmqAutoConfiguration {
          */
         rabbitTemplate.setReturnsCallback(returned -> {
             String traceId = returned.getMessage().getMessageProperties().getHeader(Constant.TRACE_ID);
+            Integer delay = returned.getMessage().getMessageProperties().getHeader(RabbitmqConstant.DELAY_HEADER);
+            if (delay > 0) {
+                // 解决延时消息会触发的bug
+                return;
+            }
             ThreadMdcUtil.setTraceId(traceId);
             // 消息到达queue失败
             log.error("消息发送到Queue失败\n" +
