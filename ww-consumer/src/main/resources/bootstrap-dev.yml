@@ -24,12 +24,6 @@ spring:
       simple:
         # 手动ack消息
         acknowledge-mode: manual
-        # 每个消费者一次获取10条消息
-        prefetch: 10
-        # 最小并发消费者数量
-        concurrency: 10
-        # 最大并发消费者数量
-        max-concurrency: 20
 
 # 开启sentinel feign支持【调用方（调用服务方）的熔断保护、被调用方（服务提供方）的降级保护】
 feign:

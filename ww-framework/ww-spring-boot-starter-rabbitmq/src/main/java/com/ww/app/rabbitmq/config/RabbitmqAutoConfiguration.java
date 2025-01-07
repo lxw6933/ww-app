@@ -14,8 +14,12 @@ import com.ww.app.rabbitmq.repository.MongoMqLogRepository;
 import com.ww.app.rabbitmq.repository.MqLogRepository;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.amqp.AmqpException;
-import org.springframework.amqp.core.*;
+import org.springframework.amqp.core.Correlation;
+import org.springframework.amqp.core.Message;
+import org.springframework.amqp.core.MessagePostProcessor;
+import org.springframework.amqp.core.MessageProperties;
 import org.springframework.amqp.rabbit.annotation.EnableRabbit;
+import org.springframework.amqp.rabbit.config.SimpleRabbitListenerContainerFactory;
 import org.springframework.amqp.rabbit.connection.ConnectionFactory;
 import org.springframework.amqp.rabbit.connection.CorrelationData;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
@@ -181,6 +185,25 @@ public class RabbitmqAutoConfiguration {
     public MqLogRepository<String, ? extends BaseMqLog> mqLogMongoRepository() {
         log.info("初始化消息日志mongo持久化");
         return new MongoMqLogRepository();
+    }
+
+    @Bean
+    public SimpleRabbitListenerContainerFactory batchContainerFactory(ConnectionFactory connectionFactory) {
+        SimpleRabbitListenerContainerFactory factory = new SimpleRabbitListenerContainerFactory();
+        factory.setConnectionFactory(connectionFactory);
+        // 启用批量监听
+        factory.setBatchListener(true);
+        // 设置批量大小
+        factory.setBatchSize(100);
+        // 设置超时时间（毫秒）
+        factory.setReceiveTimeout(5000L);
+        // 启用消费者批量模式
+        factory.setConsumerBatchEnabled(true);
+        // 最小消费者数
+        factory.setConcurrentConsumers(10);
+        // 最大并发消费者数
+        factory.setMaxConcurrentConsumers(20);
+        return factory;
     }
 
 }
