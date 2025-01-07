@@ -39,7 +39,7 @@ public class DemoController {
 
     @GetMapping("/testMsg")
     public void testMsg(String msg) {
-        rabbitMqPublisher.publishMsg(ExchangeConstant.COUPON_EXCHANGE, RouteKeyConstant.COUPON_TEST_KEY, msg);
+        rabbitMqPublisher.sendMsg(ExchangeConstant.COUPON_EXCHANGE, RouteKeyConstant.COUPON_TEST_KEY, msg);
     }
 
     private final AtomicInteger num = new AtomicInteger(0);

@@ -3,12 +3,14 @@ package com.ww.app.rabbitmq.repository;
 import com.alibaba.fastjson.JSON;
 import com.ww.app.common.enums.MqMsgStatus;
 import com.ww.app.rabbitmq.common.MyCorrelationData;
+import org.apache.commons.lang3.StringUtils;
 import org.springframework.data.mongodb.core.MongoTemplate;
 import org.springframework.data.mongodb.core.query.Criteria;
 import org.springframework.data.mongodb.core.query.Query;
 import org.springframework.data.mongodb.core.query.Update;
 
 import javax.annotation.Resource;
+import java.util.UUID;
 
 /**
  * @author ww
@@ -21,13 +23,17 @@ public class MongoMqLogRepository implements MqLogRepository<String, MqMsgLogEnt
     private MongoTemplate mongoTemplate;
 
     @Override
-    public boolean save(MyCorrelationData<?> myCorrelationData, MqMsgStatus status) {
+    public <E> boolean save(MyCorrelationData<E> myCorrelationData, MqMsgStatus status) {
         MqMsgLogEntity mqLog = new MqMsgLogEntity();
-        mqLog.setRoutingKey(myCorrelationData.getRoutingKey());
-        mqLog.setExchange(myCorrelationData.getExchange());
-        mqLog.setMessage(JSON.toJSONString(myCorrelationData.getMessage()));
-        mqLog.setMsgId(myCorrelationData.getId());
-        mqLog.setTryCount(0);
+        mqLog.setTraceId(myCorrelationData.getTraceId());
+        mqLog.setMsgId(StringUtils.isEmpty(myCorrelationData.getId()) ? UUID.randomUUID().toString() : myCorrelationData.getId());
+        if (!MqMsgStatus.CONSUMED_SUCCESS.equals(status)) {
+            mqLog.setExchange(myCorrelationData.getExchange());
+            mqLog.setRoutingKey(myCorrelationData.getRoutingKey());
+            mqLog.setMessage(JSON.toJSONString(myCorrelationData.getMessage()));
+            mqLog.setFailMsg(myCorrelationData.getFailCause());
+            mqLog.setTryCount(0);
+        }
         mqLog.setStatus(status);
         mongoTemplate.save(mqLog);
         return true;

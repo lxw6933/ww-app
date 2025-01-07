@@ -14,7 +14,7 @@ import lombok.extern.slf4j.Slf4j;
 public class DefaultMqLogRepository implements MqLogRepository<String, BaseMqLog> {
 
     @Override
-    public boolean save(MyCorrelationData<?> myCorrelationData, MqMsgStatus status) {
+    public <E> boolean save(MyCorrelationData<E> myCorrelationData, MqMsgStatus status) {
         log.info("save mq log: {} status: {}", myCorrelationData, status);
         return true;
     }

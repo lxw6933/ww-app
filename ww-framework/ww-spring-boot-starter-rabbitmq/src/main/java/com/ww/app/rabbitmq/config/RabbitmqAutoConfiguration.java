@@ -8,15 +8,13 @@ import com.ww.app.common.thread.ThreadMdcUtil;
 import com.ww.app.rabbitmq.RabbitMqPublisher;
 import com.ww.app.rabbitmq.common.BaseMqLog;
 import com.ww.app.rabbitmq.common.MyCorrelationData;
+import com.ww.app.rabbitmq.common.RabbitmqConstant;
 import com.ww.app.rabbitmq.repository.DefaultMqLogRepository;
 import com.ww.app.rabbitmq.repository.MongoMqLogRepository;
 import com.ww.app.rabbitmq.repository.MqLogRepository;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.amqp.AmqpException;
-import org.springframework.amqp.core.Correlation;
-import org.springframework.amqp.core.Message;
-import org.springframework.amqp.core.MessagePostProcessor;
-import org.springframework.amqp.core.MessageProperties;
+import org.springframework.amqp.core.*;
 import org.springframework.amqp.rabbit.annotation.EnableRabbit;
 import org.springframework.amqp.rabbit.connection.ConnectionFactory;
 import org.springframework.amqp.rabbit.connection.CorrelationData;
@@ -85,9 +83,8 @@ public class RabbitmqAutoConfiguration {
             ThreadMdcUtil.setTraceId(myCorrelationData.getTraceId());
             if (!ack) {
                 log.error("消息发送到Exchange失败, {}, cause: {}", correlationData, cause);
-                if (((MyCorrelationData<?>) correlationData).isMsgMode()) {
-                    mqLogRepository.update(myCorrelationData.getId(), MqMsgStatus.DELIVER_FAIL);
-                }
+                myCorrelationData.setFailCause(cause);
+                mqLogRepository.save(myCorrelationData, MqMsgStatus.DELIVER_FAIL);
             }
         });
         // 是否到达队列回调
@@ -102,8 +99,8 @@ public class RabbitmqAutoConfiguration {
          * @param routingKey 交换机通过哪个路由键发送到queue
          */
         rabbitTemplate.setReturnsCallback(returned -> {
-            Object traceId = returned.getMessage().getMessageProperties().getHeader(Constant.TRACE_ID);
-            ThreadMdcUtil.setTraceId(traceId.toString());
+            String traceId = returned.getMessage().getMessageProperties().getHeader(Constant.TRACE_ID);
+            ThreadMdcUtil.setTraceId(traceId);
             // 消息到达queue失败
             log.error("消息发送到Queue失败\n" +
                             "[消息]  >>>  {}\n" +
@@ -116,9 +113,14 @@ public class RabbitmqAutoConfiguration {
                     returned.getReplyText(),
                     returned.getExchange(),
                     returned.getRoutingKey());
-            if (returned.getMessage().getMessageProperties().getHeader(Constant.MSG_MODE)) {
-                mqLogRepository.update(returned.getMessage().getMessageProperties().getCorrelationId(), MqMsgStatus.DELIVER_FAIL);
-            }
+
+            MyCorrelationData<Object> correlationData = new MyCorrelationData<>(false);
+            correlationData.setMessage(new String(returned.getMessage().getBody()));
+            correlationData.setExchange(returned.getExchange());
+            correlationData.setRoutingKey(returned.getRoutingKey());
+            correlationData.setTraceId(traceId);
+            correlationData.setFailCause(returned.getReplyText());
+            mqLogRepository.save(correlationData, MqMsgStatus.DELIVER_FAIL);
         });
         return rabbitTemplate;
     }
@@ -138,10 +140,18 @@ public class RabbitmqAutoConfiguration {
                     messageProperties.setCorrelationId(correlationId);
                 }
                 if (correlation instanceof MyCorrelationData) {
-                    String traceId = ((MyCorrelationData<?>) correlation).getTraceId();
-                    boolean msgMode = ((MyCorrelationData<?>) correlation).isMsgMode();
+                    MyCorrelationData<?> myCorrelationData = (MyCorrelationData<?>) correlation;
+                    String traceId = myCorrelationData.getTraceId();
                     messageProperties.setHeader(Constant.TRACE_ID, traceId);
-                    messageProperties.setHeader(Constant.MSG_MODE, msgMode);
+                    messageProperties.setHeader(RabbitmqConstant.EXCHANGE_HEADER, myCorrelationData.getExchange());
+                    messageProperties.setHeader(RabbitmqConstant.ROUTING_KEY_HEADER, myCorrelationData.getRoutingKey());
+                    messageProperties.setHeader(RabbitmqConstant.MESSAGE_HEADER, myCorrelationData.getMessage());
+                    // 延时消息
+                    if (myCorrelationData.getDelayTime() > 0) {
+                        // 消息持久化
+                        messageProperties.setDeliveryMode(MessageDeliveryMode.PERSISTENT);
+                        messageProperties.setDelay(myCorrelationData.getDelayTime() * 1000);
+                    }
                 }
                 return message;
             }

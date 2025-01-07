@@ -24,6 +24,11 @@ public class BaseMqLog extends BaseDoc {
     private String msgId;
 
     /**
+     * traceId
+     */
+    private String traceId;
+
+    /**
      * 发送信息体
      */
     private String message;
@@ -52,5 +57,10 @@ public class BaseMqLog extends BaseDoc {
      * 下一次重试时间
      */
     private Date nextTryTime;
+
+    /**
+     * 失败原因
+     */
+    private String failMsg;
 
 }

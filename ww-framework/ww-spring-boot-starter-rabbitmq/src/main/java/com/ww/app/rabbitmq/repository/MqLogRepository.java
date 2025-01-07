@@ -17,7 +17,7 @@ public interface MqLogRepository<ID, T extends BaseMqLog> {
      * @param myCorrelationData 消息
      * @return boolean
      */
-    boolean save(MyCorrelationData<?> myCorrelationData, MqMsgStatus status);
+    <E> boolean save(MyCorrelationData<E> myCorrelationData, MqMsgStatus status);
 
     /**
      * 更新mq日志状态和重试次数

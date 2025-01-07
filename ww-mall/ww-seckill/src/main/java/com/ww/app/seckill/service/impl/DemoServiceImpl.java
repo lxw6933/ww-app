@@ -213,7 +213,7 @@ public class DemoServiceImpl implements DemoService {
             String orderDate = DateUtil.format(new Date(), DatePattern.NORM_DATETIME_PATTERN);
             String orderNo = IdUtil.generatorIdStr();
             int totalOrderNum = num.incrementAndGet();
-            rabbitMqPublisher.publishMsg(ExchangeConstant.OMS_EXCHANGE, RouteKeyConstant.CREATE_ORDER_KEY, orderNo);
+            rabbitMqPublisher.sendMsg(ExchangeConstant.OMS_EXCHANGE, RouteKeyConstant.CREATE_ORDER_KEY, orderNo);
             log.info("下单总数[{}]订单[{}]下单成功[{}]", totalOrderNum, orderNo, orderDate);
         }
         return true;
@@ -228,7 +228,7 @@ public class DemoServiceImpl implements DemoService {
             defaultThreadPoolExecutor.submit(() -> log.info("thread pool log"));
         }
         // mq日志
-        rabbitMqPublisher.publishMsg(ExchangeConstant.MEMBER_EXCHANGE, RouteKeyConstant.MEMBER_REGISTER_KEY, 1);
+        rabbitMqPublisher.sendMsg(ExchangeConstant.MEMBER_EXCHANGE, RouteKeyConstant.MEMBER_REGISTER_KEY, 1);
         // feign日志
         smsApi.sendSms("15970191157", "9527");
         log.info("interface end log");
@@ -241,7 +241,7 @@ public class DemoServiceImpl implements DemoService {
     public void msg() {
         log.info("seckill msg");
 //        rabbitTemplate.convertAndSend(QueueConstant.TEST_QUEUE, "1");
-        rabbitMqPublisher.publishSimpleMsg(ExchangeConstant.MEMBER_EXCHANGE, "321", "321");
+        rabbitMqPublisher.sendMsg(ExchangeConstant.MEMBER_EXCHANGE, "321", "321");
         log.info("发送完成");
     }
 

@@ -67,7 +67,7 @@ public class RedpacketServiceImpl implements RedpacketService {
         log.info("用户[{}]领取红包[{}]金额[{}]", clientUser.getId(), redPacketId, redPacketAmount);
         // 发送消息 新增用户金额
         RedpacketReceiveDTO redpacketReceiveDTO = new RedpacketReceiveDTO(redPacketId, clientUser.getId(), redPacketAmount);
-        rabbitMqPublisher.publishMsg(RedpacketMQConstant.REDPACKET_EXCHANGE, RedpacketMQConstant.REDPACKET_RECORD_KEY, redpacketReceiveDTO);
+        rabbitMqPublisher.sendMsg(RedpacketMQConstant.REDPACKET_EXCHANGE, RedpacketMQConstant.REDPACKET_RECORD_KEY, redpacketReceiveDTO);
         return redPacketAmount;
     }
 }

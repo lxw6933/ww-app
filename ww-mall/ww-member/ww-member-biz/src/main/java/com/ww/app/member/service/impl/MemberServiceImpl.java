@@ -41,7 +41,7 @@ public class MemberServiceImpl extends ServiceImpl<MemberMapper, Member> impleme
             member.setNickName(UUID.randomUUID().toString());
             this.save(member);
             // 发送用户注册消息
-            rabbitMqPublisher.publishMsg(ExchangeConstant.MEMBER_EXCHANGE, RouteKeyConstant.MEMBER_REGISTER_KEY, member.getId());
+            rabbitMqPublisher.sendMsg(ExchangeConstant.MEMBER_EXCHANGE, RouteKeyConstant.MEMBER_REGISTER_KEY, member.getId());
         }
         MemberDTO memberDTO = new MemberDTO();
         BeanUtils.copyProperties(member, memberDTO);
