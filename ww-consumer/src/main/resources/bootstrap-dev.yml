@@ -1,9 +1,12 @@
 server:
-  port: 7700  #服务端口号
+  port: 17700  #服务端口号
+  servlet:
+    context-path: /ww-consumer
 spring:
   redis:
-    host: localhost
+    host: 172.28.174.84
     password: 123456
+    port: 6379
   data:
     mongodb:
       # 副本集群配置
@@ -15,7 +18,7 @@ spring:
 #      password: admin
 #      authentication-database: admin
   rabbitmq:
-    addresses: localhost:5672
+    addresses: 172.28.174.84:5672
     virtual-host: /
     listener:
       simple:

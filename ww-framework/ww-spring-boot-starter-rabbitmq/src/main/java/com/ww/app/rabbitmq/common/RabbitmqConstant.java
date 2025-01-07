@@ -10,5 +10,6 @@ public class RabbitmqConstant {
     public static final String EXCHANGE_HEADER = "exchange_header";
     public static final String ROUTING_KEY_HEADER = "routing_key_header";
     public static final String MESSAGE_HEADER = "msg_header";
+    public static final String DELAY_HEADER = "msg_delay_header";
 
 }

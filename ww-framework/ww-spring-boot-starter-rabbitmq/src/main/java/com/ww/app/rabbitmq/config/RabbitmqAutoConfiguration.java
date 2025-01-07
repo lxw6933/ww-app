@@ -141,19 +141,15 @@ public class RabbitmqAutoConfiguration {
                 }
                 if (correlation instanceof MyCorrelationData) {
                     MyCorrelationData<?> myCorrelationData = (MyCorrelationData<?>) correlation;
-                    String traceId = myCorrelationData.getTraceId();
-                    messageProperties.setHeader(Constant.TRACE_ID, traceId);
+                    messageProperties.setHeader(Constant.TRACE_ID, myCorrelationData.getTraceId());
                     messageProperties.setHeader(RabbitmqConstant.EXCHANGE_HEADER, myCorrelationData.getExchange());
                     messageProperties.setHeader(RabbitmqConstant.ROUTING_KEY_HEADER, myCorrelationData.getRoutingKey());
                     messageProperties.setHeader(RabbitmqConstant.MESSAGE_HEADER, myCorrelationData.getMessage());
+                    messageProperties.setHeader(RabbitmqConstant.DELAY_HEADER, myCorrelationData.getDelayTime());
                     // 延时消息
-                    if (myCorrelationData.getDelayTime() > 0) {
-                        // 消息持久化
-                        messageProperties.setDeliveryMode(MessageDeliveryMode.PERSISTENT);
-                        messageProperties.setDelay(myCorrelationData.getDelayTime() * 1000);
-                    }
+                    messageProperties.setDelay(myCorrelationData.getDelayTime());
                 }
-                return message;
+                return this.postProcessMessage(message);
             }
 
             @Override

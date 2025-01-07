@@ -241,7 +241,9 @@ public class DemoServiceImpl implements DemoService {
     public void msg() {
         log.info("seckill msg");
 //        rabbitTemplate.convertAndSend(QueueConstant.TEST_QUEUE, "1");
-        rabbitMqPublisher.sendMsg(ExchangeConstant.MEMBER_EXCHANGE, "321", "321");
+//        rabbitMqPublisher.sendMsg(ExchangeConstant.MEMBER_EXCHANGE, "321", "321");
+//        rabbitMqPublisher.sendMsg(ExchangeConstant.OMS_EXCHANGE, RouteKeyConstant.OMS_CLOSE_KEY, 1L);
+        rabbitMqPublisher.sendDelayMsg(ExchangeConstant.COMMON_DELAY_EXCHANGE, RouteKeyConstant.PRODUCT_TIMER_UP_KEY, 1L, 5);
         log.info("发送完成");
     }
 
