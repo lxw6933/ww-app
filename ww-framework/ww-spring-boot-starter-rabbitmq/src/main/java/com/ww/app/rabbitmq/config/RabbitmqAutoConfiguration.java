@@ -147,7 +147,7 @@ public class RabbitmqAutoConfiguration {
                     messageProperties.setHeader(RabbitmqConstant.MESSAGE_HEADER, myCorrelationData.getMessage());
                     messageProperties.setHeader(RabbitmqConstant.DELAY_HEADER, myCorrelationData.getDelayTime());
                     // 延时消息
-                    messageProperties.setDelay(myCorrelationData.getDelayTime());
+                    messageProperties.setDelay(myCorrelationData.getDelayTime() * 1000);
                 }
                 return this.postProcessMessage(message);
             }
