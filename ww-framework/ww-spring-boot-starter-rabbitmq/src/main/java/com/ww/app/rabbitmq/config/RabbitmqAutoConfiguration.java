@@ -199,9 +199,9 @@ public class RabbitmqAutoConfiguration {
         factory.setReceiveTimeout(5000L);
         // 启用消费者批量模式
         factory.setConsumerBatchEnabled(true);
-        // 最小消费者数
+        // 最小消费者线程数
         factory.setConcurrentConsumers(10);
-        // 最大并发消费者数
+        // 最大并发消费者线程数
         factory.setMaxConcurrentConsumers(20);
         return factory;
     }
