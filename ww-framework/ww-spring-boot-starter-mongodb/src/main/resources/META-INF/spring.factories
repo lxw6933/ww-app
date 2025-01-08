@@ -1,2 +1,1 @@
-org.springframework.boot.autoconfigure.EnableAutoConfiguration=\
-  com.ww.app.mongodb.config.MongodbAutoConfiguration
+org.springframework.boot.autoconfigure.EnableAutoConfiguration=

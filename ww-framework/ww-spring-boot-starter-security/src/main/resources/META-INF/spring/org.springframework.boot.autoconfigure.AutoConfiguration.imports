@@ -1,0 +1,4 @@
+com.ww.app.security.config.SecurityAutoConfiguration
+com.ww.app.security.component.AclComponent
+com.ww.app.security.handler.AppAccessDeniedHandler
+com.ww.app.security.handler.AppAuthenticationEntryPoint
