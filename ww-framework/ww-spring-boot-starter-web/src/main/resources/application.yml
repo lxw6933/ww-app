@@ -53,6 +53,48 @@ minio:
   accessKey: EZpgdNV3xJ0SLu3PqrAS
   secretKey: GH27GRD6c2Zfg4vmZPKE8FFZBuhNB7xMFPOCHu4Y
 
+# 项目相关配置
+ww:
+  app:
+    name: ww-app
+    version: 1.0.0
+    description: 基于SpringBoot SpringCloud的开箱即用的脚手架
+    url: https://gitee.com/ww6933/ww-app
+    contact:
+      name: ww
+      email: ww6933mail@gmail.com
+      url: https://gitee.com/ww6933
+    license:
+      name: Apache License 2.0
+      url: https://gitee.com/ww6933/ww-app/blob/master/LICENSE
+
+# API文档相关配置[knife4j的增强配置，不需要增强可以不配]
+knife4j:
+  # 开启增强模式
+  enable: true
+  # 开启生产保护
+  production: true
+  setting:
+    # i18n国际化 中文(zh-CN)、英文(en-US)
+    language: zh_cn
+    # 自定义Footer
+    enable-footer: false
+    enable-footer-custom: true
+    footer-custom-content: <p>Apache License 2.0 | Copyright  2025-[ww](https://gitee.com/ww6933/ww-app)</p>
+
+springdoc:
+  swagger-ui:
+    disable-swagger-default-url: true
+  api-docs:
+    enabled: true
+  group-configs:
+    - group: 'all'
+      display-name: '所有API'
+      paths-to-match:
+        - /**
+      paths-to-exclude:
+        - /error
+
   # 流控规则持久化
 #  cloud:
 #    sentinel:
