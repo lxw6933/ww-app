@@ -5,11 +5,6 @@ package com.ww.app.web.properties;
 import lombok.Data;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 
-/**
- * 项目配置属性
- *
- * @author NineSu
- */
 @Data
 @ConfigurationProperties("ww.app")
 public class AppProperties {

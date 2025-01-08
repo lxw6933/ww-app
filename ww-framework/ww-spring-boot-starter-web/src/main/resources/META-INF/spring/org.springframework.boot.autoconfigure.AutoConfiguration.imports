@@ -7,5 +7,4 @@ com.ww.app.web.config.FeignFallBackConfiguration
 com.ww.app.web.config.LoadBalancerConfiguration
 com.ww.app.web.filter.ServerRequestFilter
 com.ww.app.web.config.GracefulShutdownConfiguration
-com.ww.app.web.properties.AppProperties
 com.ww.app.web.config.doc.OpenApiDocAutoConfiguration
