@@ -19,6 +19,7 @@
         <module>ww-spring-boot-starter-mongodb</module>
         <module>ww-spring-boot-starter-mybatis</module>
         <module>ww-spring-boot-starter-rabbitmq</module>
+        <module>ww-spring-boot-starter-kafka</module>
         <module>ww-spring-boot-starter-redis</module>
         <module>ww-spring-boot-starter-security</module>
         <module>ww-spring-boot-starter-sensitive</module>
