@@ -59,6 +59,9 @@
         <hippo4j.version>1.5.0</hippo4j.version>
         <jsoup.version>1.17.2</jsoup.version>
         <influxdb.version>6.7.0</influxdb.version>
+        <!-- doc -->
+        <knife4j.version>4.5.0</knife4j.version>
+        <springdoc.version>1.7.0</springdoc.version>
     </properties>
 
     <dependencyManagement>
@@ -325,7 +328,6 @@
                 <version>${sensitive.word.version}</version>
             </dependency>
             <!-- operate log -->
-            <!-- operate log -->
             <dependency>
                 <groupId>io.github.mouzt</groupId>
                 <artifactId>bizlog-sdk</artifactId>
@@ -383,6 +385,19 @@
                 <artifactId>elasticsearch</artifactId>
                 <version>${elasticsearch.version}</version>
             </dependency>
+            <!-- 接口文档 UI：knife4j -->
+            <dependency>
+                <groupId>com.github.xiaoymin</groupId>
+                <artifactId>knife4j-openapi3-spring-boot-starter</artifactId>
+                <version>${knife4j.version}</version>
+            </dependency>
+            <!-- 接口文档 UI：默认 -->
+            <dependency>
+                <groupId>org.springdoc</groupId>
+                <artifactId>springdoc-openapi-ui</artifactId>
+                <version>${springdoc.version}</version>
+            </dependency>
+
         </dependencies>
     </dependencyManagement>
 

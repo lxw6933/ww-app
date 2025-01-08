@@ -139,6 +139,16 @@
             <artifactId>ww-third-server-api</artifactId>
             <version>${revision}</version>
         </dependency>
+        <!-- 接口文档 UI：knife4j -->
+        <dependency>
+            <groupId>com.github.xiaoymin</groupId>
+            <artifactId>knife4j-openapi3-spring-boot-starter</artifactId>
+        </dependency>
+        <!-- 接口文档 UI：默认 -->
+        <dependency>
+            <groupId>org.springdoc</groupId>
+            <artifactId>springdoc-openapi-ui</artifactId>
+        </dependency>
         <!-- test -->
         <dependency>
             <groupId>org.springframework.boot</groupId>
