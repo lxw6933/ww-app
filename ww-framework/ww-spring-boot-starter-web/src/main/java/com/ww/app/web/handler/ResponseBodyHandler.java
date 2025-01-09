@@ -14,12 +14,13 @@ import org.springframework.core.MethodParameter;
 import org.springframework.http.MediaType;
 import org.springframework.http.server.ServerHttpRequest;
 import org.springframework.http.server.ServerHttpResponse;
+import org.springframework.lang.NonNull;
 import org.springframework.util.AntPathMatcher;
 import org.springframework.web.bind.annotation.ControllerAdvice;
 import org.springframework.web.servlet.mvc.method.annotation.ResponseBodyAdvice;
 
 import javax.annotation.PostConstruct;
-import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 
 /**
@@ -31,8 +32,7 @@ import java.util.List;
 @ControllerAdvice
 public class ResponseBodyHandler implements ResponseBodyAdvice<Object> {
 
-    private static final List<String> FILTER_PACKAGE = Arrays.asList("org.springframework", "springfox.documentation");
-    private static final List<String> FILTER_CLASS = Arrays.asList("springfox.documentation", "inner");
+    private static final List<String> FILTER_PACKAGE = Collections.singletonList("com.ww.app");
 
     @Autowired
     private ObjectMapper objectMapper;
@@ -48,7 +48,7 @@ public class ResponseBodyHandler implements ResponseBodyAdvice<Object> {
     }
 
     @Override
-    public boolean supports(MethodParameter returnType, Class converterType) {
+    public boolean supports(@NonNull MethodParameter returnType, @NonNull Class converterType) {
         // 通过supports方法，我们可以选择哪些类，或者哪些方法要对response进行处理，其余的则不处理。
         // true：进行拦截响应   fasle：不拦截   默认拦截所有mvc响应
         // 只对@ResponseBody有效果
@@ -58,7 +58,7 @@ public class ResponseBodyHandler implements ResponseBodyAdvice<Object> {
     }
 
     @Override
-    public Object beforeBodyWrite(Object body, MethodParameter returnType, MediaType selectedContentType, Class selectedConverterType, ServerHttpRequest request, ServerHttpResponse response) {
+    public Object beforeBodyWrite(Object body, @NonNull MethodParameter returnType, @NonNull MediaType selectedContentType, @NonNull Class selectedConverterType, @NonNull ServerHttpRequest request, @NonNull ServerHttpResponse response) {
         Result<Object> result;
         if (body instanceof Result) {
             result = (Result<Object>) body;
@@ -113,11 +113,6 @@ public class ResponseBodyHandler implements ResponseBodyAdvice<Object> {
     private Boolean filter(MethodParameter methodParameter) {
         Class<?> declaringClass = methodParameter.getDeclaringClass();
         // 检查过滤包路径
-        long count = FILTER_PACKAGE.stream().filter(l -> declaringClass.getName().contains(l)).count();
-        if (count > 0) {
-            return false;
-        }
-        // 检查<类>过滤列表
-        return !FILTER_CLASS.contains(declaringClass.getName());
+        return FILTER_PACKAGE.stream().anyMatch(l -> declaringClass.getName().contains(l));
     }
 }

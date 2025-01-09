@@ -4,6 +4,7 @@ import cn.hutool.core.collection.CollUtil;
 import cn.hutool.extra.spring.SpringUtil;
 import com.google.common.collect.HashMultimap;
 import com.google.common.collect.Multimap;
+import com.ww.app.common.constant.Constant;
 import com.ww.app.common.utils.CollectionUtils;
 import com.ww.app.security.filter.TokenAuthenticationAuthFilter;
 import com.ww.app.security.handler.AppAccessDeniedHandler;
@@ -92,7 +93,9 @@ public class SecurityAutoConfiguration {
         httpSecurity
                 .authorizeRequests()
                 // 不需要登录认证就能访问的资源
-                .antMatchers("/actuator/**", "/websocket/**", "/login/**", "/**/inner/**").permitAll()
+                .antMatchers(Constant.IGNORE_APP_URL_ARRAY).permitAll()
+                // open-api
+                .antMatchers(Constant.IGNORE_KNIFE4J_URL_ARRAY).permitAll()
                 // 所有门户接口不需要登录
                 .antMatchers("/portal/**").permitAll()
                 // 1.2 设置 @PermitAll 无需认证

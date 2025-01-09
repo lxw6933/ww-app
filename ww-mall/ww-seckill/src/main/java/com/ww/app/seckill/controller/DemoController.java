@@ -9,6 +9,11 @@ import com.ww.app.seckill.grpc.GrpcClientService;
 import com.ww.app.seckill.service.DemoService;
 import com.ww.app.seckill.view.bo.SensitiveWordBO;
 import com.ww.app.seckill.view.bo.UserInfoVO;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.Parameters;
+import io.swagger.v3.oas.annotations.enums.ParameterIn;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
@@ -27,18 +32,28 @@ import java.util.List;
  */
 @Slf4j
 @RestController
+@Tag(name = "DEMO API")
 @RequestMapping("/seckill")
 public class DemoController {
 
     @Autowired
     private DemoService demoService;
 
+    @Operation(summary = "发放红包")
     @GetMapping("/testRedPacket")
+    @Parameters({
+            @Parameter(name = "totalAmount", description = "红包总金额", required = true, in = ParameterIn.QUERY),
+            @Parameter(name = "totalCount", description = "红包个数", required = true, in = ParameterIn.QUERY),
+    })
     public boolean testRedPacket(@RequestParam BigDecimal totalAmount, @RequestParam int totalCount) {
         return demoService.testGenerateRedPacket(totalAmount, totalCount);
     }
 
+    @Operation(summary = "领取红包")
     @GetMapping("/testReceiveRedPacket")
+    @Parameters({
+            @Parameter(name = "redPacketCode", description = "红包code", required = true, in = ParameterIn.QUERY)
+    })
     public String testReceiveRedPacket(@RequestParam String redPacketCode) {
         return demoService.testReceiveRedPacket(redPacketCode);
     }
@@ -81,7 +96,9 @@ public class DemoController {
     }
 
     @GetMapping("/hashStock")
-    public boolean redisHashStock(Integer type) {return demoService.secKillHashStock(type);}
+    public boolean redisHashStock(Integer type) {
+        return demoService.secKillHashStock(type);
+    }
 
     @GetMapping("/traceId")
     public void traceId() {

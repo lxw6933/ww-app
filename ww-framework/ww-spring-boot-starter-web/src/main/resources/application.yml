@@ -73,7 +73,7 @@ knife4j:
   # 开启增强模式
   enable: true
   # 开启生产保护
-  production: true
+  production: false
   setting:
     # i18n国际化 中文(zh-CN)、英文(en-US)
     language: zh_cn
@@ -84,9 +84,12 @@ knife4j:
 
 springdoc:
   swagger-ui:
+    # 禁用原生swagger文档
     disable-swagger-default-url: true
+#    path: /swagger-ui.html
   api-docs:
     enabled: true
+    path: /v3/api-docs
   group-configs:
     - group: 'all'
       display-name: '所有API'

@@ -55,6 +55,9 @@ public class Constant {
     public static final String GATEWAY_REQUEST_FLAG = "ww-app-gateway";
     public static final String GATEWAY_REQUEST_FLAG_VALUE = "true";
 
+    public static final String[] IGNORE_KNIFE4J_URL_ARRAY = {"/doc.html", "/swagger-ui.html", "/swagger-ui/**", "/v3/api-docs/**", "/webjars/**"};
+    public static final String[] IGNORE_APP_URL_ARRAY = {"/actuator/**", "/websocket/**", "/login/**", "/**/inner/**"};
+
     /**
      * app版本更新提示
      */

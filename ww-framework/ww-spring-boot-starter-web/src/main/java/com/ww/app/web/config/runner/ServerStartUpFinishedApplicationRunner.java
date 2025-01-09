@@ -36,11 +36,13 @@ public class ServerStartUpFinishedApplicationRunner implements ApplicationRunner
             ThreadUtil.sleep(1, TimeUnit.SECONDS);
             log.info("\n----------------------------------------------------------\n\t" +
                             "项目:\t[ww-app]-[{}]服务模块,启动成功！\n\t" +
-                            "接口路径:\t{} \n" +
+                            "接口路径:\t{} \n\t" +
+                            "接口文档:\t{} \n\t" +
                             "prometheus metrics:\t{} \n" +
                             "----------------------------------------------------------",
                     serverName,
                     serverReqPath,
+                    serverReqPath + "doc.html",
                     serverReqPath + "actuator/prometheus");
         });
     }
