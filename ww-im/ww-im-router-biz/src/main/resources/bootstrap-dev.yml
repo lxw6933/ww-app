@@ -18,3 +18,10 @@ spring:
       #      username: admin
       #      password: admin
       #      authentication-database: admin
+  rabbitmq:
+    addresses: 172.28.174.84:5672
+    virtual-host: /
+    listener:
+      simple:
+        # 手动ack消息
+        acknowledge-mode: manual

@@ -4,8 +4,11 @@ import com.alibaba.fastjson.JSON;
 import com.ww.app.im.common.ImMsgBody;
 import com.ww.app.im.dto.MessageDTO;
 import com.ww.app.im.enums.ImMsgBizCodeEnum;
+import com.ww.app.im.router.api.common.ImRouterMqConstant;
 import com.ww.app.im.router.api.rpc.ImRouterApi;
+import com.ww.app.rabbitmq.RabbitMqPublisher;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.stereotype.Component;
 
 import javax.annotation.Resource;
@@ -22,12 +25,16 @@ public class ChatMsgHandler implements MsgHandler {
     @Resource
     private ImRouterApi imRouterApi;
 
+    @Resource
+    private RabbitMqPublisher rabbitMqPublisher;
+
     @Override
     public void handle(ImMsgBody imMsgBody) {
         log.info("接收到[{}]发来的消息:{}", imMsgBody.getUserId(), JSON.parseObject(imMsgBody.getBizMsg(), MessageDTO.class).getContent());
-        // TODO 消息处理、发送消息队列转发消费
+        // 消息处理、发送消息队列转发消费
+        rabbitMqPublisher.sendMsg(ImRouterMqConstant.IM_ROUTER_EXCHANGE, ImRouterMqConstant.IM_ROUTER_MSG_KEY, imMsgBody);
         // 临时使用远程调用来转发
-        imRouterApi.routeMsg(imMsgBody);
+//        imRouterApi.routeMsg(imMsgBody);
     }
 
     @Override
