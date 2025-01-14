@@ -1,8 +1,8 @@
 package com.ww.app.im.consumer;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.ww.app.common.constant.Constant;
 import com.ww.app.common.thread.ThreadMdcUtil;
+import com.ww.app.common.utils.json.JacksonUtils;
 import com.ww.app.im.common.ImMsgBody;
 import com.ww.app.im.router.api.common.ImRouterMqConstant;
 import com.ww.app.im.service.ImRouterService;
@@ -26,8 +26,6 @@ import java.util.List;
 @Component
 public class ImRouterConsumer {
 
-    private final ObjectMapper mapper = new ObjectMapper();
-
     @Resource
     private ImRouterService imRouterService;
 
@@ -38,7 +36,7 @@ public class ImRouterConsumer {
             MessageProperties properties = message.getMessageProperties();
             String traceId = properties.getHeader(Constant.TRACE_ID);
             ThreadMdcUtil.setTraceId(traceId);
-            ImMsgBody msg = mapper.readValue(message.getBody(), ImMsgBody.class);
+            ImMsgBody msg = JacksonUtils.parseObject(message.getBody(), ImMsgBody.class);
             log.info("消费消息[{}]", msg);
             imMsgBodyList.add(msg);
         }
