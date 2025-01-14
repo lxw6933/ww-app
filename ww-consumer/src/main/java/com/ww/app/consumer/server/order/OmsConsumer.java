@@ -1,10 +1,11 @@
 package com.ww.app.consumer.server.order;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.rabbitmq.client.Channel;
-import com.ww.app.common.exception.ApiException;
 import com.ww.app.rabbitmq.queue.QueueConstant;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.amqp.core.Message;
+import org.springframework.amqp.core.MessageProperties;
 import org.springframework.amqp.rabbit.annotation.RabbitListener;
 import org.springframework.stereotype.Component;
 
@@ -20,14 +21,27 @@ import java.util.List;
 @Component
 public class OmsConsumer {
 
+    private final ObjectMapper mapper = new ObjectMapper();
+
     @RabbitListener(queues = {QueueConstant.OMS_CLOSE_QUEUE}, containerFactory = "batchContainerFactory")
-    public void omsCloseMessage(List<Message> messages, Channel channel) throws IOException {
-        log.info("收到mall_oms服务发送订单关闭的消息数量：{}", messages.size());
-        messages.forEach(message -> {
-            System.out.println("消费:" + new String(message.getBody()));
-        });
+    public void omsCloseMessage(Channel channel, List<Message> msgList) throws IOException {
+        System.out.println("=======================================");
+        for (int i = 0; i < msgList.size(); i++) {
+            Message message = msgList.get(i);
+            String msg = mapper.readValue(message.getBody(), String.class);
+            MessageProperties messageProperties = message.getMessageProperties();
+            long tag = messageProperties.getDeliveryTag();
+            if (i % 2 == 1) {
+                System.out.println("消费失败[" + msg + "] tag:[" + tag + "]");
+                channel.basicNack(tag, false, true);
+            } else {
+                System.out.println("消费成功[" + msg + "] tag:[" + tag + "]");
+                channel.basicAck(tag, false);
+            }
+        }
+        System.out.println("=======================================");
         // 没有异常，会自动全部ack消息
-        throw new ApiException("异常");
+//        throw new ApiException("异常");
     }
 
 }

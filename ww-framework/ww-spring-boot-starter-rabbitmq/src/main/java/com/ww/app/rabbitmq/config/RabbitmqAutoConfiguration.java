@@ -188,9 +188,10 @@ public class RabbitmqAutoConfiguration {
     }
 
     @Bean
-    public SimpleRabbitListenerContainerFactory batchContainerFactory(ConnectionFactory connectionFactory) {
+    public SimpleRabbitListenerContainerFactory batchContainerFactory(ConnectionFactory connectionFactory, MessageConverter converter) {
         SimpleRabbitListenerContainerFactory factory = new SimpleRabbitListenerContainerFactory();
         factory.setConnectionFactory(connectionFactory);
+        factory.setMessageConverter(converter);
         // 启用批量监听
         factory.setBatchListener(true);
         // 设置批量大小
