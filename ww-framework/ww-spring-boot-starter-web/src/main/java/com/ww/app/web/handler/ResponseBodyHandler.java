@@ -1,10 +1,10 @@
 package com.ww.app.web.handler;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.ww.app.common.common.Result;
 import com.ww.app.common.constant.Constant;
 import com.ww.app.common.exception.ApiException;
 import com.ww.app.common.utils.SecretUtils;
+import com.ww.app.common.utils.json.JacksonUtils;
 import com.ww.app.web.config.SecretProperties;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.CollectionUtils;
@@ -33,9 +33,6 @@ import java.util.List;
 public class ResponseBodyHandler implements ResponseBodyAdvice<Object> {
 
     private static final List<String> FILTER_PACKAGE = Collections.singletonList("com.ww.app");
-
-    @Autowired
-    private ObjectMapper objectMapper;
 
     @Autowired
     private SecretProperties secretProperties;
@@ -73,7 +70,7 @@ public class ResponseBodyHandler implements ResponseBodyAdvice<Object> {
                 // 告知前端响应结果已加密
                 response.getHeaders().set(Constant.ENCRYPT_HEADER, "true");
                 try {
-                    return SecretUtils.aesEncrypt(objectMapper.writeValueAsString(result), secretProperties.getSecretKey());
+                    return SecretUtils.aesEncrypt(JacksonUtils.toJsonString(result), secretProperties.getSecretKey());
                 } catch (Exception e) {
                     throw new ApiException("内容不合法");
                 }

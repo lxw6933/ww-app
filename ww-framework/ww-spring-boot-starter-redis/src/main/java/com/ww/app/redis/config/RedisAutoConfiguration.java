@@ -1,17 +1,15 @@
 package com.ww.app.redis.config;
 
-import com.fasterxml.jackson.annotation.JsonAutoDetect;
-import com.fasterxml.jackson.annotation.PropertyAccessor;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import com.ww.app.common.utils.json.JacksonUtils;
 import com.ww.app.redis.AppRedisTemplate;
 import com.ww.app.redis.aspect.RateLimitAspect;
 import com.ww.app.redis.aspect.ResubmissionAspect;
 import com.ww.app.redis.component.StockRedisComponent;
 import com.ww.app.redis.component.key.AppLockRedisKeyBuilder;
-import com.ww.app.redis.handler.RedisStockHandlerManager;
 import com.ww.app.redis.component.key.GeoRedisKeyBuilder;
 import com.ww.app.redis.component.key.SpuRedisKeyBuilder;
 import com.ww.app.redis.component.key.StockRedisKeyBuilder;
+import com.ww.app.redis.handler.RedisStockHandlerManager;
 import com.ww.app.redis.listener.RedisChannelListener;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
@@ -110,10 +108,8 @@ public class RedisAutoConfiguration implements ApplicationContextAware {
     }
 
     private Jackson2JsonRedisSerializer<Object> valueSerializer() {
-        ObjectMapper objectMapper = new ObjectMapper();
-        objectMapper.setVisibility(PropertyAccessor.ALL, JsonAutoDetect.Visibility.ANY);
         Jackson2JsonRedisSerializer<Object> jackson2JsonRedisSerializer = new Jackson2JsonRedisSerializer<>(Object.class);
-        jackson2JsonRedisSerializer.setObjectMapper(objectMapper);
+        jackson2JsonRedisSerializer.setObjectMapper(JacksonUtils.getObjectMapper());
         return jackson2JsonRedisSerializer;
     }
 

@@ -1,14 +1,9 @@
 package com.ww.app.im.serializer;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.ww.app.common.enums.GlobalResCodeConstants;
-import com.ww.app.common.exception.ApiException;
+import com.ww.app.common.utils.json.JacksonUtils;
 import com.ww.app.im.core.api.enums.ImMsgSerializerEnum;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
-
-import java.io.IOException;
 
 /**
  * @author ww
@@ -18,7 +13,6 @@ import java.io.IOException;
 @Slf4j
 @Component
 public class JacksonSerializer implements ImMsgSerializer {
-    private static final ObjectMapper mapper = new ObjectMapper();
 
     @Override
     public ImMsgSerializerEnum type() {
@@ -27,21 +21,11 @@ public class JacksonSerializer implements ImMsgSerializer {
 
     @Override
     public <T> byte[] serialize(T object) {
-        try {
-            return mapper.writeValueAsBytes(object);
-        } catch (JsonProcessingException e) {
-            log.error("{} 序列化异常：", object, e);
-            throw new ApiException(GlobalResCodeConstants.SYSTEM_ERROR);
-        }
+        return JacksonUtils.toJsonByte(object);
     }
 
     @Override
     public <T> T deserialize(Class<T> clazz, byte[] bytes) {
-        try {
-            return mapper.readValue(bytes, clazz);
-        } catch (IOException e) {
-            log.error("[{}][{}]反序列化异常：", clazz, bytes, e);
-            throw new ApiException(GlobalResCodeConstants.SYSTEM_ERROR);
-        }
+        return JacksonUtils.parseObject(bytes, clazz);
     }
 }

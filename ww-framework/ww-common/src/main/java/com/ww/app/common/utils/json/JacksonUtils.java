@@ -8,6 +8,7 @@ import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
+import lombok.Getter;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 
@@ -21,6 +22,7 @@ import java.io.IOException;
 @Slf4j
 public class JacksonUtils {
 
+    @Getter
     private static final ObjectMapper objectMapper = new ObjectMapper();
 
     static {
