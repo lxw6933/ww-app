@@ -1,4 +1,4 @@
-package com.ww.app.im.dto;
+package com.ww.app.im.api.dto;
 
 import lombok.Data;
 

@@ -2,14 +2,14 @@ package com.ww.app.im.handler.msg;
 
 import cn.hutool.core.lang.Assert;
 import com.ww.app.common.exception.ApiException;
-import com.ww.app.im.common.ImConstant;
+import com.ww.app.im.core.api.common.ImConstant;
 import com.ww.app.im.common.ImMsg;
-import com.ww.app.im.common.ImMsgBody;
+import com.ww.app.im.core.api.common.ImMsgBody;
 import com.ww.app.im.component.ImMsgSerializerComponent;
-import com.ww.app.im.enums.ImMsgCodeEnum;
+import com.ww.app.im.core.api.enums.ImMsgCodeEnum;
 import com.ww.app.im.utils.ImChannelHandlerContextUtils;
 import com.ww.app.im.utils.ImContextUtils;
-import com.ww.app.im.utils.ImUtils;
+import com.ww.app.im.core.api.utils.ImUtils;
 import io.netty.channel.ChannelHandlerContext;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.redis.core.StringRedisTemplate;

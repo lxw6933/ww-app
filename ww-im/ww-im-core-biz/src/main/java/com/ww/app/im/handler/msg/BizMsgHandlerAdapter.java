@@ -1,11 +1,13 @@
 package com.ww.app.im.handler.msg;
 
+import com.ww.app.im.api.common.ImBizMqConstant;
 import com.ww.app.im.common.ImMsg;
-import com.ww.app.im.common.ImMsgBody;
-import com.ww.app.im.enums.ImMsgCodeEnum;
+import com.ww.app.im.core.api.common.ImMsgBody;
+import com.ww.app.im.core.api.enums.ImMsgCodeEnum;
 import com.ww.app.im.component.ImMsgSerializerComponent;
-import com.ww.app.im.rpc.BizMsgHandlerApi;
+import com.ww.app.im.api.rpc.BizMsgHandlerApi;
 import com.ww.app.im.utils.ImContextUtils;
+import com.ww.app.rabbitmq.RabbitMqPublisher;
 import io.netty.channel.ChannelHandlerContext;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
@@ -27,6 +29,9 @@ public class BizMsgHandlerAdapter implements ImMsgHandlerAdapter {
     @Resource
     private ImMsgSerializerComponent imMsgSerializerComponent;
 
+    @Resource
+    private RabbitMqPublisher rabbitMqPublisher;
+
     @Override
     public void handle(ChannelHandlerContext ctx, ImMsg imMsg) {
         Long userId = ImContextUtils.getUserId(ctx);
@@ -43,10 +48,10 @@ public class BizMsgHandlerAdapter implements ImMsgHandlerAdapter {
         }
         // 解析消息body
         ImMsgBody imMsgBody = imMsgSerializerComponent.deserializeMsg(imMsg);
-        log.info("收到客户端发来的业务消息：{}", imMsgBody);
-        // TODO 发送mq消费处理消息推送
+        // 发送mq消费处理消息
+        rabbitMqPublisher.sendMsg(ImBizMqConstant.IM_BIZ_EXCHANGE, ImBizMqConstant.IM_BIZ_MSG_KEY, imMsgBody);
         // 临时使用rpc测试
-        bizMsgHandlerApi.handleImMsg(imMsgBody);
+//        bizMsgHandlerApi.handleImMsg(imMsgBody);
     }
 
     @Override

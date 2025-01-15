@@ -1,7 +1,7 @@
 package com.ww.app.im.handler.msg;
 
 import com.ww.app.im.common.ImMsg;
-import com.ww.app.im.enums.ImMsgCodeEnum;
+import com.ww.app.im.core.api.enums.ImMsgCodeEnum;
 import io.netty.channel.ChannelHandlerContext;
 
 /**

@@ -1,7 +1,7 @@
 package com.ww.app.im.serializer;
 
 import com.alibaba.fastjson.JSON;
-import com.ww.app.im.enums.ImMsgSerializerEnum;
+import com.ww.app.im.core.api.enums.ImMsgSerializerEnum;
 import org.springframework.stereotype.Component;
 
 /**

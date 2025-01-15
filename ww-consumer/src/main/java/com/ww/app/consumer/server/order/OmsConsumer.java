@@ -21,7 +21,7 @@ import java.util.List;
 @Component
 public class OmsConsumer {
 
-    @RabbitListener(queues = {QueueConstant.OMS_CLOSE_QUEUE}, containerFactory = "batchContainerFactory")
+    @RabbitListener(queues = {QueueConstant.OMS_CLOSE_QUEUE}, containerFactory = "appBatchContainerFactory")
     public void omsCloseMessage(Channel channel, List<Message> msgList) throws IOException {
         System.out.println("=======================================");
         for (int i = 0; i < msgList.size(); i++) {

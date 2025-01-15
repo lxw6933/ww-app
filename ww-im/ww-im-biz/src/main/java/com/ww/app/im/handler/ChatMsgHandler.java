@@ -1,14 +1,13 @@
 package com.ww.app.im.handler;
 
 import com.alibaba.fastjson.JSON;
-import com.ww.app.im.common.ImMsgBody;
-import com.ww.app.im.dto.MessageDTO;
-import com.ww.app.im.enums.ImMsgBizCodeEnum;
+import com.ww.app.im.core.api.common.ImMsgBody;
+import com.ww.app.im.api.dto.MessageDTO;
+import com.ww.app.im.api.enums.ImMsgBizCodeEnum;
 import com.ww.app.im.router.api.common.ImRouterMqConstant;
 import com.ww.app.im.router.api.rpc.ImRouterApi;
 import com.ww.app.rabbitmq.RabbitMqPublisher;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.stereotype.Component;
 
 import javax.annotation.Resource;

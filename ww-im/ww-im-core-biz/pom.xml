@@ -44,6 +44,18 @@
             <artifactId>ww-spring-boot-starter-redis</artifactId>
             <version>${revision}</version>
         </dependency>
+        <!-- rabbitmq starter -->
+        <dependency>
+            <groupId>com.ww.app</groupId>
+            <artifactId>ww-spring-boot-starter-rabbitmq</artifactId>
+            <version>${revision}</version>
+        </dependency>
+        <!-- mongodb starter -->
+        <dependency>
+            <groupId>com.ww.app</groupId>
+            <artifactId>ww-spring-boot-starter-mongodb</artifactId>
+            <version>${revision}</version>
+        </dependency>
         <!-- test -->
         <dependency>
             <groupId>org.springframework.boot</groupId>

@@ -1,6 +1,6 @@
 package com.ww.app.im.serializer;
 
-import com.ww.app.im.enums.ImMsgSerializerEnum;
+import com.ww.app.im.core.api.enums.ImMsgSerializerEnum;
 
 /**
  * @author ww

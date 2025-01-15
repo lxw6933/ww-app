@@ -19,6 +19,7 @@ import org.springframework.amqp.core.Message;
 import org.springframework.amqp.core.MessagePostProcessor;
 import org.springframework.amqp.core.MessageProperties;
 import org.springframework.amqp.rabbit.annotation.EnableRabbit;
+import org.springframework.amqp.rabbit.config.DirectRabbitListenerContainerFactory;
 import org.springframework.amqp.rabbit.config.SimpleRabbitListenerContainerFactory;
 import org.springframework.amqp.rabbit.connection.ConnectionFactory;
 import org.springframework.amqp.rabbit.connection.CorrelationData;
@@ -188,7 +189,7 @@ public class RabbitmqAutoConfiguration {
     }
 
     @Bean
-    public SimpleRabbitListenerContainerFactory batchContainerFactory(ConnectionFactory connectionFactory, MessageConverter converter) {
+    public SimpleRabbitListenerContainerFactory appBatchContainerFactory(ConnectionFactory connectionFactory, MessageConverter converter) {
         SimpleRabbitListenerContainerFactory factory = new SimpleRabbitListenerContainerFactory();
         factory.setConnectionFactory(connectionFactory);
         factory.setMessageConverter(converter);
@@ -204,6 +205,20 @@ public class RabbitmqAutoConfiguration {
         factory.setConcurrentConsumers(10);
         // 最大并发消费者线程数
         factory.setMaxConcurrentConsumers(20);
+        return factory;
+    }
+
+    @Bean
+    public DirectRabbitListenerContainerFactory appDirectContainerFactory(ConnectionFactory connectionFactory, MessageConverter converter) {
+        DirectRabbitListenerContainerFactory factory = new DirectRabbitListenerContainerFactory();
+        // 设置连接工厂
+        factory.setConnectionFactory(connectionFactory);
+        // 设置每个队列的消费者数量
+        factory.setConsumersPerQueue(20);
+        // 设置每个消费者的预取消息数量
+        factory.setPrefetchCount(10);
+        // 设置消息转换器
+        factory.setMessageConverter(converter);
         return factory;
     }
 

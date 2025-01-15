@@ -2,6 +2,8 @@ package com.ww.app.im.common;
 
 import cn.hutool.extra.spring.SpringUtil;
 import com.ww.app.im.component.ImMsgSerializerComponent;
+import com.ww.app.im.core.api.common.ImConstant;
+import com.ww.app.im.core.api.common.ImMsgBody;
 import lombok.Data;
 
 import java.io.Serializable;

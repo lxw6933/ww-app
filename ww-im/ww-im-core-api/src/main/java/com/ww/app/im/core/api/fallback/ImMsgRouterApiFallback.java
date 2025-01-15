@@ -1,9 +1,9 @@
-package com.ww.app.im.fallback;
+package com.ww.app.im.core.api.fallback;
 
 import com.ww.app.common.common.Result;
 import com.ww.app.common.enums.GlobalResCodeConstants;
-import com.ww.app.im.common.ImMsgBody;
-import com.ww.app.im.rpc.ImMsgRouterApi;
+import com.ww.app.im.core.api.common.ImMsgBody;
+import com.ww.app.im.core.api.rpc.ImMsgRouterApi;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.cloud.openfeign.FallbackFactory;
 

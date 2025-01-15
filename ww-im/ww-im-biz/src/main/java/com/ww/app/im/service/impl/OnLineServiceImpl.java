@@ -1,7 +1,7 @@
 package com.ww.app.im.service.impl;
 
 import com.ww.app.im.service.OnLineService;
-import com.ww.app.im.utils.ImUtils;
+import com.ww.app.im.core.api.utils.ImUtils;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Service;

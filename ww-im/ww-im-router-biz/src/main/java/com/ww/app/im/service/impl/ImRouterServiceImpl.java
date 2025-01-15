@@ -1,10 +1,10 @@
 package com.ww.app.im.service.impl;
 
 import cn.hutool.core.util.StrUtil;
-import com.ww.app.im.common.ImMsgBody;
-import com.ww.app.im.rpc.ImMsgRouterApi;
+import com.ww.app.im.core.api.common.ImMsgBody;
+import com.ww.app.im.core.api.rpc.ImMsgRouterApi;
 import com.ww.app.im.service.ImRouterService;
-import com.ww.app.im.utils.ImUtils;
+import com.ww.app.im.core.api.utils.ImUtils;
 import com.ww.app.web.holder.ServerIpContextHolder;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.redis.core.StringRedisTemplate;

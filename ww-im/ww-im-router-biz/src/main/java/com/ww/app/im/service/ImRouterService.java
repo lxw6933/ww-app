@@ -1,6 +1,6 @@
 package com.ww.app.im.service;
 
-import com.ww.app.im.common.ImMsgBody;
+import com.ww.app.im.core.api.common.ImMsgBody;
 
 import java.util.List;
 

@@ -1,6 +1,6 @@
-package com.ww.app.im.rpc;
+package com.ww.app.im.api.rpc;
 
-import com.ww.app.im.common.ImMsgBody;
+import com.ww.app.im.core.api.common.ImMsgBody;
 import org.springframework.cloud.openfeign.FeignClient;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;

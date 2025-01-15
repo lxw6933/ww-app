@@ -2,7 +2,7 @@ package com.ww.app.im.service.impl;
 
 import cn.hutool.extra.spring.SpringUtil;
 import com.ww.app.common.exception.ApiException;
-import com.ww.app.im.common.ImMsgBody;
+import com.ww.app.im.core.api.common.ImMsgBody;
 import com.ww.app.im.handler.MsgHandler;
 import com.ww.app.im.service.MsgService;
 import lombok.extern.slf4j.Slf4j;

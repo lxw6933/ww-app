@@ -1,7 +1,7 @@
 package com.ww.app.im.grpc.server;
 
 import com.google.protobuf.Empty;
-import com.ww.app.im.common.ImMsgBody;
+import com.ww.app.im.core.api.common.ImMsgBody;
 import com.ww.app.im.service.MsgService;
 import com.ww.app.proto.im.ImMsgBodyRequest;
 import com.ww.app.proto.im.biz.ImMsgBizServiceGrpc;

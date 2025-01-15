@@ -1,7 +1,8 @@
 package com.ww.app.im.rpc;
 
 import com.ww.app.common.common.Result;
-import com.ww.app.im.common.ImMsgBody;
+import com.ww.app.im.core.api.common.ImMsgBody;
+import com.ww.app.im.core.api.rpc.ImMsgRouterApi;
 import com.ww.app.im.service.MsgRouterService;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;

@@ -1,6 +1,6 @@
 package com.ww.app.im.handler;
 
-import com.ww.app.im.common.ImMsgBody;
+import com.ww.app.im.core.api.common.ImMsgBody;
 
 /**
  * @author ww

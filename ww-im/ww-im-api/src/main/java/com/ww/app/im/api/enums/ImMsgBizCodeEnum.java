@@ -1,4 +1,4 @@
-package com.ww.app.im.enums;
+package com.ww.app.im.api.enums;
 
 import lombok.Getter;
 

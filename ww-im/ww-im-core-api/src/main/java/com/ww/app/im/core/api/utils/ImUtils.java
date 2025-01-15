@@ -1,9 +1,9 @@
-package com.ww.app.im.utils;
+package com.ww.app.im.core.api.utils;
 
 import cn.hutool.core.util.StrUtil;
 import com.ww.app.common.constant.Constant;
-import com.ww.app.im.common.ImConstant;
-import com.ww.app.im.common.ImMsgBody;
+import com.ww.app.im.core.api.common.ImConstant;
+import com.ww.app.im.core.api.common.ImMsgBody;
 import com.ww.app.proto.im.ImMsgBodyListRequest;
 import com.ww.app.proto.im.ImMsgBodyRequest;
 

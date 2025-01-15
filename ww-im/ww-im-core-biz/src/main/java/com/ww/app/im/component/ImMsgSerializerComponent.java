@@ -3,7 +3,7 @@ package com.ww.app.im.component;
 import cn.hutool.core.lang.Assert;
 import cn.hutool.extra.spring.SpringUtil;
 import com.ww.app.im.common.ImMsg;
-import com.ww.app.im.common.ImMsgBody;
+import com.ww.app.im.core.api.common.ImMsgBody;
 import com.ww.app.im.serializer.ImMsgSerializer;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.InitializingBean;

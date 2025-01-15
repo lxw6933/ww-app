@@ -1,4 +1,4 @@
-package com.ww.app.im.common;
+package com.ww.app.im.core.api.common;
 
 import com.ww.app.proto.im.ImMsgBodyRequest;
 import lombok.Data;

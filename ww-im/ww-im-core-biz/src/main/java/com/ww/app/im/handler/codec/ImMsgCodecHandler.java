@@ -1,6 +1,6 @@
 package com.ww.app.im.handler.codec;
 
-import com.ww.app.im.common.ImConstant;
+import com.ww.app.im.core.api.common.ImConstant;
 import com.ww.app.im.common.ImMsg;
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.ChannelHandler;

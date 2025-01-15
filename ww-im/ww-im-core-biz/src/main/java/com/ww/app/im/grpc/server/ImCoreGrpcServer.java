@@ -1,6 +1,6 @@
 package com.ww.app.im.grpc.server;
 
-import com.ww.app.im.common.ImMsgBody;
+import com.ww.app.im.core.api.common.ImMsgBody;
 import com.ww.app.im.service.MsgRouterService;
 import com.ww.app.proto.im.ImCommonResponse;
 import com.ww.app.proto.im.ImMsgBodyListRequest;

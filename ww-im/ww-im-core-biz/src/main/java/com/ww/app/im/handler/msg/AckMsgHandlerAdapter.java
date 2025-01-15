@@ -2,7 +2,7 @@ package com.ww.app.im.handler.msg;
 
 import com.ww.app.im.common.ImMsg;
 import com.ww.app.im.component.ImMsgSerializerComponent;
-import com.ww.app.im.enums.ImMsgCodeEnum;
+import com.ww.app.im.core.api.enums.ImMsgCodeEnum;
 import com.ww.app.im.service.MsgAckService;
 import com.ww.app.im.utils.ImContextUtils;
 import io.netty.channel.ChannelHandlerContext;
