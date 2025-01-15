@@ -3,12 +3,12 @@ package imclient.handler;
 import cn.hutool.core.util.StrUtil;
 import com.alibaba.fastjson.JSON;
 import com.ww.app.common.utils.ThreadUtil;
-import com.ww.app.im.core.api.common.ImConstant;
-import com.ww.app.im.common.ImMsg;
-import com.ww.app.im.core.api.common.ImMsgBody;
 import com.ww.app.im.api.dto.MessageDTO;
-import com.ww.app.im.core.api.enums.ImAppIdEnum;
 import com.ww.app.im.api.enums.ImMsgBizCodeEnum;
+import com.ww.app.im.common.ImMsg;
+import com.ww.app.im.core.api.common.ImConstant;
+import com.ww.app.im.core.api.common.ImMsgBody;
+import com.ww.app.im.core.api.enums.ImAppIdEnum;
 import com.ww.app.im.core.api.enums.ImMsgCodeEnum;
 import com.ww.app.im.handler.codec.ImMsgCodecHandler;
 import com.ww.app.im.protocol.ImProtocolFrameDecoder;
@@ -18,8 +18,6 @@ import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.channel.socket.SocketChannel;
 import io.netty.channel.socket.nio.NioSocketChannel;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.InitializingBean;
-import org.springframework.stereotype.Service;
 
 import java.util.Date;
 import java.util.Scanner;
@@ -28,14 +26,12 @@ import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 
 @Slf4j
-@Service
-public class ImTestClientStart implements InitializingBean {
+public class ImTestClientStart {
 
     private final ScheduledExecutorService heartbeatExecutor = ThreadUtil.initScheduledExecutorService(1);
 
-    @Override
-    public void afterPropertiesSet() {
-        start();
+    public static void main(String[] args) {
+        new ImTestClientStart().start();
     }
 
     public void start() {
