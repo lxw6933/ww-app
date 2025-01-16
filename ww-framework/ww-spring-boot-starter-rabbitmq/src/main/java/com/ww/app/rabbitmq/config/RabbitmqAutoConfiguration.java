@@ -5,6 +5,7 @@ import com.ww.app.common.constant.Constant;
 import com.ww.app.common.enums.MqMsgStatus;
 import com.ww.app.common.exception.ApiException;
 import com.ww.app.common.thread.ThreadMdcUtil;
+import com.ww.app.common.utils.json.JacksonUtils;
 import com.ww.app.rabbitmq.RabbitMqPublisher;
 import com.ww.app.rabbitmq.common.BaseMqLog;
 import com.ww.app.rabbitmq.common.MyCorrelationData;
@@ -125,7 +126,7 @@ public class RabbitmqAutoConfiguration {
                     returned.getRoutingKey());
 
             MyCorrelationData<Object> correlationData = new MyCorrelationData<>(false);
-            correlationData.setMessage(new String(returned.getMessage().getBody()));
+            correlationData.setMessage(JacksonUtils.parseObject(returned.getMessage().getBody(), Object.class));
             correlationData.setExchange(returned.getExchange());
             correlationData.setRoutingKey(returned.getRoutingKey());
             correlationData.setTraceId(traceId);
