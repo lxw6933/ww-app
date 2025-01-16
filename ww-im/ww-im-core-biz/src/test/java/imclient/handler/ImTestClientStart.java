@@ -86,6 +86,7 @@ public class ImTestClientStart {
                     // 构建业务消息对象
                     MessageDTO message = new MessageDTO();
                     message.setUserId(userId);
+                    message.setType(1);
                     message.setRoomId(null);
                     message.setContent(content);
                     message.setSendTime(new Date());
