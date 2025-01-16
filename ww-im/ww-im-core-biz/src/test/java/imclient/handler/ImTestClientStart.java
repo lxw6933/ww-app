@@ -88,7 +88,7 @@ public class ImTestClientStart {
                     message.setUserId(userId);
                     message.setRoomId(null);
                     message.setContent(content);
-                    message.setCreateTime(new Date());
+                    message.setSendTime(new Date());
                     bizBody.setBizMsg(JSON.toJSONString(message));
                     ImMsg bizMsg = ImMsg.buildTestClient(ImMsgCodeEnum.IM_BIZ_MSG.getCode(), ImConstant.DEFAULT_SERIALIZER, JSON.toJSONBytes(bizBody));
                     channel.writeAndFlush(bizMsg);

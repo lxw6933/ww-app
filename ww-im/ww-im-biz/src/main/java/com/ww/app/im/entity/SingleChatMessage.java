@@ -59,7 +59,7 @@ public class SingleChatMessage extends BaseDoc {
         message.setReceiverId(receiverId);
         message.setMessageType(messageDTO.getType());
         message.setContent(messageDTO.getContent());
-        message.setSendTime(messageDTO.getCreateTime());
+        message.setSendTime(messageDTO.getSendTime());
         message.setStatus(1);
         message.setDelete(0);
         return message;

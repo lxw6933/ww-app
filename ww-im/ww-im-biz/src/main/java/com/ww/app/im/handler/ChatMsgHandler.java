@@ -37,7 +37,7 @@ public class ChatMsgHandler implements MsgHandler {
     public void handle(ImMsgBody imMsgBody) {
         MessageDTO messageDTO = JSON.parseObject(imMsgBody.getBizMsg(), MessageDTO.class);
         log.info("接收到[{}]发来的消息:{}", imMsgBody.getUserId(), messageDTO.getContent());
-        mongoTemplate.save(SingleChatMessage.build(imMsgBody.getUserId(), messageDTO), DocShardUtils.getSingleChatDocName(messageDTO.getUserId(), messageDTO.getCreateTime()));
+        mongoTemplate.save(SingleChatMessage.build(imMsgBody.getUserId(), messageDTO), DocShardUtils.getSingleChatDocName(messageDTO.getUserId(), messageDTO.getSendTime()));
         // 消息处理、发送消息队列转发消费
         rabbitMqPublisher.sendMsg(ImRouterMqConstant.IM_ROUTER_EXCHANGE, ImRouterMqConstant.IM_ROUTER_MSG_KEY, imMsgBody);
         // 临时使用远程调用来转发

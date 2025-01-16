@@ -1,5 +1,6 @@
 package imclient.handler;
 
+import cn.hutool.core.date.DateUtil;
 import cn.hutool.extra.spring.SpringUtil;
 import com.alibaba.fastjson.JSON;
 import com.ww.app.im.core.api.common.ImConstant;
@@ -28,7 +29,7 @@ public class ClientHandler extends SimpleChannelInboundHandler<ImMsg> {
             String content = message.getContent();
             // 消息id
             String seqId = respBody.getSeqId();
-            System.out.println("[" + userId + "][" + seqId + "]: " + content);
+            System.out.println("[" + userId + "][" + DateUtil.formatDateTime(message.getSendTime()) + "]: " + content);
             ImMsgBody ackBody = new ImMsgBody();
             ackBody.setAppId(respBody.getAppId());
             ackBody.setUserId(userId);

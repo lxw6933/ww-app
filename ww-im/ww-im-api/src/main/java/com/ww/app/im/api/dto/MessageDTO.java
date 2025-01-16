@@ -46,6 +46,6 @@ public class MessageDTO implements Serializable {
     /**
      * 发送时间
      */
-    private Date createTime;
+    private Date sendTime;
 
 }
