@@ -31,7 +31,9 @@ public class OmsConsumer {
             long tag = messageProperties.getDeliveryTag();
             if (i % 2 == 1) {
                 System.out.println("消费失败[" + msg + "] tag:[" + tag + "]");
-                channel.basicNack(tag, false, true);
+                // 拒绝入队，进入死信队列
+                channel.basicNack(tag, false, false);
+                throw new RuntimeException("消费失败");
             } else {
                 System.out.println("消费成功[" + msg + "] tag:[" + tag + "]");
                 channel.basicAck(tag, false);
@@ -41,5 +43,7 @@ public class OmsConsumer {
         // 没有异常，会自动全部ack消息
 //        throw new ApiException("异常");
     }
+
+
 
 }

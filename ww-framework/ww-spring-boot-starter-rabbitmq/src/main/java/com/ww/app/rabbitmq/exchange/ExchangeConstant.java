@@ -12,7 +12,7 @@ public class ExchangeConstant {
     /**
      * 死信交换机
      */
-    public static final String APP_DLX_EXCHANGE = "aap.dlx.exchange";
+    public static final String APP_DLX_EXCHANGE = "app.dlx.exchange";
 
     /**
      * 缓存更新通知广播交换机
