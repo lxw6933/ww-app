@@ -11,7 +11,6 @@ import com.ww.app.rabbitmq.common.BaseMqLog;
 import com.ww.app.rabbitmq.common.MyCorrelationData;
 import com.ww.app.rabbitmq.common.RabbitmqConstant;
 import com.ww.app.rabbitmq.repository.DefaultMqLogRepository;
-import com.ww.app.rabbitmq.repository.MongoMqLogRepository;
 import com.ww.app.rabbitmq.repository.MqLogRepository;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.amqp.AmqpException;
@@ -28,12 +27,10 @@ import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.amqp.support.converter.Jackson2JsonMessageConverter;
 import org.springframework.amqp.support.converter.MessageConverter;
 import org.springframework.boot.autoconfigure.amqp.RabbitProperties;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnBean;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
-import org.springframework.data.mongodb.core.MongoTemplate;
 
 import javax.annotation.PostConstruct;
 
@@ -176,17 +173,10 @@ public class RabbitmqAutoConfiguration {
     }
 
     @Bean
-    @ConditionalOnMissingBean({MqLogRepository.class, MongoMqLogRepository.class})
+    @ConditionalOnMissingBean(MqLogRepository.class)
     public MqLogRepository<String, ? extends BaseMqLog> mqLogRepository() {
         log.info("初始化消息默认日志持久化");
         return new DefaultMqLogRepository();
-    }
-
-    @Bean
-    @ConditionalOnBean({MongoTemplate.class})
-    public MqLogRepository<String, ? extends BaseMqLog> mqLogMongoRepository() {
-        log.info("初始化消息日志mongo持久化");
-        return new MongoMqLogRepository();
     }
 
     @Bean

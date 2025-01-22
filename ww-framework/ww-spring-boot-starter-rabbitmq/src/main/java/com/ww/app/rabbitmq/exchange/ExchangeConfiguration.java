@@ -1,6 +1,7 @@
 package com.ww.app.rabbitmq.exchange;
 
 import org.springframework.amqp.core.CustomExchange;
+import org.springframework.amqp.core.DirectExchange;
 import org.springframework.amqp.core.FanoutExchange;
 import org.springframework.amqp.core.TopicExchange;
 import org.springframework.context.annotation.Bean;
@@ -14,6 +15,11 @@ import java.util.Map;
  * @create: 2023/7/21 22:59
  **/
 public class ExchangeConfiguration {
+
+    @Bean(name = ExchangeConstant.APP_DLX_EXCHANGE)
+    public DirectExchange appDlxExchange() {
+        return new DirectExchange(ExchangeConstant.APP_DLX_EXCHANGE);
+    }
 
     @Bean(name = ExchangeConstant.CACHE_NOTICE_FANOUT_EXCHANGE)
     public FanoutExchange mallCacheNoticeFanoutExchange() {

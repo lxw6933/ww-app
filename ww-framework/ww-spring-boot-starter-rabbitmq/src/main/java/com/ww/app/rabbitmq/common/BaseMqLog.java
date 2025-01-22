@@ -1,9 +1,7 @@
 package com.ww.app.rabbitmq.common;
 
 import com.ww.app.common.enums.MqMsgStatus;
-import com.ww.app.mongodb.common.BaseDoc;
 import lombok.Data;
-import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
 
 import java.util.Date;
@@ -13,10 +11,9 @@ import java.util.Date;
  * @create 2024-05-28- 16:11
  * @description:
  */
-@EqualsAndHashCode(callSuper = true)
 @Data
 @NoArgsConstructor
-public class BaseMqLog extends BaseDoc {
+public class BaseMqLog {
 
     /**
      * ack消息id

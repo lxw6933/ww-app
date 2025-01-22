@@ -10,6 +10,11 @@ public class RouteKeyConstant {
     private RouteKeyConstant() {}
 
     /**
+     * 消费失败 key
+     */
+    public static final String FAILED_ROUTING_KEY = "failed_routing_key";
+
+    /**
      * 创建订单 key
      */
     public static final String CREATE_ORDER_KEY = "create.order.key";

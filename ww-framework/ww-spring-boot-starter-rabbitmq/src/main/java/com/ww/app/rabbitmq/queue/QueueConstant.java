@@ -10,6 +10,11 @@ public class QueueConstant {
     private QueueConstant() {}
 
     /**
+     * 消费失败
+     */
+    public static final String CONSUME_FAIL_QUEUE = "consume.fail.queue";
+
+    /**
      * 缓存更新消息通知队列
      */
     public static final String CACHE_NOTICE_QUEUE = "cache.notice.queue";

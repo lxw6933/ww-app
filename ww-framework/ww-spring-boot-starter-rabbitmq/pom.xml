@@ -32,13 +32,6 @@
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-web</artifactId>
         </dependency>
-        <!-- mongodb starter -->
-        <dependency>
-            <groupId>com.ww.app</groupId>
-            <artifactId>ww-spring-boot-starter-mongodb</artifactId>
-            <version>${revision}</version>
-            <scope>provided</scope>
-        </dependency>
     </dependencies>
 
 </project>

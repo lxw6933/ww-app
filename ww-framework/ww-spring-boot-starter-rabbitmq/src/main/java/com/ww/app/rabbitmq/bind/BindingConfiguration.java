@@ -16,6 +16,12 @@ import javax.annotation.Resource;
 public class BindingConfiguration {
 
     /**
+     * 死信交换机
+     */
+    @Resource(name = ExchangeConstant.APP_DLX_EXCHANGE)
+    private DirectExchange appDlxExchange;
+
+    /**
      * 广播交换机-缓存通知
      */
     @Resource(name = ExchangeConstant.CACHE_NOTICE_FANOUT_EXCHANGE)
@@ -93,6 +99,12 @@ public class BindingConfiguration {
     @Resource(name = QueueConstant.PRODUCT_TIMER_UP_QUEUE)
     private Queue productTimerUpQueue;
 
+    /**
+     * 消费失败队列
+     */
+    @Resource(name = QueueConstant.CONSUME_FAIL_QUEUE)
+    private Queue consumeFailQueue;
+
     @Bean
     public Binding createOrderBinding() {
         return BindingBuilder.bind(mallCreateOrderQueue).to(mallOmsExchange).with(RouteKeyConstant.CREATE_ORDER_KEY);
@@ -131,6 +143,11 @@ public class BindingConfiguration {
     @Bean
     public Binding cacheNoticeBinding() {
         return BindingBuilder.bind(mallCacheNoticeQueue).to(mallCacheNoticeFanoutExchange);
+    }
+
+    @Bean
+    public Binding consumeFailBinding() {
+        return BindingBuilder.bind(consumeFailQueue).to(appDlxExchange).with(RouteKeyConstant.FAILED_ROUTING_KEY);
     }
 
 }
