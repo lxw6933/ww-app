@@ -31,4 +31,14 @@ public class ImMqConfiguration {
         return BindingBuilder.bind(imBizMsgQueue()).to(imBizExchange()).with(ImBizMqConstant.IM_BIZ_MSG_KEY);
     }
 
+    @Bean(name = ImBizMqConstant.IM_BIZ_MSG_HANDLE_QUEUE)
+    public Queue imBizMsgHandleQueue() {
+        return new Queue(ImBizMqConstant.IM_BIZ_MSG_HANDLE_QUEUE);
+    }
+
+    @Bean
+    public Binding imBizMsgHandleBinding() {
+        return BindingBuilder.bind(imBizMsgHandleQueue()).to(imBizExchange()).with(ImBizMqConstant.IM_BIZ_MSG_HANDLE_KEY);
+    }
+
 }

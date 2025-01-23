@@ -1,16 +1,15 @@
 package com.ww.app.im.handler;
 
 import com.alibaba.fastjson.JSON;
-import com.ww.app.im.core.api.common.ImMsgBody;
+import com.ww.app.im.api.common.ImBizMqConstant;
 import com.ww.app.im.api.dto.MessageDTO;
 import com.ww.app.im.api.enums.ImMsgBizCodeEnum;
+import com.ww.app.im.core.api.common.ImMsgBody;
 import com.ww.app.im.entity.SingleChatMessage;
 import com.ww.app.im.router.api.common.ImRouterMqConstant;
 import com.ww.app.im.router.api.rpc.ImRouterApi;
-import com.ww.app.im.utils.DocShardUtils;
 import com.ww.app.rabbitmq.RabbitMqPublisher;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.data.mongodb.core.MongoTemplate;
 import org.springframework.stereotype.Component;
 
 import javax.annotation.Resource;
@@ -28,16 +27,14 @@ public class ChatMsgHandler implements MsgHandler {
     private ImRouterApi imRouterApi;
 
     @Resource
-    private MongoTemplate mongoTemplate;
-
-    @Resource
     private RabbitMqPublisher rabbitMqPublisher;
 
     @Override
     public void handle(ImMsgBody imMsgBody) {
         MessageDTO messageDTO = JSON.parseObject(imMsgBody.getBizMsg(), MessageDTO.class);
         log.info("接收到[{}]发来的消息:{}", imMsgBody.getUserId(), messageDTO.getContent());
-        mongoTemplate.save(SingleChatMessage.build(imMsgBody.getUserId(), messageDTO), DocShardUtils.getSingleChatDocName(messageDTO.getUserId(), messageDTO.getSendTime()));
+        // 消息持久化
+        rabbitMqPublisher.sendMsg(ImBizMqConstant.IM_BIZ_EXCHANGE, ImBizMqConstant.IM_BIZ_MSG_HANDLE_KEY, SingleChatMessage.build(imMsgBody.getUserId(), messageDTO));
         // 消息处理、发送消息队列转发消费
         rabbitMqPublisher.sendMsg(ImRouterMqConstant.IM_ROUTER_EXCHANGE, ImRouterMqConstant.IM_ROUTER_MSG_KEY, imMsgBody);
         // 临时使用远程调用来转发
