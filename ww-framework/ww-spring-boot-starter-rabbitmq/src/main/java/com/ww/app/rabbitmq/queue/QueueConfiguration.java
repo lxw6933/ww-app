@@ -59,7 +59,7 @@ public class QueueConfiguration {
 
     @Bean(name = QueueConstant.OMS_CLOSE_QUEUE)
     public Queue orderCloseQueue() {
-        return QueueBuilder.durable(QueueConstant.PRODUCT_TIMER_UP_QUEUE).withArguments(dlxArgMap).build();
+        return QueueBuilder.durable(QueueConstant.OMS_CLOSE_QUEUE).withArguments(dlxArgMap).build();
     }
 
     @Bean(name = QueueConstant.OMS_DELAY_FIFTEEN_QUEUE)
