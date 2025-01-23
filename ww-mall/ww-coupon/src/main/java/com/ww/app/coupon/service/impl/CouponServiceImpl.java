@@ -20,7 +20,7 @@ import com.ww.app.coupon.service.CouponService;
 import com.ww.app.coupon.view.bo.CouponPageBO;
 import com.ww.app.coupon.view.vo.CouponPageVO;
 import com.ww.app.common.common.AppPageResult;
-import com.ww.app.common.utils.AuthorizationContext;
+import com.ww.app.common.context.AuthorizationContext;
 import com.ww.app.common.utils.IdUtil;
 import com.ww.app.mybatis.common.AppPlusPageResult;
 import com.ww.app.redis.annotation.DistributedLock;

@@ -10,7 +10,7 @@ import com.github.benmanes.caffeine.cache.Caffeine;
 import com.wf.captcha.ArithmeticCaptcha;
 import com.ww.app.common.common.ClientUser;
 import com.ww.app.common.exception.ApiException;
-import com.ww.app.common.utils.AuthorizationContext;
+import com.ww.app.common.context.AuthorizationContext;
 import com.ww.app.common.utils.IdUtil;
 import com.ww.app.rabbitmq.RabbitMqPublisher;
 import com.ww.app.rabbitmq.exchange.ExchangeConstant;

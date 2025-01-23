@@ -12,7 +12,7 @@ import com.ww.app.member.service.MemberIntegralRecordService;
 import com.ww.app.member.service.MemberService;
 import com.ww.app.common.common.AppPage;
 import com.ww.app.common.common.AppPageResult;
-import com.ww.app.common.utils.AuthorizationContext;
+import com.ww.app.common.context.AuthorizationContext;
 import com.ww.app.member.member.bo.AddMemberIntegralBO;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;

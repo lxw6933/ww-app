@@ -3,7 +3,7 @@ package com.ww.app.redpacket.service.impl;
 import cn.hutool.core.lang.Assert;
 import com.ww.app.common.common.ClientUser;
 import com.ww.app.common.exception.ApiException;
-import com.ww.app.common.utils.AuthorizationContext;
+import com.ww.app.common.context.AuthorizationContext;
 import com.ww.app.rabbitmq.RabbitMqPublisher;
 import com.ww.app.redpacket.common.RedpacketConstant;
 import com.ww.app.redpacket.common.RedpacketMQConstant;

@@ -3,7 +3,7 @@ package com.ww.app.web.filter;
 import cn.hutool.core.util.IdUtil;
 import com.ww.app.common.constant.Constant;
 import com.ww.app.common.thread.ThreadMdcUtil;
-import com.ww.app.common.utils.AuthorizationContext;
+import com.ww.app.common.context.AuthorizationContext;
 import com.ww.app.web.holder.ServerIpContextHolder;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;

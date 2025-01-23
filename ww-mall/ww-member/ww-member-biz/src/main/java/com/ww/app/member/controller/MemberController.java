@@ -11,7 +11,7 @@ import com.ww.app.member.service.MemberService;
 import com.ww.app.member.view.vo.MemberVO;
 import com.ww.app.common.common.AppPage;
 import com.ww.app.common.common.AppPageResult;
-import com.ww.app.common.utils.AuthorizationContext;
+import com.ww.app.common.context.AuthorizationContext;
 import com.ww.app.common.utils.IdUtil;
 import com.ww.app.mybatis.common.AppPlusPageResult;
 import com.ww.app.member.member.dto.MemberDTO;

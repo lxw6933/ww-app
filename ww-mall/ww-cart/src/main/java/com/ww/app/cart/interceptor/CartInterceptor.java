@@ -4,7 +4,7 @@ import com.alibaba.ttl.TransmittableThreadLocal;
 import com.ww.app.cart.to.UserInfoTo;
 import com.ww.app.common.common.ClientUser;
 import com.ww.app.common.constant.Constant;
-import com.ww.app.common.utils.AuthorizationContext;
+import com.ww.app.common.context.AuthorizationContext;
 import lombok.NonNull;
 import org.apache.commons.lang3.ArrayUtils;
 import org.apache.commons.lang3.StringUtils;
