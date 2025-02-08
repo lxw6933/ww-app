@@ -2,11 +2,9 @@ package com.ww.app.excel;
 
 import com.alibaba.excel.context.AnalysisContext;
 import com.alibaba.excel.event.AnalysisEventListener;
-import com.ww.app.common.exception.ApiException;
 import com.ww.app.common.utils.ThreadUtil;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.commons.collections4.CollectionUtils;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -21,13 +19,11 @@ import java.util.concurrent.ExecutorService;
 @Slf4j
 public abstract class AbstractImportListener<T> extends AnalysisEventListener<T> {
 
-    private static final ExecutorService excelThreadPoolExecutor = ThreadUtil.initFixedThreadPoolExecutor("ww-excel", 20);
-
-    private static final int MAX_COUNT = 1000;
+    private final int BATCH_SIZE;
+    private final ExecutorService excelThreadPoolExecutor;
 
     private final ArrayList<T> dataList = new ArrayList<>();
     private final ArrayList<T> errorDataList = new ArrayList<>();
-
     private final List<CompletableFuture<Void>> importTaskList = new ArrayList<>();
 
     @Getter
@@ -36,7 +32,15 @@ public abstract class AbstractImportListener<T> extends AnalysisEventListener<T>
     @Getter
     protected int analysisErrorCount;
 
-    public AbstractImportListener() {}
+    public AbstractImportListener() {
+        this.BATCH_SIZE = 1000;
+        this.excelThreadPoolExecutor = ThreadUtil.initFixedThreadPoolExecutor("ww-excel", 20);
+    }
+
+    public AbstractImportListener(int batchSize, ExecutorService executorService) {
+        this.BATCH_SIZE = batchSize;
+        this.excelThreadPoolExecutor = executorService;
+    }
 
     @Override
     public void invoke(T data, AnalysisContext analysisContext) {
@@ -48,12 +52,11 @@ public abstract class AbstractImportListener<T> extends AnalysisEventListener<T>
             analysisErrorCount++;
             errorDataList.add(data);
         }
-        if (dataList.size() >= MAX_COUNT) {
+        if (dataList.size() >= BATCH_SIZE) {
             this.asyncHandlerData();
         }
-        if (errorDataList.size() >= MAX_COUNT) {
-            @SuppressWarnings("unchecked")
-            List<T> errorDataListTask = (ArrayList<T>) errorDataList.clone();
+        if (errorDataList.size() >= BATCH_SIZE) {
+            List<T> errorDataListTask = new ArrayList<>(errorDataList);
             errorDataList.clear();
             this.handleErrorData(errorDataListTask);
         }
@@ -67,34 +70,30 @@ public abstract class AbstractImportListener<T> extends AnalysisEventListener<T>
         }
         // 处理剩余异常数据
         if (!errorDataList.isEmpty()) {
-            @SuppressWarnings("unchecked")
-            List<T> errorDataListTask = (ArrayList<T>) errorDataList.clone();
+            List<T> errorDataListTask = new ArrayList<>(errorDataList);;
             errorDataList.clear();
             this.handleErrorData(errorDataListTask);
         }
         // 等待所有线程执行完成
-        if (CollectionUtils.isNotEmpty(importTaskList)) {
-            try {
-                CompletableFuture.allOf(importTaskList.toArray(new CompletableFuture[]{})).get();
-            } catch (Exception e) {
-                throw new ApiException("导入异常");
-            }
+//        CompletableFuture.allOf(importTaskList.toArray(new CompletableFuture[0])).get();
+        CompletableFuture.allOf(importTaskList.toArray(new CompletableFuture[0])).thenRunAsync(() -> {
             importTaskList.clear();
-        }
-        log.info("此次解析总数据量：[{}] 解析异常数据量：[{}]", getAnalysisTotalCount(), getAnalysisErrorCount());
+            log.info("此次解析总数据量：[{}] 解析异常数据量：[{}]", getAnalysisTotalCount(), getAnalysisErrorCount());
+        }, excelThreadPoolExecutor);
     }
 
     private void asyncHandlerData() {
         // 拷贝线程数据
-        @SuppressWarnings("unchecked")
-        List<T> dataListTask = (ArrayList<T>) dataList.clone();
+        List<T> dataListTask = new ArrayList<>(dataList);
         // 清空线程数据
         dataList.clear();
         // 异步处理
-        CompletableFuture<Void> task = CompletableFuture.runAsync(() -> handleData(dataListTask), excelThreadPoolExecutor).exceptionally((e) -> {
-            log.error("处理excel数据异常：{}", e.getMessage());
-            handleErrorData(dataListTask);
-            return null;
+        CompletableFuture<Void> task = CompletableFuture.runAsync(() -> handleData(dataListTask), excelThreadPoolExecutor).handle((res, ex) -> {
+            if (ex != null) {
+                log.error("处理excel数据异常", ex);
+                handleErrorData(dataListTask);
+            }
+            return res;
         });
         importTaskList.add(task);
     }
