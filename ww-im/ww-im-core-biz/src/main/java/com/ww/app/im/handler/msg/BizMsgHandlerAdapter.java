@@ -48,6 +48,7 @@ public class BizMsgHandlerAdapter implements ImMsgHandlerAdapter {
         }
         // 解析消息body
         ImMsgBody imMsgBody = imMsgSerializerComponent.deserializeMsg(imMsg);
+        log.info("[core]处理客户端业务消息: {}", imMsgBody);
         // 发送mq消费处理消息
         rabbitMqPublisher.sendMsg(ImBizMqConstant.IM_BIZ_EXCHANGE, ImBizMqConstant.IM_BIZ_MSG_KEY, imMsgBody);
         // 临时使用rpc测试

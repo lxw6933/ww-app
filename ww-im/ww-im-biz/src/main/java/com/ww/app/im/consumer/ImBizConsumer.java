@@ -42,13 +42,12 @@ public class ImBizConsumer {
         MessageProperties properties = message.getMessageProperties();
         String traceId = properties.getHeader(Constant.TRACE_ID);
         ThreadMdcUtil.setTraceId(traceId);
-        log.info("收到客户端发来的业务消息：{}", imMsgBody);
         msgService.handleImMsg(imMsgBody);
     }
 
     @RabbitListener(queues = {ImBizMqConstant.IM_BIZ_MSG_HANDLE_QUEUE}, containerFactory = "appBatchContainerFactory")
     public void imBizMsgHandle(List<SingleChatMessage> msgList) {
-        log.info("消息持久化{}数量", msgList.size());
+        log.info("消息持久化{}", msgList);
         Map<String, List<SingleChatMessage>> msgMap = msgList.stream().collect(Collectors.groupingBy(msgKey -> DocShardUtils.getSingleChatDocName(msgKey.getSenderId(), msgKey.getSendTime())));
         msgMap.forEach((key, targetMsgList) -> {
             BulkOperations bulkOps = mongoTemplate.bulkOps(BulkOperations.BulkMode.UNORDERED, SingleChatMessage.class, key);

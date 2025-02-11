@@ -32,7 +32,8 @@ public class ChatMsgHandler implements MsgHandler {
     @Override
     public void handle(ImMsgBody imMsgBody) {
         MessageDTO messageDTO = JSON.parseObject(imMsgBody.getBizMsg(), MessageDTO.class);
-        log.info("接收到[{}]发来的消息:{}", imMsgBody.getUserId(), messageDTO.getContent());
+        SingleChatMessage msg = SingleChatMessage.build(imMsgBody.getUserId(), messageDTO);
+        log.info("接收到[{}]发来的消息:{}", imMsgBody.getUserId(), msg);
         // 消息持久化
         rabbitMqPublisher.sendMsg(ImBizMqConstant.IM_BIZ_EXCHANGE, ImBizMqConstant.IM_BIZ_MSG_HANDLE_KEY, SingleChatMessage.build(imMsgBody.getUserId(), messageDTO));
         // 消息处理、发送消息队列转发消费

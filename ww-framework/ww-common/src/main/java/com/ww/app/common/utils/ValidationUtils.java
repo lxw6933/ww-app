@@ -57,5 +57,22 @@ public class ValidationUtils {
         return StringUtils.hasText(url) && PATTERN_URL.matcher(url).matches();
     }
 
+    /**
+     * 下划线数字字母regex
+     */
+    public static final String USERNAME_REG = "^[a-zA-Z0-9_]+$";
+
+    private static final Pattern PATTERN_USERNAME = Pattern.compile(USERNAME_REG);
+
+    /**
+     * 校验用户名是否合法
+     *
+     * @param username 用户名
+     * @return boolean
+     */
+    public static boolean isValidUsername(String username) {
+        return StringUtils.hasText(username) && PATTERN_USERNAME.matcher(username).matches();
+    }
+
 
 }

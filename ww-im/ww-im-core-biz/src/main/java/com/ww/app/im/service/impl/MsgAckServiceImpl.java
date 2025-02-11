@@ -38,7 +38,7 @@ public class MsgAckServiceImpl implements MsgAckService {
         redisTemplate.opsForHash().delete(ackKey, imMsgBody.getSeqId());
         redisTemplate.expire(ackKey, ACK_KEY_EXPIRE, TimeUnit.MINUTES);
         // 通知发送方消息已接收
-        log.info("消息确认：{}", imMsgBody);
+//        log.info("消息确认：{}", imMsgBody);
         msgRouterService.sendMsgToClient(ImMsgCodeEnum.IM_ACK_MSG, imMsgBody);
     }
 

@@ -10,6 +10,11 @@ import io.netty.util.AttributeKey;
 public class ImContextAttr {
 
     /**
+     * traceId
+     */
+    public static AttributeKey<String> TRACE_ID = AttributeKey.valueOf("traceId");
+
+    /**
      * 绑定用户id
      */
     public static AttributeKey<Long> USER_ID = AttributeKey.valueOf("userId");

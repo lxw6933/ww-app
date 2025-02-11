@@ -10,6 +10,14 @@ import io.netty.channel.ChannelHandlerContext;
  */
 public class ImContextUtils {
 
+    public static String getTraceId(ChannelHandlerContext ctx) {
+        return ctx.channel().attr(ImContextAttr.TRACE_ID).get();
+    }
+
+    public static void setTraceId(ChannelHandlerContext ctx, String traceId) {
+        ctx.channel().attr(ImContextAttr.TRACE_ID).set(traceId);
+    }
+
     public static Integer getRoomId(ChannelHandlerContext ctx) {
         return ctx.channel().attr(ImContextAttr.ROOM_ID).get();
     }
@@ -40,6 +48,10 @@ public class ImContextUtils {
 
     public static void removeAppId(ChannelHandlerContext ctx) {
         ctx.channel().attr(ImContextAttr.APP_ID).set(null);
+    }
+
+    public static void removeTraceId(ChannelHandlerContext ctx) {
+        ctx.channel().attr(ImContextAttr.TRACE_ID).set(null);
     }
 
 }

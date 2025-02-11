@@ -1,7 +1,6 @@
 package com.ww.app.im.service.impl;
 
 import cn.hutool.extra.spring.SpringUtil;
-import com.ww.app.common.exception.ApiException;
 import com.ww.app.im.core.api.common.ImMsgBody;
 import com.ww.app.im.handler.MsgHandler;
 import com.ww.app.im.service.MsgService;
@@ -27,6 +26,10 @@ public class MsgServiceImpl implements MsgService, InitializingBean {
     @Override
     public void handleImMsg(ImMsgBody imMsgBody) {
         MsgHandler msgHandler = getMsgHandlerAdapter(imMsgBody);
+        if (msgHandler == null) {
+            log.error("[im biz]未能找到业务消息{}处理器", imMsgBody);
+            return;
+        }
         msgHandler.handle(imMsgBody);
     }
 
@@ -36,7 +39,7 @@ public class MsgServiceImpl implements MsgService, InitializingBean {
                 return handler;
             }
         }
-        throw new ApiException("未找到业务消息处理器");
+        return null;
     }
 
     @Override

@@ -1,5 +1,6 @@
 package com.ww.app.im.handler.initializer;
 
+import com.ww.app.im.handler.TraceIdHandler;
 import com.ww.app.im.handler.codec.ImMsgCodecHandler;
 import com.ww.app.im.handler.server.ImMsgServerHandler;
 import com.ww.app.im.protocol.ImProtocolFrameDecoder;
@@ -21,6 +22,9 @@ public class ImServerHandlerInitializer extends ChannelInitializer<SocketChannel
 
     @Resource
     private ImMsgServerHandler imMsgServerHandler;
+
+    @Resource
+    private TraceIdHandler traceIdHandler;
 
     @Override
     protected void initChannel(SocketChannel ch) throws Exception {
@@ -52,6 +56,8 @@ public class ImServerHandlerInitializer extends ChannelInitializer<SocketChannel
 //        ch.pipeline().addLast(new LoggingHandler(LogLevel.DEBUG));
         // 自定义协议编解码器
         ch.pipeline().addLast(new ImMsgCodecHandler());
+        // traceId 处理器
+        ch.pipeline().addLast(traceIdHandler);
         // im 消息处理器
         ch.pipeline().addLast(imMsgServerHandler);
     }

@@ -31,7 +31,6 @@ public class ImMsgServerHandler extends SimpleChannelInboundHandler<Object> {
 
     @Override
     public void channelRead0(ChannelHandlerContext channelHandlerContext, Object imMsg) {
-        log.info("ImMsgFlag[{}] 收到客户端消息: {}", imMsg instanceof ImMsg, imMsg);
         if (imMsg instanceof ImMsg) {
             imHandlerComponent.handle(channelHandlerContext, (ImMsg) imMsg);
         } else {
