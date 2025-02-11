@@ -35,7 +35,7 @@ public class ChatMsgHandler implements MsgHandler {
         SingleChatMessage msg = SingleChatMessage.build(imMsgBody.getUserId(), messageDTO);
         log.info("接收到[{}]发来的消息:{}", imMsgBody.getUserId(), msg);
         // 消息持久化
-        rabbitMqPublisher.sendMsg(ImBizMqConstant.IM_BIZ_EXCHANGE, ImBizMqConstant.IM_BIZ_MSG_HANDLE_KEY, SingleChatMessage.build(imMsgBody.getUserId(), messageDTO));
+        rabbitMqPublisher.sendMsg(ImBizMqConstant.IM_BIZ_EXCHANGE, ImBizMqConstant.IM_BIZ_MSG_HANDLE_KEY, msg);
         // 消息处理、发送消息队列转发消费
         rabbitMqPublisher.sendMsg(ImRouterMqConstant.IM_ROUTER_EXCHANGE, ImRouterMqConstant.IM_ROUTER_MSG_KEY, imMsgBody);
         // 临时使用远程调用来转发
