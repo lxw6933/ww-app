@@ -8,8 +8,8 @@ package com.ww.mall.coupon.constant;
 public class CouponLuaConstant {
 
     public static final String CONVERT_COUPON_CODE_LUA = "local key = KEYS[1] "
-            + "local element = ARGV[1] "
-            + "local placeholder = ARGV[2] "
+            + "local element = cjson.encode(ARGV[1]) "
+            + "local placeholder = cjson.encode(ARGV[2]) "
             + "local removed = redis.call('SREM', key, element) "
             + "if removed == 0 then "
             + "    return -1 "
@@ -19,6 +19,5 @@ public class CouponLuaConstant {
             + "    redis.call('SADD', key, placeholder) "
             + "end "
             + "return 1";
-    public static final byte[] CONVERT_COUPON_CODE_LUA_BYTE = CONVERT_COUPON_CODE_LUA.getBytes();
 
 }

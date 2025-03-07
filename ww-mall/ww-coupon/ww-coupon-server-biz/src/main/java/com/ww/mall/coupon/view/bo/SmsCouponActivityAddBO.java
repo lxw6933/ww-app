@@ -5,6 +5,7 @@ import lombok.Data;
 
 import javax.validation.constraints.NotBlank;
 import javax.validation.constraints.NotNull;
+import java.math.BigDecimal;
 import java.util.Date;
 import java.util.List;
 
@@ -27,6 +28,18 @@ public class SmsCouponActivityAddBO {
      */
     @NotNull(message = "优惠类型不能为空")
     private CouponDiscountType couponDiscountType;
+
+    /**
+     * 优惠券需满X金额
+     */
+    @NotNull(message = "满减金额不能为空")
+    private BigDecimal achieveAmount;
+
+    /**
+     * 优惠券扣减金额【折扣】
+     */
+    @NotNull(message = "抵扣金额不能为空")
+    private BigDecimal deductionAmount;
 
     /**
      * 领取开始时间

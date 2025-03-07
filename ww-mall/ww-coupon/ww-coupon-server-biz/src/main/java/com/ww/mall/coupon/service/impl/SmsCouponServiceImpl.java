@@ -35,14 +35,12 @@ import com.ww.mall.coupon.view.vo.SmsCouponCodeListVO;
 import com.ww.mall.coupon.view.vo.SmsCouponPageVO;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.CollectionUtils;
+import org.redisson.api.RScript;
 import org.redisson.api.RSet;
 import org.redisson.api.RedissonClient;
+import org.redisson.client.codec.StringCodec;
 import org.springframework.data.mongodb.core.BulkOperations;
 import org.springframework.data.mongodb.core.MongoTemplate;
-import org.springframework.data.redis.connection.ReturnType;
-import org.springframework.data.redis.core.RedisCallback;
-import org.springframework.data.redis.core.StringRedisTemplate;
-import org.springframework.data.redis.serializer.RedisSerializer;
 import org.springframework.stereotype.Service;
 
 import javax.annotation.PostConstruct;
@@ -69,9 +67,6 @@ public class SmsCouponServiceImpl implements SmsCouponService {
     private RedissonClient redissonClient;
 
     @Resource
-    private StringRedisTemplate stringRedisTemplate;
-
-    @Resource
     private StockRedisComponent stockRedisComponent;
 
     @Resource
@@ -81,7 +76,12 @@ public class SmsCouponServiceImpl implements SmsCouponService {
 
     @PostConstruct
     public void init() {
-        convertCouponCodeSha1 = stringRedisTemplate.execute((RedisCallback<String>) connection -> connection.scriptLoad(CouponLuaConstant.CONVERT_COUPON_CODE_LUA_BYTE));
+        loadLuaScript();
+    }
+
+    private void loadLuaScript() {
+        RScript rScript = redissonClient.getScript(StringCodec.INSTANCE);
+        convertCouponCodeSha1 = rScript.scriptLoad(CouponLuaConstant.CONVERT_COUPON_CODE_LUA);
     }
 
     @Override
@@ -168,7 +168,7 @@ public class SmsCouponServiceImpl implements SmsCouponService {
             smsCouponCodeDocs.add(new SmsCouponCode(smsCouponActivity.getActivityCode(), smsCouponActivity.getChannelId(), batchNo, code));
         }
         try {
-            RSet<String> codeRSet = redissonClient.getSet(couponRedisKeyBuilder.buildCouponCodeKey(smsCouponActivity.getActivityCode(), CouponConstant.DEFAULT_BATCH_NO));
+            RSet<String> codeRSet = redissonClient.getSet(couponRedisKeyBuilder.buildCouponCodeKey(smsCouponActivity.getActivityCode(), batchNo));
             codeRSet.addAll(smsCouponCodes);
             // 是否插入mongodb 根据channelId 分code表
             String smsCouponCodeCollectionName = CouponUtils.getSmsCouponCodeCollectionName(smsCouponActivity.getChannelId());
@@ -422,14 +422,16 @@ public class SmsCouponServiceImpl implements SmsCouponService {
      */
     @SuppressWarnings("all")
     private boolean doConvertCouponCode(String couponCodeKey, String couponCode) {
-        Long res = stringRedisTemplate.execute((RedisCallback<Long>) connection -> {
-            RedisSerializer keySerializer = stringRedisTemplate.getKeySerializer();
-            byte[] keyBytes = keySerializer.serialize(couponCodeKey);
-            // 执行lua脚本
-            Object result = connection.evalSha(convertCouponCodeSha1, ReturnType.INTEGER, 1, keyBytes, couponCode.getBytes(), CouponConstant.DEFAULT_CODE.getBytes());
-            return (Long) result;
-        });
-        return res != null && res >= 0;
+        RScript rScript = redissonClient.getScript(StringCodec.INSTANCE);
+        // 执行脚本
+        Long res = rScript.evalSha(
+                RScript.Mode.READ_WRITE, // 脚本模式
+                convertCouponCodeSha1,   // 脚本的 SHA1 校验和
+                RScript.ReturnType.INTEGER, // 返回值类型
+                Collections.singletonList(couponCodeKey), // KEYS
+                couponCode, CouponConstant.DEFAULT_CODE   // ARGV
+        );
+        return res != null && res > 0;
     }
 
 }
