@@ -10,6 +10,7 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 import org.bson.Document;
+import org.springframework.core.GenericTypeResolver;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.mongodb.core.MongoTemplate;
 import org.springframework.data.mongodb.core.aggregation.*;
@@ -29,6 +30,11 @@ import java.util.function.Function;
  * @description:
  */
 public abstract class AbstractMongoPage<T> extends AppPage {
+
+    @SuppressWarnings("all")
+    protected Class<T> tClass = (Class<T>) GenericTypeResolver.resolveTypeArgument(this.getClass(), AbstractMongoPage.class);
+
+    protected MongoTemplate mongoTemplate = SpringUtil.getBean(MongoTemplate.class);
 
     /**
      * 构建分页查询条件
@@ -52,11 +58,9 @@ public abstract class AbstractMongoPage<T> extends AppPage {
     /**
      * 构建查询结果
      *
-     * @param mongoTemplate mongoTemplate
-     * @param tClass        T class
      * @return List<T>
      */
-    private FacetResult<T> buildPageQueryResult(MongoTemplate mongoTemplate, Class<T> tClass) {
+    private FacetResult<T> buildPageQueryResult() {
         // number str sort
         Collation collation = Collation.of(Locale.CHINESE).numericOrdering(true);
         // query condition
@@ -112,23 +116,20 @@ public abstract class AbstractMongoPage<T> extends AppPage {
     /**
      * 构建分页查询结果
      *
-     * @param tClass  T class
      * @param convert 目标类型转换器
      * @param <R>     目标类型
      * @return MallPageResult<R>
      */
-    public <R> AppPageResult<R> buildPageResult(Class<T> tClass, Function<T, R> convert) {
-        MongoTemplate mongoTemplate = SpringUtil.getBean(MongoTemplate.class);
+    public <R> AppPageResult<R> buildPageResult(Function<T, R> convert) {
         // query aggregation data result
-        FacetResult<T> facetResult = this.buildPageQueryResult(mongoTemplate, tClass);
+        FacetResult<T> facetResult = this.buildPageQueryResult();
         // return
         return new AppPageResult<>(this.getPageNum(), this.getPageSize(), facetResult.getTotalCount(), facetResult.getDataList(), convert);
     }
 
-    public AppPageResult<T> buildPageResult(Class<T> tClass) {
-        MongoTemplate mongoTemplate = SpringUtil.getBean(MongoTemplate.class);
+    public AppPageResult<T> buildPageResult() {
         // query aggregation data result
-        FacetResult<T> facetResult = this.buildPageQueryResult(mongoTemplate, tClass);
+        FacetResult<T> facetResult = this.buildPageQueryResult();
         // return
         return new AppPageResult<>(this.getPageNum(), this.getPageSize(), facetResult.getTotalCount(), facetResult.getDataList());
     }
@@ -145,24 +146,21 @@ public abstract class AbstractMongoPage<T> extends AppPage {
     /**
      * 普通分页查询
      *
-     * @param tClass T class
      * @return 分页数据
      */
-    public <R> AppPageResult<R> simplePageResult(Class<T> tClass, Function<T, R> convert) {
-        MongoTemplate mongoTemplate = SpringUtil.getBean(MongoTemplate.class);
-        List<T> dataList = getSimpleDataResult(mongoTemplate, tClass);
+    public <R> AppPageResult<R> simplePageResult(Function<T, R> convert) {
+        List<T> dataList = getSimpleDataResult();
         long total = mongoTemplate.count(Query.query(buildQuery()), tClass);
         return new AppPageResult<>(getPageNum(), getPageSize(), (int) total, dataList, convert);
     }
 
-    public AppPageResult<T> simplePageResult(Class<T> tClass) {
-        MongoTemplate mongoTemplate = SpringUtil.getBean(MongoTemplate.class);
-        List<T> dataList = getSimpleDataResult(mongoTemplate, tClass);
+    public AppPageResult<T> simplePageResult() {
+        List<T> dataList = getSimpleDataResult();
         long total = mongoTemplate.count(Query.query(buildQuery()), tClass);
         return new AppPageResult<>(getPageNum(), getPageSize(), (int) total, dataList);
     }
 
-    private List<T> getSimpleDataResult(MongoTemplate mongoTemplate, Class<T> tClass) {
+    private List<T> getSimpleDataResult() {
         Query query = new Query()
                 .addCriteria(buildQuery())
                 .with(buildSort())
@@ -174,13 +172,25 @@ public abstract class AbstractMongoPage<T> extends AppPage {
     /**
      * 普通条件查询结果
      *
-     * @param tClass 条件查询结果class
      * @return 普通查询结果
      */
-    public List<T> getSimpleQueryResult(MongoTemplate mongoTemplate, Class<T> tClass) {
+    public List<T> getSimpleQueryResult() {
         Query query = new Query()
                 .addCriteria(buildQuery())
                 .with(buildSort());
+        return mongoTemplate.find(query, tClass);
+    }
+
+    /**
+     * 普通条件查询结果限制结果数量
+     *
+     * @return 普通查询结果
+     */
+    public List<T> getSimpleQuerySizeResult() {
+        Query query = new Query()
+                .addCriteria(buildQuery())
+                .with(buildSort())
+                .limit(getPageSize());
         return mongoTemplate.find(query, tClass);
     }
 

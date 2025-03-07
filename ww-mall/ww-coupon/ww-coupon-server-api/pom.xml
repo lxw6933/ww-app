@@ -4,35 +4,35 @@
     <modelVersion>4.0.0</modelVersion>
     <parent>
         <groupId>com.ww.app</groupId>
-        <artifactId>ww-mall</artifactId>
+        <artifactId>ww-coupon</artifactId>
         <version>${revision}</version>
     </parent>
 
-    <modules>
-        <module>ww-coupon-server-api</module>
-        <module>ww-coupon-server-biz</module>
-    </modules>
-
-    <artifactId>ww-coupon</artifactId>
-    <packaging>pom</packaging>
+    <artifactId>ww-coupon-server-api</artifactId>
+    <packaging>jar</packaging>
 
     <name>${project.artifactId}</name>
     <description>
-        优惠券模块
+        优惠券 api 模块
     </description>
 
     <dependencies>
-        <!-- web通用服务依赖 -->
         <dependency>
             <groupId>com.ww.app</groupId>
-            <artifactId>ww-spring-boot-starter-web</artifactId>
-            <version>1.0.0</version>
+            <artifactId>ww-common</artifactId>
+            <version>${revision}</version>
         </dependency>
-        <!-- test -->
+        <!-- 参数校验 -->
         <dependency>
             <groupId>org.springframework.boot</groupId>
-            <artifactId>spring-boot-starter-test</artifactId>
-            <scope>test</scope>
+            <artifactId>spring-boot-starter-validation</artifactId>
+            <optional>true</optional>
+        </dependency>
+        <!-- openFeign 远程调用相关 -->
+        <dependency>
+            <groupId>org.springframework.cloud</groupId>
+            <artifactId>spring-cloud-starter-openfeign</artifactId>
+            <optional>true</optional>
         </dependency>
     </dependencies>
 

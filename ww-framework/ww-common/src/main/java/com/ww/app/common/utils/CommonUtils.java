@@ -3,6 +3,8 @@ package com.ww.app.common.utils;
 import lombok.extern.slf4j.Slf4j;
 
 import java.util.List;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 /**
  * @author ww
@@ -13,6 +15,22 @@ import java.util.List;
 public class CommonUtils {
 
     private CommonUtils() {}
+
+    private static final Pattern keyPattern = Pattern.compile(":(\\d+)$");
+    /**
+     * 从 key 中提取编号部分
+     *
+     * @param key key 名称，例如 "key:123"
+     * @return 编号部分，例如 123
+     */
+    public static int extractIdFromKey(String key) {
+        // 使用正则表达式提取编号
+        Matcher matcher = keyPattern.matcher(key);
+        if (matcher.find()) {
+            return Integer.parseInt(matcher.group(1));
+        }
+        throw new IllegalArgumentException("Key 格式不正确，无法提取编号: " + key);
+    }
 
     /**
      * 获取循环次数
