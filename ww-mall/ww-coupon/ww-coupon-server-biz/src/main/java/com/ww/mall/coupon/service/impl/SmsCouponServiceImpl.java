@@ -146,7 +146,7 @@ public class SmsCouponServiceImpl implements SmsCouponService {
         while (smsCouponCodes.size() < codeNumber) {
             String code = UUID.randomUUID().toString(true);
             smsCouponCodes.add(code);
-            smsCouponCodeDocs.add(new SmsCouponCode(smsCouponActivity.getActivityCode(), batchNo, code));
+            smsCouponCodeDocs.add(new SmsCouponCode(smsCouponActivity.getActivityCode(), smsCouponActivity.getChannelId(), batchNo, code));
         }
         try {
             RSet<String> codeRSet = redissonClient.getSet(couponRedisKeyBuilder.buildCouponCodeKey(smsCouponActivity.getActivityCode(), CouponConstant.DEFAULT_BATCH_NO));
@@ -193,7 +193,7 @@ public class SmsCouponServiceImpl implements SmsCouponService {
         String smsCouponCodeCollectionName = CouponUtils.getSmsCouponCodeCollectionName(clientUser.getChannelId());
         SmsCouponCode smsCouponCode = mongoTemplate.findOne(SmsCouponCode.buildCodeQuery(clientUser.getChannelId(), couponCode), SmsCouponCode.class, smsCouponCodeCollectionName);
         Assert.notNull(smsCouponCode, () -> new ApiException("券码无效"));
-        // 校验活动
+        // 校验活动·
         SmsCouponActivity smsCouponActivity = getSmsCouponActivity(smsCouponCode.getActivityCode());
         validSmsCouponActivity(clientUser, smsCouponActivity);
         // 进行兑换

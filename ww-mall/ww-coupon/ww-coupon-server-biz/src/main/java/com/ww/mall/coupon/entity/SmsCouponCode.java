@@ -24,6 +24,11 @@ public class SmsCouponCode {
     private String activityCode;
 
     /**
+     * 渠道id
+     */
+    private Long channelId;
+
+    /**
      * 批次号
      */
     private String batchNo;
@@ -35,8 +40,9 @@ public class SmsCouponCode {
 
     public SmsCouponCode() {}
 
-    public SmsCouponCode(String activityCode, String batchNo, String code) {
+    public SmsCouponCode(String activityCode, Long channelId, String batchNo, String code) {
         this.activityCode = activityCode;
+        this.channelId = channelId;
         this.batchNo = batchNo;
         this.code = code;
     }
