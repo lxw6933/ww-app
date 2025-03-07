@@ -38,8 +38,6 @@ public class SmsCouponCode {
      */
     private String code;
 
-    public SmsCouponCode() {}
-
     public SmsCouponCode(String activityCode, Long channelId, String batchNo, String code) {
         this.activityCode = activityCode;
         this.channelId = channelId;
@@ -57,7 +55,7 @@ public class SmsCouponCode {
     public static Query buildCodeQuery(Long channelId, String couponCode) {
         return new Query().addCriteria(
                 Criteria.where("channelId").is(channelId)
-                        .and("couponCode").is(couponCode)
+                        .and("code").is(couponCode)
         );
     }
 

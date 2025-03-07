@@ -9,4 +9,6 @@ public class CouponConstant {
 
     public static final String DEFAULT_BATCH_NO = "0";
 
+    public static final String DEFAULT_CODE = "end";
+
 }

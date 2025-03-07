@@ -19,6 +19,7 @@ import com.ww.app.redis.annotation.Resubmission;
 import com.ww.app.redis.component.StockRedisComponent;
 import com.ww.mall.coupon.component.key.CouponRedisKeyBuilder;
 import com.ww.mall.coupon.constant.CouponConstant;
+import com.ww.mall.coupon.constant.CouponLuaConstant;
 import com.ww.mall.coupon.entity.SmsCouponActivity;
 import com.ww.mall.coupon.entity.SmsCouponCode;
 import com.ww.mall.coupon.entity.SmsCouponRecord;
@@ -26,6 +27,7 @@ import com.ww.mall.coupon.eunms.CouponStatus;
 import com.ww.mall.coupon.eunms.IssueType;
 import com.ww.mall.coupon.service.SmsCouponService;
 import com.ww.mall.coupon.utils.CouponUtils;
+import com.ww.mall.coupon.view.bo.AddCouponCodeBO;
 import com.ww.mall.coupon.view.bo.SmsCouponActivityAddBO;
 import com.ww.mall.coupon.view.bo.SmsCouponCodeListBO;
 import com.ww.mall.coupon.view.bo.SmsCouponPageBO;
@@ -37,8 +39,13 @@ import org.redisson.api.RSet;
 import org.redisson.api.RedissonClient;
 import org.springframework.data.mongodb.core.BulkOperations;
 import org.springframework.data.mongodb.core.MongoTemplate;
+import org.springframework.data.redis.connection.ReturnType;
+import org.springframework.data.redis.core.RedisCallback;
+import org.springframework.data.redis.core.StringRedisTemplate;
+import org.springframework.data.redis.serializer.RedisSerializer;
 import org.springframework.stereotype.Service;
 
+import javax.annotation.PostConstruct;
 import javax.annotation.Resource;
 import java.util.*;
 import java.util.stream.Collectors;
@@ -62,10 +69,20 @@ public class SmsCouponServiceImpl implements SmsCouponService {
     private RedissonClient redissonClient;
 
     @Resource
+    private StringRedisTemplate stringRedisTemplate;
+
+    @Resource
     private StockRedisComponent stockRedisComponent;
 
     @Resource
     private AppRedisTemplate appRedisTemplate;
+
+    private String convertCouponCodeSha1;
+
+    @PostConstruct
+    public void init() {
+        convertCouponCodeSha1 = stringRedisTemplate.execute((RedisCallback<String>) connection -> connection.scriptLoad(CouponLuaConstant.CONVERT_COUPON_CODE_LUA_BYTE));
+    }
 
     @Override
     public AppPageResult<SmsCouponPageVO> pageList(SmsCouponPageBO smsCouponPageBO) {
@@ -80,7 +97,9 @@ public class SmsCouponServiceImpl implements SmsCouponService {
                     Set<String> couponCodeKeys = getCouponCodeKeys(smsCouponActivity);
                     for (String key : couponCodeKeys) {
                         RSet<String> codeRSet = redissonClient.getSet(key);
-                        availableNumber += codeRSet.size();
+                        if (!codeRSet.contains(CouponConstant.DEFAULT_CODE)) {
+                            availableNumber += codeRSet.size();
+                        }
                     }
                     break;
                 default:
@@ -187,6 +206,7 @@ public class SmsCouponServiceImpl implements SmsCouponService {
     @Override
     @Resubmission
     public boolean convertCoupon(String couponCode) {
+        Assert.isTrue(!CouponConstant.DEFAULT_CODE.equals(couponCode), () -> new ApiException("非法请求"));
         ClientUser clientUser = AuthorizationContext.getClientUser();
         log.info("用户[{}]使用券码[{}]兑换优惠券", clientUser.getId(), couponCode);
         // 查询是否存在券码
@@ -194,11 +214,11 @@ public class SmsCouponServiceImpl implements SmsCouponService {
         SmsCouponCode smsCouponCode = mongoTemplate.findOne(SmsCouponCode.buildCodeQuery(clientUser.getChannelId(), couponCode), SmsCouponCode.class, smsCouponCodeCollectionName);
         Assert.notNull(smsCouponCode, () -> new ApiException("券码无效"));
         // 校验活动·
+        assert smsCouponCode != null;
         SmsCouponActivity smsCouponActivity = getSmsCouponActivity(smsCouponCode.getActivityCode());
         validSmsCouponActivity(clientUser, smsCouponActivity);
         // 进行兑换
-        RSet<String> codeRSet = redissonClient.getSet(couponRedisKeyBuilder.buildCouponCodeKey(smsCouponCode.getActivityCode(), smsCouponCode.getBatchNo()));
-        boolean remove = codeRSet.remove(couponCode);
+        boolean remove = doConvertCouponCode(couponRedisKeyBuilder.buildCouponCodeKey(smsCouponCode.getActivityCode(), smsCouponCode.getBatchNo()), couponCode);
         Assert.isTrue(remove, () -> new ApiException("券码已使用，请勿重复兑换"));
         // 构建用户领取优惠券记录
         SmsCouponRecord smsCouponRecord = buildSmsCouponRecord(clientUser, smsCouponActivity);
@@ -207,24 +227,24 @@ public class SmsCouponServiceImpl implements SmsCouponService {
         String smsCouponRecordCollectionName = CouponUtils.getSmsCouponRecordCollectionName(clientUser.getChannelId());
         mongoTemplate.save(smsCouponRecord, smsCouponRecordCollectionName);
         log.info("用户[{}]使用券码[{}]成功兑换优惠券[{}]", clientUser.getId(), couponCode, smsCouponRecord);
-        return false;
+        return true;
     }
 
     @Override
     @DistributedLock(operationKey = "#avtivityCode")
-    public boolean addSmsCouponCode(String activityCode, int number) {
-        SmsCouponActivity smsCouponActivity = getSmsCouponActivity(activityCode);
-        int generateCodeNumber = number;
+    public boolean addSmsCouponCode(AddCouponCodeBO addCouponCodeBO) {
+        SmsCouponActivity smsCouponActivity = getSmsCouponActivity(addCouponCodeBO.getActivityCode());
+        int generateCodeNumber = addCouponCodeBO.getNumber();
         switch (smsCouponActivity.getIssueType()) {
             case RECEIVE:
-                boolean add = stockRedisComponent.decrementStock(couponRedisKeyBuilder.buildCouponNumberKey(smsCouponActivity.getActivityCode()), -number);
+                boolean add = stockRedisComponent.decrementStock(couponRedisKeyBuilder.buildCouponNumberKey(smsCouponActivity.getActivityCode()), -addCouponCodeBO.getNumber());
                 if (!add) {
                     return false;
                 }
                 break;
             case DISTRIBUTE:
                 String batchNo = getCouponActivityNextBatchNo(smsCouponActivity);
-                generateCodeNumber = generateSmsCouponCode(smsCouponActivity, batchNo, number);
+                generateCodeNumber = generateSmsCouponCode(smsCouponActivity, batchNo, addCouponCodeBO.getNumber());
                 break;
             default:
         }
@@ -233,7 +253,7 @@ public class SmsCouponServiceImpl implements SmsCouponService {
             log.info("优惠券活动[{}]新增优惠券券码数量[{}]结果[{}]", smsCouponActivity.getActivityCode(), generateCodeNumber, updateResult.getModifiedCount());
             if (updateResult.getModifiedCount() == 0) {
                 if (IssueType.RECEIVE.equals(smsCouponActivity.getIssueType())) {
-                    boolean rollback = stockRedisComponent.decrementStock(couponRedisKeyBuilder.buildCouponNumberKey(smsCouponActivity.getActivityCode()), number);
+                    boolean rollback = stockRedisComponent.decrementStock(couponRedisKeyBuilder.buildCouponNumberKey(smsCouponActivity.getActivityCode()), addCouponCodeBO.getNumber());
                     if (rollback) {
                         return false;
                     } else {
@@ -393,6 +413,23 @@ public class SmsCouponServiceImpl implements SmsCouponService {
         SmsCouponActivity smsCouponActivity = mongoTemplate.findOne(SmsCouponActivity.buildActivityCodeQuery(activityCode), SmsCouponActivity.class);
         Assert.notNull(smsCouponActivity, () -> new ApiException("优惠券不存在"));
         return smsCouponActivity;
+    }
+
+    /**
+     * 兑换优惠券券码
+     *
+     * @return boolean
+     */
+    @SuppressWarnings("all")
+    private boolean doConvertCouponCode(String couponCodeKey, String couponCode) {
+        Long res = stringRedisTemplate.execute((RedisCallback<Long>) connection -> {
+            RedisSerializer keySerializer = stringRedisTemplate.getKeySerializer();
+            byte[] keyBytes = keySerializer.serialize(couponCodeKey);
+            // 执行lua脚本
+            Object result = connection.evalSha(convertCouponCodeSha1, ReturnType.INTEGER, 1, keyBytes, couponCode.getBytes(), CouponConstant.DEFAULT_CODE.getBytes());
+            return (Long) result;
+        });
+        return res != null && res >= 0;
     }
 
 }

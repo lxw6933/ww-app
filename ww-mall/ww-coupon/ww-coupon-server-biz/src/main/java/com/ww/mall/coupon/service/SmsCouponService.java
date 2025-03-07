@@ -1,6 +1,7 @@
 package com.ww.mall.coupon.service;
 
 import com.ww.app.common.common.ClientUser;
+import com.ww.mall.coupon.view.bo.AddCouponCodeBO;
 import com.ww.mall.coupon.view.bo.SmsCouponActivityAddBO;
 import com.ww.mall.coupon.view.bo.SmsCouponCodeListBO;
 import com.ww.mall.coupon.view.bo.SmsCouponPageBO;
@@ -60,11 +61,10 @@ public interface SmsCouponService {
     /**
      * 添加优惠券数量
      *
-     * @param activityCode 优惠券活动编码
-     * @param number 数量
+     * @param addCouponCodeBO bo
      * @return boolean
      */
-    boolean addSmsCouponCode(String activityCode, int number);
+    boolean addSmsCouponCode(AddCouponCodeBO addCouponCodeBO);
 
     /**
      * 更新用户优惠券状态信息

@@ -2,6 +2,7 @@ package com.ww.mall.coupon.controller;
 
 import com.ww.app.common.common.AppPageResult;
 import com.ww.mall.coupon.service.SmsCouponService;
+import com.ww.mall.coupon.view.bo.AddCouponCodeBO;
 import com.ww.mall.coupon.view.bo.SmsCouponActivityAddBO;
 import com.ww.mall.coupon.view.bo.SmsCouponCodeListBO;
 import com.ww.mall.coupon.view.bo.SmsCouponPageBO;
@@ -12,10 +13,10 @@ import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.Parameters;
 import io.swagger.v3.oas.annotations.enums.ParameterIn;
 import io.swagger.v3.oas.annotations.tags.Tag;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
+import javax.annotation.Resource;
 import java.util.List;
 
 /**
@@ -28,7 +29,7 @@ import java.util.List;
 @Tag(name = "优惠券服务 API")
 public class SmsCouponController {
 
-    @Autowired
+    @Resource
     private SmsCouponService smsCouponService;
 
     @Operation(summary = "平台优惠券列表")
@@ -65,6 +66,12 @@ public class SmsCouponController {
     @GetMapping("/convertCoupon")
     public boolean convertCoupon(@RequestParam("couponCode") String couponCode) {
         return smsCouponService.convertCoupon(couponCode);
+    }
+
+    @Operation(summary = "新增优惠券数量")
+    @PostMapping("/addCouponCoupon")
+    public boolean addCouponCoupon(@RequestBody @Validated AddCouponCodeBO addCouponCodeBO) {
+        return smsCouponService.addSmsCouponCode(addCouponCodeBO);
     }
 
 }
