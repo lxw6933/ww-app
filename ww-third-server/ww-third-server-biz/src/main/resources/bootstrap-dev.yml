@@ -1,5 +1,5 @@
 server:
-  port: 8000  #服务端口号
+  port: 18000  #服务端口号
   servlet:
     context-path: /ww-third-server
 

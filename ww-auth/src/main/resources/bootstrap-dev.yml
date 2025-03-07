@@ -13,13 +13,14 @@ grpc:
     max-inbound-message-size: 10485760
 
 server:
-  port: 9300  #服务端口号
+  port: 19400  #服务端口号
   servlet:
     context-path: /ww-auth
 spring:
   redis:
-    host: localhost
+    host: 172.28.174.84
     password: 123456
+    port: 6379
   data:
     mongodb:
       # 副本集群配置
