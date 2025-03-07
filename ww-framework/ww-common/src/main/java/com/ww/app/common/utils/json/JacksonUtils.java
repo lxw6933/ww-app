@@ -1,18 +1,22 @@
 package com.ww.app.common.utils.json;
 
+import cn.hutool.core.date.DatePattern;
 import cn.hutool.core.util.ArrayUtil;
 import cn.hutool.core.util.StrUtil;
 import com.fasterxml.jackson.annotation.JsonInclude;
+import com.fasterxml.jackson.core.JsonGenerator;
 import com.fasterxml.jackson.core.type.TypeReference;
-import com.fasterxml.jackson.databind.DeserializationFeature;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.SerializationFeature;
+import com.fasterxml.jackson.databind.*;
+import com.fasterxml.jackson.databind.module.SimpleModule;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import lombok.Getter;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 
 import java.io.IOException;
+import java.math.BigDecimal;
+import java.text.DecimalFormat;
+import java.text.SimpleDateFormat;
 
 /**
  * @author ww
@@ -32,8 +36,24 @@ public class JacksonUtils {
         objectMapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
         // 某个属性的值为 null，则该属性不会出现在生成的 JSON 字符串中
         objectMapper.setSerializationInclusion(JsonInclude.Include.NON_NULL);
+        // 处理date字符串类型转换Date类型问题
+        objectMapper.setDateFormat(new SimpleDateFormat(DatePattern.NORM_DATETIME_PATTERN));
+        // 处理BigDecimal精度问题
+        SimpleModule simpleModule = new SimpleModule();
+        simpleModule.addSerializer(BigDecimal.class, new BigDecimalSerializer());
+        objectMapper.registerModule(simpleModule);
         // 解决 LocalDateTime 的序列化
         objectMapper.registerModules(new JavaTimeModule());
+    }
+
+    public static class BigDecimalSerializer extends JsonSerializer<BigDecimal> {
+        private final DecimalFormat decimalFormat = new DecimalFormat("0.00");
+        @Override
+        public void serialize(BigDecimal value, JsonGenerator gen, SerializerProvider serializers) throws IOException {
+            if (value != null) {
+                gen.writeString(decimalFormat.format(value));
+            }
+        }
     }
 
     @SneakyThrows

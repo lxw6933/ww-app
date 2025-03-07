@@ -13,6 +13,7 @@ import io.swagger.v3.oas.annotations.Parameters;
 import io.swagger.v3.oas.annotations.enums.ParameterIn;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -31,14 +32,14 @@ public class SmsCouponController {
     private SmsCouponService smsCouponService;
 
     @Operation(summary = "平台优惠券列表")
-    @GetMapping("/activity")
-    public AppPageResult<SmsCouponPageVO> pageList(SmsCouponPageBO smsCouponPageBO) {
+    @PostMapping("/activity")
+    public AppPageResult<SmsCouponPageVO> pageList(@RequestBody SmsCouponPageBO smsCouponPageBO) {
         return smsCouponService.pageList(smsCouponPageBO);
     }
 
     @Operation(summary = "查看平台优惠券活动券码列表")
-    @GetMapping("/activity/codes")
-    public List<SmsCouponCodeListVO> codeList(SmsCouponCodeListBO smsCouponCodeListBO) {
+    @PostMapping("/activity/codes")
+    public List<SmsCouponCodeListVO> codeList(@RequestBody @Validated SmsCouponCodeListBO smsCouponCodeListBO) {
         return smsCouponService.codeList(smsCouponCodeListBO);
     }
 

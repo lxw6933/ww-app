@@ -6,6 +6,7 @@ import com.ww.app.common.exception.ApiException;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.converter.HttpMessageNotReadableException;
+import org.springframework.validation.BindException;
 import org.springframework.web.HttpMediaTypeNotSupportedException;
 import org.springframework.web.HttpRequestMethodNotSupportedException;
 import org.springframework.web.bind.MissingServletRequestParameterException;
@@ -74,6 +75,13 @@ public class ResExceptionHandler {
         log.error("RuntimeException", e);
         // 自定义异常特殊处理
         return error(GlobalResCodeConstants.SYSTEM_ERROR);
+    }
+
+    @ResponseStatus(HttpStatus.BAD_REQUEST)
+    @ExceptionHandler(BindException.class)
+    public Result<Object> handleBindException(BindException e) {
+        log.error("参数错误", e);
+        return error(GlobalResCodeConstants.BAD_REQUEST.getCode(), e.getBindingResult().getAllErrors().get(0).getDefaultMessage());
     }
 
     @ResponseStatus(HttpStatus.OK)

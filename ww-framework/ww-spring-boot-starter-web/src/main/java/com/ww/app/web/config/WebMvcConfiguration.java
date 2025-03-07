@@ -1,10 +1,7 @@
 package com.ww.app.web.config;
 
 import com.alibaba.csp.sentinel.adapter.spring.webmvc.SentinelWebInterceptor;
-import com.fasterxml.jackson.core.JsonGenerator;
-import com.fasterxml.jackson.databind.JsonSerializer;
-import com.fasterxml.jackson.databind.SerializerProvider;
-import com.fasterxml.jackson.databind.module.SimpleModule;
+import com.ww.app.common.utils.json.JacksonUtils;
 import com.ww.app.web.interceptor.RequestInterceptor;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.CacheControl;
@@ -16,9 +13,6 @@ import org.springframework.web.servlet.config.annotation.PathMatchConfigurer;
 import org.springframework.web.servlet.config.annotation.ResourceHandlerRegistry;
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 
-import java.io.IOException;
-import java.math.BigDecimal;
-import java.text.DecimalFormat;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 
@@ -60,27 +54,11 @@ public class WebMvcConfiguration implements WebMvcConfigurer {
         // String 返回异常处理
         // 第一种方式是将 json 处理的转换器放到第一位，使得先让 json 转换器处理返回值，这样 String转换器就处理不了了。
         // jackson放在第二位，防止knife4j是byte序列化导致无法加载文档
-        converters.add(1, new MappingJackson2HttpMessageConverter());
+        MappingJackson2HttpMessageConverter mappingJackson2HttpMessageConverter = new MappingJackson2HttpMessageConverter();
+        mappingJackson2HttpMessageConverter.setObjectMapper(JacksonUtils.getObjectMapper());
+        converters.add(1, mappingJackson2HttpMessageConverter);
         // 第二种就是把String类型的转换器去掉，不使用String类型的转换器 [会导致prometheus数据异常]
 //        converters.removeIf(httpMessageConverter -> httpMessageConverter.getClass() == StringHttpMessageConverter.class);
-        // 处理BigDecimal返回前端格式化问题
-        for (HttpMessageConverter<?> converter : converters) {
-            if(converter instanceof MappingJackson2HttpMessageConverter){
-                SimpleModule simpleModule = new SimpleModule();
-                simpleModule.addSerializer(BigDecimal.class, new BigDecimalSerializer());
-                ((MappingJackson2HttpMessageConverter) converter).getObjectMapper().registerModule(simpleModule);
-                break;
-            }
-        }
     }
 
-    public static class BigDecimalSerializer extends JsonSerializer<BigDecimal> {
-        private final DecimalFormat decimalFormat = new DecimalFormat("0.00");
-        @Override
-        public void serialize(BigDecimal value, JsonGenerator gen, SerializerProvider serializers) throws IOException {
-            if (value != null) {
-                gen.writeString(decimalFormat.format(value));
-            }
-        }
-    }
 }

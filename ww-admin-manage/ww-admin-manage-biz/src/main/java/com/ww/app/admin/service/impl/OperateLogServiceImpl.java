@@ -42,7 +42,7 @@ public class OperateLogServiceImpl implements OperateLogService {
 
     @Override
     public AppPageResult<OperateLogVO> page(SysOperateLogMongoPage query) {
-        return query.buildPageResult(operateLog -> {
+        return query.buildPageConvertResult(operateLog -> {
             OperateLogVO vo = new OperateLogVO();
             BeanUtils.copyProperties(operateLog, vo);
             SysUser sysUser = sysUserService.getById(vo.getUserId());

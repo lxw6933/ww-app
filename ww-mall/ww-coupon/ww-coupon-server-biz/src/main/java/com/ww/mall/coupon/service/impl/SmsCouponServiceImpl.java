@@ -69,7 +69,7 @@ public class SmsCouponServiceImpl implements SmsCouponService {
 
     @Override
     public AppPageResult<SmsCouponPageVO> pageList(SmsCouponPageBO smsCouponPageBO) {
-        return smsCouponPageBO.simplePageResult(smsCouponActivity -> {
+        return smsCouponPageBO.simplePageConvertResult(smsCouponActivity -> {
             SmsCouponPageVO vo = BeanUtil.toBean(smsCouponActivity, SmsCouponPageVO.class);
             int availableNumber = 0;
             switch (vo.getIssueType()) {
@@ -92,7 +92,8 @@ public class SmsCouponServiceImpl implements SmsCouponService {
 
     @Override
     public List<SmsCouponCodeListVO> codeList(SmsCouponCodeListBO smsCouponCodeListBO) {
-        List<SmsCouponCode> simpleQuerySizeResult = smsCouponCodeListBO.getSimpleQuerySizeResult();
+        String smsCouponCodeCollectionName = CouponUtils.getSmsCouponCodeCollectionName(smsCouponCodeListBO.getChannelId());
+        List<SmsCouponCode> simpleQuerySizeResult = smsCouponCodeListBO.simpleQuerySizeResult(smsCouponCodeCollectionName);
         return simpleQuerySizeResult.stream()
                 .map(res -> {
                     SmsCouponCodeListVO vo = BeanUtil.toBean(res, SmsCouponCodeListVO.class);

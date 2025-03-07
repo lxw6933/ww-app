@@ -9,6 +9,7 @@ import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+import org.apache.commons.lang3.StringUtils;
 import org.bson.Document;
 import org.springframework.core.GenericTypeResolver;
 import org.springframework.data.domain.Sort;
@@ -55,12 +56,16 @@ public abstract class AbstractMongoPage<T> extends AppPage {
         return null;
     }
 
+    private FacetResult<T> buildPageQueryResult() {
+        return buildPageQueryResult(null);
+    }
+
     /**
      * 构建查询结果
      *
      * @return List<T>
      */
-    private FacetResult<T> buildPageQueryResult() {
+    private FacetResult<T> buildPageQueryResult(String collectionName) {
         // number str sort
         Collation collation = Collation.of(Locale.CHINESE).numericOrdering(true);
         // query condition
@@ -103,7 +108,7 @@ public abstract class AbstractMongoPage<T> extends AppPage {
         // build the aggregation pipeline
         Aggregation aggregation = Aggregation.newAggregation(facetOperation).withOptions(options);
         // query aggregation data result
-        AggregationResults<Document> results = mongoTemplate.aggregate(aggregation, MongoUtils.getCollectionName(tClass), Document.class);
+        AggregationResults<Document> results = mongoTemplate.aggregate(aggregation, StringUtils.isNotBlank(collectionName) ? collectionName : MongoUtils.getCollectionName(tClass), Document.class);
         Document resultDoc = results.getUniqueMappedResult();
         if (resultDoc == null) {
             return new FacetResult<>(Collections.emptyList(), 0);
@@ -120,18 +125,26 @@ public abstract class AbstractMongoPage<T> extends AppPage {
      * @param <R>     目标类型
      * @return MallPageResult<R>
      */
-    public <R> AppPageResult<R> buildPageResult(Function<T, R> convert) {
+    public <R> AppPageResult<R> buildPageConvertResult(String collectionName, Function<T, R> convert) {
         // query aggregation data result
-        FacetResult<T> facetResult = this.buildPageQueryResult();
+        FacetResult<T> facetResult = this.buildPageQueryResult(collectionName);
         // return
         return new AppPageResult<>(this.getPageNum(), this.getPageSize(), facetResult.getTotalCount(), facetResult.getDataList(), convert);
     }
 
-    public AppPageResult<T> buildPageResult() {
+    public <R> AppPageResult<R> buildPageConvertResult(Function<T, R> convert) {
+        return buildPageConvertResult(null, convert);
+    }
+
+    public AppPageResult<T> buildPageResult(String collectionName) {
         // query aggregation data result
-        FacetResult<T> facetResult = this.buildPageQueryResult();
+        FacetResult<T> facetResult = this.buildPageQueryResult(collectionName);
         // return
         return new AppPageResult<>(this.getPageNum(), this.getPageSize(), facetResult.getTotalCount(), facetResult.getDataList());
+    }
+
+    public AppPageResult<T> buildPageResult() {
+        return buildPageResult(null);
     }
 
     @Getter
@@ -148,25 +161,33 @@ public abstract class AbstractMongoPage<T> extends AppPage {
      *
      * @return 分页数据
      */
-    public <R> AppPageResult<R> simplePageResult(Function<T, R> convert) {
-        List<T> dataList = getSimpleDataResult();
-        long total = mongoTemplate.count(Query.query(buildQuery()), tClass);
+    public <R> AppPageResult<R> simplePageConvertResult(Function<T, R> convert) {
+        return simplePageConvertResult(null, convert);
+    }
+
+    public <R> AppPageResult<R> simplePageConvertResult(String collectionName, Function<T, R> convert) {
+        List<T> dataList = getSimpleDataResult(collectionName);
+        long total = StringUtils.isNotBlank(collectionName) ? mongoTemplate.count(Query.query(buildQuery()), tClass, collectionName) : mongoTemplate.count(Query.query(buildQuery()), tClass);
         return new AppPageResult<>(getPageNum(), getPageSize(), (int) total, dataList, convert);
     }
 
     public AppPageResult<T> simplePageResult() {
-        List<T> dataList = getSimpleDataResult();
-        long total = mongoTemplate.count(Query.query(buildQuery()), tClass);
+        return simplePageResult(null);
+    }
+
+    public AppPageResult<T> simplePageResult(String collectionName) {
+        List<T> dataList = getSimpleDataResult(collectionName);
+        long total = StringUtils.isNotBlank(collectionName) ? mongoTemplate.count(Query.query(buildQuery()), tClass, collectionName) : mongoTemplate.count(Query.query(buildQuery()), tClass);
         return new AppPageResult<>(getPageNum(), getPageSize(), (int) total, dataList);
     }
 
-    private List<T> getSimpleDataResult() {
+    private List<T> getSimpleDataResult(String collectionName) {
         Query query = new Query()
                 .addCriteria(buildQuery())
                 .with(buildSort())
                 .skip((long) (getPageNum() - 1) * getPageSize())
                 .limit(getPageSize());
-        return mongoTemplate.find(query, tClass);
+        return StringUtils.isNotBlank(collectionName) ? mongoTemplate.find(query, tClass, collectionName) : mongoTemplate.find(query, tClass);
     }
 
     /**
@@ -174,11 +195,15 @@ public abstract class AbstractMongoPage<T> extends AppPage {
      *
      * @return 普通查询结果
      */
-    public List<T> getSimpleQueryResult() {
+    public List<T> simpleQueryResult() {
+        return simpleQueryResult(null);
+    }
+
+    public List<T> simpleQueryResult(String collectionName) {
         Query query = new Query()
                 .addCriteria(buildQuery())
                 .with(buildSort());
-        return mongoTemplate.find(query, tClass);
+        return StringUtils.isNotBlank(collectionName) ? mongoTemplate.find(query, tClass, collectionName) : mongoTemplate.find(query, tClass);
     }
 
     /**
@@ -186,12 +211,16 @@ public abstract class AbstractMongoPage<T> extends AppPage {
      *
      * @return 普通查询结果
      */
-    public List<T> getSimpleQuerySizeResult() {
+    public List<T> simpleQuerySizeResult() {
+        return simpleQuerySizeResult(null);
+    }
+
+    public List<T> simpleQuerySizeResult(String collectionName) {
         Query query = new Query()
                 .addCriteria(buildQuery())
                 .with(buildSort())
                 .limit(getPageSize());
-        return mongoTemplate.find(query, tClass);
+        return StringUtils.isNotBlank(collectionName) ? mongoTemplate.find(query, tClass, collectionName) : mongoTemplate.find(query, tClass);
     }
 
 }

@@ -20,7 +20,7 @@ public class MongoProductSearchServiceImpl implements MongoProductSearchService 
 
     @Override
     public AppPageResult<PortalProductSearchVO> portalProductSearch(MongoSearchPageBO mongoSearchPageBO, String curAppKey) {
-        return mongoSearchPageBO.buildPageResult(productDoc -> {
+        return mongoSearchPageBO.buildPageConvertResult(productDoc -> {
             try {
                 // data handler
                 return searchResultDataHandler(productDoc);
