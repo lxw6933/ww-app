@@ -26,7 +26,6 @@ import com.ww.mall.coupon.entity.SmsCouponRecord;
 import com.ww.mall.coupon.eunms.CouponStatus;
 import com.ww.mall.coupon.eunms.IssueType;
 import com.ww.mall.coupon.service.SmsCouponService;
-import com.ww.mall.coupon.utils.CouponUtils;
 import com.ww.mall.coupon.view.bo.AddCouponCodeBO;
 import com.ww.mall.coupon.view.bo.SmsCouponActivityAddBO;
 import com.ww.mall.coupon.view.bo.SmsCouponCodeListBO;
@@ -111,12 +110,11 @@ public class SmsCouponServiceImpl implements SmsCouponService {
 
     @Override
     public List<SmsCouponCodeListVO> codeList(SmsCouponCodeListBO smsCouponCodeListBO) {
-        String smsCouponCodeCollectionName = CouponUtils.getSmsCouponCodeCollectionName(smsCouponCodeListBO.getChannelId());
-        List<SmsCouponCode> simpleQuerySizeResult = smsCouponCodeListBO.simpleQuerySizeResult(smsCouponCodeCollectionName);
+        List<SmsCouponCode> simpleQuerySizeResult = smsCouponCodeListBO.simpleQuerySizeResult(SmsCouponCode.buildCollectionName(smsCouponCodeListBO.getChannelId()));
+        String smsCouponRecordCollectionName = SmsCouponRecord.buildCollectionName(smsCouponCodeListBO.getChannelId());
         return simpleQuerySizeResult.stream()
                 .map(res -> {
                     SmsCouponCodeListVO vo = BeanUtil.toBean(res, SmsCouponCodeListVO.class);
-                    String smsCouponRecordCollectionName = CouponUtils.getSmsCouponRecordCollectionName(smsCouponCodeListBO.getChannelId());
                     SmsCouponRecord couponRecord = mongoTemplate.findOne(SmsCouponRecord.buildCodeQuery(vo.getCode()), SmsCouponRecord.class, smsCouponRecordCollectionName);
                     if (couponRecord != null) {
                         vo.setMemberId(couponRecord.getMemberId());
@@ -171,8 +169,7 @@ public class SmsCouponServiceImpl implements SmsCouponService {
             RSet<String> codeRSet = redissonClient.getSet(couponRedisKeyBuilder.buildCouponCodeKey(smsCouponActivity.getActivityCode(), batchNo));
             codeRSet.addAll(smsCouponCodes);
             // 是否插入mongodb 根据channelId 分code表
-            String smsCouponCodeCollectionName = CouponUtils.getSmsCouponCodeCollectionName(smsCouponActivity.getChannelId());
-            BulkOperations bulkOps = mongoTemplate.bulkOps(BulkOperations.BulkMode.UNORDERED, SmsCouponCode.class, smsCouponCodeCollectionName);
+            BulkOperations bulkOps = mongoTemplate.bulkOps(BulkOperations.BulkMode.UNORDERED, SmsCouponCode.class, SmsCouponCode.buildCollectionName(smsCouponActivity.getChannelId()));
             bulkOps.insert(smsCouponCodeDocs);
             BulkWriteResult bulkWriteResult = bulkOps.execute();
             log.info("优惠券活动[{}]生成优惠券券码数量[{}]", smsCouponActivity.getActivityCode(), bulkWriteResult.getInsertedCount());
@@ -197,8 +194,7 @@ public class SmsCouponServiceImpl implements SmsCouponService {
         Assert.isTrue(stockRedisComponent.decrementStock(couponRedisKeyBuilder.buildCouponNumberKey(smsCouponActivity.getActivityCode()), 1), () -> new ApiException("优惠券已被抢完"));
         // 构建用户领取优惠券记录
         SmsCouponRecord smsCouponRecord = buildSmsCouponRecord(clientUser, smsCouponActivity);
-        String smsCouponRecordCollectionName = CouponUtils.getSmsCouponRecordCollectionName(clientUser.getChannelId());
-        mongoTemplate.save(smsCouponRecord, smsCouponRecordCollectionName);
+        mongoTemplate.save(smsCouponRecord, SmsCouponRecord.buildCollectionName(clientUser.getChannelId()));
         log.info("用户[{}]成功领取优惠券[{}]", clientUser.getId(), smsCouponRecord);
         return true;
     }
@@ -210,8 +206,7 @@ public class SmsCouponServiceImpl implements SmsCouponService {
         ClientUser clientUser = AuthorizationContext.getClientUser();
         log.info("用户[{}]使用券码[{}]兑换优惠券", clientUser.getId(), couponCode);
         // 查询是否存在券码
-        String smsCouponCodeCollectionName = CouponUtils.getSmsCouponCodeCollectionName(clientUser.getChannelId());
-        SmsCouponCode smsCouponCode = mongoTemplate.findOne(SmsCouponCode.buildCodeQuery(clientUser.getChannelId(), couponCode), SmsCouponCode.class, smsCouponCodeCollectionName);
+        SmsCouponCode smsCouponCode = mongoTemplate.findOne(SmsCouponCode.buildCodeQuery(clientUser.getChannelId(), couponCode), SmsCouponCode.class, SmsCouponCode.buildCollectionName(clientUser.getChannelId()));
         Assert.notNull(smsCouponCode, () -> new ApiException("券码无效"));
         // 校验活动·
         assert smsCouponCode != null;
@@ -224,8 +219,7 @@ public class SmsCouponServiceImpl implements SmsCouponService {
         SmsCouponRecord smsCouponRecord = buildSmsCouponRecord(clientUser, smsCouponActivity);
         // 记录券码
         smsCouponRecord.setCouponCode(couponCode);
-        String smsCouponRecordCollectionName = CouponUtils.getSmsCouponRecordCollectionName(clientUser.getChannelId());
-        mongoTemplate.save(smsCouponRecord, smsCouponRecordCollectionName);
+        mongoTemplate.save(smsCouponRecord, SmsCouponRecord.buildCollectionName(clientUser.getChannelId()));
         log.info("用户[{}]使用券码[{}]成功兑换优惠券[{}]", clientUser.getId(), couponCode, smsCouponRecord);
         return true;
     }
@@ -309,7 +303,7 @@ public class SmsCouponServiceImpl implements SmsCouponService {
 
     @Override
     public void updateMemberCouponStatus(ClientUser clientUser) {
-        String smsCouponRecordCollectionName = CouponUtils.getSmsCouponRecordCollectionName(clientUser.getChannelId());
+        String smsCouponRecordCollectionName = SmsCouponRecord.buildCollectionName(clientUser.getChannelId());
         // 查询用户所有生效的优惠券
         List<SmsCouponRecord> smsCouponRecordList =
                 mongoTemplate.find(SmsCouponRecord.buildMemberEffectCouponRecordQuery(clientUser.getId()), SmsCouponRecord.class, smsCouponRecordCollectionName);
@@ -355,8 +349,7 @@ public class SmsCouponServiceImpl implements SmsCouponService {
             throw new ApiException("不在优惠券领取时间范围内，不能领取优惠券");
         }
         // 查询当前用户改优惠券的领取次数
-        String smsCouponRecordCollectionName = CouponUtils.getSmsCouponRecordCollectionName(clientUser.getChannelId());
-        long memberReceiveCount = mongoTemplate.count(SmsCouponRecord.buildMemberReceiveRecordQuery(clientUser.getId(), smsCouponActivity.getActivityCode(), smsCouponActivity.getLimitReceiveTimeType()), SmsCouponRecord.class, smsCouponRecordCollectionName);
+        long memberReceiveCount = mongoTemplate.count(SmsCouponRecord.buildMemberReceiveRecordQuery(clientUser.getId(), smsCouponActivity.getActivityCode(), smsCouponActivity.getLimitReceiveTimeType()), SmsCouponRecord.class, SmsCouponRecord.buildCollectionName(clientUser.getChannelId()));
         if (memberReceiveCount >= smsCouponActivity.getLimitReceiveNumber()) {
             throw new ApiException("超出优惠券领取限制");
         }
@@ -420,7 +413,6 @@ public class SmsCouponServiceImpl implements SmsCouponService {
      *
      * @return boolean
      */
-    @SuppressWarnings("all")
     private boolean doConvertCouponCode(String couponCodeKey, String couponCode) {
         RScript rScript = redissonClient.getScript(StringCodec.INSTANCE);
         // 执行脚本

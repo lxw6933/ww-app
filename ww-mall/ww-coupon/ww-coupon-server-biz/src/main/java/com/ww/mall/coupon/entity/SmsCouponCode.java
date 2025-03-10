@@ -1,5 +1,6 @@
 package com.ww.mall.coupon.entity;
 
+import com.ww.mall.coupon.utils.CouponUtils;
 import lombok.Data;
 import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.mapping.Document;
@@ -43,6 +44,10 @@ public class SmsCouponCode {
         this.channelId = channelId;
         this.batchNo = batchNo;
         this.code = code;
+    }
+
+    public static String buildCollectionName(Long channelId) {
+        return CouponUtils.getSmsCouponCodeCollectionName(channelId);
     }
 
     /**

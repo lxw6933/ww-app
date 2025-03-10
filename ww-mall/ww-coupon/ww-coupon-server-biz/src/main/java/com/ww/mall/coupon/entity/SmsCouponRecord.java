@@ -5,6 +5,7 @@ import com.ww.app.mongodb.common.BaseDoc;
 import com.ww.mall.coupon.eunms.CouponDiscountType;
 import com.ww.mall.coupon.eunms.CouponStatus;
 import com.ww.mall.coupon.eunms.LimitReceiveTimeType;
+import com.ww.mall.coupon.utils.CouponUtils;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import org.springframework.data.mongodb.core.mapping.Document;
@@ -69,6 +70,10 @@ public class SmsCouponRecord extends BaseDoc {
      * 优惠券券码状态
      */
     private CouponStatus couponStatus;
+
+    public static String buildCollectionName(Long channelId) {
+        return CouponUtils.getSmsCouponRecordCollectionName(channelId);
+    }
 
     public static Query buildMemberReceiveRecordQuery(Long memberId, String activityCode, LimitReceiveTimeType limitReceiveTimeType) {
         Query query = new Query().addCriteria(Criteria.where("activityCode").is(activityCode).and("memberId").is(memberId));
