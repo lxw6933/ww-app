@@ -18,6 +18,7 @@ import com.ww.app.redis.annotation.DistributedLock;
 import com.ww.app.redis.annotation.Resubmission;
 import com.ww.app.redis.component.StockRedisComponent;
 import com.ww.mall.coupon.component.key.CouponRedisKeyBuilder;
+import com.ww.mall.coupon.component.key.SmsCouponStatisticsComponent;
 import com.ww.mall.coupon.constant.CouponConstant;
 import com.ww.mall.coupon.constant.CouponLuaConstant;
 import com.ww.mall.coupon.entity.SmsCouponActivity;
@@ -45,6 +46,7 @@ import org.springframework.stereotype.Service;
 import javax.annotation.PostConstruct;
 import javax.annotation.Resource;
 import java.util.*;
+import java.util.concurrent.atomic.LongAdder;
 import java.util.stream.Collectors;
 
 /**
@@ -55,6 +57,9 @@ import java.util.stream.Collectors;
 @Slf4j
 @Service
 public class SmsCouponServiceImpl implements SmsCouponService {
+
+    @Resource
+    private SmsCouponStatisticsComponent smsCouponStatisticsComponent;
 
     @Resource
     private CouponRedisKeyBuilder couponRedisKeyBuilder;
@@ -104,6 +109,11 @@ public class SmsCouponServiceImpl implements SmsCouponService {
                 default:
             }
             vo.setAvailableNumber(availableNumber);
+            // 领取、使用数据处理【多实例下一致性有延迟】
+            int receiveNumber = smsCouponStatisticsComponent.getStatisticsReceiveMap().getOrDefault(vo.getActivityCode(), new LongAdder()).intValue();
+            int useNumber = smsCouponStatisticsComponent.getStatisticsUseMap().getOrDefault(vo.getActivityCode(), new LongAdder()).intValue();
+            vo.setReceiveNumber(vo.getReceiveNumber() + receiveNumber);
+            vo.setUsedNumber(vo.getUsedNumber() + useNumber);
             return vo;
         });
     }
@@ -196,6 +206,8 @@ public class SmsCouponServiceImpl implements SmsCouponService {
         SmsCouponRecord smsCouponRecord = buildSmsCouponRecord(clientUser, smsCouponActivity);
         mongoTemplate.save(smsCouponRecord, SmsCouponRecord.buildCollectionName(clientUser.getChannelId()));
         log.info("用户[{}]成功领取优惠券[{}]", clientUser.getId(), smsCouponRecord);
+        // 统计领取数据
+        smsCouponStatisticsComponent.statisticsCouponReceive(activityCode);
         return true;
     }
 
@@ -221,6 +233,8 @@ public class SmsCouponServiceImpl implements SmsCouponService {
         smsCouponRecord.setCouponCode(couponCode);
         mongoTemplate.save(smsCouponRecord, SmsCouponRecord.buildCollectionName(clientUser.getChannelId()));
         log.info("用户[{}]使用券码[{}]成功兑换优惠券[{}]", clientUser.getId(), couponCode, smsCouponRecord);
+        // 统计领取数据
+        smsCouponStatisticsComponent.statisticsCouponReceive(smsCouponActivity.getActivityCode());
         return true;
     }
 

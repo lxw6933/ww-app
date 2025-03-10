@@ -153,4 +153,12 @@ public class SmsCouponActivity extends BaseDoc {
         return new Update().inc("number", number);
     }
 
+    public static Update buildActivityReceiveNumberUpdate(int number) {
+        return new Update().inc("receiveNumber", number);
+    }
+
+    public static Update buildActivityUseNumberUpdate(int number) {
+        return new Update().inc("useNumber", number);
+    }
+
 }
