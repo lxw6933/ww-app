@@ -1,6 +1,9 @@
 package com.ww.mall.coupon.utils;
 
 import cn.hutool.core.util.StrUtil;
+import com.ww.app.common.exception.ApiException;
+import com.ww.app.common.utils.IdUtil;
+import com.ww.mall.coupon.eunms.CouponType;
 
 /**
  * @author ww
@@ -11,6 +14,17 @@ public class CouponUtils {
 
     private CouponUtils() {}
 
+    public static final String SMS_COUPON_PREFIX = "SC";
+    public static final String MERCHANT_COUPON_PREFIX = "MC";
+
+    public static String getSmsCouponCode() {
+        return StrUtil.join(StrUtil.EMPTY, SMS_COUPON_PREFIX, IdUtil.generatorIdStr());
+    }
+
+    public static String getMerchantCouponCode() {
+        return StrUtil.join(StrUtil.EMPTY, MERCHANT_COUPON_PREFIX, IdUtil.generatorIdStr());
+    }
+
     private static final String SMS_COUPON_CODE_DOC = "sms_coupon_code";
     private static final String SMS_COUPON_RECORD_DOC = "sms_coupon_record";
 
@@ -20,6 +34,16 @@ public class CouponUtils {
 
     public static String getSmsCouponRecordCollectionName(long channelId) {
         return StrUtil.join(StrUtil.UNDERLINE, SMS_COUPON_RECORD_DOC, (int) channelId);
+    }
+
+    public static CouponType getCouponType(String activityCode) {
+        if (activityCode.contains(SMS_COUPON_PREFIX)) {
+            return CouponType.PLATFORM;
+        } else if (activityCode.contains(MERCHANT_COUPON_PREFIX)) {
+            return CouponType.MERCHANT;
+        } else {
+            throw new ApiException("非法请求");
+        }
     }
 
 }

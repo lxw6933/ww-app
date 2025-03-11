@@ -1,8 +1,6 @@
 package com.ww.mall.coupon.entity;
 
-import com.ww.app.mongodb.common.BaseDoc;
 import com.ww.mall.coupon.entity.base.BaseCouponInfo;
-import com.ww.mall.coupon.eunms.*;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import org.springframework.data.mongodb.core.mapping.Document;
@@ -10,8 +8,6 @@ import org.springframework.data.mongodb.core.query.Criteria;
 import org.springframework.data.mongodb.core.query.Query;
 import org.springframework.data.mongodb.core.query.Update;
 
-import java.math.BigDecimal;
-import java.util.Date;
 import java.util.List;
 
 /**
@@ -21,12 +17,22 @@ import java.util.List;
  */
 @Data
 @EqualsAndHashCode(callSuper = true)
-@Document(collection = "sms_coupon_activity")
-public class SmsCouponActivity extends BaseCouponInfo {
+@Document(collection = "merchant_coupon_activity")
+public class MerchantCouponActivity extends BaseCouponInfo {
 
     /**
-     * 渠道id
+     * 商家id
      */
-    private Long channelId;
+    private Long merchantId;
+
+    /**
+     * 分发渠道
+     */
+    private List<Long> channelIds;
+
+    /**
+     * 是否审核通过
+     */
+    private boolean auditPass;
 
 }

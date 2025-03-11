@@ -12,8 +12,8 @@ import org.springframework.stereotype.Component;
 @Component
 public class CouponRedisKeyBuilder extends RedisKeyBuilder {
 
-    private static final String SMS_COUPON_CODE_KEY = "sms_coupon_code";
-    private static final String SMS_COUPON_NUMBER_KEY = "sms_coupon_number";
+    private static final String COUPON_CODE_KEY = "coupon_code";
+    private static final String COUPON_NUMBER_KEY = "coupon_number";
 
     /**
      * 获取券码对应的RSet key
@@ -23,15 +23,11 @@ public class CouponRedisKeyBuilder extends RedisKeyBuilder {
      * @return key
      */
     public String buildCouponCodeKey(String activityCode, String batchNo) {
-        return super.getPrefix() + StrUtil.join(SPLIT_ITEM, SMS_COUPON_CODE_KEY, activityCode, batchNo);
+        return super.getPrefix() + StrUtil.join(SPLIT_ITEM, COUPON_CODE_KEY, activityCode, batchNo);
     }
 
     public String buildCouponNumberKey(String activityCode) {
-        return super.getPrefix() + StrUtil.join(SPLIT_ITEM, SMS_COUPON_NUMBER_KEY, activityCode);
-    }
-
-    public String buildCouponCodeKeyPattern(String activityCode) {
-        return super.getPrefix() + StrUtil.join(SPLIT_ITEM, SMS_COUPON_CODE_KEY, activityCode);
+        return super.getPrefix() + StrUtil.join(SPLIT_ITEM, COUPON_NUMBER_KEY, activityCode);
     }
 
 }

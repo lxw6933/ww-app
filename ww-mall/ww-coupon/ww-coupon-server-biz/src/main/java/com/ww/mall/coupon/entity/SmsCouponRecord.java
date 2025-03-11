@@ -4,6 +4,7 @@ import cn.hutool.core.date.DateUtil;
 import com.ww.app.mongodb.common.BaseDoc;
 import com.ww.mall.coupon.eunms.CouponDiscountType;
 import com.ww.mall.coupon.eunms.CouponStatus;
+import com.ww.mall.coupon.eunms.CouponType;
 import com.ww.mall.coupon.eunms.LimitReceiveTimeType;
 import com.ww.mall.coupon.utils.CouponUtils;
 import lombok.Data;
@@ -32,6 +33,11 @@ public class SmsCouponRecord extends BaseDoc {
     private Long memberId;
 
     /**
+     * 渠道id
+     */
+    private Long channelId;
+
+    /**
      * 优惠券券码【手动发放才有】
      */
     private String couponCode;
@@ -40,6 +46,11 @@ public class SmsCouponRecord extends BaseDoc {
      * 优惠券唯一活动编码
      */
     private String activityCode;
+
+    /**
+     * 优惠券类型【店铺、渠道】
+     */
+    private CouponType couponType;
 
     /**
      * 优惠券优惠类型【满减券、代金券、满折券】

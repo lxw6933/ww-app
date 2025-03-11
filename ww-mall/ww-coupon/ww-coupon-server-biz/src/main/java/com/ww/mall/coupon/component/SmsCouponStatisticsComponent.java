@@ -1,7 +1,10 @@
-package com.ww.mall.coupon.component.key;
+package com.ww.mall.coupon.component;
 
 import com.mongodb.client.result.UpdateResult;
+import com.ww.mall.coupon.entity.MerchantCouponActivity;
 import com.ww.mall.coupon.entity.SmsCouponActivity;
+import com.ww.mall.coupon.entity.base.BaseCouponInfo;
+import com.ww.mall.coupon.utils.CouponUtils;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.mongodb.core.MongoTemplate;
@@ -80,13 +83,31 @@ public class SmsCouponStatisticsComponent {
         statisticsReceiveMap.forEach((key, longAddr) -> {
             int statisticsNumber = (int) longAddr.sumThenReset();
             log.info("[{}]优惠券领取数据同步到DB, 领取数量[{}] 开始同步", key, statisticsNumber);
-            UpdateResult updateResult = mongoTemplate.updateFirst(SmsCouponActivity.buildActivityCodeQuery(key), SmsCouponActivity.buildActivityReceiveNumberUpdate(statisticsNumber), SmsCouponActivity.class);
+            UpdateResult updateResult = null;
+            switch (CouponUtils.getCouponType(key)) {
+                case MERCHANT:
+                    updateResult = mongoTemplate.updateFirst(BaseCouponInfo.buildActivityCodeQuery(key), BaseCouponInfo.buildActivityReceiveNumberUpdate(statisticsNumber), MerchantCouponActivity.class);
+                    break;
+                case PLATFORM:
+                    updateResult = mongoTemplate.updateFirst(BaseCouponInfo.buildActivityCodeQuery(key), BaseCouponInfo.buildActivityReceiveNumberUpdate(statisticsNumber), SmsCouponActivity.class);
+                    break;
+                default:
+            }
             log.info("[{}]优惠券领取数据同步到DB, 领取数量[{}] 同步结果[{}]", key, statisticsNumber, updateResult.getModifiedCount() == 1);
         });
         statisticsUseMap.forEach((key, longAddr) -> {
             int statisticsNumber = (int) longAddr.sumThenReset();
             log.info("[{}]优惠券使用数据同步到DB, 使用数量[{}] 开始同步", key, statisticsNumber);
-            UpdateResult updateResult = mongoTemplate.updateFirst(SmsCouponActivity.buildActivityCodeQuery(key), SmsCouponActivity.buildActivityUseNumberUpdate(statisticsNumber), SmsCouponActivity.class);
+            UpdateResult updateResult = null;
+            switch (CouponUtils.getCouponType(key)) {
+                case MERCHANT:
+                    updateResult = mongoTemplate.updateFirst(BaseCouponInfo.buildActivityCodeQuery(key), BaseCouponInfo.buildActivityUseNumberUpdate(statisticsNumber), MerchantCouponActivity.class);
+                    break;
+                case PLATFORM:
+                    updateResult = mongoTemplate.updateFirst(BaseCouponInfo.buildActivityCodeQuery(key), BaseCouponInfo.buildActivityUseNumberUpdate(statisticsNumber), SmsCouponActivity.class);
+                    break;
+                default:
+            }
             log.info("[{}]优惠券使用数据同步到DB, 使用数量[{}] 同步结果[{}]", key, statisticsNumber, updateResult.getModifiedCount() == 1);
         });
     }
