@@ -14,7 +14,8 @@ public enum CouponDiscountType {
 
     FULL_REDUCTION("满减券"),
     DIRECT_REDUCTION("代金券"),
-    FULL_DISCOUNT("折扣券");
+    FULL_DISCOUNT("折扣券"),
+    INTEGRAL_DISCOUNT("积分券[满减]");
 
     private final String text;
 
