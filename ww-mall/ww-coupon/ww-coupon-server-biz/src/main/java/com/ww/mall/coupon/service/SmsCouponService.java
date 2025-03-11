@@ -1,10 +1,9 @@
 package com.ww.mall.coupon.service;
 
 import com.ww.app.common.common.ClientUser;
-import com.ww.mall.coupon.view.bo.AddCouponCodeBO;
-import com.ww.mall.coupon.view.bo.SmsCouponActivityAddBO;
-import com.ww.mall.coupon.view.bo.SmsCouponCodeListBO;
-import com.ww.mall.coupon.view.bo.SmsCouponPageBO;
+import com.ww.mall.coupon.view.bo.*;
+import com.ww.mall.coupon.view.vo.CouponActivityCenterVO;
+import com.ww.mall.coupon.view.vo.MemberCouponCenterVO;
 import com.ww.mall.coupon.view.vo.SmsCouponCodeListVO;
 import com.ww.mall.coupon.view.vo.SmsCouponPageVO;
 import com.ww.app.common.common.AppPageResult;
@@ -72,5 +71,21 @@ public interface SmsCouponService {
      * @param clientUser 用户
      */
     void updateMemberCouponStatus(ClientUser clientUser);
+
+    /**
+     * 平台领券中心
+     *
+     * @param bo 查询条件
+     * @return List<CouponActivityCenterVO>
+     */
+    List<CouponActivityCenterVO> smsCouponActivityCenter(CouponActivityCenterBO bo);
+
+    /**
+     * 会员优惠券卡包
+     *
+     * @param bo 查询条件
+     * @return List<MemberCouponCenterVO>
+     */
+    List<MemberCouponCenterVO> memberCouponCenter(MemberCouponCenterBO bo);
 
 }

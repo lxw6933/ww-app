@@ -11,4 +11,15 @@ public class CouponConstant {
 
     public static final String DEFAULT_CODE = "end";
 
+    public enum Status {
+        // 全部
+        ALL,
+        // 可使用
+        USE,
+        // 已使用
+        USED,
+        // 已过期
+        EXPIRE
+    }
+
 }

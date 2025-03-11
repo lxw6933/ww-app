@@ -2,10 +2,9 @@ package com.ww.mall.coupon.controller;
 
 import com.ww.app.common.common.AppPageResult;
 import com.ww.mall.coupon.service.SmsCouponService;
-import com.ww.mall.coupon.view.bo.AddCouponCodeBO;
-import com.ww.mall.coupon.view.bo.SmsCouponActivityAddBO;
-import com.ww.mall.coupon.view.bo.SmsCouponCodeListBO;
-import com.ww.mall.coupon.view.bo.SmsCouponPageBO;
+import com.ww.mall.coupon.view.bo.*;
+import com.ww.mall.coupon.view.vo.CouponActivityCenterVO;
+import com.ww.mall.coupon.view.vo.MemberCouponCenterVO;
 import com.ww.mall.coupon.view.vo.SmsCouponCodeListVO;
 import com.ww.mall.coupon.view.vo.SmsCouponPageVO;
 import io.swagger.v3.oas.annotations.Operation;
@@ -72,6 +71,18 @@ public class SmsCouponController {
     @PostMapping("/addCouponCoupon")
     public boolean addCouponCoupon(@RequestBody @Validated AddCouponCodeBO addCouponCodeBO) {
         return smsCouponService.addSmsCouponCode(addCouponCodeBO);
+    }
+
+    @Operation(summary = "平台领券中心")
+    @PostMapping("/smsCouponActivityCenter")
+    public List<CouponActivityCenterVO> smsCouponActivityCenter(@RequestBody @Validated CouponActivityCenterBO couponActivityCenterBO) {
+        return smsCouponService.smsCouponActivityCenter(couponActivityCenterBO);
+    }
+
+    @Operation(summary = "会员卡券中心")
+    @PostMapping("/memberCouponCenter")
+    public List<MemberCouponCenterVO> memberCouponCenter(@RequestBody @Validated MemberCouponCenterBO memberCouponCenterBO) {
+        return smsCouponService.memberCouponCenter(memberCouponCenterBO);
     }
 
 }

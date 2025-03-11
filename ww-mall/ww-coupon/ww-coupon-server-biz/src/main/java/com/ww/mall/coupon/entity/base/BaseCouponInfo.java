@@ -138,6 +138,20 @@ public class BaseCouponInfo extends BaseDoc {
      */
     private Boolean status;
 
+    public static Query buildCouponCenterQuery(Long channelId, boolean integralType) {
+        Query query = new Query();
+        Criteria criteria = Criteria.where("channelId").is(channelId)
+                .and("issueType").is(IssueType.RECEIVE)
+                .and("status").is(true);
+        if (integralType) {
+            criteria.and("couponDiscountType").in(CouponDiscountType.FULL_DISCOUNT, CouponDiscountType.FULL_REDUCTION, CouponDiscountType.DIRECT_REDUCTION);
+        } else {
+            criteria.and("couponDiscountType").is(CouponDiscountType.INTEGRAL_DISCOUNT);
+        }
+        query.addCriteria(criteria);
+        return query;
+    }
+
     public static Query buildActivityCodeQuery(String activityCode) {
         return new Query().addCriteria(Criteria.where("activityCode").is(activityCode));
     }

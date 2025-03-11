@@ -2,10 +2,8 @@ package com.ww.mall.coupon.entity;
 
 import cn.hutool.core.date.DateUtil;
 import com.ww.app.mongodb.common.BaseDoc;
-import com.ww.mall.coupon.eunms.CouponDiscountType;
-import com.ww.mall.coupon.eunms.CouponStatus;
-import com.ww.mall.coupon.eunms.CouponType;
-import com.ww.mall.coupon.eunms.LimitReceiveTimeType;
+import com.ww.mall.coupon.constant.CouponConstant;
+import com.ww.mall.coupon.eunms.*;
 import com.ww.mall.coupon.utils.CouponUtils;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
@@ -81,6 +79,31 @@ public class SmsCouponRecord extends BaseDoc {
      * 优惠券券码状态
      */
     private CouponStatus couponStatus;
+
+    public static Query buildMemberCouponCenterQuery(Long memberId, boolean integralType, CouponConstant.Status status) {
+        Query query = new Query();
+        Criteria criteria = Criteria.where("memberId").is(memberId);
+        if (integralType) {
+            criteria.and("couponDiscountType").in(CouponDiscountType.FULL_DISCOUNT, CouponDiscountType.FULL_REDUCTION, CouponDiscountType.DIRECT_REDUCTION);
+        } else {
+            criteria.and("couponDiscountType").is(CouponDiscountType.INTEGRAL_DISCOUNT);
+        }
+        switch (status) {
+            case USE:
+                criteria.and("couponStatus").in(CouponStatus.IN_EFFECT, CouponStatus.TO_TAKE_EFFECT);
+                break;
+            case USED:
+                criteria.and("couponStatus").in(CouponStatus.USED, CouponStatus.OCCUPIED);
+                break;
+            case EXPIRE:
+                criteria.and("couponStatus").is(CouponStatus.EXPIRED);
+                break;
+            case ALL:
+            default:
+        }
+        query.addCriteria(criteria);
+        return query;
+    }
 
     public static String buildCollectionName(Long channelId) {
         return CouponUtils.getSmsCouponRecordCollectionName(channelId);

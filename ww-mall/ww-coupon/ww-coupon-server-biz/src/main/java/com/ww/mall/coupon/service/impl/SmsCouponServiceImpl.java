@@ -12,12 +12,13 @@ import com.ww.app.common.context.AuthorizationContext;
 import com.ww.app.common.exception.ApiException;
 import com.ww.app.common.utils.CommonUtils;
 import com.ww.app.mongodb.common.BaseDoc;
+import com.ww.app.mongodb.utils.MongoUtils;
 import com.ww.app.redis.AppRedisTemplate;
 import com.ww.app.redis.annotation.DistributedLock;
 import com.ww.app.redis.annotation.Resubmission;
 import com.ww.app.redis.component.StockRedisComponent;
-import com.ww.mall.coupon.component.key.CouponRedisKeyBuilder;
 import com.ww.mall.coupon.component.SmsCouponStatisticsComponent;
+import com.ww.mall.coupon.component.key.CouponRedisKeyBuilder;
 import com.ww.mall.coupon.constant.CouponConstant;
 import com.ww.mall.coupon.constant.CouponLuaConstant;
 import com.ww.mall.coupon.entity.MerchantCouponActivity;
@@ -30,10 +31,9 @@ import com.ww.mall.coupon.eunms.CouponType;
 import com.ww.mall.coupon.eunms.IssueType;
 import com.ww.mall.coupon.service.SmsCouponService;
 import com.ww.mall.coupon.utils.CouponUtils;
-import com.ww.mall.coupon.view.bo.AddCouponCodeBO;
-import com.ww.mall.coupon.view.bo.SmsCouponActivityAddBO;
-import com.ww.mall.coupon.view.bo.SmsCouponCodeListBO;
-import com.ww.mall.coupon.view.bo.SmsCouponPageBO;
+import com.ww.mall.coupon.view.bo.*;
+import com.ww.mall.coupon.view.vo.CouponActivityCenterVO;
+import com.ww.mall.coupon.view.vo.MemberCouponCenterVO;
 import com.ww.mall.coupon.view.vo.SmsCouponCodeListVO;
 import com.ww.mall.coupon.view.vo.SmsCouponPageVO;
 import lombok.extern.slf4j.Slf4j;
@@ -48,6 +48,7 @@ import org.springframework.stereotype.Service;
 
 import javax.annotation.PostConstruct;
 import javax.annotation.Resource;
+import java.math.BigDecimal;
 import java.util.*;
 import java.util.concurrent.atomic.LongAdder;
 import java.util.stream.Collectors;
@@ -362,6 +363,48 @@ public class SmsCouponServiceImpl implements SmsCouponService {
                 log.info("用户[{}]优惠券[{}]更新状态为[{}]", clientUser.getId(), smsCouponRecord.getId(), couponStatus);
             }
         });
+    }
+
+    @Override
+    public List<CouponActivityCenterVO> smsCouponActivityCenter(CouponActivityCenterBO bo) {
+        ClientUser clientUser = AuthorizationContext.getClientUser();
+        List<SmsCouponActivity> resultList = MongoUtils.pageByIdCursor(mongoTemplate, BaseCouponInfo.buildCouponCenterQuery(clientUser.getChannelId(), bo.isIntegralType()), bo.getEndIdCursorValue(), 10, SmsCouponActivity.class);
+        return resultList.stream().map(res -> {
+            CouponActivityCenterVO vo = BeanUtil.toBean(res, CouponActivityCenterVO.class);
+            int availableNumber = stockRedisComponent.getStrStock(couponRedisKeyBuilder.buildCouponNumberKey(res.getActivityCode()));
+            // 获取当前优惠券领取数量
+            int receiveNumber1 = res.getReceiveNumber();
+            int receiveNumber2 = smsCouponStatisticsComponent.getStatisticsReceiveMap().getOrDefault(vo.getActivityCode(), new LongAdder()).intValue();
+            // 计算比例
+            BigDecimal ratio = BigDecimal.valueOf((receiveNumber1 + receiveNumber2) / (receiveNumber1 + receiveNumber2 + availableNumber));
+            vo.setRatio(ratio);
+            return vo;
+        }).collect(Collectors.toList());
+    }
+
+    @Override
+    public List<MemberCouponCenterVO> memberCouponCenter(MemberCouponCenterBO bo) {
+        ClientUser clientUser = AuthorizationContext.getClientUser();
+        updateMemberCouponStatus(clientUser);
+        List<SmsCouponRecord> resultList = MongoUtils.pageByIdCursor(mongoTemplate, SmsCouponRecord.buildMemberCouponCenterQuery(clientUser.getId(), bo.isIntegralType(), bo.getStatus()), bo.getEndIdCursorValue(), 10, SmsCouponRecord.class);
+        return resultList.stream().map(res -> {
+            MemberCouponCenterVO vo = BeanUtil.toBean(res, MemberCouponCenterVO.class);
+            // 查询活动信息
+            switch (res.getCouponType()) {
+                case PLATFORM:
+                    SmsCouponActivity smsCouponActivity = getSmsCouponActivity(res.getActivityCode());
+                    vo.setTitle(smsCouponActivity.getName());
+                    vo.setDesc(smsCouponActivity.getDesc());
+                    break;
+                case MERCHANT:
+                    MerchantCouponActivity merchantCouponActivity = getMerchantCouponActivity(res.getActivityCode());
+                    vo.setTitle(merchantCouponActivity.getName());
+                    vo.setDesc(merchantCouponActivity.getDesc());
+                    break;
+                default:
+            }
+            return vo;
+        }).collect(Collectors.toList());
     }
 
     /**
