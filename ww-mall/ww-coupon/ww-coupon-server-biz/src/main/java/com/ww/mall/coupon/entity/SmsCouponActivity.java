@@ -1,18 +1,9 @@
 package com.ww.mall.coupon.entity;
 
-import com.ww.app.mongodb.common.BaseDoc;
 import com.ww.mall.coupon.entity.base.BaseCouponInfo;
-import com.ww.mall.coupon.eunms.*;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import org.springframework.data.mongodb.core.mapping.Document;
-import org.springframework.data.mongodb.core.query.Criteria;
-import org.springframework.data.mongodb.core.query.Query;
-import org.springframework.data.mongodb.core.query.Update;
-
-import java.math.BigDecimal;
-import java.util.Date;
-import java.util.List;
 
 /**
  * @author ww
