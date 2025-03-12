@@ -32,7 +32,7 @@ public class SmsCouponController {
     private SmsCouponService smsCouponService;
 
     @Operation(summary = "平台优惠券列表")
-    @PostMapping("/activity")
+    @PostMapping("/activity/page")
     public AppPageResult<SmsCouponPageVO> pageList(@RequestBody SmsCouponPageBO smsCouponPageBO) {
         return smsCouponService.pageList(smsCouponPageBO);
     }
@@ -45,8 +45,20 @@ public class SmsCouponController {
 
     @Operation(summary = "添加平台优惠券活动")
     @PutMapping("/activity")
-    public boolean add(@RequestBody SmsCouponActivityAddBO smsCouponActivityAddBO) {
+    public boolean add(@RequestBody @Validated SmsCouponActivityAddBO smsCouponActivityAddBO) {
         return smsCouponService.add(smsCouponActivityAddBO);
+    }
+
+    @Operation(summary = "编辑平台优惠券活动")
+    @PostMapping("/activity")
+    public boolean edit(@RequestBody @Validated SmsCouponActivityEditBO smsCouponActivityEditBO) {
+        return smsCouponService.edit(smsCouponActivityEditBO);
+    }
+
+    @Operation(summary = "上下架优惠券活动")
+    @PostMapping("/activity/status")
+    public boolean edit(@RequestBody @Validated SmsCouponActivityStatusBO smsCouponActivityStatusBO) {
+        return smsCouponService.status(smsCouponActivityStatusBO);
     }
 
     @Operation(summary = "领取优惠券")

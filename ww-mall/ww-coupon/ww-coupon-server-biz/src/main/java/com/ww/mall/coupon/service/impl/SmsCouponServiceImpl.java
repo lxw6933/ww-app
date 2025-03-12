@@ -146,8 +146,7 @@ public class SmsCouponServiceImpl implements SmsCouponService {
         SmsCouponActivity addSmsCouponActivityInfo = BeanUtil.toBean(smsCouponActivityAddBO, SmsCouponActivity.class);
         addSmsCouponActivityInfo.setActivityCode(CouponUtils.getSmsCouponCode());
         addSmsCouponActivityInfo.setStatus(false);
-        // 默认，后续根据后台用户set
-        addSmsCouponActivityInfo.setChannelId(1L);
+        addSmsCouponActivityInfo.setChannelId(smsCouponActivityAddBO.getChannelId());
         addSmsCouponActivityInfo.setReceiveNumber(0);
         addSmsCouponActivityInfo.setUseNumber(0);
         SmsCouponActivity smsCouponActivity = mongoTemplate.save(addSmsCouponActivityInfo);
@@ -162,6 +161,18 @@ public class SmsCouponServiceImpl implements SmsCouponService {
             default:
         }
         return true;
+    }
+
+    @Override
+    public boolean edit(SmsCouponActivityEditBO smsCouponActivityEditBO) {
+        UpdateResult updateResult = mongoTemplate.updateFirst(BaseCouponInfo.buildActivityCodeQuery(smsCouponActivityEditBO.getActivityCode(), smsCouponActivityEditBO.getChannelId()), smsCouponActivityEditBO.buildInfoUpdate(), SmsCouponActivity.class);
+        return updateResult.getModifiedCount() == 1;
+    }
+
+    @Override
+    public boolean status(SmsCouponActivityStatusBO smsCouponActivityStatusBO) {
+        UpdateResult updateResult = mongoTemplate.updateFirst(BaseCouponInfo.buildActivityCodeQuery(smsCouponActivityStatusBO.getActivityCode(), smsCouponActivityStatusBO.getChannelId()), BaseCouponInfo.buildActivityStatusUpdate(smsCouponActivityStatusBO.getStatus()), SmsCouponActivity.class);
+        return updateResult.getModifiedCount() == 1;
     }
 
     /**
@@ -279,7 +290,7 @@ public class SmsCouponServiceImpl implements SmsCouponService {
     @Override
     @DistributedLock(operationKey = "#avtivityCode")
     public boolean addSmsCouponCode(AddCouponCodeBO addCouponCodeBO) {
-        SmsCouponActivity smsCouponActivity = getSmsCouponActivity(addCouponCodeBO.getActivityCode());
+        SmsCouponActivity smsCouponActivity = getSmsCouponActivity(addCouponCodeBO.getActivityCode(), addCouponCodeBO.getChannelId());
         int generateCodeNumber = addCouponCodeBO.getNumber();
         switch (smsCouponActivity.getIssueType()) {
             case RECEIVE:
@@ -491,7 +502,7 @@ public class SmsCouponServiceImpl implements SmsCouponService {
     }
 
     /**
-     * 获取优惠券活动信息
+     * C端获取优惠券活动信息
      *
      * @param activityCode 优惠券活动编码
      * @return 活动
@@ -503,8 +514,15 @@ public class SmsCouponServiceImpl implements SmsCouponService {
         return smsCouponActivity;
     }
 
+    private SmsCouponActivity getSmsCouponActivity(String activityCode, Long channelId) {
+        // 查询优惠券活动
+        SmsCouponActivity smsCouponActivity = mongoTemplate.findOne(SmsCouponActivity.buildActivityCodeQuery(activityCode, channelId), SmsCouponActivity.class);
+        Assert.notNull(smsCouponActivity, () -> new ApiException("优惠券不存在"));
+        return smsCouponActivity;
+    }
+
     /**
-     * 获取优惠券活动信息
+     * C端获取优惠券活动信息
      *
      * @param activityCode 优惠券活动编码
      * @return 活动

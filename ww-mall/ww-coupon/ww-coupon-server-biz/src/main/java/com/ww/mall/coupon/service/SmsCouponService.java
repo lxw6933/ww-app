@@ -42,6 +42,22 @@ public interface SmsCouponService {
     boolean add(SmsCouponActivityAddBO smsCouponActivityAddBO);
 
     /**
+     * 编辑优惠券活动
+     *
+     * @param smsCouponActivityEditBO smsCouponActivityEditBO
+     * @return boolean
+     */
+    boolean edit(SmsCouponActivityEditBO smsCouponActivityEditBO);
+
+    /**
+     * 上下架活动
+     *
+     * @param smsCouponActivityStatusBO bo
+     * @return boolean
+     */
+    boolean status(SmsCouponActivityStatusBO smsCouponActivityStatusBO);
+
+    /**
      * 用户领取优惠券
      *
      * @param activityCode 优惠券编码

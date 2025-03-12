@@ -5,6 +5,7 @@ import lombok.Data;
 import javax.validation.constraints.Max;
 import javax.validation.constraints.Min;
 import javax.validation.constraints.NotBlank;
+import javax.validation.constraints.NotNull;
 
 /**
  * @author ww
@@ -13,6 +14,9 @@ import javax.validation.constraints.NotBlank;
  */
 @Data
 public class AddCouponCodeBO {
+
+    @NotNull(message = "渠道id不能为空")
+    private Long channelId;
 
     @NotBlank(message = "活动编码")
     private String activityCode;

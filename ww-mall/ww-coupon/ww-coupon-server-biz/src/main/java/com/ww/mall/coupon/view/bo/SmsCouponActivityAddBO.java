@@ -3,6 +3,8 @@ package com.ww.mall.coupon.view.bo;
 import com.ww.mall.coupon.eunms.*;
 import lombok.Data;
 
+import javax.validation.constraints.Max;
+import javax.validation.constraints.Min;
 import javax.validation.constraints.NotBlank;
 import javax.validation.constraints.NotNull;
 import java.math.BigDecimal;
@@ -16,6 +18,9 @@ import java.util.List;
  */
 @Data
 public class SmsCouponActivityAddBO {
+
+    @NotNull(message = "渠道id不能为空")
+    private Long channelId;
 
     /**
      * 活动名称
@@ -113,11 +118,14 @@ public class SmsCouponActivityAddBO {
     /**
      * 领取限制数量
      */
+    @Min(value = 1, message = "最小数量不能小于1")
     private int limitReceiveNumber;
 
     /**
      * 优惠券数量
      */
+    @Min(value = 1, message = "最小数量不能小于1")
+    @Max(value = 10000, message = "最大数量不能超过10000")
     private int number;
 
     /**

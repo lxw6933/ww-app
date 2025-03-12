@@ -161,6 +161,10 @@ public class BaseCouponInfo extends BaseDoc {
         return new Query().addCriteria(Criteria.where("activityCode").is(activityCode));
     }
 
+    public static Query buildActivityCodeQuery(String activityCode, Long channelId) {
+        return buildActivityCodeQuery(activityCode).addCriteria(Criteria.where("channelId").is(channelId));
+    }
+
     public static Update buildActivityNumberUpdate(int number) {
         return new Update().inc("number", number);
     }
@@ -171,6 +175,10 @@ public class BaseCouponInfo extends BaseDoc {
 
     public static Update buildActivityUseNumberUpdate(int number) {
         return new Update().inc("useNumber", number);
+    }
+
+    public static Update buildActivityStatusUpdate(boolean status) {
+        return new Update().set("status", status);
     }
 
 }
