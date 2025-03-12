@@ -26,16 +26,14 @@ import com.ww.mall.coupon.entity.SmsCouponActivity;
 import com.ww.mall.coupon.entity.SmsCouponCode;
 import com.ww.mall.coupon.entity.SmsCouponRecord;
 import com.ww.mall.coupon.entity.base.BaseCouponInfo;
+import com.ww.mall.coupon.eunms.CouponDiscountType;
 import com.ww.mall.coupon.eunms.CouponStatus;
 import com.ww.mall.coupon.eunms.CouponType;
 import com.ww.mall.coupon.eunms.IssueType;
 import com.ww.mall.coupon.service.SmsCouponService;
 import com.ww.mall.coupon.utils.CouponUtils;
 import com.ww.mall.coupon.view.bo.*;
-import com.ww.mall.coupon.view.vo.CouponActivityCenterVO;
-import com.ww.mall.coupon.view.vo.MemberCouponCenterVO;
-import com.ww.mall.coupon.view.vo.SmsCouponCodeListVO;
-import com.ww.mall.coupon.view.vo.SmsCouponPageVO;
+import com.ww.mall.coupon.view.vo.*;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.CollectionUtils;
 import org.redisson.api.RScript;
@@ -49,9 +47,13 @@ import org.springframework.stereotype.Service;
 import javax.annotation.PostConstruct;
 import javax.annotation.Resource;
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.util.*;
 import java.util.concurrent.atomic.LongAdder;
 import java.util.stream.Collectors;
+
+import static com.ww.app.common.utils.CollectionUtils.convertList;
+import static com.ww.app.common.utils.CollectionUtils.filterList;
 
 /**
  * @author ww
@@ -126,18 +128,16 @@ public class SmsCouponServiceImpl implements SmsCouponService {
     public List<SmsCouponCodeListVO> codeList(SmsCouponCodeListBO smsCouponCodeListBO) {
         List<SmsCouponCode> simpleQuerySizeResult = smsCouponCodeListBO.simpleQuerySizeResult(SmsCouponCode.buildCollectionName(smsCouponCodeListBO.getChannelId()));
         String smsCouponRecordCollectionName = SmsCouponRecord.buildCollectionName(smsCouponCodeListBO.getChannelId());
-        return simpleQuerySizeResult.stream()
-                .map(res -> {
-                    SmsCouponCodeListVO vo = BeanUtil.toBean(res, SmsCouponCodeListVO.class);
-                    SmsCouponRecord couponRecord = mongoTemplate.findOne(SmsCouponRecord.buildCodeQuery(vo.getCode()), SmsCouponRecord.class, smsCouponRecordCollectionName);
-                    if (couponRecord != null) {
-                        vo.setMemberId(couponRecord.getMemberId());
-                        vo.setReceiveTime(couponRecord.getCreateTime());
-                        vo.setCouponStatus(couponRecord.getCouponStatus());
-                    }
-                    return vo;
-                })
-                .collect(Collectors.toList());
+        return convertList(simpleQuerySizeResult, res -> {
+            SmsCouponCodeListVO vo = BeanUtil.toBean(res, SmsCouponCodeListVO.class);
+            SmsCouponRecord couponRecord = mongoTemplate.findOne(SmsCouponRecord.buildCodeQuery(vo.getCode()), SmsCouponRecord.class, smsCouponRecordCollectionName);
+            if (couponRecord != null) {
+                vo.setMemberId(couponRecord.getMemberId());
+                vo.setReceiveTime(couponRecord.getCreateTime());
+                vo.setCouponStatus(couponRecord.getCouponStatus());
+            }
+            return vo;
+        });
     }
 
     @Override
@@ -222,11 +222,18 @@ public class SmsCouponServiceImpl implements SmsCouponService {
         }
         // 库存校验
         Assert.isTrue(stockRedisComponent.decrementStock(couponRedisKeyBuilder.buildCouponNumberKey(activityCode), 1), () -> new ApiException("优惠券已被抢完"));
-        // 构建用户领取优惠券记录
-        SmsCouponRecord smsCouponRecord = buildSmsCouponRecord(clientUser, baseCouponInfo);
-        smsCouponRecord.setCouponType(CouponUtils.getCouponType(activityCode));
-        mongoTemplate.save(smsCouponRecord, SmsCouponRecord.buildCollectionName(clientUser.getChannelId()));
-        log.info("用户[{}]成功领取优惠券[{}]", clientUser.getId(), smsCouponRecord);
+        try {
+            // 构建用户领取优惠券记录
+            SmsCouponRecord smsCouponRecord = buildSmsCouponRecord(clientUser, baseCouponInfo);
+            smsCouponRecord.setCouponType(CouponUtils.getCouponType(activityCode));
+            mongoTemplate.save(smsCouponRecord, SmsCouponRecord.buildCollectionName(clientUser.getChannelId()));
+            log.info("用户[{}]成功领取优惠券[{}]", clientUser.getId(), smsCouponRecord);
+        } catch (Exception e) {
+            log.info("用户[{}]领取优惠券[{}]异常，进行回滚活动库存", clientUser.getId(), activityCode);
+            boolean flag = stockRedisComponent.decrementStock(couponRedisKeyBuilder.buildCouponNumberKey(activityCode), -1);
+            log.info("回滚优惠券活动[{}]库存结果[{}]", activityCode, flag);
+            return false;
+        }
         // 统计领取数据
         smsCouponStatisticsComponent.statisticsCouponReceive(activityCode);
         return true;
@@ -248,14 +255,22 @@ public class SmsCouponServiceImpl implements SmsCouponService {
         // 进行兑换
         boolean remove = doConvertCouponCode(couponRedisKeyBuilder.buildCouponCodeKey(smsCouponCode.getActivityCode(), smsCouponCode.getBatchNo()), couponCode);
         Assert.isTrue(remove, () -> new ApiException("券码已使用，请勿重复兑换"));
-        // 构建用户领取优惠券记录
-        SmsCouponRecord smsCouponRecord = buildSmsCouponRecord(clientUser, smsCouponActivity);
-        // 记录券码
-        smsCouponRecord.setCouponCode(couponCode);
-        // 目前只支持渠道券码
-        smsCouponRecord.setCouponType(CouponType.PLATFORM);
-        mongoTemplate.save(smsCouponRecord, SmsCouponRecord.buildCollectionName(clientUser.getChannelId()));
-        log.info("用户[{}]使用券码[{}]成功兑换优惠券[{}]", clientUser.getId(), couponCode, smsCouponRecord);
+        try {
+            // 构建用户领取优惠券记录
+            SmsCouponRecord smsCouponRecord = buildSmsCouponRecord(clientUser, smsCouponActivity);
+            // 记录券码
+            smsCouponRecord.setCouponCode(couponCode);
+            // 目前只支持渠道券码
+            smsCouponRecord.setCouponType(CouponType.PLATFORM);
+            mongoTemplate.save(smsCouponRecord, SmsCouponRecord.buildCollectionName(clientUser.getChannelId()));
+            log.info("用户[{}]使用券码[{}]成功兑换优惠券[{}]", clientUser.getId(), couponCode, smsCouponRecord);
+        } catch (Exception e) {
+            log.info("用户[{}]兑换优惠券[{}]异常，进行回滚活动库存", clientUser.getId(), couponCode);
+            RSet<String> codeRSet = redissonClient.getSet(couponRedisKeyBuilder.buildCouponCodeKey(smsCouponActivity.getActivityCode(), smsCouponCode.getBatchNo()));
+            boolean flag = codeRSet.add(couponCode);
+            log.info("回滚优惠券券码[{}]回滚结果[{}]", couponCode, flag);
+            return false;
+        }
         // 统计领取数据
         smsCouponStatisticsComponent.statisticsCouponReceive(smsCouponActivity.getActivityCode());
         return true;
@@ -369,7 +384,7 @@ public class SmsCouponServiceImpl implements SmsCouponService {
     public List<CouponActivityCenterVO> smsCouponActivityCenter(CouponActivityCenterBO bo) {
         ClientUser clientUser = AuthorizationContext.getClientUser();
         List<SmsCouponActivity> resultList = MongoUtils.pageByIdCursor(mongoTemplate, BaseCouponInfo.buildCouponCenterQuery(clientUser.getChannelId(), bo.isIntegralType()), bo.getEndIdCursorValue(), 10, SmsCouponActivity.class);
-        return resultList.stream().map(res -> {
+        return convertList(resultList, res -> {
             CouponActivityCenterVO vo = BeanUtil.toBean(res, CouponActivityCenterVO.class);
             int availableNumber = stockRedisComponent.getStrStock(couponRedisKeyBuilder.buildCouponNumberKey(res.getActivityCode()));
             // 获取当前优惠券领取数量
@@ -379,32 +394,36 @@ public class SmsCouponServiceImpl implements SmsCouponService {
             BigDecimal ratio = BigDecimal.valueOf((receiveNumber1 + receiveNumber2) / (receiveNumber1 + receiveNumber2 + availableNumber));
             vo.setRatio(ratio);
             return vo;
-        }).collect(Collectors.toList());
+        });
     }
 
     @Override
     public List<MemberCouponCenterVO> memberCouponCenter(MemberCouponCenterBO bo) {
         ClientUser clientUser = AuthorizationContext.getClientUser();
         updateMemberCouponStatus(clientUser);
-        List<SmsCouponRecord> resultList = MongoUtils.pageByIdCursor(mongoTemplate, SmsCouponRecord.buildMemberCouponCenterQuery(clientUser.getId(), bo.isIntegralType(), bo.getStatus()), bo.getEndIdCursorValue(), 10, SmsCouponRecord.class);
-        return resultList.stream().map(res -> {
+        List<SmsCouponRecord> resultList = MongoUtils.pageByIdCursor(mongoTemplate, SmsCouponRecord.buildMemberCouponCenterQuery(clientUser.getId(), null, bo.getStatus(), null), bo.getEndIdCursorValue(), bo.getSize(), SmsCouponRecord.class);
+        return convertList(resultList, res -> {
             MemberCouponCenterVO vo = BeanUtil.toBean(res, MemberCouponCenterVO.class);
             // 查询活动信息
             switch (res.getCouponType()) {
                 case PLATFORM:
                     SmsCouponActivity smsCouponActivity = getSmsCouponActivity(res.getActivityCode());
-                    vo.setTitle(smsCouponActivity.getName());
+                    vo.setName(smsCouponActivity.getName());
                     vo.setDesc(smsCouponActivity.getDesc());
+                    vo.setApplyProductRangeType(smsCouponActivity.getApplyProductRangeType());
+                    vo.setIdList(smsCouponActivity.getIdList());
                     break;
                 case MERCHANT:
                     MerchantCouponActivity merchantCouponActivity = getMerchantCouponActivity(res.getActivityCode());
-                    vo.setTitle(merchantCouponActivity.getName());
+                    vo.setName(merchantCouponActivity.getName());
                     vo.setDesc(merchantCouponActivity.getDesc());
+                    vo.setApplyProductRangeType(merchantCouponActivity.getApplyProductRangeType());
+                    vo.setIdList(merchantCouponActivity.getIdList());
                     break;
                 default:
             }
             return vo;
-        }).collect(Collectors.toList());
+        });
     }
 
     /**
@@ -513,6 +532,171 @@ public class SmsCouponServiceImpl implements SmsCouponService {
                 couponCode, CouponConstant.DEFAULT_CODE   // ARGV
         );
         return res != null && res > 0;
+    }
+
+    /**
+     * 获取适用spu所有的平台优惠券活动
+     *
+     * @param channelId 渠道id
+     * @param integralType 是否区分积分现金券
+     * @param smsId 渠道商品id
+     */
+    private List<ProductCouponActivityVO> getSpuCouponActivityList(Long channelId, Boolean integralType, Long smsId) {
+        // 查询前30个适用商品平台优惠券活动【进行排序】
+        List<SmsCouponActivity> couponActivityList = MongoUtils.pageByIdCursor(mongoTemplate, SmsCouponActivity.buildSpuQuery(channelId,integralType, smsId), null, 30, SmsCouponActivity.class);
+        if (CollectionUtils.isEmpty(couponActivityList)) {
+            return null;
+        }
+        List<SmsCouponActivity> integralCouponActivityList = filterList(couponActivityList, res -> res.getCouponDiscountType().equals(CouponDiscountType.INTEGRAL_DISCOUNT));
+        List<SmsCouponActivity> cashCouponActivityList = filterList(couponActivityList, res -> !res.getCouponDiscountType().equals(CouponDiscountType.INTEGRAL_DISCOUNT));
+
+        List<ProductCouponActivityVO> sortedIntegralCouponActivityTagList = integralCouponActivityList.stream()
+                .sorted(Comparator.comparing(SmsCouponActivity::getDeductionAmount).reversed())
+                .map(res -> BeanUtil.toBean(res, ProductCouponActivityVO.class))
+                .collect(Collectors.toList());
+
+        List<ProductCouponActivityVO> sortedCashCouponActivityTagList = cashCouponActivityList.stream()
+                .sorted((e1, e2) -> {
+                    BigDecimal target1 = e1.getDeductionAmount();
+                    BigDecimal target2 = e2.getDeductionAmount();
+                    if (CouponDiscountType.FULL_DISCOUNT.equals(e1.getCouponDiscountType())) {
+                        BigDecimal minPayAmount = e1.getAchieveAmount().multiply(e1.getDeductionAmount()).setScale(2, RoundingMode.HALF_UP);
+                        target1 = e1.getAchieveAmount().subtract(minPayAmount);
+                    }
+                    if (CouponDiscountType.FULL_DISCOUNT.equals(e2.getCouponDiscountType())) {
+                        BigDecimal minPayAmount = e2.getAchieveAmount().multiply(e2.getDeductionAmount()).setScale(2, RoundingMode.HALF_UP);
+                        target2 = e2.getAchieveAmount().subtract(minPayAmount);
+                    }
+                    return target2.compareTo(target1);
+                }).map(res -> BeanUtil.toBean(res, ProductCouponActivityVO.class))
+                .collect(Collectors.toList());
+        sortedIntegralCouponActivityTagList.addAll(sortedCashCouponActivityTagList);
+        return sortedCashCouponActivityTagList;
+    }
+
+    /**
+     * 获取确认下单用户优惠券信息
+     *
+     * @param orderBOList 下单商品BO
+     * @param memberSmsCouponList 用户有效平台优惠券集合
+     * @return ConfirmOrderCouponVO
+     */
+    private ConfirmOrderCouponVO getOrderMemberCouponList(List<MemberCouponCenterVO> memberSmsCouponList, List<OrderMemberSmsCouponBO> orderBOList) {
+        if (CollectionUtils.isEmpty(memberSmsCouponList)) {
+            return null;
+        }
+        // 分类有效优惠券
+        List<MemberCouponCenterVO> memberIntegralCouponList = filterList(memberSmsCouponList, res -> res.getCouponDiscountType().equals(CouponDiscountType.INTEGRAL_DISCOUNT));
+        List<MemberCouponCenterVO> memberCashCouponList = filterList(memberSmsCouponList, res -> !res.getCouponDiscountType().equals(CouponDiscountType.INTEGRAL_DISCOUNT));
+        // 一：可用优惠券【1.满足使用条件 2.不满足使用条件】
+        List<OrderMemberCouponVO> availableIntegralCouponList = new ArrayList<>();
+        List<OrderMemberCouponVO> availableCashCouponList = new ArrayList<>();
+        // 二：不可用优惠券【1.未到使用周期范围内 2.下单商品没有适用优惠券】
+        List<OrderMemberCouponVO> unAvailableIntegralCouponList = new ArrayList<>();
+        List<OrderMemberCouponVO> unAvailableCashCouponList = new ArrayList<>();
+
+        ConfirmOrderCouponVO result = new ConfirmOrderCouponVO();
+        result.setAvailableIntegralCouponList(availableIntegralCouponList);
+        result.setAvailableCashCouponList(availableCashCouponList);
+        result.setUnAvailableIntegralCouponList(unAvailableIntegralCouponList);
+        result.setUnAvailableCashCouponList(unAvailableCashCouponList);
+        // 积分
+        memberIntegralCouponList.forEach(res -> {
+            OrderMemberCouponVO vo = BeanUtil.toBean(res, OrderMemberCouponVO.class);
+            if (orderCouponInfoHandler(res, orderBOList, vo)) {
+                availableIntegralCouponList.add(vo);
+            } else {
+                unAvailableIntegralCouponList.add(vo);
+            }
+        });
+        // 现金
+        memberCashCouponList.forEach(res -> {
+            OrderMemberCouponVO vo = BeanUtil.toBean(res, OrderMemberCouponVO.class);
+            if (orderCouponInfoHandler(res, orderBOList, vo)) {
+                availableCashCouponList.add(vo);
+            } else {
+                unAvailableCashCouponList.add(vo);
+            }
+        });
+        availableCashCouponList.sort(Comparator.comparing(OrderMemberCouponVO::getDiscountTotalAmount).reversed().thenComparing(OrderMemberCouponVO::getLackAmount));
+        availableIntegralCouponList.sort(Comparator.comparing(OrderMemberCouponVO::getDiscountTotalAmount).reversed().thenComparing(OrderMemberCouponVO::getLackAmount));
+        return result;
+    }
+
+    private boolean orderCouponInfoHandler(MemberCouponCenterVO res, List<OrderMemberSmsCouponBO> orderBOList, OrderMemberCouponVO vo) {
+        if (res.getUseStartTime().after(new Date())) {
+            vo.setDisabled(CouponConstant.Disabled.UN_REACHED_TIME);
+            return false;
+        }
+        List<OrderMemberSmsCouponBO> targetList = null;
+        switch (res.getApplyProductRangeType()) {
+            case ALL:
+                targetList = orderBOList;
+                break;
+            case SPECIFY_PRODUCT:
+                targetList = filterList(orderBOList, e -> res.getIdList().contains(e.getSmsId()));
+                break;
+            case EXCLUDE_PRODUCT:
+                targetList = filterList(orderBOList, e -> !res.getIdList().contains(e.getSmsId()));
+                break;
+            default:
+        }
+        if (CollectionUtils.isEmpty(targetList)) {
+            vo.setDisabled(CouponConstant.Disabled.NO_PRODUCT);
+            return false;
+        } else {
+            if (res.getCouponDiscountType().equals(CouponDiscountType.INTEGRAL_DISCOUNT)) {
+                return orderIntegralCouponInfoHandler(res, targetList, vo);
+            } else {
+                return orderCashCouponInfoHandler(res, targetList, vo);
+            }
+        }
+    }
+
+    private boolean orderIntegralCouponInfoHandler(MemberCouponCenterVO res, List<OrderMemberSmsCouponBO> targetList, OrderMemberCouponVO vo) {
+        int achieveIntegral = res.getAchieveAmount().intValue();
+        int orderProductTotalIntegral = targetList.stream().map(OrderMemberSmsCouponBO::getRealIntegral).reduce(Integer::sum).orElse(0);
+        if (orderProductTotalIntegral == 0) {
+            vo.setDisabled(CouponConstant.Disabled.DISCOUNT_ZERO);
+            return false;
+        }
+        if (achieveIntegral > orderProductTotalIntegral) {
+            vo.setLackAmount(BigDecimal.valueOf(achieveIntegral - orderProductTotalIntegral));
+        } else {
+            vo.setDiscountTotalAmount(res.getDeductionAmount());
+        }
+        return true;
+    }
+
+    private boolean orderCashCouponInfoHandler(MemberCouponCenterVO res, List<OrderMemberSmsCouponBO> targetList, OrderMemberCouponVO vo) {
+        BigDecimal achieveAmount = res.getAchieveAmount();
+        BigDecimal orderProductTotalAmount = targetList.stream().map(OrderMemberSmsCouponBO::getRealAmount).reduce(BigDecimal::add).orElse(BigDecimal.ZERO);
+        if (orderProductTotalAmount.compareTo(BigDecimal.ZERO) == 0) {
+            vo.setDisabled(CouponConstant.Disabled.DISCOUNT_ZERO);
+            return false;
+        }
+        switch (res.getCouponDiscountType()) {
+            case DIRECT_REDUCTION:
+                vo.setDiscountTotalAmount(res.getDeductionAmount().compareTo(orderProductTotalAmount) >= 0 ? orderProductTotalAmount : res.getDeductionAmount());
+                break;
+            case FULL_REDUCTION:
+                if (achieveAmount.compareTo(orderProductTotalAmount) > 0) {
+                    vo.setLackAmount(achieveAmount.subtract(orderProductTotalAmount));
+                } else {
+                    vo.setDiscountTotalAmount(res.getDeductionAmount());
+                }
+                break;
+            case FULL_DISCOUNT:
+                if (achieveAmount.compareTo(orderProductTotalAmount) > 0) {
+                    vo.setLackAmount(achieveAmount.subtract(orderProductTotalAmount));
+                } else {
+                    BigDecimal payAmount = orderProductTotalAmount.multiply(res.getDeductionAmount()).setScale(2, RoundingMode.HALF_UP);
+                    vo.setDiscountTotalAmount(orderProductTotalAmount.subtract(payAmount));
+                }
+                break;
+            default:
+        }
+        return true;
     }
 
 }

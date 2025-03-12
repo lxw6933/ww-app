@@ -20,7 +20,7 @@ public class SmsCouponPageBO extends AbstractMongoPage<SmsCouponActivity> {
     /**
      * 优惠券名称
      */
-    private String title;
+    private String name;
 
     /**
      * 上下架
@@ -35,8 +35,8 @@ public class SmsCouponPageBO extends AbstractMongoPage<SmsCouponActivity> {
     @Override
     public Criteria buildQuery() {
         Criteria criteria = new Criteria();
-        if (StringUtils.isNotBlank(this.title)) {
-            criteria.and("title").is(this.title);
+        if (StringUtils.isNotBlank(this.name)) {
+            criteria.and("title").is(this.name);
         }
         if (this.couponDiscountType != null) {
             criteria.and("couponDiscountType").is(this.couponDiscountType);

@@ -8,7 +8,7 @@ import java.util.Date;
 /**
  * @author ww
  * @create 2023-07-26- 09:16
- * @description:
+ * @description: 优惠券券码列表信息
  */
 @Data
 public class SmsCouponCodeListVO {

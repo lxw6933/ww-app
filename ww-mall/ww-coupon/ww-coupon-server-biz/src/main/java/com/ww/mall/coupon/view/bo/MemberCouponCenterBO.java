@@ -1,6 +1,7 @@
 package com.ww.mall.coupon.view.bo;
 
 import com.ww.mall.coupon.constant.CouponConstant;
+import com.ww.mall.coupon.eunms.CouponType;
 import lombok.Data;
 
 /**
@@ -12,11 +13,6 @@ import lombok.Data;
 public class MemberCouponCenterBO {
 
     /**
-     * 是否积分券
-     */
-    private boolean integralType;
-
-    /**
      * 最后一条数据id的游标值
      */
     private String endIdCursorValue;
@@ -26,4 +22,17 @@ public class MemberCouponCenterBO {
      */
     private CouponConstant.Status status;
 
+    /**
+     * 优惠券类型
+     */
+    private CouponType couponType;
+
+    /**
+     * 展示数量
+     */
+    private Integer size;
+
+    public Integer getSize() {
+        return this.size == null ? 10 : this.size;
+    }
 }

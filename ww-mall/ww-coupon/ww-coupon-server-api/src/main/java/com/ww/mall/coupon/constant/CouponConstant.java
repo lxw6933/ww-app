@@ -22,4 +22,13 @@ public class CouponConstant {
         EXPIRE
     }
 
+    public enum Disabled {
+        // 未到可用时间
+        UN_REACHED_TIME,
+        // 没有适用商品
+        NO_PRODUCT,
+        // 抵扣金额为0
+        DISCOUNT_ZERO
+    }
+
 }

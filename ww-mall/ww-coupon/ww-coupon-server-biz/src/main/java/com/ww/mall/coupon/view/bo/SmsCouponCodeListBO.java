@@ -16,7 +16,8 @@ import org.springframework.data.mongodb.core.query.Criteria;
 import javax.validation.constraints.NotBlank;
 import javax.validation.constraints.NotNull;
 import java.util.List;
-import java.util.stream.Collectors;
+
+import static com.ww.app.common.utils.CollectionUtils.convertList;
 
 /**
  * @author ww
@@ -68,7 +69,7 @@ public class SmsCouponCodeListBO extends AbstractMongoPage<SmsCouponCode> {
             if (CollectionUtils.isEmpty(couponRecordList)) {
                 criteria.and("code").is("-");
             } else {
-                List<String> codesCondition = couponRecordList.stream().map(SmsCouponRecord::getCouponCode).collect(Collectors.toList());
+                List<String> codesCondition = convertList(couponRecordList, SmsCouponRecord::getCouponCode);
                 criteria.and("code").in(codesCondition);
             }
         }

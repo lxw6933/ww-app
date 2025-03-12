@@ -30,7 +30,7 @@ public class ConvertCodeActivity {
     /**
      * 活动名称
      */
-    private String title;
+    private String name;
 
     /**
      * 活动编码
