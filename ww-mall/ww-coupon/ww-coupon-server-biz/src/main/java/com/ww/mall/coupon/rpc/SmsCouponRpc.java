@@ -1,7 +1,6 @@
 package com.ww.mall.coupon.rpc;
 
 import com.ww.app.common.common.Result;
-import com.ww.app.common.context.AuthorizationContext;
 import com.ww.mall.coupon.service.SmsCouponService;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
@@ -22,7 +21,7 @@ public class SmsCouponRpc implements SmsCouponApi {
 
     @Override
     public Result<Boolean> receiveCoupon(String activityCode) {
-        return Result.success(smsCouponService.receiveCoupon(AuthorizationContext.getClientUser(), activityCode));
+        return Result.success(smsCouponService.receiveCoupon(activityCode));
     }
 
     @Override

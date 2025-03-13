@@ -1,7 +1,6 @@
 package com.ww.mall.coupon.controller;
 
 import com.ww.app.common.common.AppPageResult;
-import com.ww.app.common.context.AuthorizationContext;
 import com.ww.mall.coupon.service.SmsCouponService;
 import com.ww.mall.coupon.view.bo.*;
 import com.ww.mall.coupon.view.vo.CouponActivityCenterVO;
@@ -68,7 +67,7 @@ public class SmsCouponController {
     })
     @GetMapping("/receiveCoupon")
     public boolean receiveCoupon(@RequestParam("activityCode") String activityCode) {
-        return smsCouponService.receiveCoupon(AuthorizationContext.getClientUser(), activityCode);
+        return smsCouponService.receiveCoupon(activityCode);
     }
 
     @Operation(summary = "兑换优惠券")
