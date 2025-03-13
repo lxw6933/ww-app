@@ -4,8 +4,8 @@ import cn.hutool.core.collection.ConcurrentHashSet;
 import cn.hutool.core.lang.Singleton;
 import cn.hutool.core.lang.Snowflake;
 import cn.hutool.core.net.NetUtil;
+import cn.hutool.core.util.RandomUtil;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.commons.lang3.RandomUtils;
 
 import java.util.Set;
 import java.util.concurrent.ExecutorService;
@@ -27,12 +27,12 @@ public class IdUtil {
     static {
         try {
             workerId = NetUtil.ipv4ToLong(NetUtil.getLocalhostStr()) % 32;
-            dataCenterId = RandomUtils.nextInt(0, 31);
+            dataCenterId = RandomUtil.randomInt(0, 31);
             log.info("当前服务器的workerId：{} dataCenterId：{}", workerId, dataCenterId);
         } catch (Exception e) {
             log.error("获取服务器机器id失败：{}", e.getMessage());
-            workerId = RandomUtils.nextInt(0, 31);
-            dataCenterId = RandomUtils.nextInt(0, 31);
+            workerId = RandomUtil.randomInt(0, 31);
+            dataCenterId = RandomUtil.randomInt(0, 31);
             log.info("异常后分配的服务器的workerId：{} dataCenterId：{}", workerId, dataCenterId);
         }
     }
