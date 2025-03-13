@@ -9,6 +9,8 @@ import lombok.EqualsAndHashCode;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.data.mongodb.core.query.Criteria;
 
+import static com.ww.app.common.constant.Constant.MONGO_PRIMARY_KEY;
+
 /**
  * @author ww
  * @create 2023-07-26- 09:25
@@ -52,7 +54,7 @@ public class SmsCouponPageBO extends AbstractMongoPage<SmsCouponActivity> {
     public Criteria buildQuery() {
         Criteria criteria = new Criteria();
         if (StringUtils.isNotBlank(this.id)) {
-            criteria.and("id").is(this.id);
+            criteria.and(MONGO_PRIMARY_KEY).is(this.id);
         }
         if (StringUtils.isNotBlank(this.name)) {
             criteria.and("name").is(this.name);
