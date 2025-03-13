@@ -5,7 +5,6 @@ import com.ww.app.mongodb.common.AbstractMongoPage;
 import com.ww.mall.coupon.entity.SmsCouponCode;
 import com.ww.mall.coupon.entity.SmsCouponRecord;
 import com.ww.mall.coupon.eunms.CouponStatus;
-import com.ww.mall.coupon.utils.CouponUtils;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import org.apache.commons.collections4.CollectionUtils;
@@ -64,7 +63,7 @@ public class SmsCouponCodeListBO extends AbstractMongoPage<SmsCouponCode> {
         }
         if (this.couponStatus != null) {
             MongoTemplate mongoTemplate = SpringUtil.getBean(MongoTemplate.class);
-            String smsCouponRecordCollectionName = CouponUtils.getSmsCouponRecordCollectionName(this.channelId);
+            String smsCouponRecordCollectionName = SmsCouponRecord.buildCollectionName(this.channelId);
             List<SmsCouponRecord> couponRecordList = mongoTemplate.find(SmsCouponRecord.buildStatusQuery(this.activityCode, this.couponStatus).limit(getPageSize()), SmsCouponRecord.class, smsCouponRecordCollectionName);
             if (CollectionUtils.isEmpty(couponRecordList)) {
                 criteria.and("code").is("-");
