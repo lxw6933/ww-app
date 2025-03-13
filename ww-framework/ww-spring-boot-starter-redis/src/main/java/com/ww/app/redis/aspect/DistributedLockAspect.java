@@ -1,7 +1,9 @@
 package com.ww.app.redis.aspect;
 
 import cn.hutool.crypto.SecureUtil;
+import com.ww.app.common.common.ClientUser;
 import com.ww.app.common.constant.Constant;
+import com.ww.app.common.context.AuthorizationContext;
 import com.ww.app.common.enums.GlobalResCodeConstants;
 import com.ww.app.common.exception.ApiException;
 import com.ww.app.common.utils.SpringExpressionUtils;
@@ -50,8 +52,9 @@ public class DistributedLockAspect {
                 StringUtils.isNotEmpty(distributedLock.value()) ?
                 SpringExpressionUtils.parseExpression(joinPoint, distributedLock.value()) : classDeclaringTypeName + Constant.SPLIT + method.getName()
         );
-        if (StringUtils.isNotEmpty(distributedLock.userId())) {
-            sb.append(Constant.SPLIT).append(SpringExpressionUtils.parseExpression(joinPoint, distributedLock.userId()));
+        if (distributedLock.enableUserLock()) {
+            ClientUser clientUser = AuthorizationContext.getClientUser();
+            sb.append(Constant.SPLIT).append(SpringExpressionUtils.parseExpression(joinPoint, clientUser.getId().toString()));
         }
         if (StringUtils.isNotEmpty(distributedLock.operationKey())) {
             sb.append(Constant.SPLIT).append(SpringExpressionUtils.parseExpression(joinPoint, distributedLock.operationKey()));

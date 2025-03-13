@@ -24,7 +24,7 @@ public @interface DistributedLock {
     /**
      * 用户id key锁
      */
-    String userId() default "";
+    boolean enableUserLock() default false;
 
     /**
      * 业务锁

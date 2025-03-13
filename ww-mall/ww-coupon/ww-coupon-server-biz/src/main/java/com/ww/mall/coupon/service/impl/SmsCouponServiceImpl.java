@@ -209,8 +209,8 @@ public class SmsCouponServiceImpl implements SmsCouponService {
     }
 
     @Override
-    public boolean receiveCoupon(String activityCode) {
-        ClientUser clientUser = AuthorizationContext.getClientUser();
+    @DistributedLock(enableUserLock = true, operationKey = "'receiveCoupon'")
+    public boolean receiveCoupon(ClientUser clientUser, String activityCode) {
         log.info("用户[{}]领取优惠券活动[{}]", clientUser.getId(), activityCode);
         BaseCouponInfo baseCouponInfo = null;
         switch (CouponUtils.getCouponType(activityCode)) {

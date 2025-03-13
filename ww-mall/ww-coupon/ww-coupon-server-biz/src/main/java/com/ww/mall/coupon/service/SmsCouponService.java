@@ -60,10 +60,11 @@ public interface SmsCouponService {
     /**
      * 用户领取优惠券
      *
+     * @param clientUser 领取用户
      * @param activityCode 优惠券编码
      * @return boolean
      */
-    boolean receiveCoupon(String activityCode);
+    boolean receiveCoupon(ClientUser clientUser, String activityCode);
 
     /**
      * 兑换优惠券

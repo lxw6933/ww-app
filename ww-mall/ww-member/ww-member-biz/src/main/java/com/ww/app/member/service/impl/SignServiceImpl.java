@@ -35,7 +35,7 @@ public class SignServiceImpl implements SignService {
     private RedisTemplate<String, String> redisTemplate;
 
     @Override
-    @DistributedLock(userId = "#clientUser.MemberId", operationKey = "'sign'", waitTime = 3, leaseTime = 3)
+    @DistributedLock(enableUserLock = true, operationKey = "'sign'", waitTime = 3, leaseTime = 3)
     public int doSign(String dateStr, ClientUser clientUser) {
         Date now = new Date();
         Date date = getDate(dateStr);
