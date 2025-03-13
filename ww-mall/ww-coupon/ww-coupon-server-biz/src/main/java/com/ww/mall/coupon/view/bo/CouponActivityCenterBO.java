@@ -1,5 +1,6 @@
 package com.ww.mall.coupon.view.bo;
 
+import com.ww.mall.coupon.constant.CouponConstant;
 import lombok.Data;
 
 /**
@@ -13,7 +14,7 @@ public class CouponActivityCenterBO {
     /**
      * 是否积分券
      */
-    private boolean integralType;
+    private CouponConstant.Type type;
 
     /**
      * 最后一条数据id的游标值

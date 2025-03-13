@@ -141,6 +141,7 @@ public class SmsCouponServiceImpl implements SmsCouponService {
     }
 
     @Override
+    @Resubmission
     public boolean add(SmsCouponActivityAddBO smsCouponActivityAddBO) {
         // 生成优惠券记录
         SmsCouponActivity addSmsCouponActivityInfo = BeanUtil.toBean(smsCouponActivityAddBO, SmsCouponActivity.class);
@@ -164,12 +165,14 @@ public class SmsCouponServiceImpl implements SmsCouponService {
     }
 
     @Override
+    @Resubmission
     public boolean edit(SmsCouponActivityEditBO smsCouponActivityEditBO) {
         UpdateResult updateResult = mongoTemplate.updateFirst(BaseCouponInfo.buildActivityCodeQuery(smsCouponActivityEditBO.getActivityCode(), smsCouponActivityEditBO.getChannelId()), smsCouponActivityEditBO.buildInfoUpdate(), SmsCouponActivity.class);
         return updateResult.getModifiedCount() == 1;
     }
 
     @Override
+    @Resubmission
     public boolean status(SmsCouponActivityStatusBO smsCouponActivityStatusBO) {
         UpdateResult updateResult = mongoTemplate.updateFirst(BaseCouponInfo.buildActivityCodeQuery(smsCouponActivityStatusBO.getActivityCode(), smsCouponActivityStatusBO.getChannelId()), BaseCouponInfo.buildActivityStatusUpdate(smsCouponActivityStatusBO.getStatus()), SmsCouponActivity.class);
         return updateResult.getModifiedCount() == 1;
@@ -291,6 +294,9 @@ public class SmsCouponServiceImpl implements SmsCouponService {
     @DistributedLock(operationKey = "#avtivityCode")
     public boolean addSmsCouponCode(AddCouponCodeBO addCouponCodeBO) {
         SmsCouponActivity smsCouponActivity = getSmsCouponActivity(addCouponCodeBO.getActivityCode(), addCouponCodeBO.getChannelId());
+        if (addCouponCodeBO.getNumber() + smsCouponActivity.getNumber() > CouponConstant.ACTIVITY_MAX_NUMBER) {
+            throw new ApiException("活动最多添加券码数量不能超过" + CouponConstant.ACTIVITY_MAX_NUMBER);
+        }
         int generateCodeNumber = addCouponCodeBO.getNumber();
         switch (smsCouponActivity.getIssueType()) {
             case RECEIVE:
@@ -394,7 +400,7 @@ public class SmsCouponServiceImpl implements SmsCouponService {
     @Override
     public List<CouponActivityCenterVO> smsCouponActivityCenter(CouponActivityCenterBO bo) {
         ClientUser clientUser = AuthorizationContext.getClientUser();
-        List<SmsCouponActivity> resultList = MongoUtils.pageByIdCursor(mongoTemplate, BaseCouponInfo.buildCouponCenterQuery(clientUser.getChannelId(), bo.isIntegralType()), bo.getEndIdCursorValue(), 10, SmsCouponActivity.class);
+        List<SmsCouponActivity> resultList = MongoUtils.pageByIdCursor(mongoTemplate, BaseCouponInfo.buildCouponCenterQuery(clientUser.getChannelId(), bo.getType()), bo.getEndIdCursorValue(), 10, SmsCouponActivity.class);
         return convertList(resultList, res -> {
             CouponActivityCenterVO vo = BeanUtil.toBean(res, CouponActivityCenterVO.class);
             int availableNumber = stockRedisComponent.getStrStock(couponRedisKeyBuilder.buildCouponNumberKey(res.getActivityCode()));
@@ -556,12 +562,12 @@ public class SmsCouponServiceImpl implements SmsCouponService {
      * 获取适用spu所有的平台优惠券活动
      *
      * @param channelId 渠道id
-     * @param integralType 是否区分积分现金券
+     * @param type 是否区分积分现金券
      * @param smsId 渠道商品id
      */
-    private List<ProductCouponActivityVO> getSpuCouponActivityList(Long channelId, Boolean integralType, Long smsId) {
+    private List<ProductCouponActivityVO> getSpuCouponActivityList(Long channelId, CouponConstant.Type type, Long smsId) {
         // 查询前30个适用商品平台优惠券活动【进行排序】
-        List<SmsCouponActivity> couponActivityList = MongoUtils.pageByIdCursor(mongoTemplate, SmsCouponActivity.buildSpuQuery(channelId,integralType, smsId), null, 30, SmsCouponActivity.class);
+        List<SmsCouponActivity> couponActivityList = MongoUtils.pageByIdCursor(mongoTemplate, SmsCouponActivity.buildSpuQuery(channelId, type, smsId), null, 30, SmsCouponActivity.class);
         if (CollectionUtils.isEmpty(couponActivityList)) {
             return null;
         }

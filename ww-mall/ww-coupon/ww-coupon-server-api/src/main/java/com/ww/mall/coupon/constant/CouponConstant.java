@@ -7,9 +7,17 @@ package com.ww.mall.coupon.constant;
  */
 public class CouponConstant {
 
+    public static final int ACTIVITY_MAX_NUMBER = 500000;
+
     public static final String DEFAULT_BATCH_NO = "0";
 
     public static final String DEFAULT_CODE = "end";
+
+    public enum Type {
+        ALL,
+        CASH,
+        INTEGRAL,
+    }
 
     public enum Status {
         // 全部

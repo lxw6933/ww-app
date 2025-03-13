@@ -1,6 +1,7 @@
 package com.ww.mall.coupon.entity.base;
 
 import com.ww.app.mongodb.common.BaseDoc;
+import com.ww.mall.coupon.constant.CouponConstant;
 import com.ww.mall.coupon.eunms.*;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
@@ -138,7 +139,7 @@ public class BaseCouponInfo extends BaseDoc {
      */
     private Boolean status;
 
-    public static Query buildCouponCenterQuery(Long channelId, Boolean integralType) {
+    public static Query buildCouponCenterQuery(Long channelId, CouponConstant.Type type) {
         Query query = new Query();
         Date now = new Date();
         Criteria criteria = Criteria.where("channelId").is(channelId)
@@ -146,12 +147,15 @@ public class BaseCouponInfo extends BaseDoc {
                 .and("receiveEndDate").lte(now)
                 .and("issueType").is(IssueType.RECEIVE)
                 .and("status").is(true);
-        if (integralType != null) {
-            if (integralType) {
-                criteria.and("couponDiscountType").in(CouponDiscountType.FULL_DISCOUNT, CouponDiscountType.FULL_REDUCTION, CouponDiscountType.DIRECT_REDUCTION);
-            } else {
+        switch (type) {
+            case ALL:
+                break;
+            case CASH:
                 criteria.and("couponDiscountType").is(CouponDiscountType.INTEGRAL_DISCOUNT);
-            }
+                break;
+            case INTEGRAL:
+                criteria.and("couponDiscountType").in(CouponDiscountType.FULL_DISCOUNT, CouponDiscountType.FULL_REDUCTION, CouponDiscountType.DIRECT_REDUCTION);
+                break;
         }
         query.addCriteria(criteria);
         return query;

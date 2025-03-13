@@ -1,5 +1,6 @@
 package com.ww.mall.coupon.entity;
 
+import com.ww.mall.coupon.constant.CouponConstant;
 import com.ww.mall.coupon.entity.base.BaseCouponInfo;
 import com.ww.mall.coupon.eunms.ApplyProductRangeType;
 import lombok.Data;
@@ -23,8 +24,8 @@ public class SmsCouponActivity extends BaseCouponInfo {
      */
     private Long channelId;
 
-    public static Query buildSpuQuery(Long channelId, Boolean integralType, Long smsId) {
-        Query query = buildCouponCenterQuery(channelId, integralType);
+    public static Query buildSpuQuery(Long channelId, CouponConstant.Type type, Long smsId) {
+        Query query = buildCouponCenterQuery(channelId, type);
         Criteria criteria = new Criteria().orOperator(
                 Criteria.where("applyProductRangeType").is(ApplyProductRangeType.ALL),
                 Criteria.where("applyProductRangeType").is(ApplyProductRangeType.SPECIFY_PRODUCT).and("idList").in(smsId),

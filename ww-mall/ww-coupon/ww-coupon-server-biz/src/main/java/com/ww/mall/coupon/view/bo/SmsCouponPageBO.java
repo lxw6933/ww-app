@@ -1,6 +1,7 @@
 package com.ww.mall.coupon.view.bo;
 
 import com.ww.app.mongodb.common.AbstractMongoPage;
+import com.ww.mall.coupon.constant.CouponConstant;
 import com.ww.mall.coupon.entity.SmsCouponActivity;
 import com.ww.mall.coupon.eunms.CouponDiscountType;
 import lombok.Data;
@@ -18,9 +19,24 @@ import org.springframework.data.mongodb.core.query.Criteria;
 public class SmsCouponPageBO extends AbstractMongoPage<SmsCouponActivity> {
 
     /**
+     * id
+     */
+    private String id;
+
+    /**
      * 优惠券名称
      */
     private String name;
+
+    /**
+     * 活动编码
+     */
+    private String activityCode;
+
+    /**
+     * 类型【积分/现金】
+     */
+    private CouponConstant.Type type;
 
     /**
      * 上下架
@@ -35,14 +51,30 @@ public class SmsCouponPageBO extends AbstractMongoPage<SmsCouponActivity> {
     @Override
     public Criteria buildQuery() {
         Criteria criteria = new Criteria();
+        if (StringUtils.isNotBlank(this.id)) {
+            criteria.and("id").is(this.id);
+        }
         if (StringUtils.isNotBlank(this.name)) {
-            criteria.and("title").is(this.name);
+            criteria.and("name").is(this.name);
+        }
+        if (StringUtils.isNotBlank(this.activityCode)) {
+            criteria.and("activityCode").is(this.activityCode);
         }
         if (this.couponDiscountType != null) {
             criteria.and("couponDiscountType").is(this.couponDiscountType);
         }
         if (this.status != null) {
             criteria.and("status").is(this.status);
+        }
+        switch (type) {
+            case ALL:
+                break;
+            case CASH:
+                criteria.and("couponDiscountType").is(CouponDiscountType.INTEGRAL_DISCOUNT);
+                break;
+            case INTEGRAL:
+                criteria.and("couponDiscountType").in(CouponDiscountType.FULL_DISCOUNT, CouponDiscountType.FULL_REDUCTION, CouponDiscountType.DIRECT_REDUCTION);
+                break;
         }
         return criteria;
     }
