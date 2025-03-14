@@ -429,7 +429,7 @@ public class SmsCouponServiceImpl implements SmsCouponService {
     public List<MemberCouponCenterVO> memberCouponCenter(MemberCouponCenterBO bo) {
         ClientUser clientUser = AuthorizationContext.getClientUser();
         updateMemberCouponStatus(clientUser);
-        List<SmsCouponRecord> resultList = MongoUtils.pageByIdCursor(mongoTemplate, SmsCouponRecord.buildMemberCouponCenterQuery(clientUser.getId(), null, bo.getStatus(), null), bo.getEndIdCursorValue(), bo.getSize(), SmsCouponRecord.class);
+        List<SmsCouponRecord> resultList = MongoUtils.pageByIdCursor(mongoTemplate, SmsCouponRecord.buildMemberCouponCenterQuery(clientUser.getId(), null, bo.getStatus(), null), bo.getEndIdCursorValue(), bo.getSize(), SmsCouponRecord.class, SmsCouponRecord.buildCollectionName(clientUser.getChannelId()));
         return convertList(resultList, res -> {
             MemberCouponCenterVO vo = BeanUtil.toBean(res, MemberCouponCenterVO.class);
             // 查询活动信息

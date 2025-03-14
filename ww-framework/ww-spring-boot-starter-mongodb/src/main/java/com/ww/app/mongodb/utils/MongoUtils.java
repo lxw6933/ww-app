@@ -1,5 +1,6 @@
 package com.ww.app.mongodb.utils;
 
+import cn.hutool.core.util.StrUtil;
 import com.ww.app.common.constant.Constant;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
@@ -39,6 +40,7 @@ public class MongoUtils {
      * @param pageSize       每页大小
      * @param entityClass    返回数据类型
      * @param <T>            数据类型
+     * @param collectionName 指定文档名称
      * @return 查询结果列表
      */
     public static <T> List<T> queryByCursor(MongoTemplate mongoTemplate,
@@ -46,7 +48,8 @@ public class MongoUtils {
                                             String cursorField,
                                             Object cursorValue,
                                             int pageSize,
-                                            Class<T> entityClass) {
+                                            Class<T> entityClass,
+                                            String collectionName) {
         // 如果游标值不为空，则添加大于条件
         if (cursorValue != null) {
             query.addCriteria(Criteria.where(cursorField).gt(new ObjectId(cursorValue.toString())));
@@ -56,11 +59,19 @@ public class MongoUtils {
         query.with(Sort.by(Sort.Direction.ASC, cursorField)).limit(pageSize);
 
         // 执行查询
-        return mongoTemplate.find(query, entityClass, MongoUtils.getCollectionName(entityClass));
+        if (StrUtil.isEmpty(collectionName)) {
+            return mongoTemplate.find(query, entityClass, MongoUtils.getCollectionName(entityClass));
+        } else {
+            return mongoTemplate.find(query, entityClass, collectionName);
+        }
     }
 
     public static <T> List<T> pageByIdCursor(MongoTemplate mongoTemplate, Query query, Object cursorValue, int pageSize, Class<T> entityClass) {
-        return queryByCursor(mongoTemplate, query, Constant.MONGO_PRIMARY_KEY, cursorValue, pageSize, entityClass);
+        return queryByCursor(mongoTemplate, query, Constant.MONGO_PRIMARY_KEY, cursorValue, pageSize, entityClass, null);
+    }
+
+    public static <T> List<T> pageByIdCursor(MongoTemplate mongoTemplate, Query query, Object cursorValue, int pageSize, Class<T> entityClass, String collectionName) {
+        return queryByCursor(mongoTemplate, query, Constant.MONGO_PRIMARY_KEY, cursorValue, pageSize, entityClass, collectionName);
     }
 
 }
