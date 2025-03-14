@@ -294,7 +294,7 @@ public class SmsCouponServiceImpl implements SmsCouponService {
     }
 
     @Override
-    @DistributedLock(operationKey = "#avtivityCode")
+    @DistributedLock(operationKey = "#addCouponCodeBO.activityCode")
     public boolean addSmsCouponCode(AddCouponCodeBO addCouponCodeBO) {
         SmsCouponActivity smsCouponActivity = getSmsCouponActivity(addCouponCodeBO.getActivityCode(), addCouponCodeBO.getChannelId());
         if (addCouponCodeBO.getNumber() + smsCouponActivity.getNumber() > CouponConstant.ACTIVITY_MAX_NUMBER) {
