@@ -4,6 +4,7 @@ import cn.hutool.core.bean.BeanUtil;
 import cn.hutool.core.date.DateUtil;
 import cn.hutool.core.lang.Assert;
 import cn.hutool.core.lang.UUID;
+import cn.hutool.core.util.StrUtil;
 import com.mongodb.bulk.BulkWriteResult;
 import com.mongodb.client.result.UpdateResult;
 import com.ww.app.common.common.AppPageResult;
@@ -241,6 +242,7 @@ public class SmsCouponServiceImpl implements SmsCouponService {
             // 构建用户领取优惠券记录
             SmsCouponRecord smsCouponRecord = buildSmsCouponRecord(clientUser, baseCouponInfo);
             smsCouponRecord.setCouponType(CouponUtils.getCouponType(activityCode));
+            smsCouponRecord.setCouponCode(StrUtil.EMPTY);
             mongoTemplate.save(smsCouponRecord, SmsCouponRecord.buildCollectionName(clientUser.getChannelId()));
             log.info("用户[{}]成功领取优惠券[{}]", clientUser.getId(), smsCouponRecord);
         } catch (Exception e) {
