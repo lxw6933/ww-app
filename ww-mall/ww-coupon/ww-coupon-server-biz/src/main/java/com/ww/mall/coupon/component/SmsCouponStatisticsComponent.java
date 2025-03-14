@@ -82,6 +82,9 @@ public class SmsCouponStatisticsComponent {
     private void syncStatisticsDataToDB() {
         statisticsReceiveMap.forEach((key, longAddr) -> {
             int statisticsNumber = (int) longAddr.sumThenReset();
+            if (statisticsNumber == 0) {
+                return;
+            }
             log.info("[{}]优惠券领取数据同步到DB, 领取数量[{}] 开始同步", key, statisticsNumber);
             UpdateResult updateResult = null;
             switch (CouponUtils.getCouponType(key)) {
@@ -97,6 +100,9 @@ public class SmsCouponStatisticsComponent {
         });
         statisticsUseMap.forEach((key, longAddr) -> {
             int statisticsNumber = (int) longAddr.sumThenReset();
+            if (statisticsNumber == 0) {
+                return;
+            }
             log.info("[{}]优惠券使用数据同步到DB, 使用数量[{}] 开始同步", key, statisticsNumber);
             UpdateResult updateResult = null;
             switch (CouponUtils.getCouponType(key)) {
