@@ -294,6 +294,14 @@ public class SmsCouponServiceImpl implements SmsCouponService {
     }
 
     @Override
+    public List<String> queryActivityBatchNoList(SmsCouponActivityBatchNoBO batchNoBO) {
+        Set<String> codeKeys = getCouponCodeKeys(batchNoBO.getActivityCode());
+        return codeKeys.stream()
+                .map(res -> String.valueOf(CommonUtils.extractIdFromKey(res)))
+                .collect(Collectors.toList());
+    }
+
+    @Override
     @DistributedLock(operationKey = "#addCouponCodeBO.activityCode")
     public boolean addSmsCouponCode(AddCouponCodeBO addCouponCodeBO) {
         SmsCouponActivity smsCouponActivity = getSmsCouponActivity(addCouponCodeBO.getActivityCode(), addCouponCodeBO.getChannelId());

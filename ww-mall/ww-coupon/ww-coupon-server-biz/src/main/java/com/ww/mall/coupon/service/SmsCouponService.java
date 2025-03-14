@@ -74,6 +74,14 @@ public interface SmsCouponService {
     boolean convertCoupon(String couponCode);
 
     /**
+     * 获取活动现有所有批次号
+     *
+     * @param batchNoBO 批次号条件
+     * @return List<String>
+     */
+    List<String> queryActivityBatchNoList(SmsCouponActivityBatchNoBO batchNoBO);
+
+    /**
      * 添加优惠券数量
      *
      * @param addCouponCodeBO bo
