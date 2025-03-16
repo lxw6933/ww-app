@@ -59,6 +59,16 @@ public class SmsCouponStatisticsComponent {
     }
 
     /**
+     * 统计批量发放数据
+     *
+     * @param activityCode 活动编码
+     * @param number 批量发放数量
+     */
+    public void statisticsCouponReceive(String activityCode, int number) {
+        statisticsReceiveMap.computeIfAbsent(activityCode, k -> new LongAdder()).add(number);
+    }
+
+    /**
      * 统计使用数据
      *
      * @param activityCode 活动编码

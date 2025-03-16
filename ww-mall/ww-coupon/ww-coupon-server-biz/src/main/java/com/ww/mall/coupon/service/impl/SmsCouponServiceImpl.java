@@ -3,8 +3,10 @@ package com.ww.mall.coupon.service.impl;
 import cn.hutool.core.bean.BeanUtil;
 import cn.hutool.core.date.DateUtil;
 import cn.hutool.core.lang.Assert;
+import cn.hutool.core.lang.TypeReference;
 import cn.hutool.core.lang.UUID;
 import cn.hutool.core.util.StrUtil;
+import cn.hutool.extra.spring.SpringUtil;
 import com.mongodb.bulk.BulkWriteResult;
 import com.mongodb.client.result.UpdateResult;
 import com.ww.app.common.common.AppPageResult;
@@ -13,6 +15,7 @@ import com.ww.app.common.context.AuthorizationContext;
 import com.ww.app.common.exception.ApiException;
 import com.ww.app.common.utils.CommonUtils;
 import com.ww.app.mongodb.common.BaseDoc;
+import com.ww.app.mongodb.handler.MongoBulkDataHandler;
 import com.ww.app.mongodb.utils.MongoUtils;
 import com.ww.app.redis.AppRedisTemplate;
 import com.ww.app.redis.annotation.DistributedLock;
@@ -102,9 +105,10 @@ public class SmsCouponServiceImpl implements SmsCouponService {
             int availableNumber = 0;
             switch (vo.getIssueType()) {
                 case RECEIVE:
+                case DISTRIBUTE:
                     availableNumber = stockRedisComponent.getStrStock(couponRedisKeyBuilder.buildCouponNumberKey(smsCouponActivity.getActivityCode()));
                     break;
-                case DISTRIBUTE:
+                case EXPORT_DISTRIBUTE:
                     Set<String> couponCodeKeys = getCouponCodeKeys(smsCouponActivity.getActivityCode());
                     for (String key : couponCodeKeys) {
                         RSet<String> codeRSet = redissonClient.getSet(key);
@@ -155,9 +159,10 @@ public class SmsCouponServiceImpl implements SmsCouponService {
         // 生成优惠券数量记录
         switch (smsCouponActivity.getIssueType()) {
             case RECEIVE:
+            case DISTRIBUTE:
                 stockRedisComponent.initStrStock(couponRedisKeyBuilder.buildCouponNumberKey(smsCouponActivity.getActivityCode()), smsCouponActivity.getNumber());
                 break;
-            case DISTRIBUTE:
+            case EXPORT_DISTRIBUTE:
                 generateSmsCouponCode(smsCouponActivity, CouponConstant.DEFAULT_BATCH_NO, smsCouponActivity.getNumber());
                 break;
             default:
@@ -183,7 +188,7 @@ public class SmsCouponServiceImpl implements SmsCouponService {
      * 生成平台优惠券券码
      *
      * @param smsCouponActivity 优惠券活动
-     * @param batchNo 批次号
+     * @param batchNo           批次号
      * @return 生成券码数量
      */
     private int generateSmsCouponCode(SmsCouponActivity smsCouponActivity, String batchNo, int codeNumber) {
@@ -210,7 +215,7 @@ public class SmsCouponServiceImpl implements SmsCouponService {
     }
 
     @Override
-    @DistributedLock(enableUserLock = true, operationKey = "'receiveCoupon'")
+    @DistributedLock(enableUserLock = true)
     public boolean receiveCoupon(String activityCode) {
         ClientUser clientUser = AuthorizationContext.getClientUser();
         log.info("用户[{}]领取优惠券活动[{}]", clientUser.getId(), activityCode);
@@ -231,28 +236,86 @@ public class SmsCouponServiceImpl implements SmsCouponService {
                 baseCouponInfo = merchantCouponActivity;
                 break;
         }
-        // 活动校验
-        validSmsCouponActivity(clientUser, baseCouponInfo);
         if (!IssueType.RECEIVE.equals(baseCouponInfo.getIssueType())) {
             throw new ApiException("当前优惠券不能被领取");
         }
+        // 活动校验
+        validSmsCouponActivity(baseCouponInfo);
+        // 用户优惠券领取次数限制校验
+        checkUserReceiveLimit(clientUser.getId(), clientUser.getChannelId(), baseCouponInfo);
         // 库存校验
         Assert.isTrue(stockRedisComponent.decrementStock(couponRedisKeyBuilder.buildCouponNumberKey(activityCode), 1), () -> new ApiException("优惠券已被抢完"));
         try {
             // 构建用户领取优惠券记录
-            SmsCouponRecord smsCouponRecord = buildSmsCouponRecord(clientUser, baseCouponInfo);
+            SmsCouponRecord smsCouponRecord = buildSmsCouponRecord(clientUser.getId(), clientUser.getChannelId(), baseCouponInfo);
             smsCouponRecord.setCouponType(CouponUtils.getCouponType(activityCode));
             smsCouponRecord.setCouponCode(StrUtil.EMPTY);
             mongoTemplate.save(smsCouponRecord, SmsCouponRecord.buildCollectionName(clientUser.getChannelId()));
             log.info("用户[{}]成功领取优惠券[{}]", clientUser.getId(), smsCouponRecord);
         } catch (Exception e) {
-            log.info("用户[{}]领取优惠券[{}]异常，进行回滚活动库存", clientUser.getId(), activityCode);
+            log.error("用户[{}]领取优惠券[{}]异常，进行回滚活动库存", clientUser.getId(), activityCode);
             boolean flag = stockRedisComponent.decrementStock(couponRedisKeyBuilder.buildCouponNumberKey(activityCode), -1);
-            log.info("回滚优惠券活动[{}]库存结果[{}]", activityCode, flag);
+            log.error("回滚优惠券活动[{}]库存结果[{}]", activityCode, flag);
             return false;
         }
         // 统计领取数据
         smsCouponStatisticsComponent.statisticsCouponReceive(activityCode);
+        return true;
+    }
+
+    private final MongoBulkDataHandler<SmsCouponRecord> mongoBulkCouponRecordDataHandler = SpringUtil.getBean(new TypeReference<MongoBulkDataHandler<SmsCouponRecord>>() {
+    });
+
+    /**
+     * 批量发放优惠券
+     *
+     * @param activityCode    活动编码
+     * @param issueUserIdList 发放用户id集合
+     * @return boolean
+     */
+    public boolean batchIssueCoupon(String activityCode, List<Long> issueUserIdList) {
+        log.info("[批量发放优惠券]优惠券活动[{}]用户数量[{}]", activityCode, issueUserIdList.size());
+        SmsCouponActivity smsCouponActivity = getSmsCouponActivity(activityCode);
+        if (!IssueType.DISTRIBUTE.equals(smsCouponActivity.getIssueType())) {
+            throw new ApiException("当前优惠券不能被发放");
+        }
+        // 活动校验
+        validSmsCouponActivity(smsCouponActivity);
+        // 用户优惠券领取次数限制校验
+        List<Long> targetIssueUserIdList = new ArrayList<>();
+        issueUserIdList.forEach(userId -> {
+            try {
+                checkUserReceiveLimit(userId, smsCouponActivity.getChannelId(), smsCouponActivity);
+                targetIssueUserIdList.add(userId);
+            } catch (Exception e) {
+                log.error("[批量发放优惠券]优惠券活动[{}]用户[{}]已经发放优惠券", activityCode, userId);
+            }
+        });
+        if (CollectionUtils.isEmpty(targetIssueUserIdList)) {
+            return true;
+        }
+        // 库存校验
+        Assert.isTrue(stockRedisComponent.decrementStock(couponRedisKeyBuilder.buildCouponNumberKey(activityCode), targetIssueUserIdList.size()), () -> new ApiException("剩余优惠券不足以发放给" + targetIssueUserIdList.size() + "个用户"));
+        // 发放优惠券
+        List<SmsCouponRecord> smsIssueCouponRecordList = new ArrayList<>();
+        String collectionName = SmsCouponRecord.buildCollectionName(smsCouponActivity.getChannelId());
+        int issueSuccessSize;
+        try {
+            targetIssueUserIdList.forEach(userId -> {
+                // 构建用户领取优惠券记录
+                SmsCouponRecord smsCouponRecord = buildSmsCouponRecord(userId, smsCouponActivity.getChannelId(), smsCouponActivity);
+                smsCouponRecord.setCouponType(CouponUtils.getCouponType(activityCode));
+                smsCouponRecord.setCouponCode(StrUtil.EMPTY);
+                smsIssueCouponRecordList.add(smsCouponRecord);
+            });
+            issueSuccessSize = mongoBulkCouponRecordDataHandler.bulkSave(smsIssueCouponRecordList, collectionName);
+            log.info("[批量发放优惠券][{}]发放成功数量[{}]", activityCode, issueSuccessSize);
+        } catch (Exception e) {
+            log.error("[批量发放优惠券][{}]异常", activityCode, e);
+            return false;
+        }
+        // 统计批量发放数据
+        smsCouponStatisticsComponent.statisticsCouponReceive(activityCode, issueSuccessSize);
         return true;
     }
 
@@ -265,16 +328,18 @@ public class SmsCouponServiceImpl implements SmsCouponService {
         // 查询是否存在券码
         SmsCouponCode smsCouponCode = mongoTemplate.findOne(SmsCouponCode.buildCodeQuery(clientUser.getChannelId(), couponCode), SmsCouponCode.class, SmsCouponCode.buildCollectionName(clientUser.getChannelId()));
         Assert.notNull(smsCouponCode, () -> new ApiException("券码无效"));
-        // 校验活动·
         assert smsCouponCode != null;
         SmsCouponActivity smsCouponActivity = getSmsCouponActivity(smsCouponCode.getActivityCode());
-        validSmsCouponActivity(clientUser, smsCouponActivity);
+        // 活动校验
+        validSmsCouponActivity(smsCouponActivity);
+        // 用户优惠券领取次数限制校验
+        checkUserReceiveLimit(clientUser.getId(), clientUser.getChannelId(), smsCouponActivity);
         // 进行兑换
         boolean remove = doConvertCouponCode(couponRedisKeyBuilder.buildCouponCodeKey(smsCouponCode.getActivityCode(), smsCouponCode.getBatchNo()), couponCode);
         Assert.isTrue(remove, () -> new ApiException("券码已使用，请勿重复兑换"));
         try {
             // 构建用户领取优惠券记录
-            SmsCouponRecord smsCouponRecord = buildSmsCouponRecord(clientUser, smsCouponActivity);
+            SmsCouponRecord smsCouponRecord = buildSmsCouponRecord(clientUser.getId(), clientUser.getChannelId(), smsCouponActivity);
             // 记录券码
             smsCouponRecord.setCouponCode(couponCode);
             // 目前只支持渠道券码
@@ -282,10 +347,10 @@ public class SmsCouponServiceImpl implements SmsCouponService {
             mongoTemplate.save(smsCouponRecord, SmsCouponRecord.buildCollectionName(clientUser.getChannelId()));
             log.info("用户[{}]使用券码[{}]成功兑换优惠券[{}]", clientUser.getId(), couponCode, smsCouponRecord);
         } catch (Exception e) {
-            log.info("用户[{}]兑换优惠券[{}]异常，进行回滚活动库存", clientUser.getId(), couponCode);
+            log.error("用户[{}]兑换优惠券[{}]异常，进行回滚活动库存", clientUser.getId(), couponCode);
             RSet<String> codeRSet = redissonClient.getSet(couponRedisKeyBuilder.buildCouponCodeKey(smsCouponActivity.getActivityCode(), smsCouponCode.getBatchNo()));
             boolean flag = codeRSet.add(couponCode);
-            log.info("回滚优惠券券码[{}]回滚结果[{}]", couponCode, flag);
+            log.error("回滚优惠券券码[{}]回滚结果[{}]", couponCode, flag);
             return false;
         }
         // 统计领取数据
@@ -311,12 +376,13 @@ public class SmsCouponServiceImpl implements SmsCouponService {
         int generateCodeNumber = addCouponCodeBO.getNumber();
         switch (smsCouponActivity.getIssueType()) {
             case RECEIVE:
+            case DISTRIBUTE:
                 boolean add = stockRedisComponent.decrementStock(couponRedisKeyBuilder.buildCouponNumberKey(smsCouponActivity.getActivityCode()), -addCouponCodeBO.getNumber());
                 if (!add) {
                     return false;
                 }
                 break;
-            case DISTRIBUTE:
+            case EXPORT_DISTRIBUTE:
                 String batchNo = getCouponActivityNextBatchNo(smsCouponActivity.getActivityCode());
                 generateCodeNumber = generateSmsCouponCode(smsCouponActivity, batchNo, addCouponCodeBO.getNumber());
                 break;
@@ -457,10 +523,9 @@ public class SmsCouponServiceImpl implements SmsCouponService {
     /**
      * 校验优惠券活动
      *
-     * @param clientUser 用户
      * @param baseCouponInfo 活动
      */
-    private void validSmsCouponActivity(ClientUser clientUser, BaseCouponInfo baseCouponInfo) {
+    private void validSmsCouponActivity(BaseCouponInfo baseCouponInfo) {
         Date now = new Date();
         // 活动是否正常
         if (Boolean.FALSE.equals(baseCouponInfo.getStatus())) {
@@ -470,8 +535,17 @@ public class SmsCouponServiceImpl implements SmsCouponService {
         if (now.before(baseCouponInfo.getReceiveStartDate()) || now.after(baseCouponInfo.getReceiveEndDate())) {
             throw new ApiException("不在优惠券领取时间范围内，不能领取优惠券");
         }
-        // 查询当前用户改优惠券的领取次数
-        long memberReceiveCount = mongoTemplate.count(SmsCouponRecord.buildMemberReceiveRecordQuery(clientUser.getId(), baseCouponInfo.getActivityCode(), baseCouponInfo.getLimitReceiveTimeType()), SmsCouponRecord.class, SmsCouponRecord.buildCollectionName(clientUser.getChannelId()));
+    }
+
+    /**
+     * 校验活动用户领取限制
+     *
+     * @param userId         用户id
+     * @param channelId      渠道id
+     * @param baseCouponInfo 优惠券基本信息
+     */
+    private void checkUserReceiveLimit(Long userId, Long channelId, BaseCouponInfo baseCouponInfo) {
+        long memberReceiveCount = mongoTemplate.count(SmsCouponRecord.buildMemberReceiveRecordQuery(userId, baseCouponInfo.getActivityCode(), baseCouponInfo.getLimitReceiveTimeType()), SmsCouponRecord.class, SmsCouponRecord.buildCollectionName(channelId));
         if (memberReceiveCount >= baseCouponInfo.getLimitReceiveNumber()) {
             throw new ApiException("超出优惠券领取限制");
         }
@@ -480,15 +554,16 @@ public class SmsCouponServiceImpl implements SmsCouponService {
     /**
      * 构建用户优惠券记录
      *
-     * @param clientUser 用户
+     * @param userId         用户id
+     * @param channelId      渠道id
      * @param baseCouponInfo 优惠券基础信息
      * @return 用户优惠券记录
      */
-    private SmsCouponRecord buildSmsCouponRecord(ClientUser clientUser, BaseCouponInfo baseCouponInfo) {
+    private SmsCouponRecord buildSmsCouponRecord(Long userId, Long channelId, BaseCouponInfo baseCouponInfo) {
         Date now = new Date();
         SmsCouponRecord smsCouponRecord = new SmsCouponRecord();
-        smsCouponRecord.setMemberId(clientUser.getId());
-        smsCouponRecord.setChannelId(clientUser.getChannelId());
+        smsCouponRecord.setMemberId(userId);
+        smsCouponRecord.setChannelId(channelId);
         smsCouponRecord.setActivityCode(baseCouponInfo.getActivityCode());
         smsCouponRecord.setCouponDiscountType(baseCouponInfo.getCouponDiscountType());
         smsCouponRecord.setAchieveAmount(baseCouponInfo.getAchieveAmount());
@@ -573,8 +648,8 @@ public class SmsCouponServiceImpl implements SmsCouponService {
      * 获取适用spu所有的平台优惠券活动
      *
      * @param channelId 渠道id
-     * @param type 是否区分积分现金券
-     * @param smsId 渠道商品id
+     * @param type      是否区分积分现金券
+     * @param smsId     渠道商品id
      */
     private List<ProductCouponActivityVO> getSpuCouponActivityList(Long channelId, CouponConstant.Type type, Long smsId) {
         // 查询前30个适用商品平台优惠券活动【进行排序】
@@ -612,7 +687,7 @@ public class SmsCouponServiceImpl implements SmsCouponService {
     /**
      * 获取确认下单用户优惠券信息
      *
-     * @param orderBOList 下单商品BO
+     * @param orderBOList         下单商品BO
      * @param memberSmsCouponList 用户有效平台优惠券集合
      * @return ConfirmOrderCouponVO
      */

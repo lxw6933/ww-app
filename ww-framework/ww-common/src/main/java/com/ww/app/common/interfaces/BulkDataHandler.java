@@ -17,4 +17,13 @@ public interface BulkDataHandler<T> {
      */
     int bulkSave(List<T> dataList);
 
+    /**
+     * 批量保存数据
+     *
+     * @param dataList 数据集合
+     * @param collectionName 指定集合名称
+     * @return 成功保存数量
+     */
+    int bulkSave(List<T> dataList, String collectionName);
+
 }

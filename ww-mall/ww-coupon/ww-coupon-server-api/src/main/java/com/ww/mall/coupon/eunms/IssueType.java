@@ -13,7 +13,8 @@ import java.util.StringJoiner;
 public enum IssueType {
 
     RECEIVE("用户领取"),
-    DISTRIBUTE("后台发放");
+    DISTRIBUTE("后台发放"),
+    EXPORT_DISTRIBUTE("导出发放");
 
     private final String text;
 

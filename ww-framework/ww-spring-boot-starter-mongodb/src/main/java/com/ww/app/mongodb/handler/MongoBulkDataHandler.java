@@ -35,4 +35,14 @@ public class MongoBulkDataHandler<T> implements BulkDataHandler<T> {
         BulkWriteResult bulkWriteResult = bulkOps.execute();
         return bulkWriteResult.getInsertedCount();
     }
+
+    @Override
+    public int bulkSave(List<T> dataList, String collectionName) {
+        BulkOperations bulkOps = mongoTemplate.bulkOps(BulkOperations.BulkMode.UNORDERED, collectionName);
+        // 将所有数据添加到 bulk 操作中
+        bulkOps.insert(dataList);
+        // 提交批量操作
+        BulkWriteResult bulkWriteResult = bulkOps.execute();
+        return bulkWriteResult.getInsertedCount();
+    }
 }
