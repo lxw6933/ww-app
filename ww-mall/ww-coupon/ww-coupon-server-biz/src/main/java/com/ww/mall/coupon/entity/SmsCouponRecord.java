@@ -80,18 +80,21 @@ public class SmsCouponRecord extends BaseDoc {
      */
     private CouponStatus couponStatus;
 
-    public static Query buildMemberCouponCenterQuery(Long memberId, Boolean integralType, CouponConstant.Status status, CouponType couponType) {
+    public static Query buildMemberCouponCenterQuery(Long memberId, CouponConstant.Type type, CouponConstant.Status status, CouponType couponType) {
         Query query = new Query();
         Criteria criteria = Criteria.where("memberId").is(memberId);
         if (couponType != null) {
             criteria.and("couponType").is(couponType);
         }
-        if (integralType != null) {
-            if (integralType) {
-                criteria.and("couponDiscountType").in(CouponDiscountType.FULL_DISCOUNT, CouponDiscountType.FULL_REDUCTION, CouponDiscountType.DIRECT_REDUCTION);
-            } else {
+        switch (type) {
+            case ALL:
+                break;
+            case INTEGRAL:
                 criteria.and("couponDiscountType").is(CouponDiscountType.INTEGRAL_DISCOUNT);
-            }
+                break;
+            case CASH:
+                criteria.and("couponDiscountType").in(CouponDiscountType.FULL_DISCOUNT, CouponDiscountType.FULL_REDUCTION, CouponDiscountType.DIRECT_REDUCTION);
+                break;
         }
         switch (status) {
             case USE:

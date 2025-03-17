@@ -28,6 +28,11 @@ public class MemberCouponCenterBO {
     private CouponType couponType;
 
     /**
+     * 积分类型
+     */
+    private CouponConstant.Type type;
+
+    /**
      * 展示数量
      */
     private Integer size;

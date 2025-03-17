@@ -150,10 +150,10 @@ public class BaseCouponInfo extends BaseDoc {
         switch (type) {
             case ALL:
                 break;
-            case CASH:
+            case INTEGRAL:
                 criteria.and("couponDiscountType").is(CouponDiscountType.INTEGRAL_DISCOUNT);
                 break;
-            case INTEGRAL:
+            case CASH:
                 criteria.and("couponDiscountType").in(CouponDiscountType.FULL_DISCOUNT, CouponDiscountType.FULL_REDUCTION, CouponDiscountType.DIRECT_REDUCTION);
                 break;
         }

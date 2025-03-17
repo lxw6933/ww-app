@@ -497,7 +497,7 @@ public class SmsCouponServiceImpl implements SmsCouponService {
     public List<MemberCouponCenterVO> memberCouponCenter(MemberCouponCenterBO bo) {
         ClientUser clientUser = AuthorizationContext.getClientUser();
         updateMemberCouponStatus(clientUser);
-        List<SmsCouponRecord> resultList = MongoUtils.pageByIdCursor(mongoTemplate, SmsCouponRecord.buildMemberCouponCenterQuery(clientUser.getId(), null, bo.getStatus(), null), bo.getEndIdCursorValue(), bo.getSize(), SmsCouponRecord.class, SmsCouponRecord.buildCollectionName(clientUser.getChannelId()));
+        List<SmsCouponRecord> resultList = MongoUtils.pageByIdCursor(mongoTemplate, SmsCouponRecord.buildMemberCouponCenterQuery(clientUser.getId(), bo.getType(), bo.getStatus(), bo.getCouponType()), bo.getEndIdCursorValue(), bo.getSize(), SmsCouponRecord.class, SmsCouponRecord.buildCollectionName(clientUser.getChannelId()));
         return convertList(resultList, res -> {
             MemberCouponCenterVO vo = BeanUtil.toBean(res, MemberCouponCenterVO.class);
             // 查询活动信息
@@ -653,7 +653,7 @@ public class SmsCouponServiceImpl implements SmsCouponService {
      * @param type      是否区分积分现金券
      * @param smsId     渠道商品id
      */
-    private List<ProductCouponActivityVO> getSpuCouponActivityList(Long channelId, CouponConstant.Type type, Long smsId) {
+    public List<ProductCouponActivityVO> getSpuCouponActivityList(Long channelId, CouponConstant.Type type, Long smsId) {
         // 查询前30个适用商品平台优惠券活动【进行排序】
         List<SmsCouponActivity> couponActivityList = MongoUtils.pageByIdCursor(mongoTemplate, SmsCouponActivity.buildSpuQuery(channelId, type, smsId), null, 30, SmsCouponActivity.class);
         if (CollectionUtils.isEmpty(couponActivityList)) {
@@ -693,7 +693,7 @@ public class SmsCouponServiceImpl implements SmsCouponService {
      * @param memberSmsCouponList 用户有效平台优惠券集合
      * @return ConfirmOrderCouponVO
      */
-    private ConfirmOrderCouponVO getOrderMemberCouponList(List<MemberCouponCenterVO> memberSmsCouponList, List<OrderMemberSmsCouponBO> orderBOList) {
+    public ConfirmOrderCouponVO getOrderMemberCouponList(List<MemberCouponCenterVO> memberSmsCouponList, List<OrderMemberSmsCouponBO> orderBOList) {
         if (CollectionUtils.isEmpty(memberSmsCouponList)) {
             return null;
         }
