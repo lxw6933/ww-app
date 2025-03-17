@@ -1,6 +1,7 @@
 package com.ww.mall.coupon.utils;
 
 import cn.hutool.core.util.StrUtil;
+import com.ww.app.common.enums.GlobalResCodeConstants;
 import com.ww.app.common.exception.ApiException;
 import com.ww.app.common.utils.IdUtil;
 import com.ww.mall.coupon.eunms.CouponType;
@@ -42,7 +43,7 @@ public class CouponUtils {
         } else if (activityCode.contains(MERCHANT_COUPON_PREFIX)) {
             return CouponType.MERCHANT;
         } else {
-            throw new ApiException("非法请求");
+            throw new ApiException(GlobalResCodeConstants.ILLEGAL_REQUEST);
         }
     }
 

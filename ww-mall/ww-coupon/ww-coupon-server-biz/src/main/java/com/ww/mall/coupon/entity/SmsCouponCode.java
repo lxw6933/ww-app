@@ -39,6 +39,13 @@ public class SmsCouponCode {
      */
     private String code;
 
+    /**
+     * 领取用户id[是否开启][默认不开启]
+     * 不开启[默认]：领取记录不分表
+     * 开启：领取记录按照用户id分表，需要兑换接口额外维护此字段
+     */
+    private Long userId;
+
     public SmsCouponCode(String activityCode, Long channelId, String batchNo, String code) {
         this.activityCode = activityCode;
         this.channelId = channelId;
