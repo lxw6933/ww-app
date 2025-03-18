@@ -7,6 +7,7 @@ import lombok.EqualsAndHashCode;
 
 import java.math.BigDecimal;
 import java.util.Date;
+import java.util.Map;
 
 /**
  * @author ww
@@ -41,5 +42,10 @@ public class OrderMemberCouponVO extends BaseCouponInfoVO {
      * 不可用原因
      */
     private CouponConstant.Disabled disabled;
+
+    /**
+     * 商品均摊金额
+     */
+    private Map<Long, BigDecimal> allocateResultMap;
 
 }

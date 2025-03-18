@@ -7,6 +7,7 @@ import com.ww.app.common.exception.ApiException;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import org.apache.commons.collections4.CollectionUtils;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
@@ -142,24 +143,39 @@ public class MoneyUtils {
     /**
      * 按比例将优惠金额均摊到 BO 集合
      *
-     * @param boList   BO 集合
-     * @param discount 总优惠金额
+     * @param boList       BO 集合
+     * @param discount     总优惠金额
+     * @param scale        金额的小数位数
+     * @param roundingMode 金额的舍入模式
      * @return 返回每个 BO 的优惠金额映射
      */
-    public static <T> Map<T, BigDecimal> allocateDiscount(List<MoneyBO<T>> boList, BigDecimal discount) {
+    public static <T> Map<T, BigDecimal> allocateDiscount(List<MoneyBO<T>> boList, BigDecimal discount, int scale, RoundingMode roundingMode) {
+        if (CollectionUtils.isEmpty(boList)) {
+            throw new IllegalArgumentException("boList 不能为空");
+        }
         Map<T, BigDecimal> result = new HashMap<>();
         // 1. 计算总价
         BigDecimal totalAmount = boList.stream()
                 .map(MoneyBO::getPrice)
                 .reduce(BigDecimal.ZERO, BigDecimal::add);
+        if (totalAmount.compareTo(BigDecimal.ZERO) == 0) {
+            // 总金额为0，不进行均摊
+            for (MoneyBO<T> bo : boList) {
+                result.put(bo.getId(), BigDecimal.ZERO);
+            }
+            return result;
+        }
+        if (totalAmount.compareTo(discount) < 0) {
+            discount = totalAmount;
+        }
         // 2. 初始化变量，累积分摊的优惠金额，确保精度不丢失
         BigDecimal remainingDiscount = discount;
         // 3. 遍历 BO 集合，按比例计算每个 BO 的优惠金额
         for (int i = 0; i < boList.size(); i++) {
             MoneyBO<T> bo = boList.get(i);
             // 计算当前 BO 应分摊的优惠金额
-            BigDecimal proportion = bo.getPrice().divide(totalAmount, 8, RoundingMode.HALF_UP);
-            BigDecimal allocatedDiscount = discount.multiply(proportion).setScale(PRICE_SCALE, RoundingMode.HALF_UP);
+            BigDecimal proportion = bo.getPrice().divide(totalAmount, 8, roundingMode);
+            BigDecimal allocatedDiscount = discount.multiply(proportion).setScale(scale, roundingMode);
             // 如果是最后一个 BO，直接将剩余的优惠金额分摊给它，确保总金额精度不丢失
             if (i == boList.size() - 1) {
                 allocatedDiscount = remainingDiscount;
@@ -169,6 +185,20 @@ public class MoneyUtils {
             remainingDiscount = remainingDiscount.subtract(allocatedDiscount);
         }
         return result;
+    }
+
+    /**
+     * 分摊金额的简化方法（默认小数位数和舍入模式）
+     */
+    public static <T> Map<T, BigDecimal> allocateBigDecimalDiscount(List<MoneyBO<T>> itemList, BigDecimal discount) {
+        return allocateDiscount(itemList, discount, 2, RoundingMode.HALF_UP);
+    }
+
+    /**
+     * 分摊金额的简化方法（支持 int 类型的总金额）
+     */
+    public static <T> Map<T, BigDecimal> allocateIntDiscount(List<MoneyBO<T>> itemList, int discount) {
+        return allocateDiscount(itemList, new BigDecimal(discount), 0, RoundingMode.HALF_UP);
     }
 
     /**
@@ -232,10 +262,10 @@ public class MoneyUtils {
     }
 
     public static void main(String[] args) {
-//        testAllocateDiscount();
+        testAllocateDiscount();
 //        testSplitRedPacket();
         for (int i = 0; i < 1; i++) {
-            testSplitRedPacket();
+//            testSplitRedPacket();
         }
     }
 
@@ -269,13 +299,18 @@ public class MoneyUtils {
     private static void testAllocateDiscount() {
         // 示例数据
         List<MoneyBO<String>> skuList = Arrays.asList(
-                new MoneyBO<>("sku1", new BigDecimal("0.01")),
-                new MoneyBO<>("sku2", new BigDecimal("200.00")),
-                new MoneyBO<>("sku3", new BigDecimal("301.00"))
+//                new MoneyBO<>("sku1", new BigDecimal("0.01")),
+//                new MoneyBO<>("sku2", new BigDecimal("200.00")),
+//                new MoneyBO<>("sku3", new BigDecimal("301.00"))
+                new MoneyBO<>("sku1", new BigDecimal("1")),
+                new MoneyBO<>("sku2", new BigDecimal("4")),
+                new MoneyBO<>("sku3", new BigDecimal("1"))
         );
-        BigDecimal discount = new BigDecimal("50.00");
+        int discount = 2;
+//        BigDecimal discount = new BigDecimal("500");
         // 计算并打印优惠金额分摊结果
-        Map<String, BigDecimal> result = allocateDiscount(skuList, discount);
+        Map<String, BigDecimal> result = allocateIntDiscount(skuList, discount);
+//        Map<String, BigDecimal> result = allocateBigDecimalDiscount(skuList, discount);
         result.forEach((skuId, allocated) ->
                 System.out.println("SKU: " + skuId + ", 分摊优惠金额: " + allocated));
     }
