@@ -778,14 +778,8 @@ public class SmsCouponServiceImpl implements SmsCouponService {
         } else {
             vo.setDiscountTotalAmount(res.getDeductionAmount());
             // 价格均摊
-            List<MoneyUtils.MoneyBO<Long>> moneyBOS = targetList.stream().map(orderBO -> {
-                MoneyUtils.MoneyBO<Long> bo = new MoneyUtils.MoneyBO<>();
-                bo.setId(orderBO.getSmsId());
-                bo.setPrice(new BigDecimal(orderBO.getRealIntegral() * orderBO.getNumber()));
-                return bo;
-            }).collect(Collectors.toList());
-            Map<Long, BigDecimal> allocateResultMap = MoneyUtils.allocateIntDiscount(moneyBOS, vo.getDiscountTotalAmount().intValue());
-            vo.setAllocateResultMap(allocateResultMap);
+            Map<Long, BigDecimal> allocateResult = allocateDiscount(targetList, vo.getDiscountTotalAmount(), true);
+            vo.setAllocateResultMap(allocateResult);
         }
         return true;
     }
@@ -802,7 +796,7 @@ public class SmsCouponServiceImpl implements SmsCouponService {
             case DIRECT_REDUCTION:
                 vo.setDiscountTotalAmount(res.getDeductionAmount().compareTo(orderProductTotalAmount) >= 0 ? orderProductTotalAmount : res.getDeductionAmount());
                 // 价格均摊
-                allocateResult = allocateDiscount(targetList, vo.getDiscountTotalAmount());
+                allocateResult = allocateDiscount(targetList, vo.getDiscountTotalAmount(), false);
                 break;
             case FULL_REDUCTION:
                 if (achieveAmount.compareTo(orderProductTotalAmount) > 0) {
@@ -810,7 +804,7 @@ public class SmsCouponServiceImpl implements SmsCouponService {
                 } else {
                     vo.setDiscountTotalAmount(res.getDeductionAmount().compareTo(orderProductTotalAmount) >= 0 ? orderProductTotalAmount : res.getDeductionAmount());
                     // 价格均摊
-                    allocateResult = allocateDiscount(targetList, vo.getDiscountTotalAmount());
+                    allocateResult = allocateDiscount(targetList, vo.getDiscountTotalAmount(), false);
                 }
                 break;
             case FULL_DISCOUNT:
@@ -820,7 +814,7 @@ public class SmsCouponServiceImpl implements SmsCouponService {
                     BigDecimal payAmount = orderProductTotalAmount.multiply(res.getDeductionAmount()).setScale(2, RoundingMode.HALF_UP);
                     vo.setDiscountTotalAmount(orderProductTotalAmount.subtract(payAmount));
                     // 价格均摊
-                    allocateResult = allocateDiscount(targetList, vo.getDiscountTotalAmount());
+                    allocateResult = allocateDiscount(targetList, vo.getDiscountTotalAmount(), false);
                 }
                 break;
             default:
@@ -836,14 +830,15 @@ public class SmsCouponServiceImpl implements SmsCouponService {
      * @param discountAmount 优惠总金额
      * @return Map<Long, BigDecimal>
      */
-    private Map<Long, BigDecimal> allocateDiscount(List<OrderMemberSmsCouponBO> targetList, BigDecimal discountAmount) {
+    private Map<Long, BigDecimal> allocateDiscount(List<OrderMemberSmsCouponBO> targetList, BigDecimal discountAmount, boolean integralType) {
         List<MoneyUtils.MoneyBO<Long>> moneyBOList = targetList.stream().map(orderBO -> {
             MoneyUtils.MoneyBO<Long> bo = new MoneyUtils.MoneyBO<>();
-            bo.setId(orderBO.getSmsId());
+            bo.setId(orderBO.getSkuId());
             bo.setPrice(orderBO.getRealAmount().multiply(BigDecimal.valueOf(orderBO.getNumber())));
             return bo;
         }).collect(Collectors.toList());
-        return MoneyUtils.allocateBigDecimalDiscount(moneyBOList, discountAmount);
+        return integralType ? MoneyUtils.allocateIntDiscount(moneyBOList, discountAmount.intValue()) :
+                MoneyUtils.allocateBigDecimalDiscount(moneyBOList, discountAmount);
     }
 
 }

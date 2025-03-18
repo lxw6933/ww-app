@@ -13,9 +13,29 @@ import java.math.BigDecimal;
 public class OrderMemberSmsCouponBO {
 
     /**
-     * 运营商品id
+     * 运营商品id【平台优惠券用】
      */
     private Long smsId;
+
+    /**
+     * 运营商家商品id【商家优惠券用】
+     */
+    private Long spuId;
+
+    /**
+     * 运营商品规格id【均摊优惠】
+     */
+    private Long skuId;
+
+    /**
+     * 商品类目id【商家优惠券用】
+     */
+    private Long categoryId;
+
+    /**
+     * 商品品牌id【商家优惠券用】
+     */
+    private Long brandId;
 
     /**
      * 数量
