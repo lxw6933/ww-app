@@ -1,7 +1,6 @@
 package com.ww.mall.coupon.component;
 
 import com.mongodb.client.result.UpdateResult;
-import com.ww.app.common.enums.GlobalResCodeConstants;
 import com.ww.app.common.exception.ApiException;
 import com.ww.app.mongodb.common.BaseDoc;
 import com.ww.mall.coupon.component.key.CouponRedisKeyBuilder;
@@ -13,7 +12,6 @@ import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Component;
 
 import javax.annotation.Resource;
-import java.util.Date;
 import java.util.concurrent.TimeUnit;
 
 /**
@@ -37,40 +35,30 @@ public class CouponComponent {
     /**
      * 冻结优惠券
      *
-     * @param userId 用户id
+     * @param userId         用户id
      * @param couponRecordId 用户优惠券id
-     * @param submit 是否提交订单
-     * @return boolean
      */
-    public SmsCouponRecord freezeMemberCoupon(Long userId, String couponRecordId, boolean submit) {
-        SmsCouponRecord memberCouponRecord = mongoTemplate.findOne(BaseDoc.buildIdQuery(couponRecordId), SmsCouponRecord.class);
-        if (memberCouponRecord == null) {
-            throw new ApiException("优惠券不存在");
+    public void freezeMemberCoupon(Long userId, String couponRecordId) {
+        String freezeKey = couponRedisKeyBuilder.buildCouponFreezeKey(couponRecordId);
+        Boolean result = stringRedisTemplate.opsForValue().setIfAbsent(freezeKey, Boolean.TRUE.toString(), 1, TimeUnit.DAYS);
+        if (Boolean.TRUE.equals(result)) {
+            log.info("冻结用户[{}]优惠券[{}]成功", userId, couponRecordId);
+        } else {
+            log.error("用户[{}]优惠券[{}]已经被占用", userId, couponRecordId);
+            throw new ApiException("优惠券已被占用");
         }
-        if (!userId.equals(memberCouponRecord.getMemberId())) {
-            throw new ApiException(GlobalResCodeConstants.ILLEGAL_REQUEST);
+    }
+
+    /**
+     * 判断下单优惠券是否被冻结
+     *
+     * @param couponRecordId 用户优惠券id
+     */
+    public void isFreezeCoupon(String couponRecordId) {
+        String freezeKey = couponRedisKeyBuilder.buildCouponFreezeKey(couponRecordId);
+        if (Boolean.TRUE.equals(stringRedisTemplate.hasKey(freezeKey))) {
+            throw new ApiException("优惠券已被占用");
         }
-        if (CouponStatus.USED.equals(memberCouponRecord.getCouponStatus())) {
-            throw new ApiException("优惠券已使用");
-        }
-        Date now = new Date();
-        if (memberCouponRecord.getUseStartTime().after(now)) {
-            throw new ApiException("优惠券还没到使用时间");
-        }
-        if (memberCouponRecord.getUseEndTime().before(now)) {
-            throw new ApiException("优惠券已过期");
-        }
-        if (submit) {
-            String freezeKey = couponRedisKeyBuilder.buildCouponFreezeKey(couponRecordId);
-            Boolean result = stringRedisTemplate.opsForValue().setIfAbsent(freezeKey, Boolean.TRUE.toString(), 1, TimeUnit.DAYS);
-            if (Boolean.TRUE.equals(result)) {
-                log.info("冻结用户[{}]优惠券[{}]成功", userId, couponRecordId);
-            } else {
-                log.error("用户[{}]优惠券[{}]已经被占用", userId, couponRecordId);
-                throw new ApiException("优惠券已被占用");
-            }
-        }
-        return memberCouponRecord;
     }
 
     /**
