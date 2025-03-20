@@ -1,12 +1,11 @@
 package com.ww.mall.coupon.service;
 
-import com.ww.app.common.common.ClientUser;
+import com.ww.app.common.common.AppPageResult;
 import com.ww.mall.coupon.view.bo.*;
 import com.ww.mall.coupon.view.vo.CouponActivityCenterVO;
 import com.ww.mall.coupon.view.vo.MemberCouponCenterVO;
 import com.ww.mall.coupon.view.vo.SmsCouponCodeListVO;
 import com.ww.mall.coupon.view.vo.SmsCouponPageVO;
-import com.ww.app.common.common.AppPageResult;
 
 import java.util.List;
 
@@ -88,13 +87,6 @@ public interface SmsCouponService {
      * @return boolean
      */
     boolean addSmsCouponCode(AddCouponCodeBO addCouponCodeBO);
-
-    /**
-     * 更新用户优惠券状态信息
-     *
-     * @param clientUser 用户
-     */
-    void updateMemberCouponStatus(ClientUser clientUser);
 
     /**
      * 平台领券中心

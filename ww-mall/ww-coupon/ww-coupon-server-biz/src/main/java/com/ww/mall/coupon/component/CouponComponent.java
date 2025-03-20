@@ -32,6 +32,9 @@ public class CouponComponent {
     @Resource
     private MongoTemplate mongoTemplate;
 
+    @Resource
+    private SmsCouponStatisticsComponent smsCouponStatisticsComponent;
+
     /**
      * 冻结优惠券
      *
@@ -40,7 +43,7 @@ public class CouponComponent {
      */
     public void freezeMemberCoupon(Long userId, String couponRecordId) {
         String freezeKey = couponRedisKeyBuilder.buildCouponFreezeKey(couponRecordId);
-        Boolean result = stringRedisTemplate.opsForValue().setIfAbsent(freezeKey, Boolean.TRUE.toString(), 1, TimeUnit.DAYS);
+        Boolean result = stringRedisTemplate.opsForValue().setIfAbsent(freezeKey, Boolean.TRUE.toString(), 1, TimeUnit.HOURS);
         if (Boolean.TRUE.equals(result)) {
             log.info("冻结用户[{}]优惠券[{}]成功", userId, couponRecordId);
         } else {
@@ -54,15 +57,13 @@ public class CouponComponent {
      *
      * @param couponRecordId 用户优惠券id
      */
-    public void isFreezeCoupon(String couponRecordId) {
+    public boolean isFreezeCoupon(String couponRecordId) {
         String freezeKey = couponRedisKeyBuilder.buildCouponFreezeKey(couponRecordId);
-        if (Boolean.TRUE.equals(stringRedisTemplate.hasKey(freezeKey))) {
-            throw new ApiException("优惠券已被占用");
-        }
+        return Boolean.TRUE.equals(stringRedisTemplate.hasKey(freezeKey));
     }
 
     /**
-     * 解冻优惠券
+     * 解冻优惠券redis
      *
      * @param couponRecordId 用户优惠券id
      */
@@ -81,30 +82,61 @@ public class CouponComponent {
     }
 
     /**
-     * 支付更新优惠券状态
+     * 更新优惠券状态
      *
+     * @param channelId 渠道id
+     * @param couponRecordId 优惠券id
+     * @param status 状态
+     */
+    public boolean updateMemberCouponStatus(Long channelId, String couponRecordId, CouponStatus status) {
+        UpdateResult updateResult = mongoTemplate.updateFirst(BaseDoc.buildIdQuery(couponRecordId), SmsCouponRecord.buildStatusUpdate(status), SmsCouponRecord.class, SmsCouponRecord.buildCollectionName(channelId));
+        if (updateResult.getModifiedCount() == 1) {
+            log.info("优惠券[{}]状态更新[{}]状态成功", couponRecordId, status);
+            return true;
+        } else {
+            log.error("优惠券[{}]状态更新[{}]状态失败", couponRecordId, status);
+            return false;
+        }
+    }
+
+    /**
+     * 取消订单回滚优惠券状态
+     *
+     * @param channelId 渠道id
      * @param couponRecordId 优惠券id
      */
-    public void updateMemberCouponUseStatus(String couponRecordId) {
-        UpdateResult updateResult = mongoTemplate.updateFirst(BaseDoc.buildIdQuery(couponRecordId), SmsCouponRecord.buildStatusUpdate(CouponStatus.USED), SmsCouponRecord.class);
-        if (updateResult.getModifiedCount() == 1) {
-            log.info("优惠券[{}]状态更新已使用状态成功", couponRecordId);
-        } else {
-            log.error("优惠券[{}]状态更新已使用状态失败", couponRecordId);
+    public void updateMemberCouponCancelStatus(Long channelId, String couponRecordId) {
+        updateMemberCouponRollbackStatus(channelId, couponRecordId, false);
+        // 清除redis数据
+        unFreezeMemberCoupon(couponRecordId);
+    }
+
+    /**
+     * 支付更新优惠券状态
+     *
+     * @param channelId 渠道id
+     * @param couponRecordId 优惠券id
+     */
+    public void updateMemberCouponUseStatus(Long channelId, String couponRecordId) {
+        if (updateMemberCouponStatus(channelId, couponRecordId, CouponStatus.USED)) {
+            SmsCouponRecord couponRecord = mongoTemplate.findOne(BaseDoc.buildIdQuery(couponRecordId), SmsCouponRecord.class, SmsCouponRecord.buildCollectionName(channelId));
+            smsCouponStatisticsComponent.statisticsCouponUse(couponRecord.getActivityCode());
         }
     }
 
     /**
      * 售后回滚优惠券状态
      *
+     * @param channelId 渠道id
      * @param couponRecordId 优惠券id
+     * @param isAfterSale 是否售后
      */
-    public void updateMemberCouponRollbackStatus(String couponRecordId) {
-        UpdateResult updateResult = mongoTemplate.updateFirst(BaseDoc.buildIdQuery(couponRecordId), SmsCouponRecord.buildStatusUpdate(CouponStatus.IN_EFFECT), SmsCouponRecord.class);
-        if (updateResult.getModifiedCount() == 1) {
-            log.info("回滚优惠券[{}]状态成功", couponRecordId);
-        } else {
-            log.error("回滚优惠券[{}]状态失败", couponRecordId);
+    public void updateMemberCouponRollbackStatus(Long channelId, String couponRecordId, boolean isAfterSale) {
+        if (updateMemberCouponStatus(channelId, couponRecordId, CouponStatus.IN_EFFECT)) {
+            if (isAfterSale) {
+                SmsCouponRecord couponRecord = mongoTemplate.findOne(BaseDoc.buildIdQuery(couponRecordId), SmsCouponRecord.class, SmsCouponRecord.buildCollectionName(channelId));
+                smsCouponStatisticsComponent.statisticsCouponRollback(couponRecord.getActivityCode());
+            }
         }
     }
 

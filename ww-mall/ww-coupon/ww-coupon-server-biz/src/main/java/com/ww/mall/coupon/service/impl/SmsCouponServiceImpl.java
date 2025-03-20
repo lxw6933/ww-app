@@ -23,6 +23,7 @@ import com.ww.app.redis.AppRedisTemplate;
 import com.ww.app.redis.annotation.DistributedLock;
 import com.ww.app.redis.annotation.Resubmission;
 import com.ww.app.redis.component.StockRedisComponent;
+import com.ww.mall.coupon.component.CouponComponent;
 import com.ww.mall.coupon.component.SmsCouponStatisticsComponent;
 import com.ww.mall.coupon.component.key.CouponRedisKeyBuilder;
 import com.ww.mall.coupon.constant.CouponConstant;
@@ -70,6 +71,9 @@ import static com.ww.app.common.utils.CollectionUtils.filterList;
 @Slf4j
 @Service
 public class SmsCouponServiceImpl implements SmsCouponService {
+
+    @Resource
+    private CouponComponent couponComponent;
 
     @Resource
     private SmsCouponStatisticsComponent smsCouponStatisticsComponent;
@@ -450,31 +454,25 @@ public class SmsCouponServiceImpl implements SmsCouponService {
         return codeKeys;
     }
 
-    @Override
-    public void updateMemberCouponStatus(ClientUser clientUser) {
-        String smsCouponRecordCollectionName = SmsCouponRecord.buildCollectionName(clientUser.getChannelId());
-        // 查询用户所有生效的优惠券
-        List<SmsCouponRecord> smsCouponRecordList =
-                mongoTemplate.find(SmsCouponRecord.buildMemberEffectCouponRecordQuery(clientUser.getId()), SmsCouponRecord.class, smsCouponRecordCollectionName);
-        if (CollectionUtils.isEmpty(smsCouponRecordList)) {
+    public void memberCouponStatusHandle(SmsCouponRecord smsCouponRecord, Date now) {
+        if (CouponStatus.OCCUPIED.equals(smsCouponRecord.getCouponStatus()) ||
+                CouponStatus.USED.equals(smsCouponRecord.getCouponStatus()) ||
+                CouponStatus.EXPIRED.equals(smsCouponRecord.getCouponStatus())) {
             return;
         }
-        Date now = new Date();
-        smsCouponRecordList.forEach(smsCouponRecord -> {
-            CouponStatus couponStatus;
-            if (now.before(smsCouponRecord.getUseStartTime())) {
-                couponStatus = CouponStatus.TO_TAKE_EFFECT;
-            } else if (now.before(smsCouponRecord.getUseEndTime())) {
-                couponStatus = CouponStatus.IN_EFFECT;
-            } else {
-                couponStatus = CouponStatus.EXPIRED;
-            }
-            if (!smsCouponRecord.getCouponStatus().equals(couponStatus)) {
-                smsCouponRecord.setCouponStatus(couponStatus);
-                mongoTemplate.updateFirst(BaseDoc.buildIdQuery(smsCouponRecord.getId()), SmsCouponRecord.buildStatusUpdate(couponStatus), SmsCouponRecord.class, smsCouponRecordCollectionName);
-                log.info("用户[{}]优惠券[{}]更新状态为[{}]", clientUser.getId(), smsCouponRecord.getId(), couponStatus);
-            }
-        });
+        CouponStatus couponStatus;
+        if (now.before(smsCouponRecord.getUseStartTime())) {
+            couponStatus = CouponStatus.TO_TAKE_EFFECT;
+        } else if (now.before(smsCouponRecord.getUseEndTime())) {
+            couponStatus = CouponStatus.IN_EFFECT;
+        } else {
+            couponStatus = CouponStatus.EXPIRED;
+        }
+        if (!smsCouponRecord.getCouponStatus().equals(couponStatus)) {
+            mongoTemplate.updateFirst(BaseDoc.buildIdQuery(smsCouponRecord.getId()), SmsCouponRecord.buildStatusUpdate(couponStatus), SmsCouponRecord.class, SmsCouponRecord.buildCollectionName(smsCouponRecord.getChannelId()));
+            log.info("优惠券[{}]更新状态为[{}]", smsCouponRecord.getId(), couponStatus);
+            smsCouponRecord.setCouponStatus(couponStatus);
+        }
     }
 
     @Override
@@ -497,9 +495,17 @@ public class SmsCouponServiceImpl implements SmsCouponService {
     @Override
     public List<MemberCouponCenterVO> memberCouponCenter(MemberCouponCenterBO bo) {
         ClientUser clientUser = AuthorizationContext.getClientUser();
-        updateMemberCouponStatus(clientUser);
         List<SmsCouponRecord> resultList = MongoUtils.pageByIdCursor(mongoTemplate, SmsCouponRecord.buildMemberCouponCenterQuery(clientUser.getId(), bo.getType(), bo.getStatus(), bo.getCouponType()), bo.getEndIdCursorValue(), bo.getSize(), SmsCouponRecord.class, SmsCouponRecord.buildCollectionName(clientUser.getChannelId()));
+        Date now = new Date();
         return convertList(resultList, res -> {
+            // 状态实时更新
+            memberCouponStatusHandle(res, now);
+            // 判断是否冻结[特殊异常情况下]
+            if (CouponStatus.IN_EFFECT.equals(res.getCouponStatus())) {
+                if (couponComponent.isFreezeCoupon(res.getId())) {
+                    res.setCouponStatus(CouponStatus.OCCUPIED);
+                }
+            }
             MemberCouponCenterVO vo = BeanUtil.toBean(res, MemberCouponCenterVO.class);
             // 查询活动信息
             switch (res.getCouponType()) {
