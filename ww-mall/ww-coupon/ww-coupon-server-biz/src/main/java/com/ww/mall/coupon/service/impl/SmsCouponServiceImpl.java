@@ -731,8 +731,12 @@ public class SmsCouponServiceImpl implements SmsCouponService {
                 unAvailableCashCouponList.add(vo);
             }
         });
-        availableCashCouponList.sort(Comparator.comparing(OrderMemberCouponVO::getDiscountTotalAmount).reversed().thenComparing(OrderMemberCouponVO::getLackAmount));
-        availableIntegralCouponList.sort(Comparator.comparing(OrderMemberCouponVO::getDiscountTotalAmount).reversed().thenComparing(OrderMemberCouponVO::getLackAmount));
+        availableCashCouponList.sort(Comparator.comparing(OrderMemberCouponVO::getDiscountTotalAmount).reversed()
+                .thenComparing(OrderMemberCouponVO::getUseEndTime)
+                .thenComparing(OrderMemberCouponVO::getLackAmount));
+        availableIntegralCouponList.sort(Comparator.comparing(OrderMemberCouponVO::getDiscountTotalAmount).reversed()
+                .thenComparing(OrderMemberCouponVO::getUseEndTime)
+                .thenComparing(OrderMemberCouponVO::getLackAmount));
         return result;
     }
 
