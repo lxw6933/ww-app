@@ -22,5 +22,6 @@ public interface CouponResCodeConstants {
     ResCode COUPON_SALE_OUT = new ResCode(9206, "优惠券已被抢空");
     ResCode COUPON_STOCK_LESS = new ResCode(9207, "优惠券数量不足");
     ResCode COUPON_STOCK_SUCCESS_BUT_SHOW_DATA_EXCEPTION = new ResCode(9208, "优惠券数量已成功生成，优惠券数量展示数据维护失败");
+    ResCode COUPON_USED_EXCEPTION = new ResCode(9209, "优惠券已被使用");
 
 }
