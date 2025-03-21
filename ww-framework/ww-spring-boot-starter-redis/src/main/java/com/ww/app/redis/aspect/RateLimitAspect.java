@@ -3,9 +3,10 @@ package com.ww.app.redis.aspect;
 import org.aspectj.lang.ProceedingJoinPoint;
 import org.aspectj.lang.annotation.Around;
 import org.aspectj.lang.annotation.Aspect;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Component;
+
+import javax.annotation.Resource;
 
 /**
  * @author ww
@@ -16,7 +17,7 @@ import org.springframework.stereotype.Component;
 @Component
 public class RateLimitAspect {
 
-    @Autowired
+    @Resource
     private RedisTemplate<String, String> redisTemplate;
 
     @Around("@annotation(com.ww.app.redis.annotation.RateLimit)")

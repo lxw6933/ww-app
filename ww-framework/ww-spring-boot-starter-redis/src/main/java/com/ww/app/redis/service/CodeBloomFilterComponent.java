@@ -3,10 +3,10 @@ package com.ww.app.redis.service;
 import lombok.extern.slf4j.Slf4j;
 import org.redisson.api.RBloomFilter;
 import org.redisson.api.RedissonClient;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import javax.annotation.PostConstruct;
+import javax.annotation.Resource;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -19,7 +19,7 @@ import java.util.Map;
 @Component
 public class CodeBloomFilterComponent {
 
-    @Autowired
+    @Resource
     private RedissonClient redissonClient;
 
     private static final String CODE_BLOOM_FILTER_KEY = "codeBloomFilter:";

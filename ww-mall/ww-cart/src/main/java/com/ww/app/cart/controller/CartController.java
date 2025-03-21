@@ -3,12 +3,13 @@ package com.ww.app.cart.controller;
 import com.ww.app.cart.entity.Cart;
 import com.ww.app.cart.entity.CartItem;
 import com.ww.app.cart.service.HashCartService;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
+
+import javax.annotation.Resource;
 
 /**
  * @description:
@@ -20,7 +21,7 @@ import org.springframework.web.bind.annotation.RestController;
 @RequestMapping("/cart")
 public class CartController {
 
-    @Autowired
+    @Resource
     private HashCartService cartService;
 
     @GetMapping("/userCart")

@@ -6,10 +6,10 @@ import com.ww.app.auth.view.vo.LoginResultVO;
 import com.ww.app.common.utils.ValidationUtils;
 import com.ww.app.member.member.bo.MemberLoginBO;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
+import javax.annotation.Resource;
 import javax.validation.constraints.Pattern;
 
 /**
@@ -22,7 +22,7 @@ import javax.validation.constraints.Pattern;
 @RequestMapping("/login")
 public class LoginController {
 
-    @Autowired
+    @Resource
     private LoginService loginService;
 
     @PostMapping("/adminLogin")

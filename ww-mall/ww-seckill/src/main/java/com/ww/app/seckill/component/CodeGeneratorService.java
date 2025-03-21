@@ -8,7 +8,6 @@ import com.ww.app.mongodb.handler.MongoBulkDataHandler;
 import com.ww.app.redis.service.CodeBloomFilterComponent;
 import com.ww.app.seckill.entity.Code;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.DependsOn;
 import org.springframework.context.annotation.Import;
 import org.springframework.stereotype.Component;
@@ -34,7 +33,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 @DependsOn("mongoBulkDataHandler")
 public class CodeGeneratorService {
 
-    @Autowired
+    @Resource
     private CodeBloomFilterComponent codeBloomFilterComponent;
 
     @Resource

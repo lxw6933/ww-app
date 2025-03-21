@@ -6,8 +6,9 @@ import io.github.linpeilie.Converter;
 import io.github.linpeilie.annotations.AutoMapper;
 import lombok.Data;
 import org.junit.jupiter.api.Test;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+
+import javax.annotation.Resource;
 
 /**
  * @author ww
@@ -17,10 +18,10 @@ import org.springframework.boot.test.context.SpringBootTest;
 @SpringBootTest
 public class QuickStartTest {
 
-    @Autowired
+    @Resource
     private Converter converter;
 
-    @Autowired
+    @Resource
     private DemoService demoService;
 
     @Test

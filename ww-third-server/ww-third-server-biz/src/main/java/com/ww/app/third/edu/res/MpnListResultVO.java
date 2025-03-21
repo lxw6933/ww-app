@@ -23,7 +23,7 @@ public class MpnListResultVO {
     private String status;
 
     @Data
-    class EduProduct {
+    static class EduProduct {
 
         /**
          * 示例：Mac Mini

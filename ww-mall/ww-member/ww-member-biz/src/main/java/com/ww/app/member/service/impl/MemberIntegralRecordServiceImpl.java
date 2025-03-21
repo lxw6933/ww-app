@@ -3,19 +3,18 @@ package com.ww.app.member.service.impl;
 import cn.hutool.core.date.DatePattern;
 import cn.hutool.core.date.DateUtil;
 import com.baomidou.mybatisplus.core.conditions.update.UpdateWrapper;
+import com.ww.app.common.common.AppPage;
+import com.ww.app.common.common.AppPageResult;
 import com.ww.app.common.common.ClientUser;
+import com.ww.app.common.context.AuthorizationContext;
 import com.ww.app.member.entity.Member;
 import com.ww.app.member.entity.mongo.MemberIntegralRecord;
 import com.ww.app.member.enums.IntegralSource;
 import com.ww.app.member.enums.IntegralType;
+import com.ww.app.member.member.bo.AddMemberIntegralBO;
 import com.ww.app.member.service.MemberIntegralRecordService;
 import com.ww.app.member.service.MemberService;
-import com.ww.app.common.common.AppPage;
-import com.ww.app.common.common.AppPageResult;
-import com.ww.app.common.context.AuthorizationContext;
-import com.ww.app.member.member.bo.AddMemberIntegralBO;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
@@ -24,6 +23,7 @@ import org.springframework.data.mongodb.core.query.Criteria;
 import org.springframework.data.mongodb.core.query.Query;
 import org.springframework.stereotype.Service;
 
+import javax.annotation.Resource;
 import java.util.Date;
 import java.util.List;
 
@@ -36,10 +36,10 @@ import java.util.List;
 @Service
 public class MemberIntegralRecordServiceImpl implements MemberIntegralRecordService {
 
-    @Autowired
+    @Resource
     private MongoTemplate mongoTemplate;
 
-    @Autowired
+    @Resource
     private MemberService memberService;
 
     @Override

@@ -4,17 +4,17 @@ import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.ww.app.member.dao.MemberMapper;
 import com.ww.app.member.entity.Member;
+import com.ww.app.member.member.dto.MemberDTO;
 import com.ww.app.member.service.MemberService;
 import com.ww.app.rabbitmq.RabbitMqPublisher;
 import com.ww.app.rabbitmq.exchange.ExchangeConstant;
 import com.ww.app.rabbitmq.routekey.RouteKeyConstant;
 import com.ww.app.redis.annotation.Resubmission;
-import com.ww.app.member.member.dto.MemberDTO;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.BeanUtils;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import javax.annotation.Resource;
 import java.util.UUID;
 
 /**
@@ -26,7 +26,7 @@ import java.util.UUID;
 @Service
 public class MemberServiceImpl extends ServiceImpl<MemberMapper, Member> implements MemberService {
 
-    @Autowired
+    @Resource
     private RabbitMqPublisher rabbitMqPublisher;
 
     @Override

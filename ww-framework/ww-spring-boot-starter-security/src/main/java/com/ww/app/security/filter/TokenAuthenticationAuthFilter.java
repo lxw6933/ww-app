@@ -4,14 +4,13 @@ import com.ww.app.common.common.AdminUser;
 import com.ww.app.common.common.BaseUser;
 import com.ww.app.common.common.ClientUser;
 import com.ww.app.common.constant.Constant;
+import com.ww.app.common.context.AuthorizationContext;
 import com.ww.app.common.enums.UserType;
 import com.ww.app.common.exception.ApiException;
 import com.ww.app.security.component.AuthorityStore;
-import com.ww.app.common.context.AuthorizationContext;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.GrantedAuthority;
@@ -20,6 +19,7 @@ import org.springframework.security.web.authentication.WebAuthenticationDetailsS
 import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
 
+import javax.annotation.Resource;
 import javax.servlet.FilterChain;
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
@@ -38,7 +38,7 @@ import static com.ww.app.common.enums.GlobalResCodeConstants.ILLEGAL_REQUEST;
 @Component
 public class TokenAuthenticationAuthFilter extends OncePerRequestFilter {
 
-    @Autowired(required = false)
+    @Resource
     private AuthorityStore authorityStore;
 
     @Override

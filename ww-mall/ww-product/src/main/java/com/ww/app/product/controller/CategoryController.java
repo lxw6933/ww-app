@@ -3,9 +3,9 @@ package com.ww.app.product.controller;
 import com.ww.app.product.entity.Category;
 import com.ww.app.product.service.CategoryService;
 import com.ww.app.product.view.bo.CategoryBO;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
+import javax.annotation.Resource;
 import java.util.List;
 
 /**
@@ -17,7 +17,7 @@ import java.util.List;
 @RequestMapping("/category")
 public class CategoryController {
 
-    @Autowired
+    @Resource
     private CategoryService categoryService;
 
     @GetMapping

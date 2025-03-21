@@ -2,9 +2,9 @@ package com.ww.app.redis.service;
 
 import org.redisson.api.RHyperLogLog;
 import org.redisson.api.RedissonClient;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
+import javax.annotation.Resource;
 import java.util.List;
 
 /**
@@ -17,7 +17,7 @@ public class HyperLogLogService {
 
     private static final String HYPER_LOG_LOG_KEY = "hyperloglog:";
 
-    @Autowired
+    @Resource
     private RedissonClient redissonClient;
 
     public <T> void addElement(String key, T element) {

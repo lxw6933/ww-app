@@ -7,7 +7,6 @@ import com.ww.app.web.config.SecretProperties;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.MethodParameter;
 import org.springframework.core.annotation.Order;
 import org.springframework.http.HttpHeaders;
@@ -19,6 +18,7 @@ import org.springframework.web.bind.annotation.ControllerAdvice;
 import org.springframework.web.servlet.mvc.method.annotation.RequestBodyAdviceAdapter;
 
 import javax.annotation.PostConstruct;
+import javax.annotation.Resource;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
@@ -36,7 +36,7 @@ import java.nio.charset.StandardCharsets;
 @ControllerAdvice
 public class RequestBodyHandler extends RequestBodyAdviceAdapter {
 
-    @Autowired
+    @Resource
     private SecretProperties secretProperties;
 
     @PostConstruct

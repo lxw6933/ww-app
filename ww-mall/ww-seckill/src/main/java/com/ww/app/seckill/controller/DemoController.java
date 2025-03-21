@@ -15,7 +15,6 @@ import io.swagger.v3.oas.annotations.Parameters;
 import io.swagger.v3.oas.annotations.enums.ParameterIn;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -36,7 +35,7 @@ import java.util.List;
 @RequestMapping("/seckill")
 public class DemoController {
 
-    @Autowired
+    @Resource
     private DemoService demoService;
 
     @Operation(summary = "发放红包")

@@ -10,7 +10,6 @@ import com.ww.app.third.edu.req.*;
 import com.ww.app.third.edu.res.*;
 import com.ww.app.third.service.edu.AppleEduService;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.core.io.UrlResource;
 import org.springframework.http.*;
@@ -19,6 +18,7 @@ import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
 import org.springframework.web.client.RestTemplate;
 
+import javax.annotation.Resource;
 import java.net.MalformedURLException;
 import java.time.LocalDateTime;
 import java.time.ZoneOffset;
@@ -34,10 +34,10 @@ import java.util.List;
 @Service
 public class AppleEduServiceImpl implements AppleEduService {
 
-    @Autowired
+    @Resource
     private AppleEduProperties appleEduProperties;
 
-    @Autowired
+    @Resource
     private RestTemplate okRestTemplate;
 
     private static final String EDU_SUCCESS_CODE = "0";

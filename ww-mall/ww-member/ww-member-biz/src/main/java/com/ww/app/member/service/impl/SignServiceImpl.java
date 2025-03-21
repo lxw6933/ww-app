@@ -10,12 +10,12 @@ import com.ww.app.member.service.SignService;
 import com.ww.app.redis.annotation.DistributedLock;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.redis.connection.BitFieldSubCommands;
 import org.springframework.data.redis.core.RedisCallback;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
 
+import javax.annotation.Resource;
 import java.time.LocalDateTime;
 import java.util.Date;
 import java.util.List;
@@ -31,7 +31,7 @@ import java.util.TreeMap;
 @Service
 public class SignServiceImpl implements SignService {
 
-    @Autowired
+    @Resource
     private RedisTemplate<String, String> redisTemplate;
 
     @Override

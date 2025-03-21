@@ -10,13 +10,13 @@ import org.aspectj.lang.ProceedingJoinPoint;
 import org.aspectj.lang.annotation.Around;
 import org.aspectj.lang.annotation.Aspect;
 import org.aspectj.lang.reflect.MethodSignature;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.redis.connection.RedisStringCommands;
 import org.springframework.data.redis.core.RedisCallback;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.data.redis.core.types.Expiration;
 import org.springframework.stereotype.Component;
 
+import javax.annotation.Resource;
 import java.lang.reflect.Method;
 
 /**
@@ -28,7 +28,7 @@ import java.lang.reflect.Method;
 @Component
 public class ResubmissionAspect {
 
-    @Autowired
+    @Resource
     private RedisTemplate<String, String> redisTemplate;
 
     private static final String RESUBMISSION_PREFIX = "resubmission";

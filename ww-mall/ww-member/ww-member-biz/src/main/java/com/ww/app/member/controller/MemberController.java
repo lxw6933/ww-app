@@ -3,25 +3,25 @@ package com.ww.app.member.controller;
 import cn.hutool.core.util.RandomUtil;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
-import com.ww.app.common.common.ClientUser;
-import com.ww.app.common.enums.GlobalResCodeConstants;
-import com.ww.app.common.exception.ApiException;
-import com.ww.app.member.entity.Member;
-import com.ww.app.member.service.MemberService;
-import com.ww.app.member.view.vo.MemberVO;
 import com.ww.app.common.common.AppPage;
 import com.ww.app.common.common.AppPageResult;
+import com.ww.app.common.common.ClientUser;
 import com.ww.app.common.context.AuthorizationContext;
+import com.ww.app.common.enums.GlobalResCodeConstants;
+import com.ww.app.common.exception.ApiException;
 import com.ww.app.common.utils.IdUtil;
-import com.ww.app.mybatis.common.AppPlusPageResult;
+import com.ww.app.member.entity.Member;
 import com.ww.app.member.member.dto.MemberDTO;
+import com.ww.app.member.service.MemberService;
+import com.ww.app.member.view.vo.MemberVO;
+import com.ww.app.mybatis.common.AppPlusPageResult;
 import org.springframework.beans.BeanUtils;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+import javax.annotation.Resource;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
@@ -36,7 +36,7 @@ import java.util.List;
 @RequestMapping("/member")
 public class MemberController {
 
-    @Autowired
+    @Resource
     private MemberService memberService;
 
     @RequestMapping("/getId")

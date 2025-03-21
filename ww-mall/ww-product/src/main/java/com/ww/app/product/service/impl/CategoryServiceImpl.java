@@ -9,6 +9,7 @@ import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 
+import javax.annotation.Resource;
 import java.util.Comparator;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -22,6 +23,9 @@ import static com.ww.app.common.utils.CollectionUtils.filterList;
  */
 @Service
 public class CategoryServiceImpl extends ServiceImpl<CategoryMapper, Category> implements CategoryService {
+
+    @Resource
+    private CategoryService categoryService;
 
     @Override
     @Cacheable(value = "categoryTree", key="'all'", unless = "#result==null or #result?.size() == 0")
@@ -39,7 +43,7 @@ public class CategoryServiceImpl extends ServiceImpl<CategoryMapper, Category> i
     @Override
     public List<Category> listCategoryTree(CategoryBO categoryBO) {
         String searchCategoryName = categoryBO.getCategoryName();
-        List<Category> categoryList = this.listCategoryTree();
+        List<Category> categoryList = categoryService.listCategoryTree();
         String highLightStr = "<span class='category-hilight'>" + searchCategoryName + "</span>";
         return filterList(categoryList, res -> {
             boolean one = res.getCategoryName().contains(searchCategoryName);

@@ -1,14 +1,15 @@
 package com.ww.app.member.controller;
 
+import com.ww.app.common.common.AppPage;
+import com.ww.app.common.common.AppPageResult;
 import com.ww.app.member.entity.mongo.MemberIntegralRecord;
 import com.ww.app.member.service.MemberIntegralRecordService;
 import com.ww.app.member.view.bo.MemberIntegralRecordBO;
-import com.ww.app.common.common.AppPage;
-import com.ww.app.common.common.AppPageResult;
 import org.springframework.beans.BeanUtils;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
+
+import javax.annotation.Resource;
 
 /**
  * @author ww
@@ -20,7 +21,7 @@ import org.springframework.web.bind.annotation.*;
 @RequestMapping("/integral")
 public class MemberIntegralRecordController {
 
-    @Autowired
+    @Resource
     private MemberIntegralRecordService memberIntegralRecordService;
 
     @PostMapping("/add")

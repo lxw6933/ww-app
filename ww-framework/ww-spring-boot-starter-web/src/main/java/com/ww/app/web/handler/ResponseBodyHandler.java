@@ -9,7 +9,6 @@ import com.ww.app.web.config.SecretProperties;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.MethodParameter;
 import org.springframework.http.MediaType;
 import org.springframework.http.server.ServerHttpRequest;
@@ -20,6 +19,7 @@ import org.springframework.web.bind.annotation.ControllerAdvice;
 import org.springframework.web.servlet.mvc.method.annotation.ResponseBodyAdvice;
 
 import javax.annotation.PostConstruct;
+import javax.annotation.Resource;
 import java.util.Collections;
 import java.util.List;
 
@@ -34,7 +34,7 @@ public class ResponseBodyHandler implements ResponseBodyAdvice<Object> {
 
     private static final List<String> FILTER_PACKAGE = Collections.singletonList("com.ww.app");
 
-    @Autowired
+    @Resource
     private SecretProperties secretProperties;
 
     private final AntPathMatcher pathMatcher = new AntPathMatcher();

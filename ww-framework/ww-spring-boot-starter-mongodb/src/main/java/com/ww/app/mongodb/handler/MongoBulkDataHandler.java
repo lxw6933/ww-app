@@ -3,11 +3,11 @@ package com.ww.app.mongodb.handler;
 import com.mongodb.bulk.BulkWriteResult;
 import com.ww.app.common.interfaces.BulkDataHandler;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.mongodb.core.BulkOperations;
 import org.springframework.data.mongodb.core.MongoTemplate;
 import org.springframework.stereotype.Component;
 
+import javax.annotation.Resource;
 import java.util.List;
 
 /**
@@ -19,7 +19,7 @@ import java.util.List;
 @Component
 public class MongoBulkDataHandler<T> implements BulkDataHandler<T> {
 
-    @Autowired
+    @Resource
     private MongoTemplate mongoTemplate;
 
     @Override
