@@ -35,4 +35,8 @@ public class CouponCacheUtils {
         return smsCouponActivityCache.get(activityCode, code -> getMongoTemplate().findOne(SmsCouponActivity.buildActivityCodeQuery(code), SmsCouponActivity.class));
     }
 
+    public static void updateSmsCouponActivityCache(String activityCode) {
+        smsCouponActivityCache.invalidate(activityCode);
+    }
+
 }
