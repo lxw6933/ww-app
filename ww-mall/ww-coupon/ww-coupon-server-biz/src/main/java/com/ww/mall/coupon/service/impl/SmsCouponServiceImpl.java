@@ -3,10 +3,8 @@ package com.ww.mall.coupon.service.impl;
 import cn.hutool.core.bean.BeanUtil;
 import cn.hutool.core.date.DateUtil;
 import cn.hutool.core.lang.Assert;
-import cn.hutool.core.lang.TypeReference;
 import cn.hutool.core.lang.UUID;
 import cn.hutool.core.util.StrUtil;
-import cn.hutool.extra.spring.SpringUtil;
 import com.mongodb.bulk.BulkWriteResult;
 import com.mongodb.client.result.UpdateResult;
 import com.ww.app.common.common.AppPageResult;
@@ -277,8 +275,8 @@ public class SmsCouponServiceImpl implements SmsCouponService {
         return true;
     }
 
-    private final MongoBulkDataHandler<SmsCouponRecord> mongoBulkCouponRecordDataHandler = SpringUtil.getBean(new TypeReference<MongoBulkDataHandler<SmsCouponRecord>>() {
-    });
+    @Resource
+    private MongoBulkDataHandler<SmsCouponRecord> mongoBulkCouponRecordDataHandler;
 
     /**
      * 批量发放优惠券
@@ -485,7 +483,7 @@ public class SmsCouponServiceImpl implements SmsCouponService {
     @Override
     public List<CouponActivityCenterVO> smsCouponActivityCenter(CouponActivityCenterBO bo) {
         ClientUser clientUser = AuthorizationContext.getClientUser();
-        List<SmsCouponActivity> resultList = MongoUtils.pageByIdCursor(mongoTemplate, BaseCouponInfo.buildCouponCenterQuery(clientUser.getChannelId(), bo.getType()), bo.getEndIdCursorValue(), 10, SmsCouponActivity.class);
+        List<SmsCouponActivity> resultList = MongoUtils.pageByIdCursor(BaseCouponInfo.buildCouponCenterQuery(clientUser.getChannelId(), bo.getType()), bo.getEndIdCursorValue(), 10, SmsCouponActivity.class);
         return convertList(resultList, res -> {
             CouponActivityCenterVO vo = BeanUtil.toBean(res, CouponActivityCenterVO.class);
             int availableNumber = stockRedisComponent.getStrStock(couponRedisKeyBuilder.buildCouponNumberKey(res.getActivityCode()));
@@ -502,7 +500,7 @@ public class SmsCouponServiceImpl implements SmsCouponService {
     @Override
     public List<MemberCouponCenterVO> memberCouponCenter(MemberCouponCenterBO bo) {
         ClientUser clientUser = AuthorizationContext.getClientUser();
-        List<SmsCouponRecord> resultList = MongoUtils.pageByIdCursor(mongoTemplate, SmsCouponRecord.buildMemberCouponCenterQuery(clientUser.getId(), bo.getType(), bo.getStatus(), bo.getCouponType()), bo.getEndIdCursorValue(), bo.getSize(), SmsCouponRecord.class, SmsCouponRecord.buildCollectionName(clientUser.getChannelId()));
+        List<SmsCouponRecord> resultList = MongoUtils.pageByIdCursor(SmsCouponRecord.buildMemberCouponCenterQuery(clientUser.getId(), bo.getType(), bo.getStatus(), bo.getCouponType()), bo.getEndIdCursorValue(), bo.getSize(), SmsCouponRecord.class, SmsCouponRecord.buildCollectionName(clientUser.getChannelId()));
         Date now = new Date();
         return convertList(resultList, res -> {
             // 状态实时更新
@@ -678,7 +676,7 @@ public class SmsCouponServiceImpl implements SmsCouponService {
      */
     public List<ProductCouponActivityVO> getSpuCouponActivityList(Long channelId, CouponConstant.Type type, Long smsId) {
         // 查询前30个适用商品平台优惠券活动【进行排序】
-        List<SmsCouponActivity> couponActivityList = MongoUtils.pageByIdCursor(mongoTemplate, SmsCouponActivity.buildSpuQuery(channelId, type, smsId), null, 30, SmsCouponActivity.class);
+        List<SmsCouponActivity> couponActivityList = MongoUtils.pageByIdCursor(SmsCouponActivity.buildSpuQuery(channelId, type, smsId), null, 30, SmsCouponActivity.class);
         if (CollectionUtils.isEmpty(couponActivityList)) {
             return null;
         }

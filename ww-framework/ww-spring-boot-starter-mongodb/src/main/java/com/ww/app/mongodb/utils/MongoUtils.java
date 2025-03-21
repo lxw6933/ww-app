@@ -2,6 +2,7 @@ package com.ww.app.mongodb.utils;
 
 import cn.hutool.core.collection.CollectionUtil;
 import cn.hutool.core.util.StrUtil;
+import cn.hutool.extra.spring.SpringUtil;
 import com.ww.app.common.constant.Constant;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
@@ -22,6 +23,16 @@ import java.util.List;
 @Slf4j
 public class MongoUtils {
 
+    private static MongoTemplate mongoTemplate;
+
+    private static MongoTemplate getMongoTemplate() {
+        if (mongoTemplate == null) {
+            log.info("初始化MongodbTemplate引用");
+            mongoTemplate = SpringUtil.getBean(MongoTemplate.class);
+        }
+        return mongoTemplate;
+    }
+
     public static <T> String getCollectionName(Class<T> tClass) {
         if (tClass.isAnnotationPresent(Document.class)) {
             Document document = tClass.getAnnotation(Document.class);
@@ -34,7 +45,6 @@ public class MongoUtils {
     /**
      * 通用游标查询方法
      *
-     * @param mongoTemplate  MongoTemplate 实例
      * @param query          查询条件
      * @param cursorField    游标字段（必须有索引，建议是 `_id` 或单调递增字段）
      * @param cursorValue    游标值（初始值可为 null 表示从头开始查询）
@@ -44,8 +54,7 @@ public class MongoUtils {
      * @param collectionName 指定文档名称
      * @return 查询结果列表
      */
-    public static <T> List<T> queryByCursor(MongoTemplate mongoTemplate,
-                                            Query query,
+    public static <T> List<T> queryByCursor(Query query,
                                             String cursorField,
                                             Object cursorValue,
                                             int pageSize,
@@ -67,26 +76,26 @@ public class MongoUtils {
 
         // 执行查询
         if (StrUtil.isEmpty(collectionName)) {
-            return mongoTemplate.find(query, entityClass, MongoUtils.getCollectionName(entityClass));
+            return getMongoTemplate().find(query, entityClass, MongoUtils.getCollectionName(entityClass));
         } else {
-            return mongoTemplate.find(query, entityClass, collectionName);
+            return getMongoTemplate().find(query, entityClass, collectionName);
         }
     }
 
-    public static <T> List<T> pageByIdCursor(MongoTemplate mongoTemplate, Query query, Object cursorValue, int pageSize, Class<T> entityClass) {
-        return queryByCursor(mongoTemplate, query, Constant.MONGO_PRIMARY_KEY, cursorValue, pageSize, null, entityClass, null);
+    public static <T> List<T> pageByIdCursor(Query query, Object cursorValue, int pageSize, Class<T> entityClass) {
+        return queryByCursor(query, Constant.MONGO_PRIMARY_KEY, cursorValue, pageSize, null, entityClass, null);
     }
 
-    public static <T> List<T> pageByIdCursorForFields(MongoTemplate mongoTemplate, Query query, Object cursorValue, int pageSize, List<String> fieldNames, Class<T> entityClass) {
-        return queryByCursor(mongoTemplate, query, Constant.MONGO_PRIMARY_KEY, cursorValue, pageSize, fieldNames, entityClass, null);
+    public static <T> List<T> pageByIdCursorForFields(Query query, Object cursorValue, int pageSize, List<String> fieldNames, Class<T> entityClass) {
+        return queryByCursor(query, Constant.MONGO_PRIMARY_KEY, cursorValue, pageSize, fieldNames, entityClass, null);
     }
 
-    public static <T> List<T> pageByIdCursor(MongoTemplate mongoTemplate, Query query, Object cursorValue, int pageSize, Class<T> entityClass, String collectionName) {
-        return queryByCursor(mongoTemplate, query, Constant.MONGO_PRIMARY_KEY, cursorValue, pageSize, null, entityClass, collectionName);
+    public static <T> List<T> pageByIdCursor(Query query, Object cursorValue, int pageSize, Class<T> entityClass, String collectionName) {
+        return queryByCursor(query, Constant.MONGO_PRIMARY_KEY, cursorValue, pageSize, null, entityClass, collectionName);
     }
 
-    public static <T> List<T> pageByIdCursorForFields(MongoTemplate mongoTemplate, Query query, Object cursorValue, int pageSize, List<String> fieldNames, Class<T> entityClass, String collectionName) {
-        return queryByCursor(mongoTemplate, query, Constant.MONGO_PRIMARY_KEY, cursorValue, pageSize, fieldNames, entityClass, collectionName);
+    public static <T> List<T> pageByIdCursorForFields(Query query, Object cursorValue, int pageSize, List<String> fieldNames, Class<T> entityClass, String collectionName) {
+        return queryByCursor(query, Constant.MONGO_PRIMARY_KEY, cursorValue, pageSize, fieldNames, entityClass, collectionName);
     }
 
 }
