@@ -37,6 +37,7 @@ import com.ww.mall.coupon.eunms.CouponStatus;
 import com.ww.mall.coupon.eunms.CouponType;
 import com.ww.mall.coupon.eunms.IssueType;
 import com.ww.mall.coupon.service.SmsCouponService;
+import com.ww.mall.coupon.utils.CouponCacheUtils;
 import com.ww.mall.coupon.utils.CouponUtils;
 import com.ww.mall.coupon.view.bo.*;
 import com.ww.mall.coupon.view.vo.*;
@@ -48,6 +49,7 @@ import org.redisson.api.RedissonClient;
 import org.redisson.client.codec.StringCodec;
 import org.springframework.data.mongodb.core.BulkOperations;
 import org.springframework.data.mongodb.core.MongoTemplate;
+import org.springframework.data.mongodb.core.query.Query;
 import org.springframework.stereotype.Service;
 
 import javax.annotation.PostConstruct;
@@ -483,8 +485,11 @@ public class SmsCouponServiceImpl implements SmsCouponService {
     @Override
     public List<CouponActivityCenterVO> smsCouponActivityCenter(CouponActivityCenterBO bo) {
         ClientUser clientUser = AuthorizationContext.getClientUser();
-        List<SmsCouponActivity> resultList = MongoUtils.pageByIdCursor(BaseCouponInfo.buildCouponCenterQuery(clientUser.getChannelId(), bo.getType()), bo.getEndIdCursorValue(), 10, SmsCouponActivity.class);
-        return convertList(resultList, res -> {
+        List<SmsCouponActivity> targetList = getSmsCouponActivityCursorList(BaseCouponInfo.buildCouponCenterQuery(clientUser.getChannelId(), bo.getType()), bo.getEndIdCursorValue(), 10);
+        if (CollectionUtils.isEmpty(targetList)) {
+            return null;
+        }
+        return convertList(targetList, res -> {
             CouponActivityCenterVO vo = BeanUtil.toBean(res, CouponActivityCenterVO.class);
             int availableNumber = stockRedisComponent.getStrStock(couponRedisKeyBuilder.buildCouponNumberKey(res.getActivityCode()));
             // 获取当前优惠券领取数量
@@ -624,16 +629,34 @@ public class SmsCouponServiceImpl implements SmsCouponService {
      */
     private SmsCouponActivity getSmsCouponActivity(String activityCode) {
         // 查询优惠券活动
-        SmsCouponActivity smsCouponActivity = mongoTemplate.findOne(SmsCouponActivity.buildActivityCodeQuery(activityCode), SmsCouponActivity.class);
+        SmsCouponActivity smsCouponActivity = CouponCacheUtils.getSmsCouponActivityCache(activityCode);
         Assert.notNull(smsCouponActivity, () -> new ApiException(CouponResCodeConstants.UN_FOUND_ACTIVITY));
         return smsCouponActivity;
     }
 
     private SmsCouponActivity getSmsCouponActivity(String activityCode, Long channelId) {
         // 查询优惠券活动
-        SmsCouponActivity smsCouponActivity = mongoTemplate.findOne(SmsCouponActivity.buildActivityCodeQuery(activityCode, channelId), SmsCouponActivity.class);
-        Assert.notNull(smsCouponActivity, () -> new ApiException(CouponResCodeConstants.UN_FOUND_ACTIVITY));
+        SmsCouponActivity smsCouponActivity = getSmsCouponActivity(activityCode);
+        Assert.isTrue(smsCouponActivity.getChannelId().equals(channelId), () -> new ApiException(CouponResCodeConstants.UN_FOUND_ACTIVITY));
         return smsCouponActivity;
+    }
+
+    private List<SmsCouponActivity> getSmsCouponActivityCursorList(Query query, String cursorIdValue, int size) {
+        List<SmsCouponActivity> resultList = MongoUtils.pageByIdCursorForFields(query, cursorIdValue, size, Collections.singletonList("activityCode"), SmsCouponActivity.class);
+        if (CollectionUtils.isEmpty(resultList)) {
+            return null;
+        }
+        List<String> activityCodeList = resultList.stream().map(BaseCouponInfo::getActivityCode).collect(Collectors.toList());
+        List<SmsCouponActivity> targetList = new ArrayList<>();
+        activityCodeList.forEach(activityCode -> {
+            try {
+                SmsCouponActivity smsCouponActivity = getSmsCouponActivity(activityCode);
+                targetList.add(smsCouponActivity);
+            } catch (Exception e) {
+                log.error("查询平台优惠券活动异常", e);
+            }
+        });
+        return targetList;
     }
 
     /**
@@ -676,12 +699,12 @@ public class SmsCouponServiceImpl implements SmsCouponService {
      */
     public List<ProductCouponActivityVO> getSpuCouponActivityList(Long channelId, CouponConstant.Type type, Long smsId) {
         // 查询前30个适用商品平台优惠券活动【进行排序】
-        List<SmsCouponActivity> couponActivityList = MongoUtils.pageByIdCursor(SmsCouponActivity.buildSpuQuery(channelId, type, smsId), null, 30, SmsCouponActivity.class);
-        if (CollectionUtils.isEmpty(couponActivityList)) {
+        List<SmsCouponActivity> targetList = getSmsCouponActivityCursorList(SmsCouponActivity.buildSpuQuery(channelId, type, smsId), null, 30);
+        if (CollectionUtils.isEmpty(targetList)) {
             return null;
         }
-        List<SmsCouponActivity> integralCouponActivityList = filterList(couponActivityList, res -> res.getCouponDiscountType().equals(CouponDiscountType.INTEGRAL_DISCOUNT));
-        List<SmsCouponActivity> cashCouponActivityList = filterList(couponActivityList, res -> !res.getCouponDiscountType().equals(CouponDiscountType.INTEGRAL_DISCOUNT));
+        List<SmsCouponActivity> integralCouponActivityList = filterList(targetList, res -> res.getCouponDiscountType().equals(CouponDiscountType.INTEGRAL_DISCOUNT));
+        List<SmsCouponActivity> cashCouponActivityList = filterList(targetList, res -> !res.getCouponDiscountType().equals(CouponDiscountType.INTEGRAL_DISCOUNT));
 
         List<ProductCouponActivityVO> sortedIntegralCouponActivityTagList = integralCouponActivityList.stream()
                 .sorted(Comparator.comparing(SmsCouponActivity::getDeductionAmount).reversed())

@@ -23,6 +23,8 @@ import java.util.List;
 @Slf4j
 public class MongoUtils {
 
+    private MongoUtils() {}
+
     private static MongoTemplate mongoTemplate;
 
     private static MongoTemplate getMongoTemplate() {
