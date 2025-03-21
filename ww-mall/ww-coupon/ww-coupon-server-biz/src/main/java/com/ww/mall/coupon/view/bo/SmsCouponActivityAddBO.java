@@ -1,5 +1,6 @@
 package com.ww.mall.coupon.view.bo;
 
+import com.ww.mall.coupon.constant.CouponConstant;
 import com.ww.mall.coupon.eunms.*;
 import lombok.Data;
 
@@ -82,9 +83,14 @@ public class SmsCouponActivityAddBO {
     private int receiveDay;
 
     /**
-     * 多少天的有效期【根据领取时间计算】
+     * 有效单位【天，分】【根据领取时间计算】
      */
-    private int day;
+    private CouponConstant.EffectTimeUnit effectTimeUnit;
+
+    /**
+     * 有效期【根据领取时间计算】
+     */
+    private int effectNumber;
 
     /**
      * 发放类型

@@ -2,10 +2,7 @@ package com.ww.mall.coupon.service;
 
 import com.ww.app.common.common.AppPageResult;
 import com.ww.mall.coupon.view.bo.*;
-import com.ww.mall.coupon.view.vo.CouponActivityCenterVO;
-import com.ww.mall.coupon.view.vo.MemberCouponCenterVO;
-import com.ww.mall.coupon.view.vo.SmsCouponCodeListVO;
-import com.ww.mall.coupon.view.vo.SmsCouponPageVO;
+import com.ww.mall.coupon.view.vo.*;
 
 import java.util.List;
 
@@ -47,6 +44,14 @@ public interface SmsCouponService {
      * @return boolean
      */
     boolean edit(SmsCouponActivityEditBO smsCouponActivityEditBO);
+
+    /**
+     * 平台优惠券活动详情
+     *
+     * @param id 活动id
+     * @return SmsCouponDetailVO
+     */
+    SmsCouponDetailVO info(String id);
 
     /**
      * 上下架活动

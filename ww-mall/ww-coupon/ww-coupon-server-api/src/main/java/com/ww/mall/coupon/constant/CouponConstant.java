@@ -39,4 +39,11 @@ public class CouponConstant {
         DISCOUNT_ZERO
     }
 
+    public enum EffectTimeUnit {
+        // 多少分钟有效期
+        MINUTES,
+        // 多少天有效期
+        DAY
+    }
+
 }

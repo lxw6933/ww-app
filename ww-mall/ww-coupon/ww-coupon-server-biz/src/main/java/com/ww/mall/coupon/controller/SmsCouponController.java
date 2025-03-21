@@ -3,10 +3,7 @@ package com.ww.mall.coupon.controller;
 import com.ww.app.common.common.AppPageResult;
 import com.ww.mall.coupon.service.SmsCouponService;
 import com.ww.mall.coupon.view.bo.*;
-import com.ww.mall.coupon.view.vo.CouponActivityCenterVO;
-import com.ww.mall.coupon.view.vo.MemberCouponCenterVO;
-import com.ww.mall.coupon.view.vo.SmsCouponCodeListVO;
-import com.ww.mall.coupon.view.vo.SmsCouponPageVO;
+import com.ww.mall.coupon.view.vo.*;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.Parameters;
@@ -53,6 +50,15 @@ public class SmsCouponController {
     @PostMapping("/activity")
     public boolean edit(@RequestBody @Validated SmsCouponActivityEditBO smsCouponActivityEditBO) {
         return smsCouponService.edit(smsCouponActivityEditBO);
+    }
+
+    @Operation(summary = "活动详情")
+    @Parameters({
+            @Parameter(name = "id", description = "活动id", required = true, in = ParameterIn.PATH),
+    })
+    @GetMapping("/activity/info/{id}")
+    public SmsCouponDetailVO info(@PathVariable("id") String id) {
+        return smsCouponService.info(id);
     }
 
     @Operation(summary = "上下架优惠券活动")

@@ -77,12 +77,17 @@ public class BaseCouponInfo extends BaseDoc {
     /**
      * 领取多少天后生效【根据领取时间计算】
      */
-    private int receiveAfterEffectDay;
+    private int receiveDay;
 
     /**
-     * 多少天的有效期【根据领取时间计算】
+     * 有效单位【天，分】【根据领取时间计算】
      */
-    private int effectDay;
+    private CouponConstant.EffectTimeUnit effectTimeUnit;
+
+    /**
+     * 有效期【根据领取时间计算】
+     */
+    private int effectNumber;
 
     /**
      * 发放类型

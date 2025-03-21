@@ -185,6 +185,13 @@ public class SmsCouponServiceImpl implements SmsCouponService {
     }
 
     @Override
+    public SmsCouponDetailVO info(String id) {
+        SmsCouponActivity smsCouponActivity = mongoTemplate.findOne(BaseDoc.buildIdQuery(id), SmsCouponActivity.class);
+        Assert.notNull(smsCouponActivity, () -> new ApiException(CouponResCodeConstants.UN_FOUND_ACTIVITY));
+        return BeanUtil.toBean(smsCouponActivity, SmsCouponDetailVO.class);
+    }
+
+    @Override
     @Resubmission
     public boolean status(SmsCouponActivityStatusBO smsCouponActivityStatusBO) {
         UpdateResult updateResult = mongoTemplate.updateFirst(BaseCouponInfo.buildActivityCodeQuery(smsCouponActivityStatusBO.getActivityCode(), smsCouponActivityStatusBO.getChannelId()), BaseCouponInfo.buildActivityStatusUpdate(smsCouponActivityStatusBO.getStatus()), SmsCouponActivity.class);
@@ -584,10 +591,19 @@ public class SmsCouponServiceImpl implements SmsCouponService {
                 smsCouponRecord.setUseEndTime(baseCouponInfo.getUseEndTime());
                 break;
             case AFTER_RECEIVING:
-                int receiveAfterDayEffect = baseCouponInfo.getReceiveAfterEffectDay();
-                int effectDay = baseCouponInfo.getEffectDay();
-                smsCouponRecord.setUseStartTime(DateUtil.offsetDay(now, receiveAfterDayEffect));
-                smsCouponRecord.setUseEndTime(DateUtil.offsetDay(smsCouponRecord.getUseStartTime(), effectDay));
+                int receiveDay = baseCouponInfo.getReceiveDay();
+                int effectNumber = baseCouponInfo.getEffectNumber();
+                smsCouponRecord.setUseStartTime(DateUtil.offsetDay(now, receiveDay));
+                switch (baseCouponInfo.getEffectTimeUnit()) {
+                    case MINUTES:
+                        smsCouponRecord.setUseEndTime(DateUtil.offsetMinute(smsCouponRecord.getUseStartTime(), effectNumber));
+                        break;
+                    case DAY:
+                        smsCouponRecord.setUseEndTime(DateUtil.offsetDay(smsCouponRecord.getUseStartTime(), effectNumber));
+                        break;
+                    default:
+                        throw new ApiException(CouponResCodeConstants.DATA_ERROR);
+                }
                 break;
             default:
                 throw new ApiException(CouponResCodeConstants.DATA_ERROR);
