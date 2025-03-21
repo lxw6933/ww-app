@@ -27,7 +27,7 @@ public class MongoUtils {
 
     private static MongoTemplate mongoTemplate;
 
-    private static MongoTemplate getMongoTemplate() {
+    public static MongoTemplate getMongoTemplate() {
         if (mongoTemplate == null) {
             log.info("初始化MongodbTemplate引用");
             mongoTemplate = SpringUtil.getBean(MongoTemplate.class);
