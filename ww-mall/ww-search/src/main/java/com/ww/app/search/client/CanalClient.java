@@ -65,13 +65,10 @@ public class CanalClient {
                                 afterData.put(column.getName(), column.getValue());
                             }
                             // 数据打印
-                            log.info("变更表:" + tableName +
-                                    ",变更类型:" + eventType +
-                                    "\n变更前数据:" + beforeData +
-                                    "\n变更后数据:" + afterData);
+                            log.info("变更表:{},变更类型:{}\n变更前数据:{}\n变更后数据:{}", tableName, eventType, beforeData, afterData);
                         }
                     } else {
-                        log.info("当前操作类型为：" + entryType);
+                        log.info("当前操作类型为：{}", entryType);
                     }
                 }
             }

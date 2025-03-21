@@ -26,7 +26,7 @@ public class HelloServiceImpl extends HelloServiceGrpc.HelloServiceImplBase {
         // 接受客户端请求参数
         String name = request.getName();
         // 业务处理
-        log.info("服务端业务处理");
+        log.info("服务端业务处理客户端{}业务", name);
         // 封装响应
         HelloResponse.Builder responseBuilder = HelloResponse.newBuilder();
         responseBuilder.setResult("success");
@@ -47,7 +47,6 @@ public class HelloServiceImpl extends HelloServiceGrpc.HelloServiceImplBase {
         // 接受客户端请求参数
         String name = request.getName();
         // 业务处理
-        log.info("服务端业务处理");
         for (int i = 0; i < 10; i++) {
             try {
                 Thread.sleep(RandomUtil.randomInt(1, 5) * 1000L);
