@@ -554,7 +554,7 @@ public class SmsCouponServiceImpl implements SmsCouponService {
             throw new ApiException(CouponResCodeConstants.COUPON_ACTIVITY_DOWN);
         }
         // 是否达到领取时间
-        if (now.before(baseCouponInfo.getReceiveStartDate()) || now.after(baseCouponInfo.getReceiveEndDate())) {
+        if (now.before(baseCouponInfo.getReceiveStartTime()) || now.after(baseCouponInfo.getReceiveEndTime())) {
             throw new ApiException(CouponResCodeConstants.COUPON_ACTIVITY_CANT_GET);
         }
     }

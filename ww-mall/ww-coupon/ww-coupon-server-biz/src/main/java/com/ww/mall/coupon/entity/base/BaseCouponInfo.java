@@ -148,8 +148,8 @@ public class BaseCouponInfo extends BaseDoc {
         Query query = new Query();
         Date now = new Date();
         Criteria criteria = Criteria.where("channelId").is(channelId)
-                .and("receiveStartDate").lte(now)
-                .and("receiveEndDate").gte(now)
+                .and("receiveStartTime").lte(now)
+                .and("receiveEndTime").gte(now)
                 .and("issueType").is(IssueType.RECEIVE)
                 .and("status").is(true);
         switch (type) {

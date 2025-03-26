@@ -51,13 +51,13 @@ public class SmsCouponActivityAddBO {
      * 领取开始时间
      */
     @NotNull(message = "领取开始时间不能为空")
-    private Date receiveStartDate;
+    private Date receiveStartTime;
 
     /**
      * 领取结束时间
      */
     @NotNull(message = "领取结束时间不能为空")
-    private Date receiveEndDate;
+    private Date receiveEndTime;
 
     /**
      * 优惠券领取后有效期计算类型
