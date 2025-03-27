@@ -3,7 +3,6 @@ package com.ww.mall.coupon.service.impl;
 import cn.hutool.core.bean.BeanUtil;
 import cn.hutool.core.date.DateUtil;
 import cn.hutool.core.lang.Assert;
-import cn.hutool.core.lang.UUID;
 import cn.hutool.core.util.StrUtil;
 import com.mongodb.bulk.BulkWriteResult;
 import com.mongodb.client.result.UpdateResult;
@@ -43,6 +42,7 @@ import com.ww.mall.coupon.view.bo.*;
 import com.ww.mall.coupon.view.vo.*;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.CollectionUtils;
+import org.bson.types.ObjectId;
 import org.redisson.api.RScript;
 import org.redisson.api.RSet;
 import org.redisson.api.RedissonClient;
@@ -211,7 +211,7 @@ public class SmsCouponServiceImpl implements SmsCouponService {
         List<SmsCouponCode> smsCouponCodeDocs = new ArrayList<>();
         Set<String> smsCouponCodes = new HashSet<>();
         while (smsCouponCodes.size() < codeNumber) {
-            String code = UUID.randomUUID().toString(true);
+            String code = new ObjectId().toString();
             smsCouponCodes.add(code);
             smsCouponCodeDocs.add(new SmsCouponCode(smsCouponActivity.getActivityCode(), smsCouponActivity.getChannelId(), batchNo, code));
         }
