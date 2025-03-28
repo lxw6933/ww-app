@@ -30,6 +30,14 @@ public interface SmsCouponService {
     List<SmsCouponCodeListVO> codeList(SmsCouponCodeListBO smsCouponCodeListBO);
 
     /**
+     * 导出优惠券券码
+     *
+     * @param smsCouponCodeListBO 筛选条件
+     * @return 文件url
+     */
+    String exportCouponCode(SmsCouponCodeListBO smsCouponCodeListBO);
+
+    /**
      * 新增优惠券活动
      *
      * @param smsCouponActivityAddBO smsCouponActivityBO

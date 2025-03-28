@@ -181,7 +181,7 @@ public abstract class AbstractMongoPage<T> extends AppPage {
         return new AppPageResult<>(getPageNum(), getPageSize(), (int) total, dataList);
     }
 
-    private List<T> getSimpleDataResult(String collectionName) {
+    public List<T> getSimpleDataResult(String collectionName) {
         Query query = new Query()
                 .addCriteria(buildQuery())
                 .with(buildSort())

@@ -2,8 +2,10 @@ package com.ww.mall.coupon.service.impl;
 
 import cn.hutool.core.bean.BeanUtil;
 import cn.hutool.core.date.DateUtil;
+import cn.hutool.core.io.FileUtil;
 import cn.hutool.core.lang.Assert;
 import cn.hutool.core.util.StrUtil;
+import cn.hutool.core.util.ZipUtil;
 import com.mongodb.bulk.BulkWriteResult;
 import com.mongodb.client.result.UpdateResult;
 import com.ww.app.common.common.AppPageResult;
@@ -13,6 +15,9 @@ import com.ww.app.common.enums.GlobalResCodeConstants;
 import com.ww.app.common.exception.ApiException;
 import com.ww.app.common.utils.CommonUtils;
 import com.ww.app.common.utils.MoneyUtils;
+import com.ww.app.common.utils.ThreadUtil;
+import com.ww.app.excel.ExcelTemplate;
+import com.ww.app.minio.MinioTemplate;
 import com.ww.app.mongodb.common.BaseDoc;
 import com.ww.app.mongodb.handler.MongoBulkDataHandler;
 import com.ww.app.mongodb.utils.MongoUtils;
@@ -43,6 +48,7 @@ import com.ww.mall.coupon.view.vo.*;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.CollectionUtils;
 import org.bson.types.ObjectId;
+import org.jetbrains.annotations.NotNull;
 import org.redisson.api.RScript;
 import org.redisson.api.RSet;
 import org.redisson.api.RedissonClient;
@@ -54,9 +60,15 @@ import org.springframework.stereotype.Service;
 
 import javax.annotation.PostConstruct;
 import javax.annotation.Resource;
+import java.io.File;
+import java.io.FileInputStream;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.util.*;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ExecutorService;
 import java.util.concurrent.atomic.LongAdder;
 import java.util.stream.Collectors;
 
@@ -140,16 +152,93 @@ public class SmsCouponServiceImpl implements SmsCouponService {
     public List<SmsCouponCodeListVO> codeList(SmsCouponCodeListBO smsCouponCodeListBO) {
         List<SmsCouponCode> simpleQuerySizeResult = smsCouponCodeListBO.simpleQuerySizeResult(SmsCouponCode.buildCollectionName(smsCouponCodeListBO.getChannelId()));
         String smsCouponRecordCollectionName = SmsCouponRecord.buildCollectionName(smsCouponCodeListBO.getChannelId());
-        return convertList(simpleQuerySizeResult, res -> {
-            SmsCouponCodeListVO vo = BeanUtil.toBean(res, SmsCouponCodeListVO.class);
-            SmsCouponRecord couponRecord = mongoTemplate.findOne(SmsCouponRecord.buildCodeQuery(vo.getCode()), SmsCouponRecord.class, smsCouponRecordCollectionName);
-            if (couponRecord != null) {
-                vo.setMemberId(couponRecord.getMemberId());
-                vo.setReceiveTime(couponRecord.getCreateTime());
-                vo.setCouponStatus(couponRecord.getCouponStatus());
+        return convertList(simpleQuerySizeResult, res -> convertSmsCouponCodeListVO(res, smsCouponRecordCollectionName));
+    }
+
+    @NotNull
+    private SmsCouponCodeListVO convertSmsCouponCodeListVO(SmsCouponCode res, String smsCouponRecordCollectionName) {
+        SmsCouponCodeListVO vo = new SmsCouponCodeListVO();
+        vo.setCode(res.getCode());
+        vo.setBatchNo(res.getBatchNo());
+        SmsCouponRecord couponRecord = mongoTemplate.findOne(SmsCouponRecord.buildCodeQuery(vo.getCode()), SmsCouponRecord.class, smsCouponRecordCollectionName);
+        if (couponRecord != null) {
+            vo.setMemberId(couponRecord.getMemberId());
+            vo.setReceiveTime(couponRecord.getCreateTime());
+            vo.setCouponStatus(couponRecord.getCouponStatus());
+            if (CouponStatus.USED.equals(couponRecord.getCouponStatus())) {
+                vo.setVerificationTime(couponRecord.getUpdateTime());
             }
-            return vo;
-        });
+        }
+        return vo;
+    }
+
+    @Resource
+    private MinioTemplate minioTemplate;
+
+    @Resource
+    private ExcelTemplate excelTemplate;
+
+    private static final ExecutorService exportExecutorService = ThreadUtil.initFixedThreadPoolExecutor("coupon-export-thread", 20);
+
+    @Override
+    @Resubmission
+    public String exportCouponCode(SmsCouponCodeListBO smsCouponCodeListBO) {
+        log.info("导出优惠券券码[{}]", smsCouponCodeListBO);
+        String bucket = "coupon-code-export";
+        String couponCodeCollectionName = SmsCouponCode.buildCollectionName(smsCouponCodeListBO.getChannelId());
+        long totalCount = mongoTemplate.count(new Query().addCriteria(smsCouponCodeListBO.buildQuery()), SmsCouponCode.class, couponCodeCollectionName);
+        if (totalCount == 0) {
+            return null;
+        }
+        int perFileSize = 10000;
+        int fileNumber = CommonUtils.getCircleNumber((int) totalCount, perFileSize);
+        CountDownLatch countDownLatch = new CountDownLatch(fileNumber);
+
+        List<File> exportFiles = new CopyOnWriteArrayList<>();
+        File targetFile = null;
+        String smsCouponRecordCollectionName = SmsCouponRecord.buildCollectionName(smsCouponCodeListBO.getChannelId());
+        try {
+            for (int i = 0; i < fileNumber; i++) {
+                final int fileIndex = i;
+                CompletableFuture.runAsync(() -> {
+                    smsCouponCodeListBO.setPageNum(fileIndex);
+                    List<SmsCouponCode> resultList = smsCouponCodeListBO.getSimpleDataResult(couponCodeCollectionName);
+                    List<SmsCouponCodeListVO> couponCodeListVO = resultList.stream().map(res -> convertSmsCouponCodeListVO(res, smsCouponRecordCollectionName)).collect(Collectors.toList());
+                    // 生成临时文件
+                    File file = excelTemplate.exportExcelOfOneSheetToTempFile(couponCodeListVO, fileIndex + StrUtil.EMPTY, UUID.randomUUID() + StrUtil.UNDERLINE + fileIndex);
+                    exportFiles.add(file);
+                    countDownLatch.countDown();
+                }, exportExecutorService).exceptionally(e -> {
+                    countDownLatch.countDown();
+                    throw new RuntimeException("导出临时文件异常", e);
+                });
+            }
+            countDownLatch.await();
+            targetFile = ZipUtil.zip(FileUtil.createTempFile(UUID.randomUUID().toString(), ".zip", true), true, exportFiles.toArray(new File[]{}));
+            log.info("压缩文件完成");
+            try (FileInputStream inputStream = new FileInputStream(targetFile)) {
+                boolean upload = minioTemplate.upload(inputStream, bucket, targetFile.getName());
+                log.info("导出压缩文件上传minio结果[{}]", upload);
+                if (!upload) {
+                    throw new ApiException("上传压缩文件失败");
+                }
+            }
+            log.info("上传压缩文件至Minio完成");
+            return minioTemplate.getFileUrl(bucket, targetFile.getName(), null);
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        } finally {
+            if (targetFile != null) {
+                boolean del = FileUtil.del(targetFile);
+                log.info("导出临时压缩文件删除结果[{}]", del);
+            }
+            if (!exportFiles.isEmpty()) {
+                exportFiles.forEach(res -> {
+                    boolean del = FileUtil.del(res);
+                    log.info("导出临时文件删除结果[{}]", del);
+                });
+            }
+        }
     }
 
     @Override

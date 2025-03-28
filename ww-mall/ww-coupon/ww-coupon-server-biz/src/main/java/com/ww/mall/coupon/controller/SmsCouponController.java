@@ -40,6 +40,18 @@ public class SmsCouponController {
         return smsCouponService.codeList(smsCouponCodeListBO);
     }
 
+    @Operation(summary = "获取活动所有批次号")
+    @PostMapping("/queryActivityBatchNoList")
+    public List<String> queryActivityBatchNoList(@RequestBody @Validated SmsCouponActivityBatchNoBO batchNoBO) {
+        return smsCouponService.queryActivityBatchNoList(batchNoBO);
+    }
+
+    @Operation(summary = "导出平台优惠券活动券码列表")
+    @PostMapping("/exportCouponCode")
+    public String exportCouponCode(@RequestBody @Validated SmsCouponCodeListBO smsCouponCodeListBO) {
+        return smsCouponService.exportCouponCode(smsCouponCodeListBO);
+    }
+
     @Operation(summary = "添加平台优惠券活动")
     @PutMapping("/activity")
     public boolean add(@RequestBody @Validated SmsCouponActivityAddBO smsCouponActivityAddBO) {

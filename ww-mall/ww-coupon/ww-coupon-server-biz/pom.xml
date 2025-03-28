@@ -53,6 +53,18 @@
             <artifactId>ww-spring-boot-starter-mybatis</artifactId>
             <version>${revision}</version>
         </dependency>
+        <!-- excel starter -->
+        <dependency>
+            <groupId>com.ww.app</groupId>
+            <artifactId>ww-spring-boot-starter-excel</artifactId>
+            <version>${revision}</version>
+        </dependency>
+        <!-- minio starter -->
+        <dependency>
+            <groupId>com.ww.app</groupId>
+            <artifactId>ww-spring-boot-starter-minio</artifactId>
+            <version>${revision}</version>
+        </dependency>
         <!-- test -->
         <dependency>
             <groupId>org.springframework.boot</groupId>
