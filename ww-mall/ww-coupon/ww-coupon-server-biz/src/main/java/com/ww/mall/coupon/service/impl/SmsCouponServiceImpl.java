@@ -168,8 +168,8 @@ public class SmsCouponServiceImpl implements SmsCouponService {
         vo.setCouponStatus(vo.getMemberId() == null ? CouponStatus.WAIT : couponStatus);
         // 全部、已使用
         if (couponStatus == null || CouponStatus.USED.equals(couponStatus)) {
-            SmsCouponRecord couponRecord = mongoTemplate.findOne(SmsCouponRecord.buildCodeQuery(vo.getCode()), SmsCouponRecord.class, smsCouponRecordCollectionName);
-            if (couponRecord != null) {
+            if (vo.getMemberId() != null) {
+                SmsCouponRecord couponRecord = mongoTemplate.findOne(SmsCouponRecord.buildCodeQuery(vo.getCode()), SmsCouponRecord.class, smsCouponRecordCollectionName);
                 vo.setVerificationTime(couponRecord.getUpdateTime());
                 vo.setCouponStatus(couponRecord.getCouponStatus());
             }
