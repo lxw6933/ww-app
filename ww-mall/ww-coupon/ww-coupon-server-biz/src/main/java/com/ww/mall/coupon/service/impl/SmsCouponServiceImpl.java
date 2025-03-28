@@ -17,6 +17,7 @@ import com.ww.app.common.utils.CommonUtils;
 import com.ww.app.common.utils.MoneyUtils;
 import com.ww.app.common.utils.ThreadUtil;
 import com.ww.app.excel.ExcelTemplate;
+import com.ww.app.excel.annotation.ExcelExportTimer;
 import com.ww.app.minio.MinioTemplate;
 import com.ww.app.mongodb.common.BaseDoc;
 import com.ww.app.mongodb.handler.MongoBulkDataHandler;
@@ -182,6 +183,7 @@ public class SmsCouponServiceImpl implements SmsCouponService {
 
     @Override
     @Resubmission
+    @ExcelExportTimer
     public String exportCouponCode(SmsCouponCodeListBO smsCouponCodeListBO) {
         log.info("导出优惠券券码[{}]", smsCouponCodeListBO);
         String bucket = "coupon-code-export";
