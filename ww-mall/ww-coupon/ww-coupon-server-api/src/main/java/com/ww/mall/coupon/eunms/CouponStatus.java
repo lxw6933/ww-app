@@ -12,6 +12,7 @@ import java.util.StringJoiner;
 @Getter
 public enum CouponStatus {
 
+    WAIT("待领取"),
     TO_TAKE_EFFECT("待生效"),
     IN_EFFECT("生效中"),
     EXPIRED("已失效"),

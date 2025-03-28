@@ -1,23 +1,23 @@
 package com.ww.mall.coupon.entity;
 
+import com.ww.app.mongodb.common.BaseDoc;
 import com.ww.mall.coupon.utils.CouponUtils;
 import lombok.Data;
-import org.springframework.data.annotation.Id;
+import lombok.EqualsAndHashCode;
 import org.springframework.data.mongodb.core.mapping.Document;
 import org.springframework.data.mongodb.core.query.Criteria;
 import org.springframework.data.mongodb.core.query.Query;
+import org.springframework.data.mongodb.core.query.Update;
 
 /**
  * @author ww
  * @create 2024-10-15- 15:00
  * @description: 平台优惠券券码
  */
+@EqualsAndHashCode(callSuper = true)
 @Data
 @Document
-public class SmsCouponCode {
-
-    @Id
-    private String id;
+public class SmsCouponCode extends BaseDoc {
 
     /**
      * 优惠券活动编码
@@ -40,9 +40,7 @@ public class SmsCouponCode {
     private String code;
 
     /**
-     * 领取用户id[是否开启][默认不开启]
-     * 不开启[默认]：领取记录不分表
-     * 开启：领取记录按照用户id分表，需要兑换接口额外维护此字段
+     * 领取用户id
      */
     private Long userId;
 
@@ -69,6 +67,10 @@ public class SmsCouponCode {
                 Criteria.where("channelId").is(channelId)
                         .and("code").is(couponCode)
         );
+    }
+
+    public static Update buildCodeUserIdUpdate(Long userId) {
+        return new Update().set("userId", userId);
     }
 
 }

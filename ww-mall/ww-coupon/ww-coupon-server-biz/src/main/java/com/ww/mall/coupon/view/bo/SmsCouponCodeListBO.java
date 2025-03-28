@@ -11,6 +11,7 @@ import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.data.mongodb.core.MongoTemplate;
 import org.springframework.data.mongodb.core.query.Criteria;
+import org.springframework.data.mongodb.core.query.Query;
 
 import javax.validation.constraints.NotBlank;
 import javax.validation.constraints.NotNull;
@@ -64,12 +65,18 @@ public class SmsCouponCodeListBO extends AbstractMongoPage<SmsCouponCode> {
         if (this.couponStatus != null) {
             MongoTemplate mongoTemplate = SpringUtil.getBean(MongoTemplate.class);
             String smsCouponRecordCollectionName = SmsCouponRecord.buildCollectionName(this.channelId);
-            List<SmsCouponRecord> couponRecordList = mongoTemplate.find(SmsCouponRecord.buildStatusQuery(this.activityCode, this.couponStatus).limit(getPageSize()), SmsCouponRecord.class, smsCouponRecordCollectionName);
-            if (CollectionUtils.isEmpty(couponRecordList)) {
-                criteria.and("code").is("-");
+            if (CouponStatus.WAIT.equals(this.couponStatus)) {
+                criteria.and("userId").isNull();
             } else {
-                List<String> codesCondition = convertList(couponRecordList, SmsCouponRecord::getCouponCode);
-                criteria.and("code").in(codesCondition);
+                Query query = SmsCouponRecord.buildStatusQuery(this.activityCode, this.couponStatus);
+                query.fields().exclude("couponCode");
+                List<SmsCouponRecord> couponRecordList = mongoTemplate.find(query, SmsCouponRecord.class, smsCouponRecordCollectionName);
+                if (CollectionUtils.isEmpty(couponRecordList)) {
+                    criteria.and("code").is("-");
+                } else {
+                    List<String> codesCondition = convertList(couponRecordList, SmsCouponRecord::getCouponCode);
+                    criteria.and("code").in(codesCondition);
+                }
             }
         }
         return criteria;

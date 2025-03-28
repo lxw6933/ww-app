@@ -1,13 +1,12 @@
 package com.ww.mall.coupon.service.impl;
 
 import cn.hutool.core.bean.BeanUtil;
-import cn.hutool.core.codec.Base64;
 import cn.hutool.core.date.DateUtil;
 import cn.hutool.core.io.FileUtil;
 import cn.hutool.core.lang.Assert;
+import cn.hutool.core.lang.UUID;
 import cn.hutool.core.util.StrUtil;
 import cn.hutool.core.util.ZipUtil;
-import cn.hutool.core.lang.UUID;
 import cn.hutool.crypto.digest.MD5;
 import com.alibaba.fastjson.JSON;
 import com.mongodb.bulk.BulkWriteResult;
@@ -69,10 +68,7 @@ import java.io.FileInputStream;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.util.*;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.CopyOnWriteArrayList;
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.ExecutorService;
+import java.util.concurrent.*;
 import java.util.concurrent.atomic.LongAdder;
 import java.util.stream.Collectors;
 
@@ -87,6 +83,9 @@ import static com.ww.app.common.utils.CollectionUtils.filterList;
 @Slf4j
 @Service
 public class SmsCouponServiceImpl implements SmsCouponService {
+
+    @Resource
+    private ThreadPoolExecutor defaultThreadPoolExecutor;
 
     @Resource
     private CouponComponent couponComponent;
@@ -156,21 +155,23 @@ public class SmsCouponServiceImpl implements SmsCouponService {
     public List<SmsCouponCodeListVO> codeList(SmsCouponCodeListBO smsCouponCodeListBO) {
         List<SmsCouponCode> simpleQuerySizeResult = smsCouponCodeListBO.simpleQuerySizeResult(SmsCouponCode.buildCollectionName(smsCouponCodeListBO.getChannelId()));
         String smsCouponRecordCollectionName = SmsCouponRecord.buildCollectionName(smsCouponCodeListBO.getChannelId());
-        return convertList(simpleQuerySizeResult, res -> convertSmsCouponCodeListVO(res, smsCouponRecordCollectionName));
+        return convertList(simpleQuerySizeResult, res -> convertSmsCouponCodeListVO(res, smsCouponCodeListBO.getCouponStatus(), smsCouponRecordCollectionName));
     }
 
     @NotNull
-    private SmsCouponCodeListVO convertSmsCouponCodeListVO(SmsCouponCode res, String smsCouponRecordCollectionName) {
+    private SmsCouponCodeListVO convertSmsCouponCodeListVO(SmsCouponCode res, CouponStatus couponStatus, String smsCouponRecordCollectionName) {
         SmsCouponCodeListVO vo = new SmsCouponCodeListVO();
         vo.setCode(res.getCode());
         vo.setBatchNo(res.getBatchNo());
-        SmsCouponRecord couponRecord = mongoTemplate.findOne(SmsCouponRecord.buildCodeQuery(vo.getCode()), SmsCouponRecord.class, smsCouponRecordCollectionName);
-        if (couponRecord != null) {
-            vo.setMemberId(couponRecord.getMemberId());
-            vo.setReceiveTime(couponRecord.getCreateTime());
-            vo.setCouponStatus(couponRecord.getCouponStatus());
-            if (CouponStatus.USED.equals(couponRecord.getCouponStatus())) {
+        vo.setMemberId(res.getUserId());
+        vo.setReceiveTime(vo.getMemberId() == null ? null : res.getUpdateTime());
+        vo.setCouponStatus(vo.getMemberId() == null ? CouponStatus.WAIT : couponStatus);
+        // 全部、已使用
+        if (couponStatus == null || CouponStatus.USED.equals(couponStatus)) {
+            SmsCouponRecord couponRecord = mongoTemplate.findOne(SmsCouponRecord.buildCodeQuery(vo.getCode()), SmsCouponRecord.class, smsCouponRecordCollectionName);
+            if (couponRecord != null) {
                 vo.setVerificationTime(couponRecord.getUpdateTime());
+                vo.setCouponStatus(couponRecord.getCouponStatus());
             }
         }
         return vo;
@@ -207,7 +208,7 @@ public class SmsCouponServiceImpl implements SmsCouponService {
                 final int fileIndex = i;
                 CompletableFuture.runAsync(() -> {
                     List<SmsCouponCode> resultList = smsCouponCodeListBO.getSimpleDataResult(couponCodeCollectionName, fileIndex, perFileSize);
-                    List<SmsCouponCodeListVO> couponCodeListVO = resultList.stream().map(res -> convertSmsCouponCodeListVO(res, smsCouponRecordCollectionName)).collect(Collectors.toList());
+                    List<SmsCouponCodeListVO> couponCodeListVO = resultList.stream().map(res -> convertSmsCouponCodeListVO(res, smsCouponCodeListBO.getCouponStatus(), smsCouponRecordCollectionName)).collect(Collectors.toList());
                     // 生成临时文件
                     File file = excelTemplate.exportExcelOfOneSheetToTempFile(couponCodeListVO, fileIndex + StrUtil.EMPTY, UUID.randomUUID().toString(true) + StrUtil.UNDERLINE + fileIndex);
                     exportFiles.add(file);
@@ -458,6 +459,19 @@ public class SmsCouponServiceImpl implements SmsCouponService {
             smsCouponRecord.setCouponType(CouponType.PLATFORM);
             mongoTemplate.save(smsCouponRecord, SmsCouponRecord.buildCollectionName(clientUser.getChannelId()));
             log.info("用户[{}]使用券码[{}]成功兑换优惠券[{}]", clientUser.getId(), couponCode, smsCouponRecord);
+            // 更新券码领取用户id
+            CompletableFuture.runAsync(() -> {
+                // 发送更新券码用户id消息
+                try {
+                    UpdateResult updateResult = mongoTemplate.updateFirst(SmsCouponCode.buildCodeQuery(clientUser.getChannelId(), couponCode),
+                            SmsCouponCode.buildCodeUserIdUpdate(clientUser.getId()),
+                            SmsCouponCode.class,
+                            SmsCouponCode.buildCollectionName(clientUser.getChannelId()));
+                    log.info("更新券码[{}]用户id[{}]结果[{}]", couponCode, clientUser.getId(), updateResult.getModifiedCount());
+                } catch (Exception e) {
+                    log.error("更新券码用户id异常", e);
+                }
+            }, defaultThreadPoolExecutor);
         } catch (Exception e) {
             log.error("用户[{}]兑换优惠券[{}]异常，进行回滚活动库存", clientUser.getId(), couponCode);
             RSet<String> codeRSet = redissonClient.getSet(couponRedisKeyBuilder.buildCouponCodeKey(smsCouponActivity.getActivityCode(), smsCouponCode.getBatchNo()));
