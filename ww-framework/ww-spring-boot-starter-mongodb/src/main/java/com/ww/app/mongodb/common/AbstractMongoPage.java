@@ -182,11 +182,15 @@ public abstract class AbstractMongoPage<T> extends AppPage {
     }
 
     public List<T> getSimpleDataResult(String collectionName) {
+        return getSimpleDataResult(collectionName, getPageNum(), getPageSize());
+    }
+
+    public List<T> getSimpleDataResult(String collectionName, int pageNumber, int pageSize) {
         Query query = new Query()
                 .addCriteria(buildQuery())
                 .with(buildSort())
-                .skip((long) (getPageNum() - 1) * getPageSize())
-                .limit(getPageSize());
+                .skip((long) (pageNumber - 1) * pageSize)
+                .limit(pageSize);
         return StringUtils.isNotBlank(collectionName) ? mongoTemplate.find(query, tClass, collectionName) : mongoTemplate.find(query, tClass);
     }
 

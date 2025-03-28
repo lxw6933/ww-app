@@ -6,6 +6,7 @@ import cn.hutool.core.io.FileUtil;
 import cn.hutool.core.lang.Assert;
 import cn.hutool.core.util.StrUtil;
 import cn.hutool.core.util.ZipUtil;
+import com.alibaba.fastjson.JSON;
 import com.mongodb.bulk.BulkWriteResult;
 import com.mongodb.client.result.UpdateResult;
 import com.ww.app.common.common.AppPageResult;
@@ -185,7 +186,7 @@ public class SmsCouponServiceImpl implements SmsCouponService {
     @Resubmission
     @ExcelExportTimer
     public String exportCouponCode(SmsCouponCodeListBO smsCouponCodeListBO) {
-        log.info("导出优惠券券码[{}]", smsCouponCodeListBO);
+        log.info("导出优惠券券码[{}]", JSON.toJSON(smsCouponCodeListBO));
         String bucket = "coupon-code-export";
         String couponCodeCollectionName = SmsCouponCode.buildCollectionName(smsCouponCodeListBO.getChannelId());
         long totalCount = mongoTemplate.count(new Query().addCriteria(smsCouponCodeListBO.buildQuery()), SmsCouponCode.class, couponCodeCollectionName);
@@ -200,11 +201,10 @@ public class SmsCouponServiceImpl implements SmsCouponService {
         File targetFile = null;
         String smsCouponRecordCollectionName = SmsCouponRecord.buildCollectionName(smsCouponCodeListBO.getChannelId());
         try {
-            for (int i = 0; i < fileNumber; i++) {
+            for (int i = 1; i <= fileNumber; i++) {
                 final int fileIndex = i;
                 CompletableFuture.runAsync(() -> {
-                    smsCouponCodeListBO.setPageNum(fileIndex);
-                    List<SmsCouponCode> resultList = smsCouponCodeListBO.getSimpleDataResult(couponCodeCollectionName);
+                    List<SmsCouponCode> resultList = smsCouponCodeListBO.getSimpleDataResult(couponCodeCollectionName, fileIndex, perFileSize);
                     List<SmsCouponCodeListVO> couponCodeListVO = resultList.stream().map(res -> convertSmsCouponCodeListVO(res, smsCouponRecordCollectionName)).collect(Collectors.toList());
                     // 生成临时文件
                     File file = excelTemplate.exportExcelOfOneSheetToTempFile(couponCodeListVO, fileIndex + StrUtil.EMPTY, UUID.randomUUID() + StrUtil.UNDERLINE + fileIndex);

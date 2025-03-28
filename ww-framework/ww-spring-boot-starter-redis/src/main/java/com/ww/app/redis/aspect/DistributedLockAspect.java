@@ -71,9 +71,10 @@ public class DistributedLockAspect {
             log.info("线程[{}]获取到锁key：{}", currThreadId, lockKey);
             return joinPoint.proceed();
         } catch (ApiException e) {
+            log.error("线程[{}]锁key[{}]业务异常", currThreadId, lockKey, e);
             throw new ApiException(e.getCode(), e.getMessage());
         } catch (Exception e) {
-            log.info("线程[{}]锁key[{}]业务异常[{}]", currThreadId, lockKey, e.getMessage());
+            log.error("线程[{}]锁key[{}]系统异常", currThreadId, lockKey, e);
             throw new ApiException(GlobalResCodeConstants.SYSTEM_ERROR);
         } finally {
             if (lock.isHeldByCurrentThread()) {
