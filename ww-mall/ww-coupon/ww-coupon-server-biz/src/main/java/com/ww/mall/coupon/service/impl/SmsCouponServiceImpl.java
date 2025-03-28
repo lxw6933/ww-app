@@ -1,11 +1,14 @@
 package com.ww.mall.coupon.service.impl;
 
 import cn.hutool.core.bean.BeanUtil;
+import cn.hutool.core.codec.Base64;
 import cn.hutool.core.date.DateUtil;
 import cn.hutool.core.io.FileUtil;
 import cn.hutool.core.lang.Assert;
 import cn.hutool.core.util.StrUtil;
 import cn.hutool.core.util.ZipUtil;
+import cn.hutool.core.lang.UUID;
+import cn.hutool.crypto.digest.MD5;
 import com.alibaba.fastjson.JSON;
 import com.mongodb.bulk.BulkWriteResult;
 import com.mongodb.client.result.UpdateResult;
@@ -49,7 +52,6 @@ import com.ww.mall.coupon.view.bo.*;
 import com.ww.mall.coupon.view.vo.*;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.CollectionUtils;
-import org.bson.types.ObjectId;
 import org.jetbrains.annotations.NotNull;
 import org.redisson.api.RScript;
 import org.redisson.api.RSet;
@@ -207,7 +209,7 @@ public class SmsCouponServiceImpl implements SmsCouponService {
                     List<SmsCouponCode> resultList = smsCouponCodeListBO.getSimpleDataResult(couponCodeCollectionName, fileIndex, perFileSize);
                     List<SmsCouponCodeListVO> couponCodeListVO = resultList.stream().map(res -> convertSmsCouponCodeListVO(res, smsCouponRecordCollectionName)).collect(Collectors.toList());
                     // 生成临时文件
-                    File file = excelTemplate.exportExcelOfOneSheetToTempFile(couponCodeListVO, fileIndex + StrUtil.EMPTY, UUID.randomUUID() + StrUtil.UNDERLINE + fileIndex);
+                    File file = excelTemplate.exportExcelOfOneSheetToTempFile(couponCodeListVO, fileIndex + StrUtil.EMPTY, UUID.randomUUID().toString(true) + StrUtil.UNDERLINE + fileIndex);
                     exportFiles.add(file);
                     countDownLatch.countDown();
                 }, exportExecutorService).exceptionally(e -> {
@@ -216,7 +218,7 @@ public class SmsCouponServiceImpl implements SmsCouponService {
                 });
             }
             countDownLatch.await();
-            targetFile = ZipUtil.zip(FileUtil.createTempFile(UUID.randomUUID().toString(), ".zip", true), true, exportFiles.toArray(new File[]{}));
+            targetFile = ZipUtil.zip(FileUtil.createTempFile(UUID.randomUUID().toString(true), ".zip", true), true, exportFiles.toArray(new File[]{}));
             log.info("压缩文件完成");
             try (FileInputStream inputStream = new FileInputStream(targetFile)) {
                 boolean upload = minioTemplate.upload(inputStream, bucket, targetFile.getName());
@@ -291,6 +293,8 @@ public class SmsCouponServiceImpl implements SmsCouponService {
         return updateResult.getModifiedCount() == 1;
     }
 
+    private final static MD5 md5 = MD5.create();
+
     /**
      * 生成平台优惠券券码
      *
@@ -302,7 +306,8 @@ public class SmsCouponServiceImpl implements SmsCouponService {
         List<SmsCouponCode> smsCouponCodeDocs = new ArrayList<>();
         Set<String> smsCouponCodes = new HashSet<>();
         while (smsCouponCodes.size() < codeNumber) {
-            String code = new ObjectId().toString();
+            String uuid = UUID.randomUUID().toString(true);
+            String code = md5.digestHex16(uuid);
             smsCouponCodes.add(code);
             smsCouponCodeDocs.add(new SmsCouponCode(smsCouponActivity.getActivityCode(), smsCouponActivity.getChannelId(), batchNo, code));
         }
