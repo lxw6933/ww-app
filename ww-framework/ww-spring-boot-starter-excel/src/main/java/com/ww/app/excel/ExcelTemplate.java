@@ -44,7 +44,7 @@ public class ExcelTemplate {
     private <T> ExcelWriterBuilder baseBuilder(OutputStream os, Class<T> pojoClass) {
         return EasyExcel.write(os, pojoClass)
                 // 不要自动关闭流
-//                .autoCloseStream(false)
+                .autoCloseStream(false)
                 // 基于column长度，自动适配。最大 255 宽度
                 .registerWriteHandler(new LongestMatchColumnWidthStyleStrategy())
                 // 避免Long类型丢失精度
