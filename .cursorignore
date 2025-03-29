@@ -1,0 +1,26 @@
+# 忽略所有的.idea目录
+.idea/
+
+# 忽略所有的git目录
+.git/
+
+# 忽略所有的日志文件
+*.log
+
+# 忽略所有的编译输出目录
+target/
+build/
+
+# 忽略所有的临时文件
+*.tmp
+*.swp
+
+# 忽略所有的node_modules目录（如果使用Node.js）
+node_modules/
+
+# 忽略所有的Docker相关文件
+Dockerfile
+*.dockerignore
+
+# 忽略所有的脚本目录
+script/
