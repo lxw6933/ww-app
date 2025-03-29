@@ -618,7 +618,7 @@ public class SmsCouponServiceImpl implements SmsCouponService {
     @Override
     public List<MemberCouponCenterVO> memberCouponCenter(MemberCouponCenterBO bo) {
         ClientUser clientUser = AuthorizationContext.getClientUser();
-        List<SmsCouponRecord> resultList = MongoUtils.pageByIdCursor(SmsCouponRecord.buildMemberCouponCenterQuery(clientUser.getId(), bo.getType(), bo.getStatus(), bo.getCouponType()), bo.getEndIdCursorValue(), bo.getSize(), SmsCouponRecord.class, SmsCouponRecord.buildCollectionName(clientUser.getChannelId()));
+        List<SmsCouponRecord> resultList = MongoUtils.pageByIdCursor(SmsCouponRecord.buildMemberCouponCenterQuery(clientUser.getId(), bo), bo.getEndIdCursorValue(), bo.getSize(), SmsCouponRecord.class, SmsCouponRecord.buildCollectionName(clientUser.getChannelId()));
         Date now = new Date();
         return convertList(resultList, res -> {
             // 状态实时更新

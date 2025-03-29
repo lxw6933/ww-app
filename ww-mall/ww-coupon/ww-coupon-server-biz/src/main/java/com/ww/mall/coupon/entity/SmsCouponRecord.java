@@ -1,10 +1,14 @@
 package com.ww.mall.coupon.entity;
 
 import cn.hutool.core.date.DateUtil;
+import cn.hutool.core.util.StrUtil;
 import com.ww.app.mongodb.common.BaseDoc;
-import com.ww.mall.coupon.constant.CouponConstant;
-import com.ww.mall.coupon.eunms.*;
+import com.ww.mall.coupon.eunms.CouponDiscountType;
+import com.ww.mall.coupon.eunms.CouponStatus;
+import com.ww.mall.coupon.eunms.CouponType;
+import com.ww.mall.coupon.eunms.LimitReceiveTimeType;
 import com.ww.mall.coupon.utils.CouponUtils;
+import com.ww.mall.coupon.view.bo.MemberCouponCenterBO;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import org.springframework.data.mongodb.core.mapping.Document;
@@ -80,13 +84,16 @@ public class SmsCouponRecord extends BaseDoc {
      */
     private CouponStatus couponStatus;
 
-    public static Query buildMemberCouponCenterQuery(Long memberId, CouponConstant.Type type, CouponConstant.Status status, CouponType couponType) {
+    public static Query buildMemberCouponCenterQuery(Long memberId, MemberCouponCenterBO bo) {
         Query query = new Query();
         Criteria criteria = Criteria.where("memberId").is(memberId);
-        if (couponType != null) {
-            criteria.and("couponType").is(couponType);
+        if (bo.getCouponType() != null) {
+            criteria.and("couponType").is(bo.getCouponType());
         }
-        switch (type) {
+        if (StrUtil.isNotBlank(bo.getActivityCode())) {
+            criteria.and("activityCode").is(bo.getActivityCode());
+        }
+        switch (bo.getType()) {
             case ALL:
                 break;
             case INTEGRAL:
@@ -96,7 +103,7 @@ public class SmsCouponRecord extends BaseDoc {
                 criteria.and("couponDiscountType").in(CouponDiscountType.FULL_DISCOUNT, CouponDiscountType.FULL_REDUCTION, CouponDiscountType.DIRECT_REDUCTION);
                 break;
         }
-        switch (status) {
+        switch (bo.getStatus()) {
             case USE:
                 criteria.and("couponStatus").in(CouponStatus.IN_EFFECT, CouponStatus.TO_TAKE_EFFECT);
                 break;

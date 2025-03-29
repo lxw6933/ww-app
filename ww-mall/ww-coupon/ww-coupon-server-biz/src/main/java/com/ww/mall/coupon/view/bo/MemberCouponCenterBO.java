@@ -37,6 +37,11 @@ public class MemberCouponCenterBO {
      */
     private Integer size;
 
+    /**
+     * activityCode
+     */
+    private String activityCode;
+
     public Integer getSize() {
         return this.size == null ? 10 : this.size;
     }
