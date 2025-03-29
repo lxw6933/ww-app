@@ -1,5 +1,6 @@
 package com.ww.mall.coupon.eunms;
 
+import com.ww.app.common.enums.BaseEnum;
 import lombok.Getter;
 
 import java.util.StringJoiner;
@@ -10,7 +11,7 @@ import java.util.StringJoiner;
  * @description:
  */
 @Getter
-public enum CouponStatus {
+public enum CouponStatus implements BaseEnum {
 
     WAIT("待领取"),
     TO_TAKE_EFFECT("待生效"),
@@ -32,4 +33,8 @@ public enum CouponStatus {
                 .toString();
     }
 
+    @Override
+    public String getShowValue() {
+        return this.text;
+    }
 }

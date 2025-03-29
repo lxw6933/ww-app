@@ -1,6 +1,7 @@
 package com.ww.mall.coupon.view.vo;
 
 import com.alibaba.excel.annotation.ExcelProperty;
+import com.ww.app.excel.convert.CommonEnumConverter;
 import com.ww.mall.coupon.eunms.CouponStatus;
 import lombok.Data;
 
@@ -23,7 +24,7 @@ public class SmsCouponCodeListVO {
     /**
      * 优惠券券码状态
      */
-    @ExcelProperty(value = "优惠券券码状态", index = 1)
+    @ExcelProperty(value = "优惠券券码状态", converter = CommonEnumConverter.class, index = 1)
     private CouponStatus couponStatus;
 
     /**
