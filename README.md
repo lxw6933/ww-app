@@ -218,4 +218,10 @@ gRPC 服务模块，提供高性能的远程过程调用：
 本项目使用 MIT 许可证，详情请参阅 LICENSE 文件。
 
 ## 联系方式
-如有任何问题或建议，请通过 [ww6933mail@gmail.com](mailto:ww6933mail@gmail.com) 联系我们。
+
+* 问题反馈：GitHub Issues
+* 邮箱：[ww6933mail@gmail.com](mailto:ww6933mail@gmail.com)
+
+## 致谢
+
+感谢所有贡献者和使用者的支持。
