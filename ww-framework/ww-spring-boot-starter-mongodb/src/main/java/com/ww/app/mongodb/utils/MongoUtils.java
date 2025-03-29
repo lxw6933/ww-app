@@ -56,10 +56,11 @@ public class MongoUtils {
      * @param collectionName 指定文档名称
      * @return 查询结果列表
      */
-    public static <T> List<T> queryByCursor(Query query,
+    public static <T> List<T> doQueryByCursor(Query query,
                                             String cursorField,
                                             Object cursorValue,
                                             int pageSize,
+                                            Sort.Direction sort,
                                             List<String> fieldNames,
                                             Class<T> entityClass,
                                             String collectionName) {
@@ -74,7 +75,7 @@ public class MongoUtils {
         }
 
         // 添加排序和分页
-        query.with(Sort.by(Sort.Direction.ASC, cursorField)).limit(pageSize);
+        query.with(Sort.by(sort, cursorField)).limit(pageSize);
 
         // 执行查询
         if (StrUtil.isEmpty(collectionName)) {
@@ -84,20 +85,56 @@ public class MongoUtils {
         }
     }
 
-    public static <T> List<T> pageByIdCursor(Query query, Object cursorValue, int pageSize, Class<T> entityClass) {
+    public static <T> List<T> queryByCursor(Query query,
+                                            String cursorField,
+                                            Object cursorValue,
+                                            int pageSize,
+                                            List<String> fieldNames,
+                                            Class<T> entityClass,
+                                            String collectionName) {
+        return doQueryByCursor(query, cursorField, cursorValue, pageSize, Sort.Direction.ASC, fieldNames, entityClass, collectionName);
+    }
+
+    public static <T> List<T> descQueryByCursor(Query query,
+                                            String cursorField,
+                                            Object cursorValue,
+                                            int pageSize,
+                                            List<String> fieldNames,
+                                            Class<T> entityClass,
+                                            String collectionName) {
+        return doQueryByCursor(query, cursorField, cursorValue, pageSize, Sort.Direction.DESC, fieldNames, entityClass, collectionName);
+    }
+
+    public static <T> List<T> queryByIdCursor(Query query, Object cursorValue, int pageSize, Class<T> entityClass) {
         return queryByCursor(query, Constant.MONGO_PRIMARY_KEY, cursorValue, pageSize, null, entityClass, null);
     }
 
-    public static <T> List<T> pageByIdCursorForFields(Query query, Object cursorValue, int pageSize, List<String> fieldNames, Class<T> entityClass) {
+    public static <T> List<T> descQueryByIdCursor(Query query, Object cursorValue, int pageSize, Class<T> entityClass) {
+        return descQueryByCursor(query, Constant.MONGO_PRIMARY_KEY, cursorValue, pageSize, null, entityClass, null);
+    }
+
+    public static <T> List<T> queryByIdCursorForFields(Query query, Object cursorValue, int pageSize, List<String> fieldNames, Class<T> entityClass) {
         return queryByCursor(query, Constant.MONGO_PRIMARY_KEY, cursorValue, pageSize, fieldNames, entityClass, null);
     }
 
-    public static <T> List<T> pageByIdCursor(Query query, Object cursorValue, int pageSize, Class<T> entityClass, String collectionName) {
+    public static <T> List<T> descQueryByIdCursorForFields(Query query, Object cursorValue, int pageSize, List<String> fieldNames, Class<T> entityClass) {
+        return descQueryByCursor(query, Constant.MONGO_PRIMARY_KEY, cursorValue, pageSize, fieldNames, entityClass, null);
+    }
+
+    public static <T> List<T> queryByIdCursor(Query query, Object cursorValue, int pageSize, Class<T> entityClass, String collectionName) {
         return queryByCursor(query, Constant.MONGO_PRIMARY_KEY, cursorValue, pageSize, null, entityClass, collectionName);
     }
 
-    public static <T> List<T> pageByIdCursorForFields(Query query, Object cursorValue, int pageSize, List<String> fieldNames, Class<T> entityClass, String collectionName) {
+    public static <T> List<T> descQueryByIdCursor(Query query, Object cursorValue, int pageSize, Class<T> entityClass, String collectionName) {
+        return descQueryByCursor(query, Constant.MONGO_PRIMARY_KEY, cursorValue, pageSize, null, entityClass, collectionName);
+    }
+
+    public static <T> List<T> queryByIdCursorForFields(Query query, Object cursorValue, int pageSize, List<String> fieldNames, Class<T> entityClass, String collectionName) {
         return queryByCursor(query, Constant.MONGO_PRIMARY_KEY, cursorValue, pageSize, fieldNames, entityClass, collectionName);
+    }
+
+    public static <T> List<T> descQueryByIdCursorForFields(Query query, Object cursorValue, int pageSize, List<String> fieldNames, Class<T> entityClass, String collectionName) {
+        return descQueryByCursor(query, Constant.MONGO_PRIMARY_KEY, cursorValue, pageSize, fieldNames, entityClass, collectionName);
     }
 
 }

@@ -389,7 +389,7 @@ public class DemoServiceImpl implements DemoService {
     public String exportCursorDate(HttpServletResponse response) {
         Object cursorValue = null;  // 初始游标值
         int pageSize = 50;       // 每页大小
-        List<Demo> resultList = MongoUtils.pageByIdCursor(new Query(), cursorValue, pageSize, Demo.class);
+        List<Demo> resultList = MongoUtils.queryByIdCursor(new Query(), cursorValue, pageSize, Demo.class);
         return exportMinio(resultList, "test-excel-export");
 //        Map<String, List<Demo>> map = new HashMap<>();
 //        while (true) {
