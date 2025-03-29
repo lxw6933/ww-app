@@ -59,7 +59,7 @@ public class ExcelTemplate {
         File tempFile;
         try {
             // 创建临时文件路径
-            tempFile = FileUtil.createTempFile(UUID.randomUUID().toString(), fileSuffix + DEFAULT_SUFFIX, true);
+            tempFile = FileUtil.createTempFile(UUID.randomUUID().toString(true), fileSuffix + DEFAULT_SUFFIX, true);
             // 导出数据到临时文件
             try (OutputStream os = Files.newOutputStream(tempFile.toPath())) {
                 baseBuilder(os, data.get(0).getClass()).sheet(sheetName).doWrite(data);
