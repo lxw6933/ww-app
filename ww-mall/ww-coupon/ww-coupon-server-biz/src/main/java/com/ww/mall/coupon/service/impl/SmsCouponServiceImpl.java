@@ -618,7 +618,7 @@ public class SmsCouponServiceImpl implements SmsCouponService {
     @Override
     public List<MemberCouponCenterVO> memberCouponCenter(MemberCouponCenterBO bo) {
         ClientUser clientUser = AuthorizationContext.getClientUser();
-        List<SmsCouponRecord> resultList = MongoUtils.queryByIdCursor(SmsCouponRecord.buildMemberCouponCenterQuery(clientUser.getId(), bo), bo.getEndIdCursorValue(), bo.getSize(), SmsCouponRecord.class, SmsCouponRecord.buildCollectionName(clientUser.getChannelId()));
+        List<SmsCouponRecord> resultList = MongoUtils.descQueryByIdCursor(SmsCouponRecord.buildMemberCouponCenterQuery(clientUser.getId(), bo), bo.getEndIdCursorValue(), bo.getSize(), SmsCouponRecord.class, SmsCouponRecord.buildCollectionName(clientUser.getChannelId()));
         Date now = new Date();
         return convertList(resultList, res -> {
             // 状态实时更新
@@ -755,7 +755,7 @@ public class SmsCouponServiceImpl implements SmsCouponService {
     }
 
     private List<SmsCouponActivity> getSmsCouponActivityCursorList(Query query, String cursorIdValue, int size) {
-        List<SmsCouponActivity> resultList = MongoUtils.queryByIdCursorForFields(query, cursorIdValue, size, Collections.singletonList("activityCode"), SmsCouponActivity.class);
+        List<SmsCouponActivity> resultList = MongoUtils.descQueryByIdCursorForFields(query, cursorIdValue, size, Collections.singletonList("activityCode"), SmsCouponActivity.class);
         if (CollectionUtils.isEmpty(resultList)) {
             return null;
         }

@@ -56,7 +56,7 @@ public class MongoUtils {
      * @param collectionName 指定文档名称
      * @return 查询结果列表
      */
-    public static <T> List<T> doQueryByCursor(Query query,
+    private static <T> List<T> doQueryByCursor(Query query,
                                             String cursorField,
                                             Object cursorValue,
                                             int pageSize,
@@ -85,7 +85,7 @@ public class MongoUtils {
         }
     }
 
-    public static <T> List<T> queryByCursor(Query query,
+    private static <T> List<T> queryByCursor(Query query,
                                             String cursorField,
                                             Object cursorValue,
                                             int pageSize,
@@ -95,7 +95,7 @@ public class MongoUtils {
         return doQueryByCursor(query, cursorField, cursorValue, pageSize, Sort.Direction.ASC, fieldNames, entityClass, collectionName);
     }
 
-    public static <T> List<T> descQueryByCursor(Query query,
+    private static <T> List<T> descQueryByCursor(Query query,
                                             String cursorField,
                                             Object cursorValue,
                                             int pageSize,
