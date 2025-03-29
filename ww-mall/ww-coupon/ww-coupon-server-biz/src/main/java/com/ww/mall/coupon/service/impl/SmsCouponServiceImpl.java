@@ -310,7 +310,7 @@ public class SmsCouponServiceImpl implements SmsCouponService {
             String uuid = UUID.randomUUID().toString(true);
             String code = md5.digestHex16(uuid);
             smsCouponCodes.add(code);
-            smsCouponCodeDocs.add(new SmsCouponCode(smsCouponActivity.getActivityCode(), smsCouponActivity.getChannelId(), batchNo, code));
+            smsCouponCodeDocs.add(new SmsCouponCode(smsCouponActivity.getActivityCode(), batchNo, code));
         }
         try {
             RSet<String> codeRSet = redissonClient.getSet(couponRedisKeyBuilder.buildCouponCodeKey(smsCouponActivity.getActivityCode(), batchNo));
@@ -439,7 +439,7 @@ public class SmsCouponServiceImpl implements SmsCouponService {
         ClientUser clientUser = AuthorizationContext.getClientUser();
         log.info("用户[{}]使用券码[{}]兑换优惠券", clientUser.getId(), couponCode);
         // 查询是否存在券码
-        SmsCouponCode smsCouponCode = mongoTemplate.findOne(SmsCouponCode.buildCodeQuery(clientUser.getChannelId(), couponCode), SmsCouponCode.class, SmsCouponCode.buildCollectionName(clientUser.getChannelId()));
+        SmsCouponCode smsCouponCode = mongoTemplate.findOne(SmsCouponCode.buildCodeQuery(couponCode), SmsCouponCode.class, SmsCouponCode.buildCollectionName(clientUser.getChannelId()));
         Assert.notNull(smsCouponCode, () -> new ApiException(CouponResCodeConstants.INVALID_CODE));
         assert smsCouponCode != null;
         SmsCouponActivity smsCouponActivity = getSmsCouponActivity(smsCouponCode.getActivityCode());
@@ -463,7 +463,7 @@ public class SmsCouponServiceImpl implements SmsCouponService {
             CompletableFuture.runAsync(() -> {
                 // 发送更新券码用户id消息
                 try {
-                    UpdateResult updateResult = mongoTemplate.updateFirst(SmsCouponCode.buildCodeQuery(clientUser.getChannelId(), couponCode),
+                    UpdateResult updateResult = mongoTemplate.updateFirst(SmsCouponCode.buildCodeQuery(couponCode),
                             SmsCouponCode.buildCodeUserIdUpdate(clientUser.getId()),
                             SmsCouponCode.class,
                             SmsCouponCode.buildCollectionName(clientUser.getChannelId()));

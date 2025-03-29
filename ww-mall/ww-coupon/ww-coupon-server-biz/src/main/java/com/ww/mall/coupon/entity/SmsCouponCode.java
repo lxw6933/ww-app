@@ -25,11 +25,6 @@ public class SmsCouponCode extends BaseDoc {
     private String activityCode;
 
     /**
-     * 渠道id
-     */
-    private Long channelId;
-
-    /**
      * 批次号
      */
     private String batchNo;
@@ -44,9 +39,8 @@ public class SmsCouponCode extends BaseDoc {
      */
     private Long userId;
 
-    public SmsCouponCode(String activityCode, Long channelId, String batchNo, String code) {
+    public SmsCouponCode(String activityCode, String batchNo, String code) {
         this.activityCode = activityCode;
-        this.channelId = channelId;
         this.batchNo = batchNo;
         this.code = code;
     }
@@ -58,15 +52,11 @@ public class SmsCouponCode extends BaseDoc {
     /**
      * 券码查询条件
      *
-     * @param channelId 渠道id
      * @param couponCode 券码
      * @return Query
      */
-    public static Query buildCodeQuery(Long channelId, String couponCode) {
-        return new Query().addCriteria(
-                Criteria.where("channelId").is(channelId)
-                        .and("code").is(couponCode)
-        );
+    public static Query buildCodeQuery(String couponCode) {
+        return new Query().addCriteria(Criteria.where("code").is(couponCode));
     }
 
     public static Update buildCodeUserIdUpdate(Long userId) {
