@@ -35,11 +35,6 @@ public class SmsCouponRecord extends BaseDoc {
     private Long memberId;
 
     /**
-     * 渠道id
-     */
-    private Long channelId;
-
-    /**
      * 优惠券券码【手动发放才有】
      */
     private String couponCode;

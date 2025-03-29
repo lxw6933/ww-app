@@ -360,7 +360,7 @@ public class SmsCouponServiceImpl implements SmsCouponService {
         Assert.isTrue(stockRedisComponent.decrementStock(couponRedisKeyBuilder.buildCouponNumberKey(activityCode), 1), () -> new ApiException(CouponResCodeConstants.COUPON_SALE_OUT));
         try {
             // 构建用户领取优惠券记录
-            SmsCouponRecord smsCouponRecord = buildSmsCouponRecord(clientUser.getId(), clientUser.getChannelId(), baseCouponInfo);
+            SmsCouponRecord smsCouponRecord = buildSmsCouponRecord(clientUser.getId(), baseCouponInfo);
             smsCouponRecord.setCouponType(CouponUtils.getCouponType(activityCode));
             smsCouponRecord.setCouponCode(StrUtil.EMPTY);
             mongoTemplate.save(smsCouponRecord, SmsCouponRecord.buildCollectionName(clientUser.getChannelId()));
@@ -416,7 +416,7 @@ public class SmsCouponServiceImpl implements SmsCouponService {
         try {
             targetIssueUserIdList.forEach(userId -> {
                 // 构建用户领取优惠券记录
-                SmsCouponRecord smsCouponRecord = buildSmsCouponRecord(userId, smsCouponActivity.getChannelId(), smsCouponActivity);
+                SmsCouponRecord smsCouponRecord = buildSmsCouponRecord(userId, smsCouponActivity);
                 smsCouponRecord.setCouponType(CouponUtils.getCouponType(activityCode));
                 smsCouponRecord.setCouponCode(StrUtil.EMPTY);
                 smsIssueCouponRecordList.add(smsCouponRecord);
@@ -452,7 +452,7 @@ public class SmsCouponServiceImpl implements SmsCouponService {
         Assert.isTrue(remove, () -> new ApiException(CouponResCodeConstants.CODE_USED));
         try {
             // 构建用户领取优惠券记录
-            SmsCouponRecord smsCouponRecord = buildSmsCouponRecord(clientUser.getId(), clientUser.getChannelId(), smsCouponActivity);
+            SmsCouponRecord smsCouponRecord = buildSmsCouponRecord(clientUser.getId(), smsCouponActivity);
             // 记录券码
             smsCouponRecord.setCouponCode(couponCode);
             // 目前只支持渠道券码
@@ -574,7 +574,7 @@ public class SmsCouponServiceImpl implements SmsCouponService {
         return codeKeys;
     }
 
-    public void memberCouponStatusHandle(SmsCouponRecord smsCouponRecord, Date now) {
+    public void memberCouponStatusHandle(ClientUser clientUser, SmsCouponRecord smsCouponRecord, Date now) {
         if (CouponStatus.OCCUPIED.equals(smsCouponRecord.getCouponStatus()) ||
                 CouponStatus.USED.equals(smsCouponRecord.getCouponStatus()) ||
                 CouponStatus.EXPIRED.equals(smsCouponRecord.getCouponStatus())) {
@@ -589,7 +589,7 @@ public class SmsCouponServiceImpl implements SmsCouponService {
             couponStatus = CouponStatus.EXPIRED;
         }
         if (!smsCouponRecord.getCouponStatus().equals(couponStatus)) {
-            mongoTemplate.updateFirst(BaseDoc.buildIdQuery(smsCouponRecord.getId()), SmsCouponRecord.buildStatusUpdate(couponStatus), SmsCouponRecord.class, SmsCouponRecord.buildCollectionName(smsCouponRecord.getChannelId()));
+            mongoTemplate.updateFirst(BaseDoc.buildIdQuery(smsCouponRecord.getId()), SmsCouponRecord.buildStatusUpdate(couponStatus), SmsCouponRecord.class, SmsCouponRecord.buildCollectionName(clientUser.getChannelId()));
             log.info("优惠券[{}]更新状态为[{}]", smsCouponRecord.getId(), couponStatus);
             smsCouponRecord.setCouponStatus(couponStatus);
         }
@@ -622,7 +622,7 @@ public class SmsCouponServiceImpl implements SmsCouponService {
         Date now = new Date();
         return convertList(resultList, res -> {
             // 状态实时更新
-            memberCouponStatusHandle(res, now);
+            memberCouponStatusHandle(clientUser, res, now);
             // 判断是否冻结[特殊异常情况下]
             if (CouponStatus.IN_EFFECT.equals(res.getCouponStatus())) {
                 if (couponComponent.isFreezeCoupon(res.getId())) {
@@ -687,15 +687,13 @@ public class SmsCouponServiceImpl implements SmsCouponService {
      * 构建用户优惠券记录
      *
      * @param userId         用户id
-     * @param channelId      渠道id
      * @param baseCouponInfo 优惠券基础信息
      * @return 用户优惠券记录
      */
-    private SmsCouponRecord buildSmsCouponRecord(Long userId, Long channelId, BaseCouponInfo baseCouponInfo) {
+    private SmsCouponRecord buildSmsCouponRecord(Long userId, BaseCouponInfo baseCouponInfo) {
         Date now = new Date();
         SmsCouponRecord smsCouponRecord = new SmsCouponRecord();
         smsCouponRecord.setMemberId(userId);
-        smsCouponRecord.setChannelId(channelId);
         smsCouponRecord.setActivityCode(baseCouponInfo.getActivityCode());
         smsCouponRecord.setCouponDiscountType(baseCouponInfo.getCouponDiscountType());
         smsCouponRecord.setAchieveAmount(baseCouponInfo.getAchieveAmount());
