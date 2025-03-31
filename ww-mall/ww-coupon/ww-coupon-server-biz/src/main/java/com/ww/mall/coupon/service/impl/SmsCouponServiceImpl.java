@@ -275,7 +275,17 @@ public class SmsCouponServiceImpl implements SmsCouponService {
     @Override
     @Resubmission
     public boolean edit(SmsCouponActivityEditBO smsCouponActivityEditBO) {
-        UpdateResult updateResult = mongoTemplate.updateFirst(BaseCouponInfo.buildActivityCodeQuery(smsCouponActivityEditBO.getActivityCode(), smsCouponActivityEditBO.getChannelId()), smsCouponActivityEditBO.buildInfoUpdate(), SmsCouponActivity.class);
+        SmsCouponActivity smsCouponActivity = mongoTemplate.findOne(BaseCouponInfo.buildActivityCodeQuery(smsCouponActivityEditBO.getActivityCode(), smsCouponActivityEditBO.getChannelId()), SmsCouponActivity.class);
+        Assert.notNull(smsCouponActivity, () -> new ApiException(CouponResCodeConstants.UN_FOUND_ACTIVITY));
+        // 判断是否开始
+        UpdateResult updateResult;
+        if (smsCouponActivity.getReceiveStartTime().before(new Date())) {
+            // 未开始
+            updateResult = mongoTemplate.updateFirst(BaseCouponInfo.buildActivityCodeQuery(smsCouponActivityEditBO.getActivityCode(), smsCouponActivityEditBO.getChannelId()), smsCouponActivityEditBO.buildWaitStartInfoUpdate(), SmsCouponActivity.class);
+        } else {
+            // 已开始
+            updateResult = mongoTemplate.updateFirst(BaseCouponInfo.buildActivityCodeQuery(smsCouponActivityEditBO.getActivityCode(), smsCouponActivityEditBO.getChannelId()), smsCouponActivityEditBO.buildInfoUpdate(), SmsCouponActivity.class);
+        }
         CouponCacheUtils.updateSmsCouponActivityCache(smsCouponActivityEditBO.getActivityCode());
         return updateResult.getModifiedCount() == 1;
     }
