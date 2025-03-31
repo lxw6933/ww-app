@@ -117,4 +117,8 @@ public interface SmsCouponService {
      */
     List<MemberCouponCenterVO> memberCouponCenter(MemberCouponCenterBO bo);
 
+    /**
+     * 过期活动redis数据处理
+     */
+    void expireActivityRedisDataHandle();
 }
