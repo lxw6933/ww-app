@@ -21,6 +21,11 @@ import static com.ww.app.common.constant.Constant.MONGO_PRIMARY_KEY;
 public class SmsCouponPageBO extends AbstractMongoPage<SmsCouponActivity> {
 
     /**
+     * 渠道id
+     */
+    private Long channelId;
+
+    /**
      * id
      */
     private String id;
@@ -53,6 +58,7 @@ public class SmsCouponPageBO extends AbstractMongoPage<SmsCouponActivity> {
     @Override
     public Criteria buildQuery() {
         Criteria criteria = new Criteria();
+        criteria.and("channelId").is(this.channelId);
         if (StringUtils.isNotBlank(this.id)) {
             criteria.and(MONGO_PRIMARY_KEY).is(this.id);
         }
