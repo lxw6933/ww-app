@@ -65,6 +65,12 @@
             <artifactId>ww-spring-boot-starter-minio</artifactId>
             <version>${revision}</version>
         </dependency>
+        <!-- xxl job starter -->
+        <dependency>
+            <groupId>com.ww.app</groupId>
+            <artifactId>ww-spring-boot-starter-job</artifactId>
+            <version>${revision}</version>
+        </dependency>
         <!-- test -->
         <dependency>
             <groupId>org.springframework.boot</groupId>

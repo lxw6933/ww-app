@@ -16,6 +16,10 @@ public class CouponRedisKeyBuilder extends RedisKeyBuilder {
     private static final String COUPON_NUMBER_KEY = "coupon_number";
     private static final String COUPON_FREEZE_KEY = "coupon_freeze";
 
+    public String buildCouponCodePrefixKey() {
+        return super.getPrefix() + COUPON_CODE_KEY;
+    }
+
     /**
      * 获取券码对应的RSet key
      *
@@ -24,7 +28,11 @@ public class CouponRedisKeyBuilder extends RedisKeyBuilder {
      * @return key
      */
     public String buildCouponCodeKey(String activityCode, String batchNo) {
-        return super.getPrefix() + StrUtil.join(SPLIT_ITEM, COUPON_CODE_KEY, activityCode, batchNo);
+        return StrUtil.join(SPLIT_ITEM, buildCouponCodePrefixKey(), activityCode, batchNo);
+    }
+
+    public String buildCouponNumberPrefixKey() {
+        return super.getPrefix() + COUPON_NUMBER_KEY;
     }
 
     /**
@@ -34,7 +42,21 @@ public class CouponRedisKeyBuilder extends RedisKeyBuilder {
      * @return key
      */
     public String buildCouponNumberKey(String activityCode) {
-        return super.getPrefix() + StrUtil.join(SPLIT_ITEM, COUPON_NUMBER_KEY, activityCode);
+        return StrUtil.join(SPLIT_ITEM, buildCouponNumberPrefixKey(), activityCode);
+    }
+
+    /**
+     * 从 key 中提取 activityCode
+     */
+    public String extractActivityCode(String fullKey, String keyPrefix) {
+        if (!StrUtil.isNotBlank(fullKey) || !fullKey.startsWith(keyPrefix)) {
+            return null;
+        }
+        // 移除前缀后，剩余部分格式应为 "activityCode" 或 "activityCode:batchNo"
+        String suffix = fullKey.substring(keyPrefix.length());
+        String[] parts = suffix.split(SPLIT_ITEM);
+        // 第一个部分是 activityCode
+        return (parts.length > 0) ? parts[0] : null;
     }
 
     /**
