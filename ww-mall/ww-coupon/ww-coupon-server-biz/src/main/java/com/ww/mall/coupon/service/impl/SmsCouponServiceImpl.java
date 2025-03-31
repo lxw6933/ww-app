@@ -929,24 +929,26 @@ public class SmsCouponServiceImpl implements SmsCouponService {
         result.setAvailableCashCouponList(availableCashCouponList);
         result.setUnAvailableIntegralCouponList(unAvailableIntegralCouponList);
         result.setUnAvailableCashCouponList(unAvailableCashCouponList);
+        // 过滤掉参与活动不能使用优惠券的商品
+        orderBOList = orderBOList.stream().filter(OrderMemberSmsCouponBO::isActivityUseCoupon).collect(Collectors.toList());
         // 积分
-        memberIntegralCouponList.forEach(res -> {
+        for (MemberCouponCenterVO res : memberIntegralCouponList) {
             OrderMemberCouponVO vo = BeanUtil.toBean(res, OrderMemberCouponVO.class);
             if (orderCouponInfoHandler(res, orderBOList, vo)) {
                 availableIntegralCouponList.add(vo);
             } else {
                 unAvailableIntegralCouponList.add(vo);
             }
-        });
+        }
         // 现金
-        memberCashCouponList.forEach(res -> {
+        for (MemberCouponCenterVO res : memberCashCouponList) {
             OrderMemberCouponVO vo = BeanUtil.toBean(res, OrderMemberCouponVO.class);
             if (orderCouponInfoHandler(res, orderBOList, vo)) {
                 availableCashCouponList.add(vo);
             } else {
                 unAvailableCashCouponList.add(vo);
             }
-        });
+        }
         availableCashCouponList.sort(Comparator.comparing(OrderMemberCouponVO::getDiscountTotalAmount).reversed()
                 .thenComparing(OrderMemberCouponVO::getUseEndTime)
                 .thenComparing(OrderMemberCouponVO::getLackAmount));

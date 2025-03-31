@@ -51,4 +51,9 @@ public class OrderMemberSmsCouponBO {
      * 实际支付积分【活动优惠后】
      */
     private Integer realIntegral;
+
+    /**
+     * 参与的活动是否允许使用优惠券
+     */
+    private boolean activityUseCoupon = true;
 }
