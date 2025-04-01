@@ -12,6 +12,7 @@ import org.apache.commons.collections4.CollectionUtils;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.util.*;
+import java.util.stream.Collectors;
 
 /**
  * @author ww
@@ -153,37 +154,67 @@ public class MoneyUtils {
         if (CollectionUtils.isEmpty(boList)) {
             throw new IllegalArgumentException("boList 不能为空");
         }
+        
+        // 处理负数优惠金额
+        if (discount.compareTo(BigDecimal.ZERO) < 0) {
+            throw new IllegalArgumentException("优惠金额不能为负数");
+        }
+        
         Map<T, BigDecimal> result = new HashMap<>();
-        // 1. 计算总价
-        BigDecimal totalAmount = boList.stream()
-                .map(MoneyBO::getPrice)
-                .reduce(BigDecimal.ZERO, BigDecimal::add);
-        if (totalAmount.compareTo(BigDecimal.ZERO) == 0) {
-            // 总金额为0，不进行均摊
-            for (MoneyBO<T> bo : boList) {
-                result.put(bo.getId(), BigDecimal.ZERO);
-            }
+        
+        // 过滤掉价格为0的商品，避免除零异常
+        List<MoneyBO<T>> validBoList = boList.stream()
+                .filter(bo -> bo.getPrice().compareTo(BigDecimal.ZERO) > 0)
+                .collect(Collectors.toList());
+        
+        // 处理价格为0的商品，直接放入结果集
+        boList.stream()
+                .filter(bo -> bo.getPrice().compareTo(BigDecimal.ZERO) == 0)
+                .forEach(bo -> result.put(bo.getId(), BigDecimal.ZERO));
+        
+        // 如果没有有效商品，直接返回结果
+        if (validBoList.isEmpty()) {
             return result;
         }
+        
+        // 1. 计算总价
+        BigDecimal totalAmount = validBoList.stream()
+                .map(MoneyBO::getPrice)
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
+        
+        // 如果优惠金额大于总金额，则限制为总金额
         if (totalAmount.compareTo(discount) < 0) {
             discount = totalAmount;
         }
+        
         // 2. 初始化变量，累积分摊的优惠金额，确保精度不丢失
         BigDecimal remainingDiscount = discount;
-        // 3. 遍历 BO 集合，按比例计算每个 BO 的优惠金额
-        for (int i = 0; i < boList.size(); i++) {
-            MoneyBO<T> bo = boList.get(i);
-            // 计算当前 BO 应分摊的优惠金额
+        
+        // 3. 遍历有效商品列表，按比例计算每个商品的优惠金额
+        for (int i = 0; i < validBoList.size(); i++) {
+            MoneyBO<T> bo = validBoList.get(i);
+            
+            // 计算当前商品应分摊的优惠金额
             BigDecimal proportion = bo.getPrice().divide(totalAmount, 8, roundingMode);
             BigDecimal allocatedDiscount = discount.multiply(proportion).setScale(scale, roundingMode);
-            // 如果是最后一个 BO，直接将剩余的优惠金额分摊给它，确保总金额精度不丢失
-            if (i == boList.size() - 1) {
-                allocatedDiscount = remainingDiscount;
+            
+            // 确保分摊的优惠金额不超过商品自身价格
+            if (allocatedDiscount.compareTo(bo.getPrice()) > 0) {
+                allocatedDiscount = bo.getPrice();
             }
+            
+            // 如果是最后一个商品，将剩余的优惠金额分摊给它，确保总金额精度不丢失
+            if (i == validBoList.size() - 1) {
+                // 确保最后一个商品的优惠金额不超过其自身价格
+                allocatedDiscount = remainingDiscount.compareTo(bo.getPrice()) > 0 ? bo.getPrice() : remainingDiscount;
+            }
+            
             result.put(bo.getId(), allocatedDiscount);
+            
             // 减少剩余的优惠金额
             remainingDiscount = remainingDiscount.subtract(allocatedDiscount);
         }
+        
         return result;
     }
 
