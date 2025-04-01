@@ -19,11 +19,11 @@ public class CouponUtils {
     public static final String MERCHANT_COUPON_PREFIX = "MC";
 
     public static String getSmsCouponCode() {
-        return StrUtil.join(StrUtil.EMPTY, SMS_COUPON_PREFIX, IdUtil.generatorIdStr());
+        return StrUtil.join(StrUtil.EMPTY, SMS_COUPON_PREFIX, IdUtil.nextIdStr());
     }
 
     public static String getMerchantCouponCode() {
-        return StrUtil.join(StrUtil.EMPTY, MERCHANT_COUPON_PREFIX, IdUtil.generatorIdStr());
+        return StrUtil.join(StrUtil.EMPTY, MERCHANT_COUPON_PREFIX, IdUtil.nextIdStr());
     }
 
     private static final String SMS_COUPON_CODE_DOC = "sms_coupon_code";

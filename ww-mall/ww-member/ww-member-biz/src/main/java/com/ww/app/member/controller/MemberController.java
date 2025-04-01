@@ -41,7 +41,7 @@ public class MemberController {
 
     @RequestMapping("/getId")
     public String getId() {
-        String id = IdUtil.generatorIdStr();
+        String id = IdUtil.nextIdStr();
         System.out.println(id);
         return id;
     }
@@ -71,7 +71,7 @@ public class MemberController {
         List<Member> memberList = new ArrayList<>();
         for (int i = 0; i < 20; i++) {
             Member member = new Member();
-            member.setOpenId(IdUtil.generatorIdStr());
+            member.setOpenId(IdUtil.nextIdStr());
             member.setChannelId(1L);
             member.setPassword(RandomUtil.randomNumbers(6));
             member.setNickName(RandomUtil.randomString(5));

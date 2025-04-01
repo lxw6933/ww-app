@@ -21,7 +21,7 @@ public class TraceIdHandler extends ChannelInboundHandlerAdapter {
     @Override
     public void channelRead(ChannelHandlerContext ctx, Object msg) throws Exception {
         // 设置traceId
-        ImContextUtils.setTraceId(ctx, IdUtil.generatorIdStr());
+        ImContextUtils.setTraceId(ctx, IdUtil.nextIdStr());
         try {
             // 将消息传递给下一个 Handler
             super.channelRead(ctx, msg);

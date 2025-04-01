@@ -134,7 +134,7 @@ public class DemoServiceImpl implements DemoService {
     public List<String> issueCode(String outOrderCode, int quantity) {
 
         if ("1".equals(outOrderCode)) {
-            outOrderCode = IdUtil.generatorIdStr();
+            outOrderCode = IdUtil.nextIdStr();
         }
         return issueCodeService.distributeCodes("test", outOrderCode, quantity);
     }
@@ -211,7 +211,7 @@ public class DemoServiceImpl implements DemoService {
     public boolean secKillOrder() {
         if (stockRedisComponent.decrementStock("skuStock", 1)) {
             String orderDate = DateUtil.format(new Date(), DatePattern.NORM_DATETIME_PATTERN);
-            String orderNo = IdUtil.generatorIdStr();
+            String orderNo = IdUtil.nextIdStr();
             int totalOrderNum = num.incrementAndGet();
             rabbitMqPublisher.sendMsg(ExchangeConstant.OMS_EXCHANGE, RouteKeyConstant.CREATE_ORDER_KEY, orderNo);
             log.info("下单总数[{}]订单[{}]下单成功[{}]", totalOrderNum, orderNo, orderDate);

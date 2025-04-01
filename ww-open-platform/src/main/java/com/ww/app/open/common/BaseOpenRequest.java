@@ -71,7 +71,7 @@ public class BaseOpenRequest<T> {
 
     public static void main(String[] args) {
         BaseOpenRequest<Demo> req = new BaseOpenRequest<>();
-        req.setTransId(IdUtil.generatorIdStr());
+        req.setTransId(IdUtil.nextIdStr());
         req.setSysCode("DEMO");
         req.setAppCode("TEST");
         req.setReqTime(DateUtil.format(new Date(), DatePattern.NORM_DATETIME_PATTERN));

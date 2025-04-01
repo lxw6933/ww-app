@@ -124,7 +124,7 @@ public class SeckillServiceImpl implements SeckillService {
         String skuStockRedisKey = stockRedisKeyBuilder.buildStockKey(reqBO.getActivityCode(), null, null, reqBO.getSkuId());
         if (stockRedisComponent.decrementStock(skuStockRedisKey, 1)) {
             String orderDate = DateUtil.format(new Date(), DatePattern.NORM_DATETIME_PATTERN);
-            String orderNo = IdUtil.generatorIdStr();
+            String orderNo = IdUtil.nextIdStr();
             rabbitMqPublisher.sendMsg(ExchangeConstant.OMS_EXCHANGE, RouteKeyConstant.CREATE_ORDER_KEY, orderNo);
             log.info("订单[{}]下单成功[{}]", orderNo, orderDate);
             return true;

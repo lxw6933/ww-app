@@ -14,11 +14,9 @@ import java.util.List;
 import java.util.regex.Pattern;
 
 /**
- * IP工具类
- * 提供IP地址获取、验证、转换等功能
- *
  * @author ww
  * @create 2023-07-15- 14:49
+ * @description: IP工具类 提供IP地址获取、验证、转换等功能
  */
 @Slf4j
 public class IpUtil {
