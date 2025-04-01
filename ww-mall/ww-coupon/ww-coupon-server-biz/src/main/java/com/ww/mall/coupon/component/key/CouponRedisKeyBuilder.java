@@ -17,7 +17,7 @@ public class CouponRedisKeyBuilder extends RedisKeyBuilder {
     private static final String COUPON_FREEZE_KEY = "coupon_freeze";
 
     public String buildCouponCodePrefixKey() {
-        return super.getPrefix() + COUPON_CODE_KEY;
+        return super.getPrefix() + COUPON_CODE_KEY + SPLIT_ITEM;
     }
 
     /**
@@ -28,11 +28,11 @@ public class CouponRedisKeyBuilder extends RedisKeyBuilder {
      * @return key
      */
     public String buildCouponCodeKey(String activityCode, String batchNo) {
-        return StrUtil.join(SPLIT_ITEM, buildCouponCodePrefixKey(), activityCode, batchNo);
+        return buildCouponCodePrefixKey() + StrUtil.join(SPLIT_ITEM, activityCode, batchNo);
     }
 
     public String buildCouponNumberPrefixKey() {
-        return super.getPrefix() + COUPON_NUMBER_KEY;
+        return super.getPrefix() + COUPON_NUMBER_KEY + SPLIT_ITEM;
     }
 
     /**
@@ -42,7 +42,7 @@ public class CouponRedisKeyBuilder extends RedisKeyBuilder {
      * @return key
      */
     public String buildCouponNumberKey(String activityCode) {
-        return StrUtil.join(SPLIT_ITEM, buildCouponNumberPrefixKey(), activityCode);
+        return buildCouponNumberPrefixKey() + activityCode;
     }
 
     /**
