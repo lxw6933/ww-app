@@ -38,7 +38,7 @@ public class RedisPublishAspect {
     private ThreadPoolExecutor defaultThreadPoolExecutor;
 
     @Around("@annotation(com.ww.app.redis.annotation.RedisPublishMsg)")
-    public Object mallRedisPublishAdvise(ProceedingJoinPoint joinPoint) throws Throwable {
+    public Object redisPublishAdvise(ProceedingJoinPoint joinPoint) throws Throwable {
         Object proceed = joinPoint.proceed();
         CompletableFuture.runAsync(() -> {
             try {
