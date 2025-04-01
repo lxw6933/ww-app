@@ -31,16 +31,36 @@ import java.util.Map;
 import java.util.Set;
 
 /**
- * @description: excel管理类
  * @author: ww
  * @create: 2021-05-14 14:04
+ * @description: Excel工具类
  */
 @Slf4j
 @Component
 public class ExcelTemplate {
 
+    /**
+     * 默认文件后缀
+     */
     private static final String DEFAULT_SUFFIX = ".xlsx";
 
+    /**
+     * 默认sheet名称
+     */
+    private static final String DEFAULT_SHEET_NAME = "Sheet1";
+
+    /**
+     * 默认缓冲区大小
+     */
+    private static final int DEFAULT_BUFFER_SIZE = 8192;
+
+    /**
+     * 创建基础Excel写入构建器
+     *
+     * @param os 输出流
+     * @param pojoClass 数据类型
+     * @return ExcelWriterBuilder
+     */
     private <T> ExcelWriterBuilder baseBuilder(OutputStream os, Class<T> pojoClass) {
         return EasyExcel.write(os, pojoClass)
                 // 不要自动关闭流
@@ -51,32 +71,52 @@ public class ExcelTemplate {
                 .registerConverter(new LongStringConverter());
     }
 
+    /**
+     * 导出Excel到临时文件(单sheet)
+     *
+     * @param data 数据列表
+     * @return 临时文件
+     */
     public <T> File exportExcelOfOneSheetToTempFile(List<T> data) {
-        return this.exportExcelOfOneSheetToTempFile(data,null, DEFAULT_SUFFIX);
+        return exportExcelOfOneSheetToTempFile(data, DEFAULT_SHEET_NAME, DEFAULT_SUFFIX);
     }
 
+    /**
+     * 导出Excel到临时文件(单sheet)
+     *
+     * @param data 数据列表
+     * @param sheetName sheet名称
+     * @param fileSuffix 文件后缀
+     * @return 临时文件
+     */
     public <T> File exportExcelOfOneSheetToTempFile(List<T> data, String sheetName, String fileSuffix) {
+        if (CollectionUtils.isEmpty(data)) {
+            throw new ApiException("导出数据不能为空");
+        }
+
         File tempFile;
         try {
             // 创建临时文件路径
             tempFile = FileUtil.createTempFile(UUID.randomUUID().toString(true), fileSuffix + DEFAULT_SUFFIX, true);
             // 导出数据到临时文件
             try (OutputStream os = Files.newOutputStream(tempFile.toPath())) {
-                baseBuilder(os, data.get(0).getClass()).sheet(sheetName).doWrite(data);
+                baseBuilder(os, data.get(0).getClass())
+                        .sheet(sheetName)
+                        .doWrite(data);
             }
             return tempFile;
         } catch (IOException e) {
             log.error("生成临时文件失败: ", e);
-            throw new ApiException("导出文件失败");
+            throw new ApiException("导出文件失败: " + e.getMessage());
         }
     }
 
     /**
-     * 下载excel（导出所有属性字段在一个sheet里）
+     * 导出Excel(单sheet)
      *
-     * @param response  web响应
-     * @param data      导出数据集合
-     * @param fileName  导出excel文件名称
+     * @param response HTTP响应
+     * @param data 数据列表
+     * @param fileName 文件名
      * @param sheetName sheet名称
      */
     public <T> void exportExcelOfOneSheet(HttpServletResponse response, List<T> data, String fileName, String sheetName) throws IOException {
@@ -84,60 +124,85 @@ public class ExcelTemplate {
     }
 
     /**
-     * 下载excel 在一个sheet里
+     * 导出Excel(单sheet)
      *
-     * @param response   web响应
-     * @param data       导出数据集合
-     * @param fileName   导出excel文件名称
-     * @param sheetName  sheet名称
-     * @param filedNames 字段名称集合
-     * @param include    true: 只显示filedNames false：不包含filedNames
+     * @param response HTTP响应
+     * @param data 数据列表
+     * @param fileName 文件名
+     * @param sheetName sheet名称
+     * @param fieldNames 字段名称集合
+     * @param include true:只显示fieldNames false:不包含fieldNames
      */
-    public <T> void exportExcelOfOneSheet(HttpServletResponse response, List<T> data, String fileName, String sheetName, Set<String> filedNames, boolean include) throws IOException {
+    public <T> void exportExcelOfOneSheet(HttpServletResponse response, List<T> data, String fileName, 
+            String sheetName, Set<String> fieldNames, boolean include) throws IOException {
+        if (CollectionUtils.isEmpty(data)) {
+            throw new ApiException("导出数据不能为空");
+        }
+
         try {
             setResponse(response, fileName);
-            ExcelWriterBuilder excelWriterBuilder = baseBuilder(response.getOutputStream(), data.get(0).getClass());
-            if (CollectionUtils.isNotEmpty(filedNames)) {
+            ExcelWriterBuilder builder = baseBuilder(response.getOutputStream(), data.get(0).getClass());
+            
+            if (CollectionUtils.isNotEmpty(fieldNames)) {
                 if (include) {
-                    excelWriterBuilder.includeColumnFieldNames(filedNames);
+                    builder.includeColumnFieldNames(fieldNames);
                 } else {
-                    excelWriterBuilder.excludeColumnFieldNames(filedNames);
+                    builder.excludeColumnFieldNames(fieldNames);
                 }
             }
-            excelWriterBuilder.sheet(sheetName).doWrite(data);
+            
+            builder.sheet(sheetName).doWrite(data);
         } catch (Exception e) {
             exportErrorReturn(response, e);
         }
     }
 
     /**
-     * 下载excel 多个集合分布在不同的sheet里
+     * 导出Excel(多sheet)
      *
-     * @param response web响应
-     * @param data     导出数据集合 string: sheet名称   data：对应的数据集合
-     * @param fileName 导出excel文件名称
+     * @param response HTTP响应
+     * @param data 数据Map
+     * @param fileName 文件名
      */
     public <T> void exportExcelOfManySheet(HttpServletResponse response, Map<String, List<T>> data, String fileName) throws IOException {
         exportExcelOfManySheet(response, data, fileName, null, true);
     }
 
-    public <T> void exportExcelOfManySheet(HttpServletResponse response, Map<String, List<T>> data, String fileName, Set<String> filedNames, boolean include) throws IOException {
+    /**
+     * 导出Excel(多sheet)
+     *
+     * @param response HTTP响应
+     * @param data 数据Map
+     * @param fileName 文件名
+     * @param fieldNames 字段名称集合
+     * @param include true:只显示fieldNames false:不包含fieldNames
+     */
+    public <T> void exportExcelOfManySheet(HttpServletResponse response, Map<String, List<T>> data, 
+            String fileName, Set<String> fieldNames, boolean include) throws IOException {
+        if (data == null || data.isEmpty()) {
+            throw new ApiException("导出数据不能为空");
+        }
+
         setResponse(response, fileName);
-        try (ExcelWriter excelWriter = baseBuilder(response.getOutputStream(), data.values().iterator().next().get(0).getClass()).build()) {
-            int i = 0;
+        try (ExcelWriter excelWriter = baseBuilder(response.getOutputStream(), 
+                data.values().iterator().next().get(0).getClass()).build()) {
+            
+            int sheetNo = 0;
             for (Map.Entry<String, List<T>> entry : data.entrySet()) {
-                // 每次都要创建 writeSheet 这里注意必须指定sheetNo 而且sheetName必须不一样。
-                ExcelWriterSheetBuilder excelWriterSheetBuilder = EasyExcelFactory.writerSheet(i, entry.getKey()).head(entry.getValue().get(0).getClass());
-                if (CollectionUtils.isNotEmpty(filedNames)) {
+                ExcelWriterSheetBuilder sheetBuilder = EasyExcelFactory.writerSheet(sheetNo, entry.getKey())
+                        .head(entry.getValue().get(0).getClass());
+                
+                if (CollectionUtils.isNotEmpty(fieldNames)) {
                     if (include) {
-                        excelWriterSheetBuilder.includeColumnFieldNames(filedNames);
+                        sheetBuilder.includeColumnFieldNames(fieldNames);
                     } else {
-                        excelWriterSheetBuilder.excludeColumnFieldNames(filedNames);
+                        sheetBuilder.excludeColumnFieldNames(fieldNames);
                     }
                 }
-                WriteSheet writeSheet = excelWriterSheetBuilder.build();
+                
+                WriteSheet writeSheet = sheetBuilder.build();
                 excelWriter.write(entry.getValue(), writeSheet);
-                i++;
+                sheetNo++;
             }
         } catch (Exception e) {
             exportErrorReturn(response, e);
@@ -145,53 +210,75 @@ public class ExcelTemplate {
     }
 
     /**
-     * 读取上传的excel文件
+     * 读取Excel文件
      *
-     * @param file       file
-     * @param modelClass 封装数据model类型
+     * @param file 文件
+     * @param modelClass 数据类型
+     * @param listener 监听器
      */
     public <T> void readExcel(MultipartFile file, Class<T> modelClass, AbstractImportListener<T> listener) throws IOException {
-        EasyExcelFactory.read(
-                file.getInputStream(),
-                modelClass,
-                listener
-        ).sheet().doRead();
+        if (file == null || file.isEmpty()) {
+            throw new ApiException("上传文件不能为空");
+        }
+
+        try {
+            EasyExcelFactory.read(file.getInputStream(), modelClass, listener)
+                    .sheet()
+                    .doRead();
+        } catch (Exception e) {
+            log.error("读取Excel文件失败: ", e);
+            throw new ApiException("读取Excel文件失败: " + e.getMessage());
+        }
     }
 
     /**
-     * 读取上传的excel文件的指定sheet数据
+     * 读取Excel文件指定sheet
      *
-     * @param file       file
-     * @param sheetNum   sheet下标
-     * @param modelClass 封装数据model类型
+     * @param file 文件
+     * @param sheetNum sheet下标
+     * @param modelClass 数据类型
+     * @param listener 监听器
      */
-    public <T> void readExcel(MultipartFile file, int sheetNum, Class<T> modelClass, AbstractImportListener<T> listener) throws IOException {
-        EasyExcelFactory.read(
-                file.getInputStream(),
-                modelClass,
-                listener
-        ).sheet(sheetNum).doRead();
+    public <T> void readExcel(MultipartFile file, int sheetNum, Class<T> modelClass, 
+            AbstractImportListener<T> listener) throws IOException {
+        if (file == null || file.isEmpty()) {
+            throw new ApiException("上传文件不能为空");
+        }
+
+        try {
+            EasyExcelFactory.read(file.getInputStream(), modelClass, listener)
+                    .sheet(sheetNum)
+                    .doRead();
+        } catch (Exception e) {
+            log.error("读取Excel文件失败: ", e);
+            throw new ApiException("读取Excel文件失败: " + e.getMessage());
+        }
     }
 
+    /**
+     * 设置HTTP响应头
+     */
     private void setResponse(HttpServletResponse response, String fileName) throws UnsupportedEncodingException {
         response.setContentType("application/vnd.ms-excel");
         response.setCharacterEncoding(StandardCharsets.UTF_8.name());
-        // 这里URLEncoder.encode可以防止中文乱码
-        fileName = URLEncoder.encode(fileName, StandardCharsets.UTF_8.name())
+        String encodedFileName = URLEncoder.encode(fileName, StandardCharsets.UTF_8.name())
                 .replace("\\+", "%20");
-        response.setHeader("Content-disposition", "attachment;filename*=utf-8''" + fileName + ".xlsx");
+        response.setHeader("Content-disposition", "attachment;filename*=utf-8''" + encodedFileName + DEFAULT_SUFFIX);
     }
 
+    /**
+     * 导出错误响应
+     */
     private void exportErrorReturn(HttpServletResponse response, Exception e) throws IOException {
-        log.error("导出excel失败！！！导出失败原因：", e);
-        // 重置response
+        log.error("导出Excel失败: ", e);
         response.reset();
         response.setContentType("application/json");
         response.setCharacterEncoding(StandardCharsets.UTF_8.name());
-        Map<String, String> map = new HashMap<>(64);
-        map.put("status", "failure");
-        map.put("message", "下载文件失败" + e.getMessage());
-        response.getWriter().println(JSON.toJSONString(map));
+        
+        Map<String, String> result = new HashMap<>(2);
+        result.put("status", "failure");
+        result.put("message", "下载文件失败: " + e.getMessage());
+        
+        response.getWriter().println(JSON.toJSONString(result));
     }
-
 }
