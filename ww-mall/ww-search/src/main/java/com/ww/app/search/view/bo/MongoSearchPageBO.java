@@ -83,16 +83,32 @@ public class MongoSearchPageBO extends AbstractMongoPage<ProductDoc> {
         if (this.searchScopeBO != null && this.searchScopeBO.support()) {
             switch (this.searchScopeBO.getRangeType()) {
                 case SMS:
-                    criteria.and("smsId").in(this.searchScopeBO.getIdList());
+                    if (this.searchScopeBO.isContain()) {
+                        criteria.and("smsId").in(this.searchScopeBO.getIdList());
+                    } else {
+                        criteria.and("smsId").nin(this.searchScopeBO.getIdList());
+                    }
                     break;
                 case SPU:
-                    criteria.and("spuId").in(this.searchScopeBO.getIdList());
+                    if (this.searchScopeBO.isContain()) {
+                        criteria.and("spuId").in(this.searchScopeBO.getIdList());
+                    } else {
+                        criteria.and("spuId").nin(this.searchScopeBO.getIdList());
+                    }
                     break;
                 case BRAND:
-                    criteria.and("brandId").in(this.searchScopeBO.getIdList());
+                    if (this.searchScopeBO.isContain()) {
+                        criteria.and("brandId").in(this.searchScopeBO.getIdList());
+                    } else {
+                        criteria.and("brandId").nin(this.searchScopeBO.getIdList());
+                    }
                     break;
                 case CATEGORY:
-                    criteria.and("categoryId").in(this.searchScopeBO.getIdList());
+                    if (this.searchScopeBO.isContain()) {
+                        criteria.and("categoryId").in(this.searchScopeBO.getIdList());
+                    } else {
+                        criteria.and("categoryId").nin(this.searchScopeBO.getIdList());
+                    }
                     break;
                 default:
             }

@@ -20,6 +20,11 @@ public class SearchScopeBO implements BaseSearch {
     private ScopeTypeEnum rangeType;
 
     /**
+     * 是否包含id集合
+     */
+    private boolean isContain = true;
+
+    /**
      * id集合
      */
     private List<Long> idList;
