@@ -8,6 +8,9 @@ import org.checkerframework.checker.index.qual.NonNegative;
 import org.checkerframework.checker.nullness.qual.NonNull;
 import org.checkerframework.checker.nullness.qual.Nullable;
 
+import java.util.Collection;
+import java.util.Collections;
+import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.Executor;
 import java.util.concurrent.TimeUnit;
@@ -155,6 +158,77 @@ public class CaffeineUtil {
     }
 
     /**
+     * 创建支持批量加载的缓存
+     *
+     * @param initialCapacity 初始容量
+     * @param maximumSize 最大容量
+     * @param expireTime 过期时间
+     * @param timeUnit 时间单位
+     * @param batchLoadFunction 批量加载函数
+     */
+    public static <K, V> LoadingCache<K, V> createBatchLoadingCache(Integer initialCapacity,
+                                                                   Integer maximumSize,
+                                                                   Integer expireTime,
+                                                                   TimeUnit timeUnit,
+                                                                   Function<Collection<K>, Map<K, V>> batchLoadFunction) {
+        return commonCaffeine(initialCapacity, maximumSize, expireTime, expireTime, timeUnit)
+                .build(getBatchCacheLoader(batchLoadFunction));
+    }
+
+    /**
+     * 创建支持批量加载和刷新的缓存
+     *
+     * @param initialCapacity 初始容量
+     * @param maximumSize 最大容量
+     * @param expireTime 过期时间
+     * @param timeUnit 时间单位
+     * @param refreshTime 刷新时间
+     * @param refreshTimeUnit 刷新时间单位
+     * @param batchLoadFunction 批量加载函数
+     */
+    public static <K, V> LoadingCache<K, V> createBatchAutoRefreshCache(Integer initialCapacity,
+                                                                       Integer maximumSize,
+                                                                       Integer expireTime,
+                                                                       TimeUnit timeUnit,
+                                                                       Integer refreshTime,
+                                                                       TimeUnit refreshTimeUnit,
+                                                                       Function<Collection<K>, Map<K, V>> batchLoadFunction) {
+        return commonCaffeine(initialCapacity, maximumSize, expireTime, expireTime, timeUnit)
+                .refreshAfterWrite(refreshTime, refreshTimeUnit)
+                .build(getBatchCacheLoader(batchLoadFunction));
+    }
+
+    /**
+     * 批量获取缓存值，如果缓存中不存在则批量加载
+     *
+     * @param cache 缓存实例
+     * @param keys 键集合
+     * @return 值映射
+     */
+    public static <K, V> Map<K, V> getAll(LoadingCache<K, V> cache, Collection<K> keys) {
+        try {
+            return cache.getAll(keys);
+        } catch (Exception e) {
+            log.error("批量获取缓存失败 - 键: {}", keys, e);
+            return Collections.emptyMap();
+        }
+    }
+
+    /**
+     * 批量刷新缓存
+     *
+     * @param cache 缓存实例
+     * @param keys 键集合
+     */
+    public static <K, V> void refreshAll(LoadingCache<K, V> cache, Collection<K> keys) {
+        try {
+            keys.forEach(cache::refresh);
+        } catch (Exception e) {
+            log.error("批量刷新缓存失败 - 键: {}", keys, e);
+        }
+    }
+
+    /**
      * 通用Caffeine构建器
      */
     private static <K, V> Caffeine<K, V> commonCaffeine(Integer initialCapacity,
@@ -225,7 +299,35 @@ public class CaffeineUtil {
             public @Nullable V reload(@NonNull K key, @NonNull V oldValue) throws Exception {
                 V value = refreshFactory.apply(key);
                 if (log.isDebugEnabled()) {
-                    log.debug("异步刷新缓存 - 键: {}, 旧值: {}, 新值: {}", 
+                    log.debug("异步刷新缓存 - 键: {}, 旧值: {}, 新值: {}",
+                            key, oldValue, value);
+                }
+                return value;
+            }
+        };
+    }
+
+    /**
+     * 批量缓存加载器
+     */
+    private static <K, V> CacheLoader<K, V> getBatchCacheLoader(Function<Collection<K>, Map<K, V>> batchLoadFunction) {
+        return new CacheLoader<K, V>() {
+            @Override
+            public @Nullable V load(@NonNull K key) throws Exception {
+                Map<K, V> result = batchLoadFunction.apply(Collections.singleton(key));
+                V value = result.get(key);
+                if (log.isDebugEnabled()) {
+                    log.debug("单个加载缓存 - 键: {}, 值: {}", key, value);
+                }
+                return value;
+            }
+
+            @Override
+            public @Nullable V reload(@NonNull K key, @NonNull V oldValue) throws Exception {
+                Map<K, V> result = batchLoadFunction.apply(Collections.singleton(key));
+                V value = result.get(key);
+                if (log.isDebugEnabled()) {
+                    log.debug("单个刷新缓存 - 键: {}, 旧值: {}, 新值: {}",
                             key, oldValue, value);
                 }
                 return value;
