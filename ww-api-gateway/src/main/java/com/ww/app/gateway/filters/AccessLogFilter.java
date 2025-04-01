@@ -64,28 +64,38 @@ public class AccessLogFilter implements GlobalFilter, Ordered {
      * @param gatewayLog 网关日志
      */
     private void writeAccessLog(AccessLog gatewayLog) {
-        // 方式一：打印 Logger 后，通过 ELK 进行收集
-        // log.info("[writeAccessLog][网关日志：{}]", JsonUtils.toJsonString(gatewayLog));
-
-        // 方式二：打印到控制台，方便排查错误
+        // 打印到控制台，方便排查错误
         Map<String, Object> values = MapUtil.newHashMap(15, true);
         values.put("routeId", gatewayLog.getRoute() != null ? gatewayLog.getRoute().getId() : null);
         values.put("schema", gatewayLog.getSchema());
         values.put("requestUrl", gatewayLog.getRequestUrl());
-        values.put("queryParams", gatewayLog.getQueryParams().toSingleValueMap());
-        values.put("requestBody", JSONUtil.isTypeJSON(gatewayLog.getRequestBody()) ?
+        values.put("queryParams", gatewayLog.getQueryParams() != null ? 
+                gatewayLog.getQueryParams().toSingleValueMap() : null);
+        values.put("requestBody", gatewayLog.getRequestBody() != null && JSONUtil.isTypeJSON(gatewayLog.getRequestBody()) ?
                 JSONUtil.parse(gatewayLog.getRequestBody()) : gatewayLog.getRequestBody());
-        values.put("requestHeaders", JSONUtil.toJsonStr(gatewayLog.getRequestHeaders().toSingleValueMap()));
+        values.put("requestHeaders", gatewayLog.getRequestHeaders() != null ? 
+                JSONUtil.toJsonStr(gatewayLog.getRequestHeaders().toSingleValueMap()) : null);
         values.put("userIp", gatewayLog.getUserIp());
-        values.put("responseBody", JSONUtil.isTypeJSON(gatewayLog.getResponseBody()) ?
+        values.put("responseBody", gatewayLog.getResponseBody() != null && JSONUtil.isTypeJSON(gatewayLog.getResponseBody()) ?
                 JSONUtil.parse(gatewayLog.getResponseBody()) : gatewayLog.getResponseBody());
         values.put("responseHeaders", gatewayLog.getResponseHeaders() != null ?
                 JSONUtil.toJsonStr(gatewayLog.getResponseHeaders().toSingleValueMap()) : null);
         values.put("httpStatus", gatewayLog.getHttpStatus());
-        values.put("startTime", LocalDateTimeUtil.format(gatewayLog.getStartTime(), NORM_DATETIME_MS_FORMATTER));
-        values.put("endTime", LocalDateTimeUtil.format(gatewayLog.getEndTime(), NORM_DATETIME_MS_FORMATTER));
+        values.put("startTime", gatewayLog.getStartTime() != null ? 
+                LocalDateTimeUtil.format(gatewayLog.getStartTime(), NORM_DATETIME_MS_FORMATTER) : null);
+        values.put("endTime", gatewayLog.getEndTime() != null ? 
+                LocalDateTimeUtil.format(gatewayLog.getEndTime(), NORM_DATETIME_MS_FORMATTER) : null);
         values.put("duration", gatewayLog.getDuration() != null ? gatewayLog.getDuration() + " ms" : null);
-        log.info("[writeAccessLog][网关日志：{}]", JSONUtil.toJsonPrettyStr(values));
+        
+        // 生产环境使用非格式化输出以提高性能
+        boolean isPretty = !isProdEnvironment();
+        String logContent = isPretty ? JSONUtil.toJsonPrettyStr(values) : JSONUtil.toJsonStr(values);
+        log.info("[writeAccessLog][网关日志：{}]", logContent);
+    }
+
+    private boolean isProdEnvironment() {
+        // 根据实际配置判断是否为生产环境
+        return System.getProperty("spring.profiles.active", "").contains("prod");
     }
 
     @Override
@@ -185,17 +195,36 @@ public class AccessLogFilter implements GlobalFilter, Ordered {
                     if (StringUtils.isNotBlank(originalResponseContentType) && originalResponseContentType.contains("application/json")) {
                         Flux<? extends DataBuffer> fluxBody = Flux.from(body);
                         return super.writeWith(fluxBody.buffer().map(dataBuffers -> {
-                            // 设置 response body 到网关日志
-                            byte[] content = readContent(dataBuffers);
-                            String responseResult = new String(content, StandardCharsets.UTF_8);
-                            gatewayLog.setResponseBody(responseResult);
-                            // 响应
-                            return bufferFactory.wrap(content);
+                            try {
+                                // 设置 response body 到网关日志
+                                byte[] content = readContent(dataBuffers);
+                                // 限制响应体大小，防止内存溢出
+                                String responseResult = content.length > 1024 * 1024 ? 
+                                    "[Response body too large to log]" : new String(content, StandardCharsets.UTF_8);
+                                gatewayLog.setResponseBody(responseResult);
+                                // 响应
+                                return bufferFactory.wrap(content);
+                            } catch (Exception e) {
+                                log.error("Failed to read response body", e);
+                                gatewayLog.setResponseBody("[Error reading response body]");
+                                // 确保即使处理失败，也能返回原始内容
+                                return dataBufferFactory.join(dataBuffers);
+                            }
                         }));
+                    } else {
+                        // 对于非JSON响应，记录响应类型但不记录内容
+                        gatewayLog.setResponseBody("[Non-JSON response: " + originalResponseContentType + "]");
                     }
                 }
                 // if body is not a flux. never got there.
                 return super.writeWith(body);
+            }
+
+            @Override
+            public Mono<Void> writeAndFlushWith(@NonNull Publisher<? extends Publisher<? extends DataBuffer>> body) {
+                // 对于流式响应，简单记录类型
+                gatewayLog.setResponseBody("[Streaming response]");
+                return super.writeAndFlushWith(body);
             }
         };
     }
