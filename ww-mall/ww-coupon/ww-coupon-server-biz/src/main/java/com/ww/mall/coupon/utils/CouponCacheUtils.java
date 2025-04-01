@@ -18,7 +18,7 @@ public class CouponCacheUtils {
 
     private CouponCacheUtils() {}
 
-    private static final Cache<String, SmsCouponActivity> smsCouponActivityCache = CaffeineUtil.initCaffeine(100, 200, 30, TimeUnit.MINUTES);
+    private static final Cache<String, SmsCouponActivity> smsCouponActivityCache = CaffeineUtil.createCache(100, 200, 30, TimeUnit.MINUTES);
 
     public static SmsCouponActivity getSmsCouponActivityCache(String activityCode) {
         return smsCouponActivityCache.get(activityCode, code -> MongoUtils.getMongoTemplate().findOne(SmsCouponActivity.buildActivityCodeQuery(code), SmsCouponActivity.class));

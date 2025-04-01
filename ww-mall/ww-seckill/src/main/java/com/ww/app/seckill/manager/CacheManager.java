@@ -18,6 +18,6 @@ public class CacheManager {
         System.out.println(TimeUnit.SECONDS.name());
     }
 
-    public static final LoadingCache<String, String> spuCache = CaffeineUtil.initAutoSyncRefreshCaffeine(500, 2000, 6, TimeUnit.HOURS, 30, TimeUnit.MINUTES, key -> key + "===");
+    public static final LoadingCache<String, String> spuCache = CaffeineUtil.createAutoRefreshCache(500, 2000, 6, TimeUnit.HOURS, 30, TimeUnit.MINUTES, key -> key + "===");
 
 }

@@ -22,7 +22,7 @@ public class Test {
 //        System.out.println(new BigDecimal("4799.99").divide(BigDecimal.valueOf(12), 2, RoundingMode.DOWN));
 //        String str = "ds";
 //        System.out.println(StrUtil.hide(str, 0, str.length() - 3));
-        Cache<Object, Object> cache = CaffeineUtil.initCaffeine();
+        Cache<Object, Object> cache = CaffeineUtil.createCache();
 //        Object key = new Object();
         ExecutorService executor = Executors.newFixedThreadPool(10);
 
