@@ -1056,7 +1056,8 @@ public class SmsCouponServiceImpl implements SmsCouponService {
         List<MoneyUtils.MoneyBO<Long>> moneyBOList = targetList.stream().map(orderBO -> {
             MoneyUtils.MoneyBO<Long> bo = new MoneyUtils.MoneyBO<>();
             bo.setId(orderBO.getSkuId());
-            bo.setPrice(orderBO.getRealAmount().multiply(BigDecimal.valueOf(orderBO.getNumber())));
+            bo.setPrice(integralType ? new BigDecimal(orderBO.getRealIntegral() * orderBO.getNumber()) :
+                    orderBO.getRealAmount().multiply(BigDecimal.valueOf(orderBO.getNumber())));
             return bo;
         }).collect(Collectors.toList());
         return integralType ? MoneyUtils.allocateIntDiscount(moneyBOList, discountAmount.intValue()) :
