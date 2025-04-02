@@ -54,7 +54,7 @@ private static final long serialVersionUID = 0L;
    * <code>repeated .ImMsgBodyRequest imMsgBodyList = 1;</code>
    */
   @java.lang.Override
-  public java.util.List<? extends com.ww.app.proto.im.ImMsgBodyRequestOrBuilder>
+  public java.util.List<? extends com.ww.app.proto.im.ImMsgBodyRequestOrBuilder> 
       getImMsgBodyListOrBuilderList() {
     return imMsgBodyList_;
   }
@@ -260,7 +260,7 @@ private static final long serialVersionUID = 0L;
               com.ww.app.proto.im.ImMsgBodyListRequest.class, com.ww.app.proto.im.ImMsgBodyListRequest.Builder.class);
     }
 
-    // Construct using com.ww.mall.proto.im.ImMsgBodyListRequest.newBuilder()
+    // Construct using com.ww.app.proto.im.ImMsgBodyListRequest.newBuilder()
     private Builder() {
 
     }
@@ -391,7 +391,7 @@ private static final long serialVersionUID = 0L;
             imMsgBodyListBuilder_ = null;
             imMsgBodyList_ = other.imMsgBodyList_;
             bitField0_ = (bitField0_ & ~0x00000001);
-            imMsgBodyListBuilder_ =
+            imMsgBodyListBuilder_ = 
               com.google.protobuf.GeneratedMessageV3.alwaysUseFieldBuilders ?
                  getImMsgBodyListFieldBuilder() : null;
           } else {
@@ -650,7 +650,7 @@ private static final long serialVersionUID = 0L;
     /**
      * <code>repeated .ImMsgBodyRequest imMsgBodyList = 1;</code>
      */
-    public java.util.List<? extends com.ww.app.proto.im.ImMsgBodyRequestOrBuilder>
+    public java.util.List<? extends com.ww.app.proto.im.ImMsgBodyRequestOrBuilder> 
          getImMsgBodyListOrBuilderList() {
       if (imMsgBodyListBuilder_ != null) {
         return imMsgBodyListBuilder_.getMessageOrBuilderList();
@@ -676,12 +676,12 @@ private static final long serialVersionUID = 0L;
     /**
      * <code>repeated .ImMsgBodyRequest imMsgBodyList = 1;</code>
      */
-    public java.util.List<com.ww.app.proto.im.ImMsgBodyRequest.Builder>
+    public java.util.List<com.ww.app.proto.im.ImMsgBodyRequest.Builder> 
          getImMsgBodyListBuilderList() {
       return getImMsgBodyListFieldBuilder().getBuilderList();
     }
     private com.google.protobuf.RepeatedFieldBuilderV3<
-        com.ww.app.proto.im.ImMsgBodyRequest, com.ww.app.proto.im.ImMsgBodyRequest.Builder, com.ww.app.proto.im.ImMsgBodyRequestOrBuilder>
+        com.ww.app.proto.im.ImMsgBodyRequest, com.ww.app.proto.im.ImMsgBodyRequest.Builder, com.ww.app.proto.im.ImMsgBodyRequestOrBuilder> 
         getImMsgBodyListFieldBuilder() {
       if (imMsgBodyListBuilder_ == null) {
         imMsgBodyListBuilder_ = new com.google.protobuf.RepeatedFieldBuilderV3<

@@ -11,7 +11,7 @@ public interface ImMsgBodyListRequestOrBuilder extends
   /**
    * <code>repeated .ImMsgBodyRequest imMsgBodyList = 1;</code>
    */
-  java.util.List<com.ww.app.proto.im.ImMsgBodyRequest>
+  java.util.List<com.ww.app.proto.im.ImMsgBodyRequest> 
       getImMsgBodyListList();
   /**
    * <code>repeated .ImMsgBodyRequest imMsgBodyList = 1;</code>
@@ -24,7 +24,7 @@ public interface ImMsgBodyListRequestOrBuilder extends
   /**
    * <code>repeated .ImMsgBodyRequest imMsgBodyList = 1;</code>
    */
-  java.util.List<? extends com.ww.app.proto.im.ImMsgBodyRequestOrBuilder>
+  java.util.List<? extends com.ww.app.proto.im.ImMsgBodyRequestOrBuilder> 
       getImMsgBodyListOrBuilderList();
   /**
    * <code>repeated .ImMsgBodyRequest imMsgBodyList = 1;</code>

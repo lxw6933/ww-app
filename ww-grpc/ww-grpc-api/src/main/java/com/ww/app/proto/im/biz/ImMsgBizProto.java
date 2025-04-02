@@ -27,8 +27,8 @@ public final class ImMsgBizProto {
       "\n\021im/imMsgBiz.proto\032\013im/im.proto\032\033google" +
       "/protobuf/empty.proto2K\n\017ImMsgBizService" +
       "\0228\n\013handleImMsg\022\021.ImMsgBodyRequest\032\026.goo" +
-      "gle.protobuf.EmptyB+\n\030com.ww.mall.proto." +
-      "im.bizB\rImMsgBizProtoP\001b\006proto3"
+      "gle.protobuf.EmptyB*\n\027com.ww.app.proto.i" +
+      "m.bizB\rImMsgBizProtoP\001b\006proto3"
     };
     descriptor = com.google.protobuf.Descriptors.FileDescriptor
       .internalBuildGeneratedFileFrom(descriptorData,

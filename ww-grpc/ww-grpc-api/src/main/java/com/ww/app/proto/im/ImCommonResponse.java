@@ -228,7 +228,7 @@ private static final long serialVersionUID = 0L;
               com.ww.app.proto.im.ImCommonResponse.class, com.ww.app.proto.im.ImCommonResponse.Builder.class);
     }
 
-    // Construct using com.ww.mall.proto.im.ImCommonResponse.newBuilder()
+    // Construct using com.ww.app.proto.im.ImCommonResponse.newBuilder()
     private Builder() {
 
     }

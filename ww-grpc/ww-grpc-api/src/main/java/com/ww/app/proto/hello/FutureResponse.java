@@ -57,7 +57,7 @@ private static final long serialVersionUID = 0L;
     if (ref instanceof java.lang.String) {
       return (java.lang.String) ref;
     } else {
-      com.google.protobuf.ByteString bs =
+      com.google.protobuf.ByteString bs = 
           (com.google.protobuf.ByteString) ref;
       java.lang.String s = bs.toStringUtf8();
       result_ = s;
@@ -73,7 +73,7 @@ private static final long serialVersionUID = 0L;
       getResultBytes() {
     java.lang.Object ref = result_;
     if (ref instanceof java.lang.String) {
-      com.google.protobuf.ByteString b =
+      com.google.protobuf.ByteString b = 
           com.google.protobuf.ByteString.copyFromUtf8(
               (java.lang.String) ref);
       result_ = b;
@@ -263,7 +263,7 @@ private static final long serialVersionUID = 0L;
               com.ww.app.proto.hello.FutureResponse.class, com.ww.app.proto.hello.FutureResponse.Builder.class);
     }
 
-    // Construct using com.ww.mall.proto.hello.FutureResponse.newBuilder()
+    // Construct using com.ww.app.proto.hello.FutureResponse.newBuilder()
     private Builder() {
 
     }
@@ -438,7 +438,7 @@ private static final long serialVersionUID = 0L;
         getResultBytes() {
       java.lang.Object ref = result_;
       if (ref instanceof String) {
-        com.google.protobuf.ByteString b =
+        com.google.protobuf.ByteString b = 
             com.google.protobuf.ByteString.copyFromUtf8(
                 (java.lang.String) ref);
         result_ = b;

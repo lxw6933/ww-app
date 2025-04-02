@@ -28,8 +28,8 @@ public final class ImMsgBizProto {
       "erverService\0221\n\007sendMsg\022\021.ImMsgBodyReque" +
       "st\032\021.ImCommonResponse\"\000\022:\n\014batchSendMsg\022" +
       "\025.ImMsgBodyListRequest\032\021.ImCommonRespons" +
-      "e\"\000B,\n\031com.ww.mall.proto.im.coreB\rImMsgB" +
-      "izProtoP\001b\006proto3"
+      "e\"\000B+\n\030com.ww.app.proto.im.coreB\rImMsgBi" +
+      "zProtoP\001b\006proto3"
     };
     descriptor = com.google.protobuf.Descriptors.FileDescriptor
       .internalBuildGeneratedFileFrom(descriptorData,

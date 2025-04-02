@@ -29,8 +29,8 @@ public final class ImRouterProto {
       "e\0225\n\010routeMsg\022\021.ImMsgBodyRequest\032\026.googl" +
       "e.protobuf.Empty\022>\n\rbatchRouteMsg\022\025.ImMs" +
       "gBodyListRequest\032\026.google.protobuf.Empty" +
-      "B.\n\033com.ww.mall.proto.im.routerB\rImRoute" +
-      "rProtoP\001b\006proto3"
+      "B-\n\032com.ww.app.proto.im.routerB\rImRouter" +
+      "ProtoP\001b\006proto3"
     };
     descriptor = com.google.protobuf.Descriptors.FileDescriptor
       .internalBuildGeneratedFileFrom(descriptorData,

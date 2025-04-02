@@ -17,17 +17,17 @@ public final class ImProto {
   }
   static final com.google.protobuf.Descriptors.Descriptor
     internal_static_ImMsgBodyRequest_descriptor;
-  static final
+  static final 
     com.google.protobuf.GeneratedMessageV3.FieldAccessorTable
       internal_static_ImMsgBodyRequest_fieldAccessorTable;
   static final com.google.protobuf.Descriptors.Descriptor
     internal_static_ImMsgBodyListRequest_descriptor;
-  static final
+  static final 
     com.google.protobuf.GeneratedMessageV3.FieldAccessorTable
       internal_static_ImMsgBodyListRequest_fieldAccessorTable;
   static final com.google.protobuf.Descriptors.Descriptor
     internal_static_ImCommonResponse_descriptor;
-  static final
+  static final 
     com.google.protobuf.GeneratedMessageV3.FieldAccessorTable
       internal_static_ImCommonResponse_fieldAccessorTable;
 
@@ -44,8 +44,8 @@ public final class ImProto {
       "\r\n\005token\030\004 \001(\t\022\017\n\007bizCode\030\005 \001(\005\022\016\n\006bizMs" +
       "g\030\006 \001(\t\"@\n\024ImMsgBodyListRequest\022(\n\rimMsg" +
       "BodyList\030\001 \003(\0132\021.ImMsgBodyRequest\"#\n\020ImC" +
-      "ommonResponse\022\017\n\007success\030\001 \001(\010B!\n\024com.ww" +
-      ".mall.proto.imB\007ImProtoP\001b\006proto3"
+      "ommonResponse\022\017\n\007success\030\001 \001(\010B \n\023com.ww" +
+      ".app.proto.imB\007ImProtoP\001b\006proto3"
     };
     descriptor = com.google.protobuf.Descriptors.FileDescriptor
       .internalBuildGeneratedFileFrom(descriptorData,

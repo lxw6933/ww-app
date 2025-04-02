@@ -17,12 +17,12 @@ public final class HelloProto {
   }
   static final com.google.protobuf.Descriptors.Descriptor
     internal_static_HelloRequest_descriptor;
-  static final
+  static final 
     com.google.protobuf.GeneratedMessageV3.FieldAccessorTable
       internal_static_HelloRequest_fieldAccessorTable;
   static final com.google.protobuf.Descriptors.Descriptor
     internal_static_HelloResponse_descriptor;
-  static final
+  static final 
     com.google.protobuf.GeneratedMessageV3.FieldAccessorTable
       internal_static_HelloResponse_fieldAccessorTable;
 
@@ -41,8 +41,8 @@ public final class HelloProto {
       "elloRequest\032\016.HelloResponse\"\0000\001\0226\n\021clien" +
       "tStreamHello\022\r.HelloRequest\032\016.HelloRespo" +
       "nse\"\000(\001\0228\n\021duplexStreamHello\022\r.HelloRequ" +
-      "est\032\016.HelloResponse\"\000(\0010\001B\'\n\027com.ww.mall" +
-      ".proto.helloB\nHelloProtoP\001b\006proto3"
+      "est\032\016.HelloResponse\"\000(\0010\001B&\n\026com.ww.app." +
+      "proto.helloB\nHelloProtoP\001b\006proto3"
     };
     descriptor = com.google.protobuf.Descriptors.FileDescriptor
       .internalBuildGeneratedFileFrom(descriptorData,
