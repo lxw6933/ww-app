@@ -39,13 +39,6 @@ public @interface Resubmission {
     int[] paramIndexes() default {};
 
     /**
-     * 是否使用Redisson锁
-     * true: 使用Redisson实现锁，支持可重入性
-     * false: 使用Redis的SET NX命令实现简单锁
-     */
-    boolean useRedisson() default false;
-
-    /**
      * 严格模式
      * true: Redis异常时直接拒绝请求
      * false: Redis异常时允许请求继续执行

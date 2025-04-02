@@ -51,10 +51,8 @@ public class DistributedLockAspect {
         MethodSignature signature = (MethodSignature) joinPoint.getSignature();
         Method method = signature.getMethod();
         DistributedLock lockAnnotation = method.getAnnotation(DistributedLock.class);
-        
         // 2. 构建锁的key
         String lockKey = buildLockKey(joinPoint, signature, lockAnnotation);
-        
         // 3. 获取锁并执行目标方法
         return executeWithLock(joinPoint, lockAnnotation, lockKey);
     }
@@ -67,9 +65,7 @@ public class DistributedLockAspect {
         String baseKey = StringUtils.isNotEmpty(lockAnnotation.value()) ?
                 Objects.toString(SpringExpressionUtils.parseExpression(joinPoint, lockAnnotation.value()), "") : 
                 signature.getDeclaringTypeName() + Constant.SPLIT + signature.getMethod().getName();
-        
         StringBuilder keyBuilder = new StringBuilder(128).append(baseKey);
-        
         // 添加用户标识（如果启用）
         if (lockAnnotation.enableUserLock()) {
             ClientUser clientUser = AuthorizationContext.getClientUser();
@@ -77,7 +73,6 @@ public class DistributedLockAspect {
                 keyBuilder.append(Constant.SPLIT).append(clientUser.getId().toString());
             }
         }
-        
         // 添加操作key（如果存在）
         if (StringUtils.isNotEmpty(lockAnnotation.operationKey())) {
             Object operationKeyObj = SpringExpressionUtils.parseExpression(joinPoint, lockAnnotation.operationKey());
@@ -86,7 +81,6 @@ public class DistributedLockAspect {
                 keyBuilder.append(Constant.SPLIT).append(operationKey);
             }
         }
-        
         // 使用MD5处理，保证key长度合理且唯一
         return appLockRedisKeyBuilder.buildLock(SecureUtil.md5(keyBuilder.toString()));
     }
@@ -99,27 +93,18 @@ public class DistributedLockAspect {
         long threadId = Thread.currentThread().getId();
         long startTime = System.currentTimeMillis();
         boolean lockAcquired = false;
-        
         try {
             // 尝试获取锁
             if (log.isDebugEnabled()) {
                 log.debug("线程[{}]尝试获取锁: {}", threadId, lockKey);
             }
-            
-            lockAcquired = lock.tryLock(
-                    lockAnnotation.waitTime(), 
-                    lockAnnotation.leaseTime(), 
-                    lockAnnotation.timeUnit()
-            );
-            
+            lockAcquired = lock.tryLock(lockAnnotation.waitTime(), lockAnnotation.leaseTime(), lockAnnotation.timeUnit());
             if (!lockAcquired) {
                 throw new ApiException(GlobalResCodeConstants.LIMIT_REQUEST);
             }
-            
             if (log.isDebugEnabled()) {
                 log.debug("线程[{}]获取到锁: {}", threadId, lockKey);
             }
-            
             // 执行目标方法
             return joinPoint.proceed();
         } catch (ApiException e) {
