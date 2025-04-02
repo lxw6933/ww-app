@@ -4,7 +4,7 @@ syntax = "proto3";
 // 生成的java是一个源文件还是多个源文件
 option java_multiple_files = true;
 // 指定生成的java类放哪个包中
-option java_package = "com.ww.mall.proto.im.core";
+option java_package = "com.ww.app.proto.im.core";
 // proto java结构：外部类名称[内部类是真正开发使用的]
 option java_outer_classname = "ImMsgBizProto";
 
