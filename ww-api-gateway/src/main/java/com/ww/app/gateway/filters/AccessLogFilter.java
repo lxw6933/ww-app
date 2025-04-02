@@ -220,6 +220,7 @@ public class AccessLogFilter implements GlobalFilter, Ordered {
                 return super.writeWith(body);
             }
 
+            @NonNull
             @Override
             public Mono<Void> writeAndFlushWith(@NonNull Publisher<? extends Publisher<? extends DataBuffer>> body) {
                 // 对于流式响应，简单记录类型
