@@ -21,7 +21,7 @@ import java.util.regex.Pattern;
 @Slf4j
 public class IpUtil {
 
-    private static final String UNKNOWN = "unknown";
+    public static final String UNKNOWN = "unknown";
     private static final String LOCAL_HOST_IP = "0:0:0:0:0:0:0:1";
     private static final String LOCAL_HOST_IP_DEFAULT = "127.0.0.1";
     private static final String[] IP_HEADERS = {

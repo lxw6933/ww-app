@@ -7,6 +7,8 @@ package com.ww.app.common.constant;
  */
 public class Constant {
 
+    public static final String ERROR = "error";
+
     public static final String MYSQL_PRIMARY_KEY = "id";
     public static final String MONGO_PRIMARY_KEY = "_id";
 

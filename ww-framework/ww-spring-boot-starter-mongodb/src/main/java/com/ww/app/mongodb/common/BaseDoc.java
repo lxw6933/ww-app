@@ -12,7 +12,7 @@ import java.util.Date;
 /**
  * @author ww
  * @create 2024-08-23- 18:09
- * @description:
+ * @description: MongoDB文档基础类
  */
 @Data
 public class BaseDoc implements Serializable {
