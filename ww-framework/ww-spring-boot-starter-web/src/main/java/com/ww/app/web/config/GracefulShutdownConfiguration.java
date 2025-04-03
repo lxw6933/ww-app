@@ -3,6 +3,7 @@ package com.ww.app.web.config;
 import cn.hutool.extra.spring.SpringUtil;
 import com.alibaba.cloud.nacos.NacosDiscoveryProperties;
 import com.alibaba.cloud.nacos.registry.NacosAutoServiceRegistration;
+import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.SpringApplication;
@@ -13,7 +14,6 @@ import org.springframework.stereotype.Component;
 import javax.annotation.Resource;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.concurrent.atomic.AtomicLong;
 
 /**
  * @author ww
@@ -51,48 +51,9 @@ public class GracefulShutdownConfiguration implements SmartLifecycle {
     private volatile boolean isRunning = false;
     
     /**
-     * 当前正在处理的请求数量
-     */
-    private final AtomicInteger activeRequests = new AtomicInteger(0);
-    
-    /**
-     * 请求计数器
-     */
-    private final AtomicLong requestCounter = new AtomicLong(0);
-    
-    /**
      * 关闭执行器
      */
     private ExecutorService shutdownExecutor;
-
-    /**
-     * 增加活跃请求计数
-     */
-    public void incrementActiveRequests() {
-        activeRequests.incrementAndGet();
-        requestCounter.incrementAndGet();
-    }
-
-    /**
-     * 减少活跃请求计数
-     */
-    public void decrementActiveRequests() {
-        activeRequests.decrementAndGet();
-    }
-
-    /**
-     * 获取当前活跃请求数
-     */
-    public int getActiveRequestCount() {
-        return activeRequests.get();
-    }
-
-    /**
-     * 获取总请求数
-     */
-    public long getTotalRequestCount() {
-        return requestCounter.get();
-    }
 
     @Override
     public void start() {
@@ -109,13 +70,11 @@ public class GracefulShutdownConfiguration implements SmartLifecycle {
         }
         log.info("接收到停机信号，开始优雅停机流程...");
         try {
-            // 1. 取消nacos服务实例的注册，不再接收新请求
+            // 取消nacos服务实例的注册，不再接收新请求
             deregisterNacosInstance();
-            // 2. 等待所有当前请求处理完成
-            waitForActiveRequestsToComplete();
-            // 3. 关闭应用上下文
+            // 关闭应用上下文
             shutdownApplicationContext();
-            // 4. 关闭线程池
+            // 关闭线程池
             shutdownExecutor.shutdown();
             try {
                 if (!shutdownExecutor.awaitTermination(5, TimeUnit.SECONDS)) {
@@ -141,7 +100,7 @@ public class GracefulShutdownConfiguration implements SmartLifecycle {
         ThreadFactory threadFactory = new ThreadFactory() {
             private final AtomicInteger counter = new AtomicInteger(1);
             @Override
-            public Thread newThread(Runnable r) {
+            public Thread newThread(@NonNull Runnable r) {
                 Thread thread = new Thread(r);
                 thread.setName("graceful-shutdown-" + counter.getAndIncrement());
                 thread.setDaemon(true);
@@ -170,9 +129,7 @@ public class GracefulShutdownConfiguration implements SmartLifecycle {
                     nacosDiscoveryProperties.getIp(), 
                     nacosDiscoveryProperties.getPort());
             
-            CompletableFuture<Void> future = CompletableFuture.runAsync(() -> {
-                nacosAutoServiceRegistration.stop();
-            }, shutdownExecutor);
+            CompletableFuture<Void> future = CompletableFuture.runAsync(() -> nacosAutoServiceRegistration.stop(), shutdownExecutor);
             
             future.get(10, TimeUnit.SECONDS);
             
@@ -184,39 +141,6 @@ public class GracefulShutdownConfiguration implements SmartLifecycle {
         } catch (Exception e) {
             log.warn("注销Nacos服务实例过程中发生异常", e);
         }
-    }
-
-    /**
-     * 等待活跃请求处理完成
-     */
-    private void waitForActiveRequestsToComplete() {
-        final long startTime = System.currentTimeMillis();
-        final int initialCount = activeRequests.get();
-        if (initialCount <= 0) {
-            log.info("当前无活跃请求，无需等待");
-            return;
-        }
-        log.info("等待{}个活跃请求处理完成，最大等待时间为{}ms", initialCount, requestTimeoutMs);
-        while (activeRequests.get() > 0) {
-            try {
-                // 每100ms检查一次
-                Thread.sleep(100);
-                long elapsedTime = System.currentTimeMillis() - startTime;
-                if (elapsedTime > requestTimeoutMs) {
-                    log.warn("等待活跃请求超时！仍有{}个请求未处理完成", activeRequests.get());
-                    break;
-                }
-                // 每秒打印一次日志
-                if (elapsedTime % 1000 < 100) {
-                    log.info("正在等待{}个活跃请求处理完成，已等待{}ms", activeRequests.get(), elapsedTime);
-                }
-            } catch (InterruptedException e) {
-                Thread.currentThread().interrupt();
-                log.warn("等待请求完成过程中被中断");
-                break;
-            }
-        }
-        log.info("所有活跃请求已处理完成，用时{}ms", System.currentTimeMillis() - startTime);
     }
 
     /**
