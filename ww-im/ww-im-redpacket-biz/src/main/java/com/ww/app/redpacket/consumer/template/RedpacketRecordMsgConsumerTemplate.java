@@ -24,7 +24,7 @@ public class RedpacketRecordMsgConsumerTemplate extends MsgConsumerTemplate<Redp
     private MongoTemplate mongoTemplate;
 
     @Override
-    public boolean serverHandler(RedpacketReceiveDTO redpacketReceiveDTO) {
+    public boolean doProcess(RedpacketReceiveDTO redpacketReceiveDTO) {
         log.info("[红包领取]收到消息：{}", redpacketReceiveDTO);
         // 保存领取记录
         RedPacketRecord redPacketRecord = RedPacketRecord.build(redpacketReceiveDTO.getRedpacketId(), redpacketReceiveDTO.getUserId(), redpacketReceiveDTO.getAmount());

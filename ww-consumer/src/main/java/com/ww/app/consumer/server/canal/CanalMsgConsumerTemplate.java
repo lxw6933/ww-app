@@ -9,7 +9,7 @@ import com.ww.app.rabbitmq.template.MsgConsumerTemplate;
  */
 public class CanalMsgConsumerTemplate extends MsgConsumerTemplate<CanalMessage<?>> {
     @Override
-    public boolean serverHandler(CanalMessage<?> msg) {
+    public boolean doProcess(CanalMessage<?> msg) {
         // TODO: 2023/7/27 根据表名处理后续逻辑
         return true;
     }

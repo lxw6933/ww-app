@@ -29,7 +29,7 @@ public class RedpacketRollbackMsgConsumerTemplate extends MsgConsumerTemplate<St
     private RedpacketComponent redpacketComponent;
 
     @Override
-    public boolean serverHandler(String redpacketId) {
+    public boolean doProcess(String redpacketId) {
         log.info("[红包回滚]收到消息：{}", redpacketId);
         RedPacket redPacket = mongoTemplate.findOne(RedPacket.buildIdQuery(redpacketId), RedPacket.class);
         if (redPacket == null) {

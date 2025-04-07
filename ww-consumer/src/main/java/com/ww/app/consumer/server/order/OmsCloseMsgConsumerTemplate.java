@@ -11,7 +11,7 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 public class OmsCloseMsgConsumerTemplate extends MsgConsumerTemplate<Long> {
     @Override
-    public boolean serverHandler(Long mainOrderId) {
+    public boolean doProcess(Long mainOrderId) {
         // TODO: 2023/7/28 关单逻辑处理
         return true;
     }

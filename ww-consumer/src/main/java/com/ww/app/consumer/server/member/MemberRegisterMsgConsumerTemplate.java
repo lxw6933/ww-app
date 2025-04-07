@@ -17,7 +17,7 @@ public class MemberRegisterMsgConsumerTemplate extends MsgConsumerTemplate<Long>
     private final MemberApi memberApi = SpringUtil.getBean(MemberApi.class);
 
     @Override
-    public boolean serverHandler(Long msg) {
+    public boolean doProcess(Long msg) {
         AddMemberIntegralBO addMemberIntegralBO = new AddMemberIntegralBO();
         addMemberIntegralBO.setMemberId(msg);
         addMemberIntegralBO.setIntegralType(true);

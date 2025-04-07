@@ -18,6 +18,10 @@ public class ThreadMdcUtil {
         return MDC.get(Constant.TRACE_ID);
     }
 
+    public static void removeTraceId() {
+        MDC.remove(Constant.TRACE_ID);
+    }
+
     public static void setTraceId(String traceId) {
         MDC.put(Constant.TRACE_ID, traceId);
     }
