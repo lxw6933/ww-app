@@ -5,10 +5,9 @@ import com.ww.app.redis.key.RedisKeyBuilder;
 import org.springframework.stereotype.Component;
 
 /**
- * 统计数据Redis Key构建器
- * 用于生成PV、UV等统计数据的Redis key
- *
  * @author ww
+ * @create 2024-12-21 10:38
+ * @description: 统计数据Redis Key构建器 用于生成PV、UV等统计数据的Redis key
  */
 @Component
 public class StatisticsRedisKeyBuilder extends RedisKeyBuilder {

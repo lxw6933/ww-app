@@ -21,11 +21,9 @@ import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
 /**
- * Redis统计组件
- * 用于统计PV、UV等数据
- * 采用HyperLogLog实现UV统计，String计数器实现PV统计
- *
  * @author ww
+ * @create 2024-12-21 11:04
+ * @description: 用于统计PV、UV等数据 采用HyperLogLog实现UV统计，String计数器实现PV统计
  */
 @Slf4j
 @Component

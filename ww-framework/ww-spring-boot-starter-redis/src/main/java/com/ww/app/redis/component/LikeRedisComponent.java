@@ -6,27 +6,14 @@ import com.ww.app.common.exception.ApiException;
 import com.ww.app.redis.component.key.LikeRedisKeyBuilder;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.data.redis.core.Cursor;
-import org.springframework.data.redis.core.RedisCallback;
-import org.springframework.data.redis.core.ScanOptions;
-import org.springframework.data.redis.core.StringRedisTemplate;
-import org.springframework.data.redis.core.ZSetOperations;
+import org.springframework.data.redis.core.*;
 import org.springframework.data.redis.core.script.DefaultRedisScript;
 import org.springframework.stereotype.Component;
 
 import javax.annotation.PostConstruct;
 import javax.annotation.Resource;
 import java.nio.charset.StandardCharsets;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-import java.util.Random;
-import java.util.Set;
+import java.util.*;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Consumer;
@@ -34,7 +21,9 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 /**
- * 点赞Redis组件
+ * @author ww
+ * @create 2024-12-21 11:04
+ * @description: 点赞Redis组件
  * 支持高性能、高并发、高可用性的点赞功能
  * 采用多种数据结构组合实现，满足不同场景的需求
  * 针对大规模点赞进行分片优化，避免bigkey问题
