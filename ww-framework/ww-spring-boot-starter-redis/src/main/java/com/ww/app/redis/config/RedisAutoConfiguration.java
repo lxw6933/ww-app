@@ -4,10 +4,12 @@ import com.ww.app.common.utils.json.JacksonUtils;
 import com.ww.app.redis.AppRedisTemplate;
 import com.ww.app.redis.aspect.RateLimitAspect;
 import com.ww.app.redis.aspect.ResubmissionAspect;
+import com.ww.app.redis.component.StatisticsRedisComponent;
 import com.ww.app.redis.component.StockRedisComponent;
 import com.ww.app.redis.component.key.AppLockRedisKeyBuilder;
 import com.ww.app.redis.component.key.GeoRedisKeyBuilder;
 import com.ww.app.redis.component.key.SpuRedisKeyBuilder;
+import com.ww.app.redis.component.key.StatisticsRedisKeyBuilder;
 import com.ww.app.redis.component.key.StockRedisKeyBuilder;
 import com.ww.app.redis.handler.RedisStockHandlerManager;
 import com.ww.app.redis.listener.RedisChannelListener;
@@ -156,6 +158,16 @@ public class RedisAutoConfiguration implements ApplicationContextAware {
     @Bean
     public RedisStockHandlerManager redisStockHandlerManager() {
         return new RedisStockHandlerManager();
+    }
+
+    @Bean
+    public StatisticsRedisComponent statisticsRedisComponent() {
+        return new StatisticsRedisComponent();
+    }
+
+    @Bean
+    public StatisticsRedisKeyBuilder statisticsRedisKeyBuilder() {
+        return new StatisticsRedisKeyBuilder();
     }
 
     @Override
