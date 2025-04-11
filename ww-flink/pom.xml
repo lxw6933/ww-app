@@ -12,6 +12,10 @@
     <artifactId>ww-flink</artifactId>
     <description>flink服务</description>
 
+    <properties>
+        <flink.version>1.15.2</flink.version>
+    </properties>
+
     <dependencies>
         <!-- web -->
         <dependency>
@@ -19,21 +23,51 @@
             <artifactId>ww-spring-boot-starter-web</artifactId>
             <version>${revision}</version>
         </dependency>
-        <!-- flink -->
+        
+        <!-- kafka -->
+        <dependency>
+            <groupId>com.ww.app</groupId>
+            <artifactId>ww-spring-boot-starter-kafka</artifactId>
+            <version>${revision}</version>
+        </dependency>
+        
+        <!-- flink core -->
         <dependency>
             <groupId>org.apache.flink</groupId>
             <artifactId>flink-streaming-java</artifactId>
+            <version>${flink.version}</version>
         </dependency>
         <dependency>
             <groupId>org.apache.flink</groupId>
             <artifactId>flink-clients</artifactId>
+            <version>${flink.version}</version>
         </dependency>
+        
+        <!-- flink connectors -->
+        <dependency>
+            <groupId>org.apache.flink</groupId>
+            <artifactId>flink-connector-jdbc</artifactId>
+            <version>${flink.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.flink</groupId>
+            <artifactId>flink-connector-files</artifactId>
+            <version>${flink.version}</version>
+        </dependency>
+        
+        <!-- Kafka相关依赖 -->
+        <dependency>
+            <groupId>org.springframework.kafka</groupId>
+            <artifactId>spring-kafka</artifactId>
+        </dependency>
+        
         <!-- minio starter -->
         <dependency>
             <groupId>com.ww.app</groupId>
             <artifactId>ww-spring-boot-starter-minio</artifactId>
             <version>${revision}</version>
         </dependency>
+        
         <!-- test -->
         <dependency>
             <groupId>org.springframework.boot</groupId>

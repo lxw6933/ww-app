@@ -1,0 +1,106 @@
+server:
+  port: 8085
+  servlet:
+    context-path: /flink
+
+spring:
+  application:
+    name: ww-flink
+  profiles:
+    active: ${SPRING_PROFILES_ACTIVE:dev}
+  kafka:
+    bootstrap-servers: localhost:9092
+    producer:
+      key-serializer: org.apache.kafka.common.serialization.StringSerializer
+      value-serializer: org.apache.kafka.common.serialization.StringSerializer
+      acks: 1
+    consumer:
+      key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+      value-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+      auto-offset-reset: earliest
+      enable-auto-commit: true
+
+ww:
+  # WW自定义Kafka配置
+  kafka:
+    enabled: true
+    retry-times: 3
+    send-timeout: 10000
+    compression-enabled: true
+    compression-type: snappy
+    transaction-enabled: false
+    batch-size: 100
+    consumer-concurrency: 3
+    dead-letter:
+      enabled: true
+      suffix: ".dlq"
+    tracing:
+      enabled: true
+      propagate-trace-id: true
+    producer:
+      idempotence-enabled: true
+      acks: all
+      buffer-memory: 33554432
+    consumer:
+      group-id: default-group
+      auto-commit: false
+      batch-enabled: false
+      concurrency: 3
+      
+  flink:
+    # Flink 基础配置
+    parallelism: 1
+    checkpoint-interval: 60000
+    checkpoint-timeout: 30000
+    min-pause-between-checkpoints: 10000
+    max-concurrent-checkpoints: 1
+    enable-checkpoint: true
+    enable-restart: true
+    restart-attempts: 3
+    restart-delay-ms: 10000
+    state-backend: memory
+    incremental-checkpoints: true
+    
+    # 指标配置
+    enable-metrics: false
+    rest-address: "localhost"
+    rest-port: 8081
+    
+    # 作业配置
+    job:
+      # 订单事件生成器配置
+      order:
+        generator:
+          enable: true
+          rate: 100  # 每秒生成的事件数（估计值）
+        
+        # 订单分析作业配置
+        enable: true
+        topic: order_events
+        output-topic: order_analytics
+        alert-topic: order_alerts
+        bootstrap-servers: localhost:9092
+        group-id: order-analytics-group
+      
+      # 文件流配置
+      file:
+        enable: false
+        directory: ./data
+        pattern: "*.json"
+        polling-interval: 30000
+        
+      # 文件打印作业配置
+      fileprint:
+        enable: false
+        directory: ./data/inputs
+        pattern: "*.txt"
+        polling-interval: 5000
+
+# 日志配置
+logging:
+  level:
+    root: info
+    com.ww.app: info
+    com.ww.app.flink: debug
+    org.apache.flink: info
+    org.apache.kafka: WARN 
