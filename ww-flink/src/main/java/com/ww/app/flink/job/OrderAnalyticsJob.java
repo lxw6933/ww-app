@@ -102,14 +102,6 @@ public class OrderAnalyticsJob extends AbstractKafkaListener implements Applicat
         // 自定义重试逻辑
         return !(e instanceof InterruptedException);
     }
-    
-    /**
-     * 获取最大重试次数
-     */
-    @Override
-    protected int getMaxRetries() {
-        return 3;
-    }
 
     @Override
     public void run(ApplicationArguments args) throws Exception {
@@ -129,12 +121,7 @@ public class OrderAnalyticsJob extends AbstractKafkaListener implements Applicat
 
         // 解析JSON为OrderEvent对象
         DataStream<OrderEvent> orderEventStream = orderJsonStream
-                .map(new MapFunction<String, OrderEvent>() {
-                    @Override
-                    public OrderEvent map(String json) throws Exception {
-                        return objectMapper.readValue(json, OrderEvent.class);
-                    }
-                })
+                .map((MapFunction<String, OrderEvent>) json -> objectMapper.readValue(json, OrderEvent.class))
                 .name("Parse JSON");
 
         // 1. 成功支付的订单统计 - 每分钟统计一次
@@ -165,7 +152,7 @@ public class OrderAnalyticsJob extends AbstractKafkaListener implements Applicat
 
         // 4. 订单转化率统计 - 计算从创建到完成的转化率
         SingleOutputStreamOperator<Tuple2<String, Long>> orderStatusCount = orderEventStream
-                .keyBy(event -> event.getStatus())
+                .keyBy(OrderEvent::getStatus)
                 .window(TumblingProcessingTimeWindows.of(Time.minutes(5)))
                 .process(new OrderStatusCountWindowFunction())
                 .name("Order Status Count");
