@@ -11,8 +11,6 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
-import java.io.IOException;
-
 /**
  * Flink配置类
  */
@@ -103,8 +101,7 @@ public class FlinkConfig {
             }
 
             // 作业取消时保留检查点
-            checkpointConfig.enableExternalizedCheckpoints(
-                    CheckpointConfig.ExternalizedCheckpointCleanup.RETAIN_ON_CANCELLATION);
+            checkpointConfig.setExternalizedCheckpointCleanup(CheckpointConfig.ExternalizedCheckpointCleanup.RETAIN_ON_CANCELLATION);
         }
         
         // 配置重启策略
