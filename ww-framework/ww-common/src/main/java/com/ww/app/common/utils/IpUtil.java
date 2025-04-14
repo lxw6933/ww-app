@@ -97,6 +97,10 @@ public class IpUtil {
         return ipArr[ipArr.length - 1].trim();
     }
 
+    public static String getRealIp() {
+        return getRealIp(HttpContextUtils.getHttpServletRequest());
+    }
+
     /**
      * 验证IP是否在白名单中
      *

@@ -6,11 +6,7 @@ import com.ww.app.redis.aspect.RateLimitAspect;
 import com.ww.app.redis.aspect.ResubmissionAspect;
 import com.ww.app.redis.component.StatisticsRedisComponent;
 import com.ww.app.redis.component.StockRedisComponent;
-import com.ww.app.redis.component.key.AppLockRedisKeyBuilder;
-import com.ww.app.redis.component.key.GeoRedisKeyBuilder;
-import com.ww.app.redis.component.key.SpuRedisKeyBuilder;
-import com.ww.app.redis.component.key.StatisticsRedisKeyBuilder;
-import com.ww.app.redis.component.key.StockRedisKeyBuilder;
+import com.ww.app.redis.component.key.*;
 import com.ww.app.redis.handler.RedisStockHandlerManager;
 import com.ww.app.redis.listener.RedisChannelListener;
 import lombok.NonNull;
@@ -168,6 +164,11 @@ public class RedisAutoConfiguration implements ApplicationContextAware {
     @Bean
     public StatisticsRedisKeyBuilder statisticsRedisKeyBuilder() {
         return new StatisticsRedisKeyBuilder();
+    }
+
+    @Bean
+    public RateLimitRedisKeyBuilder rateLimitRedisKeyBuilder() {
+        return new RateLimitRedisKeyBuilder();
     }
 
     @Override
