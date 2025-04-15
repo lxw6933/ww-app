@@ -50,7 +50,7 @@ import org.springframework.data.mongodb.core.MongoTemplate;
 import org.springframework.data.mongodb.core.aggregation.Aggregation;
 import org.springframework.data.mongodb.core.aggregation.AggregationOperation;
 import org.springframework.data.mongodb.core.query.Query;
-import org.springframework.data.redis.core.RedisTemplate;
+import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -99,7 +99,7 @@ public class DemoServiceImpl implements DemoService {
     private RedissonClient redissonClient;
 
     @Resource
-    private RedisTemplate<String, String> redisTemplate;
+    private StringRedisTemplate stringRedisTemplate;
 
     @PostConstruct
     public void init() {
@@ -286,7 +286,7 @@ public class DemoServiceImpl implements DemoService {
                 break;
             case 2:
                 // 判断
-                log.info("是否包含：[{}],[{}]", ele, redisTemplate.opsForValue().getBit("bitMapTest", ele));
+                log.info("是否包含：[{}],[{}]", ele, stringRedisTemplate.opsForValue().getBit("bitMapTest", ele));
         }
     }
 

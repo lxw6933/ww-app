@@ -17,7 +17,7 @@ import org.aspectj.lang.reflect.MethodSignature;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.redis.connection.RedisStringCommands;
 import org.springframework.data.redis.core.RedisCallback;
-import org.springframework.data.redis.core.RedisTemplate;
+import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.data.redis.core.types.Expiration;
 import org.springframework.stereotype.Component;
 
@@ -40,7 +40,7 @@ import java.util.function.Supplier;
 public class ResubmissionAspect {
 
     @Resource
-    private RedisTemplate<String, String> redisTemplate;
+    private StringRedisTemplate stringRedisTemplate;
 
     /**
      * Redis防重复提交键前缀
@@ -199,7 +199,7 @@ public class ResubmissionAspect {
         // 2. 检查Redis
         Boolean success = executeWithFallback(() -> {
             try {
-                return redisTemplate.execute(
+                return stringRedisTemplate.execute(
                         (RedisCallback<Boolean>) connection -> connection.set(
                                 key.getBytes(),
                                 UUID.randomUUID().toString().getBytes(),

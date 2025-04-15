@@ -9,8 +9,8 @@ import com.github.benmanes.caffeine.cache.Cache;
 import com.github.benmanes.caffeine.cache.Caffeine;
 import com.wf.captcha.ArithmeticCaptcha;
 import com.ww.app.common.common.ClientUser;
-import com.ww.app.common.exception.ApiException;
 import com.ww.app.common.context.AuthorizationContext;
+import com.ww.app.common.exception.ApiException;
 import com.ww.app.common.utils.IdUtil;
 import com.ww.app.rabbitmq.RabbitMqPublisher;
 import com.ww.app.rabbitmq.exchange.ExchangeConstant;
@@ -22,7 +22,7 @@ import com.ww.app.seckill.service.SeckillService;
 import com.ww.app.seckill.view.bo.SecKillOrderReqBO;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
-import org.springframework.data.redis.core.RedisTemplate;
+import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Service;
 
 import javax.annotation.PostConstruct;
@@ -46,7 +46,7 @@ public class SeckillServiceImpl implements SeckillService {
     private RabbitMqPublisher rabbitMqPublisher;
 
     @Resource
-    private RedisTemplate<String, String> redisTemplate;
+    private StringRedisTemplate stringRedisTemplate;
 
     @Resource
     private StockRedisComponent stockRedisComponent;
@@ -60,7 +60,7 @@ public class SeckillServiceImpl implements SeckillService {
     @PostConstruct
     public void init() {
         // 初始化活动数据信息
-        activityCache.get("activityRedisCacheKey", key -> redisTemplate.opsForValue().get(key));
+        activityCache.get("activityRedisCacheKey", key -> stringRedisTemplate.opsForValue().get(key));
     }
 
     private static final Cache<String, String> activityCache = Caffeine.newBuilder()
@@ -84,7 +84,7 @@ public class SeckillServiceImpl implements SeckillService {
         captcha.setLen(3);
         // 验证码结果存入redis
         String key = seckillRedisKeyBuilder.buildSeckillCodeKey(activityCode, clientUser.getId(), skuId);
-        redisTemplate.opsForValue().set(key, captcha.text(), 1, TimeUnit.MINUTES);
+        stringRedisTemplate.opsForValue().set(key, captcha.text(), 1, TimeUnit.MINUTES);
         // 输出图片流
         try {
             captcha.out(response.getOutputStream());
@@ -99,14 +99,14 @@ public class SeckillServiceImpl implements SeckillService {
         ClientUser clientUser = AuthorizationContext.getClientUser();
 
         String key = seckillRedisKeyBuilder.buildSeckillPathKey(activityCode, clientUser.getId(), skuId);
-        String userSecKillPath = redisTemplate.opsForValue().get(key);
+        String userSecKillPath = stringRedisTemplate.opsForValue().get(key);
         if (StringUtils.isNotEmpty(userSecKillPath)) {
             return userSecKillPath;
         }
         // 生成secKillPath
         userSecKillPath = MD5.create().digestHex(UUID.randomUUID() + activityCode + clientUser.getId().toString(), StandardCharsets.UTF_8.name());
         // 加密后地址存入redis
-        redisTemplate.opsForValue().set(key, userSecKillPath, 1, TimeUnit.MINUTES);
+        stringRedisTemplate.opsForValue().set(key, userSecKillPath, 1, TimeUnit.MINUTES);
         return userSecKillPath;
     }
 
@@ -139,13 +139,13 @@ public class SeckillServiceImpl implements SeckillService {
             return false;
         }
         String key = seckillRedisKeyBuilder.buildSeckillPathKey(activityCode, clientUser.getId(), skuId);
-        String userSecKillPathCache = redisTemplate.opsForValue().get(key);
+        String userSecKillPathCache = stringRedisTemplate.opsForValue().get(key);
         return userSecKillPath.equals(userSecKillPathCache);
     }
 
     private boolean checkSecKillVerCode(ClientUser clientUser, String activityCode, Long skuId, String userVerCode) {
         String key = seckillRedisKeyBuilder.buildSeckillCodeKey(activityCode, clientUser.getId(), skuId);
-        String verCodeCache = redisTemplate.opsForValue().get(key);
+        String verCodeCache = stringRedisTemplate.opsForValue().get(key);
         return userVerCode.equals(verCodeCache);
     }
 

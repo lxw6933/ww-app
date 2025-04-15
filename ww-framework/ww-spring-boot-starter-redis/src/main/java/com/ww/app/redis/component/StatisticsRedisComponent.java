@@ -5,7 +5,7 @@ import com.ww.app.common.exception.ApiException;
 import com.ww.app.redis.component.key.StatisticsRedisKeyBuilder;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
-import org.springframework.data.redis.core.RedisTemplate;
+import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.data.redis.core.script.DefaultRedisScript;
 import org.springframework.data.redis.core.script.RedisScript;
 import org.springframework.stereotype.Component;
@@ -65,7 +65,7 @@ public class StatisticsRedisComponent {
             "return results";
 
     @Resource
-    private RedisTemplate<String, String> redisTemplate;
+    private StringRedisTemplate stringRedisTemplate;
 
     @Resource
     private StatisticsRedisKeyBuilder statisticsRedisKeyBuilder;
@@ -113,9 +113,9 @@ public class StatisticsRedisComponent {
         }
         try {
             String key = statisticsRedisKeyBuilder.buildPVKey(bizType, bizId, date.format(DATE_FORMATTER));
-            Long count = redisTemplate.opsForValue().increment(key);
+            Long count = stringRedisTemplate.opsForValue().increment(key);
             // 设置过期时间
-            redisTemplate.expire(key, DEFAULT_EXPIRE_DAYS, TimeUnit.DAYS);
+            stringRedisTemplate.expire(key, DEFAULT_EXPIRE_DAYS, TimeUnit.DAYS);
             return count;
         } catch (Exception e) {
             log.error("记录PV异常: bizType={}, bizId={}, date={}", bizType, bizId, date, e);
@@ -152,7 +152,7 @@ public class StatisticsRedisComponent {
                 keys.add(statisticsRedisKeyBuilder.buildPVKey(bizType, bizId, date.format(DATE_FORMATTER)));
             }
             // 使用Lua脚本批量执行
-            List<Long> results = redisTemplate.execute(batchRecordPVScript, keys, 
+            List<Long> results = stringRedisTemplate.execute(batchRecordPVScript, keys,
                     String.valueOf(DEFAULT_EXPIRE_DAYS * 24 * 60 * 60));
             // 构建结果Map
             Map<String, Long> resultMap = new HashMap<>(bizIds.size());
@@ -193,12 +193,12 @@ public class StatisticsRedisComponent {
         }
         try {
             String key = statisticsRedisKeyBuilder.buildUVKey(bizType, bizId, date.format(DATE_FORMATTER));
-            boolean added = redisTemplate.opsForHyperLogLog().add(key, userId) > 0;
+            boolean added = stringRedisTemplate.opsForHyperLogLog().add(key, userId) > 0;
             // 设置过期时间
             if (added) {
-                redisTemplate.expire(key, DEFAULT_EXPIRE_DAYS, TimeUnit.DAYS);
+                stringRedisTemplate.expire(key, DEFAULT_EXPIRE_DAYS, TimeUnit.DAYS);
             }
-            return redisTemplate.opsForHyperLogLog().size(key);
+            return stringRedisTemplate.opsForHyperLogLog().size(key);
         } catch (Exception e) {
             log.error("记录UV异常: bizType={}, bizId={}, userId={}, date={}", bizType, bizId, userId, date, e);
             throw new ApiException("记录UV异常: " + e.getMessage());
@@ -240,7 +240,7 @@ public class StatisticsRedisComponent {
             // 添加过期时间参数
             users.add(String.valueOf(DEFAULT_EXPIRE_DAYS * 24 * 60 * 60));
             // 使用Lua脚本批量执行
-            List<Long> results = redisTemplate.execute(batchRecordUVScript, keys, users.toArray());
+            List<Long> results = stringRedisTemplate.execute(batchRecordUVScript, keys, users.toArray());
             // 构建结果Map
             Map<String, Long> resultMap = new HashMap<>(bizIds.size());
             for (int i = 0; i < bizIds.size(); i++) {
@@ -278,7 +278,7 @@ public class StatisticsRedisComponent {
                 currentDate = currentDate.plusDays(1);
             }
             // 批量获取PV数据
-            List<String> values = redisTemplate.opsForValue().multiGet(keys);
+            List<String> values = stringRedisTemplate.opsForValue().multiGet(keys);
             if (values != null) {
                 for (int i = 0; i < keys.size(); i++) {
                     String value = values.get(i);
@@ -320,7 +320,7 @@ public class StatisticsRedisComponent {
                 currentDate = currentDate.plusDays(1);
             }
             // 批量获取PV数据
-            List<String> values = redisTemplate.opsForValue().multiGet(keys);
+            List<String> values = stringRedisTemplate.opsForValue().multiGet(keys);
             if (values != null) {
                 for (int i = 0; i < keys.size(); i++) {
                     String value = values.get(i);
@@ -357,7 +357,7 @@ public class StatisticsRedisComponent {
             while (!currentDate.isAfter(toDate)) {
                 String dateStr = currentDate.format(DATE_FORMATTER);
                 String key = statisticsRedisKeyBuilder.buildUVKey(bizType, bizId, dateStr);
-                Long count = redisTemplate.opsForHyperLogLog().size(key);
+                Long count = stringRedisTemplate.opsForHyperLogLog().size(key);
                 result.put(dateStr, count);
                 currentDate = currentDate.plusDays(1);
             }
@@ -387,7 +387,7 @@ public class StatisticsRedisComponent {
             while (!currentDate.isAfter(toDate)) {
                 String dateStr = currentDate.format(DATE_FORMATTER);
                 String key = statisticsRedisKeyBuilder.buildBizTypeUVKey(bizType, dateStr);
-                Long count = redisTemplate.opsForHyperLogLog().size(key);
+                Long count = stringRedisTemplate.opsForHyperLogLog().size(key);
                 result.put(dateStr, count);
                 currentDate = currentDate.plusDays(1);
             }
@@ -423,11 +423,11 @@ public class StatisticsRedisComponent {
             // 使用HyperLogLog的merge操作计算去重UV
             String mergeKey = statisticsRedisKeyBuilder.buildUVMergeKey(bizType, bizId, 
                     fromDate.format(DATE_FORMATTER), toDate.format(DATE_FORMATTER));
-            redisTemplate.opsForHyperLogLog().union(mergeKey, 
+            stringRedisTemplate.opsForHyperLogLog().union(mergeKey,
                     keys.toArray(new String[0]));
             // 设置临时merge key的过期时间
-            redisTemplate.expire(mergeKey, 1, TimeUnit.HOURS);
-            return redisTemplate.opsForHyperLogLog().size(mergeKey);
+            stringRedisTemplate.expire(mergeKey, 1, TimeUnit.HOURS);
+            return stringRedisTemplate.opsForHyperLogLog().size(mergeKey);
         } catch (Exception e) {
             log.error("获取UV去重统计异常: bizType={}, bizId={}, fromDate={}, toDate={}", bizType, bizId, fromDate, toDate, e);
             throw new ApiException("获取UV去重统计异常: " + e.getMessage());
@@ -458,11 +458,11 @@ public class StatisticsRedisComponent {
             // 使用HyperLogLog的merge操作计算去重UV
             String mergeKey = statisticsRedisKeyBuilder.buildBizTypeUVMergeKey(bizType, 
                     fromDate.format(DATE_FORMATTER), toDate.format(DATE_FORMATTER));
-            redisTemplate.opsForHyperLogLog().union(mergeKey, 
+            stringRedisTemplate.opsForHyperLogLog().union(mergeKey,
                     keys.toArray(new String[0]));
             // 设置临时merge key的过期时间
-            redisTemplate.expire(mergeKey, 1, TimeUnit.HOURS);
-            return redisTemplate.opsForHyperLogLog().size(mergeKey);
+            stringRedisTemplate.expire(mergeKey, 1, TimeUnit.HOURS);
+            return stringRedisTemplate.opsForHyperLogLog().size(mergeKey);
         } catch (Exception e) {
             log.error("获取业务类型UV去重统计异常: bizType={}, fromDate={}, toDate={}", bizType, fromDate, toDate, e);
             throw new ApiException("获取业务类型UV去重统计异常: " + e.getMessage());
@@ -492,9 +492,9 @@ public class StatisticsRedisComponent {
         }
         try {
             String key = statisticsRedisKeyBuilder.buildBizTypePVKey(bizType, date.format(DATE_FORMATTER));
-            Long count = redisTemplate.opsForValue().increment(key);
+            Long count = stringRedisTemplate.opsForValue().increment(key);
             // 设置过期时间
-            redisTemplate.expire(key, DEFAULT_EXPIRE_DAYS, TimeUnit.DAYS);
+            stringRedisTemplate.expire(key, DEFAULT_EXPIRE_DAYS, TimeUnit.DAYS);
             return count;
         } catch (Exception e) {
             log.error("记录业务类型PV异常: bizType={}, date={}", bizType, date, e);
@@ -527,12 +527,12 @@ public class StatisticsRedisComponent {
         }
         try {
             String key = statisticsRedisKeyBuilder.buildBizTypeUVKey(bizType, date.format(DATE_FORMATTER));
-            boolean added = redisTemplate.opsForHyperLogLog().add(key, userId) > 0;
+            boolean added = stringRedisTemplate.opsForHyperLogLog().add(key, userId) > 0;
             // 设置过期时间
             if (added) {
-                redisTemplate.expire(key, DEFAULT_EXPIRE_DAYS, TimeUnit.DAYS);
+                stringRedisTemplate.expire(key, DEFAULT_EXPIRE_DAYS, TimeUnit.DAYS);
             }
-            return redisTemplate.opsForHyperLogLog().size(key);
+            return stringRedisTemplate.opsForHyperLogLog().size(key);
         } catch (Exception e) {
             log.error("记录业务类型UV异常: bizType={}, userId={}, date={}", bizType, userId, date, e);
             throw new ApiException("记录业务类型UV异常: " + e.getMessage());

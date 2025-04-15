@@ -13,7 +13,7 @@ import org.aspectj.lang.annotation.Around;
 import org.aspectj.lang.annotation.Aspect;
 import org.aspectj.lang.reflect.MethodSignature;
 import org.springframework.data.redis.connection.ReturnType;
-import org.springframework.data.redis.core.RedisTemplate;
+import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.data.redis.core.script.DefaultRedisScript;
 import org.springframework.stereotype.Component;
 
@@ -39,7 +39,7 @@ public class RateLimitAspect {
     private DefaultRedisScript<Long> rateLimitScript;
 
     @Resource
-    private RedisTemplate<String, String> redisTemplate;
+    private StringRedisTemplate stringRedisTemplate;
 
     @Resource
     private RateLimitRedisKeyBuilder rateLimitRedisKeyBuilder;
@@ -141,7 +141,7 @@ public class RateLimitAspect {
         try {
             String whitelistKey = rateLimitRedisKeyBuilder.buildWhitelistKey();
             String value = getClientIp();
-            return Boolean.TRUE.equals(redisTemplate.opsForSet().isMember(whitelistKey, value));
+            return Boolean.TRUE.equals(stringRedisTemplate.opsForSet().isMember(whitelistKey, value));
         } catch (Exception e) {
             log.error("白名单检查异常: key={}", key, e);
             return false;
@@ -155,7 +155,7 @@ public class RateLimitAspect {
         try {
             String blacklistKey = rateLimitRedisKeyBuilder.buildBlacklistKey();
             String value = getClientIp();
-            return Boolean.TRUE.equals(redisTemplate.opsForSet().isMember(blacklistKey, value));
+            return Boolean.TRUE.equals(stringRedisTemplate.opsForSet().isMember(blacklistKey, value));
         } catch (Exception e) {
             log.error("黑名单检查异常: key={}", key, e);
             return false;

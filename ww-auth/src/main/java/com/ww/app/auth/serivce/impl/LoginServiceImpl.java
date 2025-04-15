@@ -57,7 +57,7 @@ public class LoginServiceImpl extends BaseService implements LoginService {
     @Override
     public LoginResultVO clientMobileLogin(MemberLoginBO memberLoginBO) {
         String mobile = memberLoginBO.getMobile();
-        String mobileCode = redisTemplate.opsForValue().get(smsCodeRedisKeyBuilder.buildSmsCodeKey(mobile));
+        String mobileCode = stringRedisTemplate.opsForValue().get(smsCodeRedisKeyBuilder.buildSmsCodeKey(mobile));
         mobileCode = StringUtils.isNotEmpty(mobileCode) ? mobileCode.split(Constant.UNDER_LINE_SPLIT)[0] : null;
         if (memberLoginBO.getVerifyCode().equals(mobileCode)) {
             // 获取登录用户信息
@@ -82,7 +82,7 @@ public class LoginServiceImpl extends BaseService implements LoginService {
 
     @Override
     public void sendCode(String mobile) {
-        String mobileCode = redisTemplate.opsForValue().get(smsCodeRedisKeyBuilder.buildSmsCodeKey(mobile));
+        String mobileCode = stringRedisTemplate.opsForValue().get(smsCodeRedisKeyBuilder.buildSmsCodeKey(mobile));
         if (StringUtils.isNotEmpty(mobileCode)) {
             // 判断是否超过验证码过期时间
             long mobileCodeTime = Long.parseLong(mobileCode.split(Constant.UNDER_LINE_SPLIT)[1]);
@@ -96,7 +96,7 @@ public class LoginServiceImpl extends BaseService implements LoginService {
         // 记录验证码生成的时间
         String newCodeTime =  newCode + Constant.UNDER_LINE_SPLIT + System.currentTimeMillis();
         // 验证码三分钟内有效
-        redisTemplate.opsForValue()
+        stringRedisTemplate.opsForValue()
                 .set(smsCodeRedisKeyBuilder.buildSmsCodeKey(mobile), newCodeTime, 3, TimeUnit.MINUTES);
         // 发送验证码短信
         Result<Boolean> sendSmsResult = smsApi.sendSms(mobile, newCode);

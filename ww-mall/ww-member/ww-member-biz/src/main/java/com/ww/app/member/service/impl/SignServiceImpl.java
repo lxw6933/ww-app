@@ -12,7 +12,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.data.redis.connection.BitFieldSubCommands;
 import org.springframework.data.redis.core.RedisCallback;
-import org.springframework.data.redis.core.RedisTemplate;
+import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Service;
 
 import javax.annotation.Resource;
@@ -32,7 +32,7 @@ import java.util.TreeMap;
 public class SignServiceImpl implements SignService {
 
     @Resource
-    private RedisTemplate<String, String> redisTemplate;
+    private StringRedisTemplate stringRedisTemplate;
 
     @Override
     @DistributedLock(enableUserLock = true, operationKey = "'sign'", waitTime = 3, leaseTime = 3)
@@ -54,13 +54,13 @@ public class SignServiceImpl implements SignService {
         // 构建 Key user:sign:5:yyyyMM
         String signKey = buildSignKey(clientUser.getId(), date);
         // 查看是否已签到
-        Boolean isSigned = redisTemplate.opsForValue().getBit(signKey, offset);
+        Boolean isSigned = stringRedisTemplate.opsForValue().getBit(signKey, offset);
         if (Boolean.TRUE.equals(isSigned)) {
             log.warn("当前日期已完成签到，无需再签");
             throw new ApiException("当前日期已完成签到，无需再签");
         }
         // 签到
-        redisTemplate.opsForValue().setBit(signKey, offset, true);
+        stringRedisTemplate.opsForValue().setBit(signKey, offset, true);
         // 统计连续签到的次数
         return getContinuousSignCount(dateStr, clientUser);
     }
@@ -77,7 +77,7 @@ public class SignServiceImpl implements SignService {
                 = BitFieldSubCommands.create()
                 .get(BitFieldSubCommands.BitFieldType.unsigned(dayOfMonth))
                 .valueAt(0);
-        List<Long> list = redisTemplate.opsForValue().bitField(signKey, bitFieldSubCommands);
+        List<Long> list = stringRedisTemplate.opsForValue().bitField(signKey, bitFieldSubCommands);
         if (list == null || list.isEmpty()) {
             return 0;
         }
@@ -106,7 +106,7 @@ public class SignServiceImpl implements SignService {
         // 构建 Key
         String signKey = buildSignKey(clientUser.getId(), date);
         // bitcount user:sign:5:202011
-        Long signCount = redisTemplate.execute(
+        Long signCount = stringRedisTemplate.execute(
                 (RedisCallback<Long>) con -> con.bitCount(signKey.getBytes())
         );
         return signCount == null ? 0 : signCount.intValue();
@@ -130,7 +130,7 @@ public class SignServiceImpl implements SignService {
                 .get(BitFieldSubCommands.BitFieldType.unsigned(dayOfMonth))
                 .valueAt(0);
         // 从偏移量offset=0开始取dayOfMonth位，获取无符号整数的值
-        List<Long> list = redisTemplate.opsForValue().bitField(signKey, bitFieldSubCommands);
+        List<Long> list = stringRedisTemplate.opsForValue().bitField(signKey, bitFieldSubCommands);
         if (list == null || list.isEmpty()) {
             return signInfo;
         }

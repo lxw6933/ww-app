@@ -5,7 +5,7 @@ import com.ww.app.auth.config.JwtProperties;
 import com.ww.app.member.member.rpc.MemberApi;
 import com.ww.app.third.sms.rpc.SmsApi;
 import org.springframework.data.mongodb.core.MongoTemplate;
-import org.springframework.data.redis.core.RedisTemplate;
+import org.springframework.data.redis.core.StringRedisTemplate;
 
 import javax.annotation.Resource;
 
@@ -20,7 +20,7 @@ public class BaseService {
     protected JwtProperties jwtProperties;
 
     @Resource
-    protected RedisTemplate<String, String> redisTemplate;
+    protected StringRedisTemplate stringRedisTemplate;
 
     @Resource
     protected MongoTemplate mongoTemplate;

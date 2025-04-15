@@ -50,7 +50,7 @@ public class AppRedisTemplate {
     private static final long DEFAULT_EXPIRE_SECONDS = 3600;
 
     @Resource
-    private RedisTemplate<String, String> redisTemplate;
+    private StringRedisTemplate stringRedisTemplate;
 
     @Resource
     private GeoRedisKeyBuilder geoRedisKeyBuilder;
@@ -78,7 +78,7 @@ public class AppRedisTemplate {
         }
         
         try {
-            return redisTemplate.execute((RedisCallback<Set<String>>) connection -> {
+            return stringRedisTemplate.execute((RedisCallback<Set<String>>) connection -> {
                 Set<String> keySet = new HashSet<>();
                 try (Cursor<byte[]> cursor = connection.scan(
                         ScanOptions.scanOptions().match(pattern).count(limit).build())) {
@@ -118,7 +118,7 @@ public class AppRedisTemplate {
             // 分批处理
             List<List<String>> batches = splitList(keys, DEFAULT_BATCH_NUM);
             for (List<String> batch : batches) {
-                redisTemplate.executePipelined((RedisCallback<Object>) connection -> {
+                stringRedisTemplate.executePipelined((RedisCallback<Object>) connection -> {
                     for (String key : batch) {
                         if (async) {
                             // 异步删除，防止bigKey阻塞
@@ -190,7 +190,7 @@ public class AppRedisTemplate {
      * @param expireSeconds 过期时间(秒)
      */
     private void processBatchStringData(Map<String, String> batchDataMap, long expireSeconds) {
-        redisTemplate.executePipelined((RedisCallback<Object>) connection -> {
+        stringRedisTemplate.executePipelined((RedisCallback<Object>) connection -> {
             for (Map.Entry<String, String> entry : batchDataMap.entrySet()) {
                 byte[] keyBytes = entry.getKey().getBytes();
                 byte[] valueBytes = entry.getValue().getBytes();
@@ -217,7 +217,7 @@ public class AppRedisTemplate {
         }
         
         try {
-            redisTemplate.executePipelined((RedisCallback<Object>) connection -> {
+            stringRedisTemplate.executePipelined((RedisCallback<Object>) connection -> {
                 for (Integer index : dataList) {
                     if (index != null && index >= 0) {
                         connection.setBit(key.getBytes(), index, true);
@@ -260,7 +260,7 @@ public class AppRedisTemplate {
                     }
                     
                     if (!locationGEOList.isEmpty()) {
-                        redisTemplate.opsForGeo().add(geoKey, locationGEOList);
+                        stringRedisTemplate.opsForGeo().add(geoKey, locationGEOList);
                         log.debug("初始化GEO数据成功: typeId={}, size={}", typeId, locationGEOList.size());
                     }
                 }
@@ -297,7 +297,7 @@ public class AppRedisTemplate {
             String geoKey = geoRedisKeyBuilder.buildGeoKey(typeId);
             
             // 执行GEO搜索
-            GeoResults<RedisGeoCommands.GeoLocation<String>> results = redisTemplate.opsForGeo().search(
+            GeoResults<RedisGeoCommands.GeoLocation<String>> results = stringRedisTemplate.opsForGeo().search(
                     geoKey,
                     GeoReference.fromCoordinate(longitude, latitude),
                     new Distance(distance),
@@ -346,7 +346,7 @@ public class AppRedisTemplate {
         }
         
         try {
-            redisTemplate.convertAndSend(channel, message);
+            stringRedisTemplate.convertAndSend(channel, message);
             log.debug("发布消息成功: channel={}, message={}", channel, message);
             return true;
         } catch (Exception e) {
@@ -367,7 +367,7 @@ public class AppRedisTemplate {
         }
         
         try {
-            redisTemplate.execute(new SessionCallback<Void>() {
+            stringRedisTemplate.execute(new SessionCallback<Void>() {
                 @Override
                 public Void execute(@NonNull RedisOperations operations) {
                     operations.multi();
@@ -404,9 +404,9 @@ public class AppRedisTemplate {
         
         try {
             if (expireSeconds > 0) {
-                redisTemplate.opsForValue().set(key, value, expireSeconds, TimeUnit.SECONDS);
+                stringRedisTemplate.opsForValue().set(key, value, expireSeconds, TimeUnit.SECONDS);
             } else {
-                redisTemplate.opsForValue().set(key, value);
+                stringRedisTemplate.opsForValue().set(key, value);
             }
             return true;
         } catch (Exception e) {
@@ -427,7 +427,7 @@ public class AppRedisTemplate {
         }
         
         try {
-            List<String> values = redisTemplate.opsForValue().multiGet(keys);
+            List<String> values = stringRedisTemplate.opsForValue().multiGet(keys);
             return values != null ? values : Collections.emptyList();
         } catch (Exception e) {
             log.error("批量获取值异常: keys={}", keys, e);

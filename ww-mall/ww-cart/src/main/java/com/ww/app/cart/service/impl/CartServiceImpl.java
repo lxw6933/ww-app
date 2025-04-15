@@ -29,7 +29,7 @@ import static com.ww.app.common.utils.CollectionUtils.convertList;
 public class CartServiceImpl implements CartService {
 
     @Resource
-    private RedisTemplate<String, String> stringRedisTemplate;
+    private RedisTemplate<String, Object> redisTemplate;
 
     @Resource
     private CartRedisKeyBuilder cartRedisKeyBuilder;
@@ -68,7 +68,7 @@ public class CartServiceImpl implements CartService {
                 // 合并到当前登录用户购物车
                 tempUserCartList.forEach(tempCartItem -> this.addToCart(tempCartItem.getSkuId(), tempCartItem.getCount()));
                 // 清空临时用户购物车数据
-                stringRedisTemplate.delete(tempUserCartKey);
+                redisTemplate.delete(tempUserCartKey);
             }
             // 获取用户购物车商品数据
             cart.setCartItems(getUserCartItemList());
@@ -83,7 +83,7 @@ public class CartServiceImpl implements CartService {
     public boolean clearUserCart() {
         UserInfoTo userInfoTo = CartInterceptor.cartThreadLocal.get();
         String userCartKey = cartRedisKeyBuilder.buildUserCartKey(userInfoTo.getUserId() != null ? userInfoTo.getUserId() : userInfoTo.getTempUserKey());
-        return Boolean.TRUE.equals(stringRedisTemplate.delete(userCartKey));
+        return Boolean.TRUE.equals(redisTemplate.delete(userCartKey));
     }
 
     @Override
@@ -136,7 +136,7 @@ public class CartServiceImpl implements CartService {
     private BoundHashOperations<String, Object, Object> getUserCart() {
         UserInfoTo userInfoTo = CartInterceptor.cartThreadLocal.get();
         String userCartKey = cartRedisKeyBuilder.buildUserCartKey(userInfoTo.getUserId() != null ? userInfoTo.getUserId() : userInfoTo.getTempUserKey());
-        return stringRedisTemplate.boundHashOps(userCartKey);
+        return redisTemplate.boundHashOps(userCartKey);
     }
 
 }

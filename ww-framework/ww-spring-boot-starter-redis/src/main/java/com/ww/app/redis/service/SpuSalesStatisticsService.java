@@ -4,6 +4,7 @@ import com.ww.app.redis.component.key.SpuRedisKeyBuilder;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnBean;
 import org.springframework.data.redis.core.RedisTemplate;
+import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Component;
 
 import javax.annotation.PreDestroy;
@@ -29,7 +30,7 @@ public class SpuSalesStatisticsService {
     private final ScheduledExecutorService salesDataSyncScheduler = Executors.newScheduledThreadPool(1);
 
     @Resource
-    private RedisTemplate<String, String> redisTemplate;
+    private StringRedisTemplate stringRedisTemplate;
 
     @Resource
     private SpuRedisKeyBuilder spuRedisKeyBuilder;
@@ -45,9 +46,9 @@ public class SpuSalesStatisticsService {
     /**
      * 统计销量数据
      *
-     * @param spuId 商品id
+     * @param spuId     商品id
      * @param channelId 渠道id
-     * @param num 数量【新增：正数  减少：负数】
+     * @param num       数量【新增：正数  减少：负数】
      */
     public void recordSpuSale(Long spuId, Long channelId, int num) {
         salesMap.computeIfAbsent(spuRedisKeyBuilder.buildSpuMapKey(channelId, spuId), k -> new LongAdder()).add(num);
@@ -60,7 +61,7 @@ public class SpuSalesStatisticsService {
         salesMap.forEach((key, longAddr) -> {
             if (longAddr.sum() > 0) {
                 log.info("[{}]销量数据同步到redis, 销量[{}]", key, longAddr.sum());
-                redisTemplate.opsForValue().increment(spuRedisKeyBuilder.buildSpuSaleKey(key), longAddr.sumThenReset());
+                stringRedisTemplate.opsForValue().increment(spuRedisKeyBuilder.buildSpuSaleKey(key), longAddr.sumThenReset());
             }
         });
     }
