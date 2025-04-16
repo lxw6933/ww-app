@@ -7,6 +7,7 @@ import com.ww.app.redis.aspect.ResubmissionAspect;
 import com.ww.app.redis.component.StatisticsRedisComponent;
 import com.ww.app.redis.component.StockRedisComponent;
 import com.ww.app.redis.component.key.*;
+import com.ww.app.redis.component.lua.RedisScriptComponent;
 import com.ww.app.redis.handler.RedisStockHandlerManager;
 import com.ww.app.redis.listener.RedisChannelListener;
 import lombok.NonNull;
@@ -129,6 +130,11 @@ public class RedisAutoConfiguration implements ApplicationContextAware {
     @Bean
     public StockRedisComponent stockRedisComponent() {
         return new StockRedisComponent();
+    }
+
+    @Bean
+    public RedisScriptComponent redisScriptComponent() {
+        return new RedisScriptComponent();
     }
 
     @Bean

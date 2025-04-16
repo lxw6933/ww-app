@@ -27,6 +27,7 @@ import com.ww.app.rabbitmq.RabbitMqPublisher;
 import com.ww.app.rabbitmq.exchange.ExchangeConstant;
 import com.ww.app.rabbitmq.routekey.RouteKeyConstant;
 import com.ww.app.redis.AppRedisTemplate;
+import com.ww.app.redis.annotation.RateLimit;
 import com.ww.app.redis.component.StockRedisComponent;
 import com.ww.app.seckill.component.CodeGeneratorService;
 import com.ww.app.seckill.component.IssueCodeService;
@@ -294,6 +295,7 @@ public class DemoServiceImpl implements DemoService {
     private SensitiveWordBs sensitiveWordBs;
 
     @Override
+    @RateLimit(period = 2, count = 1, message = "访问太频繁")
     @SensitiveWord(content = {"#content.word", "#content.content"}, handlerType = SensitiveWordHandlerType.REPLACE)
     public String sensitiveWord(SensitiveWordBO content) {
         return JSON.toJSONString(content);
