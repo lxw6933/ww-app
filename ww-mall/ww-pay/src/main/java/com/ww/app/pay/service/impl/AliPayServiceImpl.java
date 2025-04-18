@@ -272,25 +272,9 @@ public class AliPayServiceImpl implements AliPayService {
     @Override
     public String returnUrl(HttpServletRequest request) {
         try {
-            // 获取支付宝GET过来反馈信息
-            Map<String, String> map = AliPayApi.toMap(request);
-            for (Map.Entry<String, String> entry : map.entrySet()) {
-                System.out.println(entry.getKey() + " = " + entry.getValue());
-            }
-            boolean verifyResult = aliPayProperties.getUseCer() ?
-                    AlipaySignature.rsaCertCheckV1(map, aliPayProperties.getAliPayCertPath(), Constant.UTF_8, aliPayProperties.getSignType()) :
-                    AlipaySignature.rsaCheckV1(map, aliPayProperties.getPublicKey(), Constant.UTF_8, aliPayProperties.getSignType());
-            if (verifyResult) {
-                // TODO 请在这里加上商户的业务逻辑程序代码
-                System.out.println("return_url 验证成功");
-                return "success";
-            } else {
-                System.out.println("return_url 验证失败");
-                // TODO
-                return "failure";
-            }
-        } catch (AlipayApiException e) {
-            log.error("returnUrl exception", e);
+            return resolveNotifyReq(request, 1);
+        } catch (Exception e) {
+            log.error("支付宝回调异常：", e);
             return "failure";
         }
     }
@@ -298,26 +282,30 @@ public class AliPayServiceImpl implements AliPayService {
     @Override
     public String notifyUrl(HttpServletRequest request) {
         try {
-            // 获取支付宝回调数据
-            Map<String, String> params = AliPayApi.toMap(request);
-            for (Map.Entry<String, String> entry : params.entrySet()) {
-                System.out.println(entry.getKey() + " = " + entry.getValue());
-            }
-            boolean verifyResult = aliPayProperties.getUseCer() ?
-                    AlipaySignature.rsaCertCheckV1(params, aliPayProperties.getAliPayCertPath(), Constant.UTF_8, aliPayProperties.getSignType()) :
-                    AlipaySignature.rsaCheckV1(params, aliPayProperties.getPublicKey(), Constant.UTF_8, aliPayProperties.getSignType());
-            if (verifyResult) {
-                // TODO 请在这里加上商户的业务逻辑程序代码 异步通知可能出现订单重复通知 需要做去重处理
-                System.out.println("notify_url 验证成功succcess");
-                return "success";
-            } else {
-                System.out.println("notify_url 验证失败");
-                // TODO
-                return "failure";
-            }
-        } catch (AlipayApiException e) {
+            return resolveNotifyReq(request, 2);
+        } catch (Exception e) {
             log.error("支付宝回调异常：", e);
             return "failure";
         }
     }
+
+    private String resolveNotifyReq(HttpServletRequest request, int type) throws Exception {
+        String typeStr = type == 1 ? "支付" : "退款";
+        // 获取支付宝回调数据
+        Map<String, String> params = AliPayApi.toMap(request);
+        for (Map.Entry<String, String> entry : params.entrySet()) {
+            log.info("[{}]支付宝回调[{}]=[{}]", typeStr, entry.getKey(), entry.getValue());
+        }
+        boolean verifyResult = aliPayProperties.getUseCer() ?
+                AlipaySignature.rsaCertCheckV1(params, aliPayProperties.getAliPayCertPath(), Constant.UTF_8, aliPayProperties.getSignType()) :
+                AlipaySignature.rsaCheckV1(params, aliPayProperties.getPublicKey(), Constant.UTF_8, aliPayProperties.getSignType());
+        if (verifyResult) {
+            // TODO 请在这里加上商户的业务逻辑程序代码 异步通知可能出现订单重复通知 需要做去重处理
+            return "success";
+        } else {
+            // TODO
+            return "failure";
+        }
+    }
+
 }
