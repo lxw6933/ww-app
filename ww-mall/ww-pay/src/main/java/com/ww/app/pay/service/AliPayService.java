@@ -36,17 +36,17 @@ public interface AliPayService {
     /**
      * 生成支付二维码
      */
-    java.lang.String tradePreCreatePay();
+    String tradePreCreatePay();
 
     /**
      * 支付查询
      */
-    java.lang.String tradeQuery(@RequestParam(required = false, name = "outTradeNo") java.lang.String outTradeNo, @RequestParam(required = false, name = "tradeNo") java.lang.String tradeNo);
+    String tradeQuery(@RequestParam(required = false, name = "outTradeNo") String outTradeNo, @RequestParam(required = false, name = "tradeNo") String tradeNo);
 
     /**
      * 退款
      */
-    java.lang.String refund(java.lang.String outTradeNo, java.lang.String tradeNo);
+    String refund(String outTradeNo, String tradeNo);
 
     /**
      * 后端唤起支付宝应用授权URL并授权
@@ -56,21 +56,21 @@ public interface AliPayService {
     /**
      * 使用 app_auth_code 换取 app_auth_token 用于获取用户信息
      */
-    java.lang.String getAuthToken(java.lang.String appId, java.lang.String appAuthCode);
+    String getAuthToken(String appId, String appAuthCode);
 
     /**
      * 查询支付宝用户信息
      */
-    java.lang.String getAuthTokenUserInfo(java.lang.String appAuthToken);
+    String getAuthTokenUserInfo(String appAuthToken);
 
     /**
      * 支付跳转
      */
-    java.lang.String returnUrl(HttpServletRequest request);
+    String returnUrl(HttpServletRequest request);
 
     /**
      * 支付回调
      */
-    java.lang.String notifyUrl(HttpServletRequest request);
+    String notifyUrl(HttpServletRequest request);
 
 }
