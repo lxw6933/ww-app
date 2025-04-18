@@ -29,10 +29,7 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.nio.charset.StandardCharsets;
 import java.security.cert.X509Certificate;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 /**
  * @author ww
@@ -60,16 +57,16 @@ public class WxPayV3ServiceImpl implements WxPayV3Service {
         // 提前两天检查证书是否有效
         boolean isValid = PayKit.checkCertificateIsValid(certificate, wxPayV3Properties.getMchId(), -2);
         log.info("证书是否可用 {} 证书有效期为 {}", isValid, DateUtil.format(certificate.getNotAfter(), DatePattern.NORM_DATETIME_PATTERN));
-//            System.out.println("输出证书信息:\n" + certificate.toString());
-//            // 输出关键信息，截取部分并进行标记
-//            System.out.println("证书序列号:" + certificate.getSerialNumber().toString(16));
-//            System.out.println("版本号:" + certificate.getVersion());
-//            System.out.println("签发者：" + certificate.getIssuerDN());
-//            System.out.println("有效起始日期：" + certificate.getNotBefore());
-//            System.out.println("有效终止日期：" + certificate.getNotAfter());
-//            System.out.println("主体名：" + certificate.getSubjectDN());
-//            System.out.println("签名算法：" + certificate.getSigAlgName());
-//            System.out.println("签名：" + certificate.getSignature().toString());
+        System.out.println("输出证书信息:\n" + certificate);
+        // 输出关键信息，截取部分并进行标记
+        System.out.println("证书序列号:" + certificate.getSerialNumber().toString(16));
+        System.out.println("版本号:" + certificate.getVersion());
+        System.out.println("签发者：" + certificate.getIssuerDN());
+        System.out.println("有效起始日期：" + certificate.getNotBefore());
+        System.out.println("有效终止日期：" + certificate.getNotAfter());
+        System.out.println("主体名：" + certificate.getSubjectDN());
+        System.out.println("签名算法：" + certificate.getSigAlgName());
+        System.out.println("签名：" + Arrays.toString(certificate.getSignature()));
         return serialNo;
     }
 
@@ -102,14 +99,7 @@ public class WxPayV3ServiceImpl implements WxPayV3Service {
                     AuthTypeEnum.RSA.getCode()
             );
             log.info("商户[{}]外部交易号[{}]支付结果查询响应[{}]", wxPayV3Properties.getMchId(), outTradeNo, response);
-            // 根据证书序列号查询对应的证书来验证签名结果
-//				boolean verifySignature = WxPayKit.verifySignature(response, wxPayV3Bean.getPlatformCertPath());
-            // 微信公钥验证签名
-            boolean verifySignature = WxPayKit.verifyPublicKeySignature(response, wxPayV3Properties.getPlatformCertPath());
-            log.info("微信支付查询verifySignature: {}", verifySignature);
-            if (response.getStatus() == OK && verifySignature) {
-                return response.getBody();
-            }
+            return wxV3PayResultHandle(BasePayApiEnum.ORDER_QUERY_BY_OUT_TRADE_NO, response);
         } catch (Exception e) {
             log.error("外部交易号[{}]支付结果查询异常", outTradeNo, e);
         }
@@ -319,6 +309,7 @@ public class WxPayV3ServiceImpl implements WxPayV3Service {
                     case H5_PAY:
                         return JSONUtil.toJsonStr(body);
                     case REFUND:
+                    case ORDER_QUERY_BY_OUT_TRADE_NO:
                         return body;
                     default:
                         throw new ApiException("暂不支持" + payApiEnum.getDesc());
