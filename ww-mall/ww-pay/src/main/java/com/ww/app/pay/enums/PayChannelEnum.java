@@ -1,8 +1,11 @@
 package com.ww.app.pay.enums;
 
+import lombok.Getter;
+
 /**
  * 支付渠道枚举
  */
+@Getter
 public enum PayChannelEnum {
     /**
      * 支付宝
@@ -23,14 +26,6 @@ public enum PayChannelEnum {
     PayChannelEnum(String code, String desc) {
         this.code = code;
         this.desc = desc;
-    }
-
-    public String getCode() {
-        return code;
-    }
-
-    public String getDesc() {
-        return desc;
     }
 
     /**

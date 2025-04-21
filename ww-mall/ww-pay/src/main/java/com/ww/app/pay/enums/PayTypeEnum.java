@@ -1,8 +1,11 @@
 package com.ww.app.pay.enums;
 
+import lombok.Getter;
+
 /**
  * 支付方式枚举
  */
+@Getter
 public enum PayTypeEnum {
     /**
      * APP支付
@@ -35,14 +38,6 @@ public enum PayTypeEnum {
     PayTypeEnum(String code, String desc) {
         this.code = code;
         this.desc = desc;
-    }
-
-    public String getCode() {
-        return code;
-    }
-
-    public String getDesc() {
-        return desc;
     }
 
     /**

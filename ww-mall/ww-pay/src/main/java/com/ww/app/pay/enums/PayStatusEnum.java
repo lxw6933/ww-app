@@ -1,8 +1,11 @@
 package com.ww.app.pay.enums;
 
+import lombok.Getter;
+
 /**
  * 支付状态枚举
  */
+@Getter
 public enum PayStatusEnum {
     /**
      * 待支付
@@ -39,14 +42,6 @@ public enum PayStatusEnum {
     PayStatusEnum(int code, String desc) {
         this.code = code;
         this.desc = desc;
-    }
-
-    public int getCode() {
-        return code;
-    }
-
-    public String getDesc() {
-        return desc;
     }
 
     /**

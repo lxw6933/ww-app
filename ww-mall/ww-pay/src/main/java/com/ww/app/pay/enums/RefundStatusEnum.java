@@ -1,8 +1,11 @@
 package com.ww.app.pay.enums;
 
+import lombok.Getter;
+
 /**
  * 退款状态枚举
  */
+@Getter
 public enum RefundStatusEnum {
     /**
      * 退款中
@@ -23,14 +26,6 @@ public enum RefundStatusEnum {
     RefundStatusEnum(int code, String desc) {
         this.code = code;
         this.desc = desc;
-    }
-
-    public int getCode() {
-        return code;
-    }
-
-    public String getDesc() {
-        return desc;
     }
 
     /**
