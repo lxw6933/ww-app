@@ -1,0 +1,28 @@
+pay:
+  # 支付宝支付配置
+  alipay:
+    app-id: 2021000123456789
+    private-key: MIIEvQIBADANBgk.....
+    public-key: MIIBIjANBgk.....
+    server-url: https://openapi.alipay.com/gateway.do
+    notify-url: https://api.yourdomain.com/api/payment/callback/alipay
+    return-url: https://www.yourdomain.com/payment/result
+
+  # 微信支付配置
+  wxpay:
+    app-id: wx123456789
+    mch-id: 1234567890
+    api-key: your_api_key
+    notify-url: https://api.yourdomain.com/api/payment/callback/wxpay
+
+  # 微信支付V3配置
+  wxpay-v3:
+    app-id: wx123456789
+    mch-id: 1234567890
+    api-key-v3: your_api_key_v3
+    cert-path: /path/to/cert/apiclient_cert.p12
+    notify-url: https://api.yourdomain.com/api/payment/callback/wxpay_v3
+    domain: https://api.yourdomain.com
+    api-v3-key: your_api_v3_key
+    serial-number: serial_number
+    private-key-path: /path/to/private/key.pem

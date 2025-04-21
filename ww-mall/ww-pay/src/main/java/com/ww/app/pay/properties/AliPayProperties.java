@@ -2,36 +2,57 @@ package com.ww.app.pay.properties;
 
 import lombok.Data;
 import org.springframework.boot.context.properties.ConfigurationProperties;
-import org.springframework.context.annotation.Configuration;
+import org.springframework.stereotype.Component;
 
 /**
- * @author ww
- * @create 2024-06-04- 18:56
- * @description:
+ * 支付宝配置属性
  */
 @Data
-@Configuration
-@ConfigurationProperties(prefix = "alipay")
+@Component
+@ConfigurationProperties(prefix = "pay.alipay")
 public class AliPayProperties {
-
+    /**
+     * 应用ID
+     */
     private String appId;
-
+    
+    /**
+     * 商户私钥
+     */
     private String privateKey;
-
+    
+    /**
+     * 支付宝公钥
+     */
     private String publicKey;
-
-    private String appCertPath;
-
-    private String aliPayCertPath;
-
-    private String aliPayRootCertPath;
-
-    private String serverUrl;
-
-    private String domain;
-
+    
+    /**
+     * 服务器URL
+     */
+    private String serverUrl = "https://openapi.alipay.com/gateway.do";
+    
+    /**
+     * 签名类型
+     */
     private String signType = "RSA2";
-
-    private Boolean useCer = true;
-
+    
+    /**
+     * 编码
+     */
+    private String charset = "UTF-8";
+    
+    /**
+     * 接口版本号
+     */
+    private String version = "1.0";
+    
+    /**
+     * 支付结果异步通知地址
+     */
+    private String notifyUrl;
+    
+    /**
+     * 支付完成后的跳转地址
+     */
+    private String returnUrl;
 }
