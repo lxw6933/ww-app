@@ -1,5 +1,7 @@
 package com.ww.app.redis.component.key;
 
+import cn.hutool.core.util.StrUtil;
+import com.ww.app.redis.key.RedisKeyBuilder;
 import org.springframework.stereotype.Component;
 
 /**
@@ -9,17 +11,17 @@ import org.springframework.stereotype.Component;
  * @author ww
  */
 @Component
-public class ShortCodeRedisKeyBuilder {
+public class ShortCodeRedisKeyBuilder extends RedisKeyBuilder {
 
     /**
      * Redis键前缀 - 最大ID
      */
-    private static final String MAX_ID_KEY_PREFIX = "short:code:segment:maxid:";
+    private static final String MAX_ID_KEY_PREFIX = "short:code:segment:maxid";
 
     /**
      * Redis键前缀 - 分布式锁
      */
-    private static final String LOCK_KEY_PREFIX = "short:code:segment:lock:";
+    private static final String LOCK_KEY_PREFIX = "short:code:segment:lock";
 
     /**
      * 构建最大ID的Redis键
@@ -29,7 +31,7 @@ public class ShortCodeRedisKeyBuilder {
      * @return 最大ID的Redis键
      */
     public String buildMaxIdKey(String businessType, int length) {
-        return MAX_ID_KEY_PREFIX + businessType + ":" + length;
+        return super.getPrefix() + StrUtil.join(SPLIT_ITEM, MAX_ID_KEY_PREFIX, businessType, length);
     }
 
     /**
@@ -40,6 +42,6 @@ public class ShortCodeRedisKeyBuilder {
      * @return 分布式锁的Redis键
      */
     public String buildLockKey(String businessType, int length) {
-        return LOCK_KEY_PREFIX + businessType + ":" + length;
+        return super.getPrefix() + StrUtil.join(SPLIT_ITEM, LOCK_KEY_PREFIX, businessType, length);
     }
 } 
