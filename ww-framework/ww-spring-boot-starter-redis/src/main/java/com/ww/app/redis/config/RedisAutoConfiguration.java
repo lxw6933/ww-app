@@ -4,6 +4,7 @@ import com.ww.app.common.utils.json.JacksonUtils;
 import com.ww.app.redis.AppRedisTemplate;
 import com.ww.app.redis.aspect.RateLimitAspect;
 import com.ww.app.redis.aspect.ResubmissionAspect;
+import com.ww.app.redis.component.ShortCodeRedisComponent;
 import com.ww.app.redis.component.StatisticsRedisComponent;
 import com.ww.app.redis.component.StockRedisComponent;
 import com.ww.app.redis.component.key.*;
@@ -133,6 +134,11 @@ public class RedisAutoConfiguration implements ApplicationContextAware {
     }
 
     @Bean
+    public ShortCodeRedisComponent shortCodeRedisComponent() {
+        return new ShortCodeRedisComponent();
+    }
+
+    @Bean
     public RedisScriptComponent redisScriptComponent() {
         return new RedisScriptComponent();
     }
@@ -155,6 +161,11 @@ public class RedisAutoConfiguration implements ApplicationContextAware {
     @Bean
     public SpuRedisKeyBuilder spuRedisKeyBuilder() {
         return new SpuRedisKeyBuilder();
+    }
+
+    @Bean
+    public ShortCodeRedisKeyBuilder shortCodeRedisKeyBuilder() {
+        return new ShortCodeRedisKeyBuilder();
     }
 
     @Bean
