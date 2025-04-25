@@ -38,7 +38,7 @@ public class HashCartServiceImpl implements HashCartService {
     public CartItem addToCart(Long skuId, Integer num) {
         RMap<String, CartItem> userCart = getUserCart();
         // 是否达到购物车最大容量
-        Assert.isTrue(userCart.size() > MAX_CART_NUMBER, () -> new ApiException("超出购物车最大容量"));
+        Assert.isTrue(userCart.size() < MAX_CART_NUMBER, () -> new ApiException("超出购物车最大容量"));
         // 判断购物车是否存在当前商品
         CartItem cartItem = userCart.get(skuId.toString());
         if (cartItem == null) {
@@ -85,7 +85,7 @@ public class HashCartServiceImpl implements HashCartService {
     public boolean checkItem(Long skuId) {
         RMap<String, CartItem> userCart = getUserCart();
         CartItem userCartItem = userCart.get(skuId.toString());
-        Assert.isNull(userCartItem);
+        Assert.notNull(userCartItem, () -> new ApiException("商品不存在"));
         userCartItem.setChecked(!userCartItem.getChecked());
         userCart.put(skuId.toString(), userCartItem);
         return true;
@@ -95,7 +95,7 @@ public class HashCartServiceImpl implements HashCartService {
     public boolean modifyItemCount(Long skuId, Integer num) {
         RMap<String, CartItem> userCart = getUserCart();
         CartItem userCartItem = userCart.get(skuId.toString());
-        Assert.isNull(userCartItem);
+        Assert.notNull(userCartItem, () -> new ApiException("商品不存在"));
         if (num < 1) {
             return false;
         }
