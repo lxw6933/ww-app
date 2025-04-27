@@ -325,7 +325,8 @@ public class SmsCouponServiceImpl implements SmsCouponService {
         }
         try {
             RSet<String> codeRSet = redissonClient.getSet(couponRedisKeyBuilder.buildCouponCodeKey(smsCouponActivity.getActivityCode(), batchNo));
-            codeRSet.addAll(smsCouponCodes);
+            boolean success = codeRSet.addAll(smsCouponCodes);
+            Assert.isTrue(success, () -> new ApiException(CouponResCodeConstants.COUPON_ERROR));
             // 是否插入mongodb 根据channelId 分code表
             BulkOperations bulkOps = mongoTemplate.bulkOps(BulkOperations.BulkMode.UNORDERED, SmsCouponCode.class, SmsCouponCode.buildCollectionName(smsCouponActivity.getChannelId()));
             bulkOps.insert(smsCouponCodeDocs);
