@@ -1,12 +1,7 @@
 package com.ww.app.web.utils;
 
-import org.apache.commons.lang3.StringUtils;
-import org.springframework.util.DigestUtils;
-
-import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.TreeMap;
 
 /**
  * API安全客户端工具类
@@ -21,20 +16,7 @@ public class ApiSecurityClientUtils {
      * @return 签名
      */
     public static String generateSign(Map<String, String> params) {
-        // 1. 参数排序
-        TreeMap<String, String> sortedParams = new TreeMap<>(params);
-        
-        // 2. 拼接参数
-        StringBuilder sb = new StringBuilder();
-        for (Map.Entry<String, String> entry : sortedParams.entrySet()) {
-            String key = entry.getKey();
-            String value = entry.getValue();
-            if (StringUtils.isNotBlank(value)) {
-                sb.append(key).append("=").append(value).append("&");
-            }
-        }
-        // 3. 生成MD5签名
-        return DigestUtils.md5DigestAsHex(sb.toString().getBytes(StandardCharsets.UTF_8)).toUpperCase();
+        return SignUtils.generateSign(params);
     }
 
     /**
