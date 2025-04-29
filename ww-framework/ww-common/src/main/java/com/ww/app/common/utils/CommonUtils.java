@@ -2,6 +2,7 @@ package com.ww.app.common.utils;
 
 import lombok.extern.slf4j.Slf4j;
 
+import java.lang.reflect.Field;
 import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -55,7 +56,9 @@ public class CommonUtils {
         try {
             if (!records.isEmpty()) {
                 T lastRecord = records.get(records.size() - 1);
-                return lastRecord.getClass().getDeclaredField(cursorField).get(lastRecord);
+                Field field = lastRecord.getClass().getDeclaredField(cursorField);
+                field.setAccessible(true);
+                return field.get(lastRecord);
             }
         } catch (Exception e) {
             log.error("Error retrieving cursor value: {}", e.getMessage());
