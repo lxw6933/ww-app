@@ -59,6 +59,10 @@ public class SmsCouponCode extends BaseDoc {
         return new Query().addCriteria(Criteria.where("code").is(couponCode));
     }
 
+    public static Query buildActivityCodeAndBatchNoQuery(String activityCode, String batchNo) {
+        return new Query().addCriteria(Criteria.where("activityCode").is(activityCode).and("batchNo").is(batchNo));
+    }
+
     public static Update buildCodeUserIdUpdate(Long userId) {
         return new Update().set("userId", userId);
     }

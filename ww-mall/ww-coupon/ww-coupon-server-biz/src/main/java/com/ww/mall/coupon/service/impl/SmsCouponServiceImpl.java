@@ -86,6 +86,9 @@ import static com.ww.app.common.utils.CollectionUtils.filterList;
 public class SmsCouponServiceImpl implements SmsCouponService {
 
     @Resource
+    private SmsCouponService smsCouponService;
+
+    @Resource
     private ThreadPoolExecutor defaultThreadPoolExecutor;
 
     @Resource
@@ -131,6 +134,7 @@ public class SmsCouponServiceImpl implements SmsCouponService {
                 case ADMIN_ISSUE:
                     availableNumber = stockRedisComponent.getStrStock(couponRedisKeyBuilder.buildCouponNumberKey(smsCouponActivity.getActivityCode()));
                     break;
+                case API_ISSUE:
                 case EXPORT_ISSUE:
                     Set<String> couponCodeKeys = getCouponCodeKeys(smsCouponActivity.getActivityCode());
                     for (String key : couponCodeKeys) {
@@ -264,6 +268,7 @@ public class SmsCouponServiceImpl implements SmsCouponService {
             case ADMIN_ISSUE:
                 stockRedisComponent.initStrStock(couponRedisKeyBuilder.buildCouponNumberKey(smsCouponActivity.getActivityCode()), smsCouponActivity.getNumber());
                 break;
+            case API_ISSUE:
             case EXPORT_ISSUE:
                 generateSmsCouponCode(smsCouponActivity, CouponConstant.DEFAULT_BATCH_NO, smsCouponActivity.getNumber());
                 break;
@@ -361,7 +366,7 @@ public class SmsCouponServiceImpl implements SmsCouponService {
                 baseCouponInfo = merchantCouponActivity;
                 break;
         }
-        if (IssueType.EXPORT_ISSUE.equals(baseCouponInfo.getIssueType())) {
+        if (IssueType.EXPORT_ISSUE.equals(baseCouponInfo.getIssueType()) || IssueType.API_ISSUE.equals(baseCouponInfo.getIssueType())) {
             throw new ApiException(GlobalResCodeConstants.ILLEGAL_REQUEST);
         }
         // 活动校验
@@ -497,6 +502,48 @@ public class SmsCouponServiceImpl implements SmsCouponService {
     }
 
     @Override
+    public String issueCouponCode(IssueCouponCodeBO issueCouponCodeBO) {
+        log.info("[API发放]优惠券券码请求参数: {}", issueCouponCodeBO);
+        SmsCouponActivity smsCouponActivity = getSmsCouponActivity(issueCouponCodeBO.getActivityCode(), issueCouponCodeBO.getChannelId());
+        Assert.isTrue(IssueType.API_ISSUE.equals(smsCouponActivity.getIssueType()), () -> new ApiException(CouponResCodeConstants.COUPON_TYPE_EXCEPTION));
+        // 校验活动
+        validSmsCouponActivity(smsCouponActivity);
+        // 判断发放区是否存在
+        String issueCodeKey = couponRedisKeyBuilder.buildCouponBatchCodeIssueKey(issueCouponCodeBO.getActivityCode(), issueCouponCodeBO.getBatchNo());
+        if (!appRedisTemplate.hasKey(issueCodeKey)) {
+            // 不存在[加锁]放入发放区
+            smsCouponService.joinIssueArea(issueCouponCodeBO.getActivityCode(), issueCouponCodeBO.getBatchNo(), issueCouponCodeBO.getChannelId());
+        }
+        // 从发放区进行发放券码
+        RSet<String> issueCodeRSet = redissonClient.getSet(issueCodeKey);
+        String issueCode = issueCodeRSet.removeRandom();
+        Assert.notEmpty(issueCode, () -> new ApiException(CouponResCodeConstants.OUT_OF_ISSUE_STOCK));
+        log.info("[API发放]优惠券券码: {} 发放单号: {}", issueCode, issueCouponCodeBO.getIssueOrderCode());
+        // TODO 记录发放单号和券码关系
+
+        return issueCode;
+    }
+
+    @Override
+    @DistributedLock(operationKey = "issueArea")
+    public void joinIssueArea(String activityCode, String batchNo, Long channelId) {
+        String issueCodeKey = couponRedisKeyBuilder.buildCouponBatchCodeIssueKey(activityCode, batchNo);
+        // double check
+        if (appRedisTemplate.hasKey(issueCodeKey)) {
+            return;
+        }
+        // TODO 判断是否加入发放区，避免多次加入
+
+        // 查询批次下所有code
+        List<SmsCouponCode> smsCouponCodes = mongoTemplate.find(SmsCouponCode.buildActivityCodeAndBatchNoQuery(activityCode, batchNo), SmsCouponCode.class, SmsCouponCode.buildCollectionName(channelId));
+        RSet<String> issueCodeRSet = redissonClient.getSet(issueCodeKey);
+        List<String> codes = smsCouponCodes.stream().map(SmsCouponCode::getCode).collect(Collectors.toList());
+        issueCodeRSet.addAll(codes);
+        // TODO 记录当前批次已经加入发放区
+
+    }
+
+    @Override
     public List<String> queryActivityBatchNoList(SmsCouponActivityBatchNoBO batchNoBO) {
         Set<String> codeKeys = getCouponCodeKeys(batchNoBO.getActivityCode());
         return codeKeys.stream()
@@ -520,6 +567,7 @@ public class SmsCouponServiceImpl implements SmsCouponService {
                     return false;
                 }
                 break;
+            case API_ISSUE:
             case EXPORT_ISSUE:
                 String batchNo = getCouponActivityNextBatchNo(smsCouponActivity.getActivityCode());
                 generateCodeNumber = generateSmsCouponCode(smsCouponActivity, batchNo, addCouponCodeBO.getNumber());

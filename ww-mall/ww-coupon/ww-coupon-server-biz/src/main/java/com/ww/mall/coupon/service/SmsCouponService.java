@@ -86,6 +86,23 @@ public interface SmsCouponService {
     boolean convertCoupon(String couponCode);
 
     /**
+     * 发放优惠券券码
+     *
+     * @param issueCouponCodeBO 发放参数
+     * @return 券码
+     */
+    String issueCouponCode(IssueCouponCodeBO issueCouponCodeBO);
+
+    /**
+     * 将活动批次下的券码加入发放区
+     *
+     * @param activityCode 活动编码
+     * @param batchNo 批次号
+     * @param channelId 渠道id
+     */
+    void joinIssueArea(String activityCode, String batchNo, Long channelId);
+
+    /**
      * 获取活动现有所有批次号
      *
      * @param batchNoBO 批次号条件

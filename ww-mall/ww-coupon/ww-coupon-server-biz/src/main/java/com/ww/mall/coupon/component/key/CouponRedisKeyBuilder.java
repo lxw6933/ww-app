@@ -16,6 +16,19 @@ public class CouponRedisKeyBuilder extends RedisKeyBuilder {
     private static final String COUPON_NUMBER_KEY = "coupon_number";
     private static final String COUPON_FREEZE_KEY = "coupon_freeze";
 
+    private static final String COUPON_BATCH_CODE_ISSUE_KEY = "coupon_batch_code_issue";
+
+    /**
+     * 券码发放区key
+     *
+     * @param activityCode 活动编码
+     * @param batchNo 批次号
+     * @return key
+     */
+    public String buildCouponBatchCodeIssueKey(String activityCode, String batchNo) {
+        return super.getPrefix() + StrUtil.join(SPLIT_ITEM, COUPON_BATCH_CODE_ISSUE_KEY, activityCode, batchNo);
+    }
+
     public String buildCouponCodePrefixKey() {
         return super.getPrefix() + COUPON_CODE_KEY + SPLIT_ITEM;
     }

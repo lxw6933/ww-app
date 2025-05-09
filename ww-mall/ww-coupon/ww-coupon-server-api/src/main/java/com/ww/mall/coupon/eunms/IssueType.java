@@ -14,6 +14,7 @@ public enum IssueType {
 
     RECEIVE("用户领取"),
     ADMIN_ISSUE("后台发放"),
+    API_ISSUE("api发放"),
     EXPORT_ISSUE("导出发放");
 
     private final String text;

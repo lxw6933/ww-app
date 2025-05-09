@@ -55,6 +55,10 @@ public class AppRedisTemplate {
     @Resource
     private GeoRedisKeyBuilder geoRedisKeyBuilder;
 
+    public boolean hasKey(String key) {
+        return stringRedisTemplate.hasKey(key);
+    }
+
     /**
      * 批量根据正则表达式扫描匹配的key
      *
