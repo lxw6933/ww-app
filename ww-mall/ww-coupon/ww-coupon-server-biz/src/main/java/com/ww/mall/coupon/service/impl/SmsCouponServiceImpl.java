@@ -10,6 +10,7 @@ import cn.hutool.core.util.StrUtil;
 import cn.hutool.core.util.ZipUtil;
 import cn.hutool.crypto.digest.MD5;
 import com.alibaba.fastjson.JSON;
+import com.google.common.collect.Lists;
 import com.mongodb.bulk.BulkWriteResult;
 import com.mongodb.client.result.UpdateResult;
 import com.ww.app.common.common.AppPageResult;
@@ -35,10 +36,7 @@ import com.ww.mall.coupon.component.SmsCouponStatisticsComponent;
 import com.ww.mall.coupon.component.key.CouponRedisKeyBuilder;
 import com.ww.mall.coupon.constant.CouponConstant;
 import com.ww.mall.coupon.constant.CouponLuaConstant;
-import com.ww.mall.coupon.entity.MerchantCouponActivity;
-import com.ww.mall.coupon.entity.SmsCouponActivity;
-import com.ww.mall.coupon.entity.SmsCouponCode;
-import com.ww.mall.coupon.entity.SmsCouponRecord;
+import com.ww.mall.coupon.entity.*;
 import com.ww.mall.coupon.entity.base.BaseCouponInfo;
 import com.ww.mall.coupon.enums.CouponResCodeConstants;
 import com.ww.mall.coupon.eunms.CouponDiscountType;
@@ -84,6 +82,8 @@ import static com.ww.app.common.utils.CollectionUtils.filterList;
 @Slf4j
 @Service
 public class SmsCouponServiceImpl implements SmsCouponService {
+
+    private static final int BATCH_NUMBER = 1000;
 
     @Resource
     private SmsCouponService smsCouponService;
@@ -519,8 +519,6 @@ public class SmsCouponServiceImpl implements SmsCouponService {
         String issueCode = issueCodeRSet.removeRandom();
         Assert.notEmpty(issueCode, () -> new ApiException(CouponResCodeConstants.OUT_OF_ISSUE_STOCK));
         log.info("[API发放]优惠券券码: {} 发放单号: {}", issueCode, issueCouponCodeBO.getIssueOrderCode());
-        // TODO 记录发放单号和券码关系
-
         return issueCode;
     }
 
@@ -530,17 +528,39 @@ public class SmsCouponServiceImpl implements SmsCouponService {
         String issueCodeKey = couponRedisKeyBuilder.buildCouponBatchCodeIssueKey(activityCode, batchNo);
         // double check
         if (appRedisTemplate.hasKey(issueCodeKey)) {
+            log.info("活动[{}]批次[{}]已被其他线程加入发放区，直接发放券码", activityCode, batchNo);
             return;
         }
-        // TODO 判断是否加入发放区，避免多次加入
-
+        // 判断是否已经发放完毕
+        boolean exists = mongoTemplate.exists(SmsCouponIssueAreaRecord.buildActivityCodeBatchNoQuery(activityCode, batchNo), SmsCouponIssueAreaRecord.class);
+        if (exists) {
+            log.info("活动[{}]批次[{}]已全部发完", activityCode, batchNo);
+            return;
+        }
         // 查询批次下所有code
         List<SmsCouponCode> smsCouponCodes = mongoTemplate.find(SmsCouponCode.buildActivityCodeAndBatchNoQuery(activityCode, batchNo), SmsCouponCode.class, SmsCouponCode.buildCollectionName(channelId));
-        RSet<String> issueCodeRSet = redissonClient.getSet(issueCodeKey);
+        if (CollectionUtil.isEmpty(smsCouponCodes)) {
+            throw new ApiException("当前活动批次券码没有券码");
+        }
         List<String> codes = smsCouponCodes.stream().map(SmsCouponCode::getCode).collect(Collectors.toList());
-        issueCodeRSet.addAll(codes);
-        // TODO 记录当前批次已经加入发放区
-
+        List<List<String>> codePartitionList = Lists.partition(codes, BATCH_NUMBER);
+        RSet<String> issueCodeRSet = redissonClient.getSet(issueCodeKey);
+        codePartitionList.forEach(issueCodeRSet::addAll);
+        int issueCodeNumber = issueCodeRSet.size();
+        if (issueCodeNumber < 1) {
+            throw new ApiException("当前活动批次发放券码异常，请联系客服人员");
+        }
+        if (issueCodeNumber != codes.size()) {
+            log.error("活动[{}]批次[{}]券码加入发放区数量不一致", activityCode, batchNo);
+        }
+        log.info("活动[{}]批次[{}]券码数量[{}]加入发放区[{}]数量", activityCode, batchNo, codes.size(), issueCodeNumber);
+        // 记录加入发放区记录
+        SmsCouponIssueAreaRecord issueAreaRecord = new SmsCouponIssueAreaRecord();
+        issueAreaRecord.setActivityCode(activityCode);
+        issueAreaRecord.setBatchNo(batchNo);
+        issueAreaRecord.setCodeNumber(codes.size());
+        issueAreaRecord.setIssueAreaNumber(issueCodeNumber);
+        mongoTemplate.save(issueAreaRecord);
     }
 
     @Override
