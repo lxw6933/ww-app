@@ -2,6 +2,7 @@ package com.ww.mall.coupon.service.impl;
 
 import cn.hutool.core.bean.BeanUtil;
 import cn.hutool.core.collection.CollectionUtil;
+import cn.hutool.core.date.DatePattern;
 import cn.hutool.core.date.DateUtil;
 import cn.hutool.core.io.FileUtil;
 import cn.hutool.core.lang.Assert;
@@ -270,7 +271,7 @@ public class SmsCouponServiceImpl implements SmsCouponService {
                 break;
             case API_ISSUE:
             case EXPORT_ISSUE:
-                generateSmsCouponCode(smsCouponActivity, CouponConstant.DEFAULT_BATCH_NO, smsCouponActivity.getNumber());
+                generateSmsCouponCode(smsCouponActivity, buildBatchNo(CouponConstant.DEFAULT_BATCH_NO), smsCouponActivity.getNumber());
                 break;
             default:
         }
@@ -567,7 +568,7 @@ public class SmsCouponServiceImpl implements SmsCouponService {
     public List<String> queryActivityBatchNoList(SmsCouponActivityBatchNoBO batchNoBO) {
         Set<String> codeKeys = getCouponCodeKeys(batchNoBO.getActivityCode());
         return codeKeys.stream()
-                .map(res -> String.valueOf(CommonUtils.extractIdFromKey(res)))
+                .map(CommonUtils::extractIdFromKey)
                 .collect(Collectors.toList());
     }
 
@@ -630,13 +631,18 @@ public class SmsCouponServiceImpl implements SmsCouponService {
         while (iterator.hasNext()) {
             String key = iterator.next();
             // 提取 key 中的编号部分
-            int id = CommonUtils.extractIdFromKey(key);
+            String batchNo = CommonUtils.extractIdFromKey(key);
+            int id = Integer.parseInt(batchNo.split(StrUtil.DASHED)[1]);
             if (id > maxId) {
                 maxId = id;
             }
         }
         log.info("获取优惠券活动最新批次号[{}]下一个批次号[{}]", maxId, maxId + 1);
-        return String.valueOf(maxId + 1);
+        return buildBatchNo(maxId + 1);
+    }
+
+    private String buildBatchNo(int no) {
+        return StrUtil.join(StrUtil.DASHED, DateUtil.format(new Date(), DatePattern.PURE_DATE_PATTERN), no);
     }
 
     /**
