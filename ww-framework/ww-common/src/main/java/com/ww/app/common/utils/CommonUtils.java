@@ -17,7 +17,7 @@ public class CommonUtils {
 
     private CommonUtils() {}
 
-    private static final Pattern keyPattern = Pattern.compile(":(\\d+-\\d+)$");
+    private static final Pattern keyPattern = Pattern.compile(":([^:]+)$");
 
     /**
      * 从 key 中提取编号部分
