@@ -1,5 +1,6 @@
 package com.ww.mall.coupon.view.vo;
 
+import com.ww.mall.coupon.constant.CouponConstant;
 import com.ww.mall.coupon.eunms.EffectTimeType;
 import com.ww.mall.coupon.view.vo.base.BaseCouponInfoVO;
 import lombok.Data;
@@ -36,11 +37,16 @@ public class ProductCouponActivityVO extends BaseCouponInfoVO {
     /**
      * 领取多少天后生效【根据领取时间计算】
      */
-    private int receiveAfterEffectDay;
+    private int receiveDay;
+
+    /**
+     * 有效单位【天，分】【根据领取时间计算】
+     */
+    private CouponConstant.EffectTimeUnit effectTimeUnit;
 
     /**
      * 多少天的有效期【根据领取时间计算】
      */
-    private int effectDay;
+    private int effectNumber;
 
 }

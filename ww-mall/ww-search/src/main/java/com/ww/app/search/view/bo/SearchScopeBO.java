@@ -22,7 +22,7 @@ public class SearchScopeBO implements BaseSearch {
     /**
      * 是否包含id集合
      */
-    private boolean isContain = true;
+    private boolean contain = true;
 
     /**
      * id集合

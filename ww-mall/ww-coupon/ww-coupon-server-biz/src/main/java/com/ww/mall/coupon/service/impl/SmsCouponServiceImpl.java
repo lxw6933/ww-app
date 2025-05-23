@@ -152,7 +152,7 @@ public class SmsCouponServiceImpl implements SmsCouponService {
             int receiveNumber = smsCouponStatisticsComponent.getStatisticsReceiveMap().getOrDefault(vo.getActivityCode(), new LongAdder()).intValue();
             int useNumber = smsCouponStatisticsComponent.getStatisticsUseMap().getOrDefault(vo.getActivityCode(), new LongAdder()).intValue();
             vo.setReceiveNumber(vo.getReceiveNumber() + receiveNumber);
-            vo.setUsedNumber(vo.getUsedNumber() + useNumber);
+            vo.setUseNumber(vo.getUseNumber() + useNumber);
             return vo;
         });
     }
@@ -975,7 +975,7 @@ public class SmsCouponServiceImpl implements SmsCouponService {
                 }).map(res -> BeanUtil.toBean(res, ProductCouponActivityVO.class))
                 .collect(Collectors.toList());
         sortedIntegralCouponActivityTagList.addAll(sortedCashCouponActivityTagList);
-        return sortedCashCouponActivityTagList;
+        return sortedIntegralCouponActivityTagList;
     }
 
     /**
@@ -1065,7 +1065,7 @@ public class SmsCouponServiceImpl implements SmsCouponService {
 
     private boolean orderIntegralCouponInfoHandler(MemberCouponCenterVO res, List<OrderMemberSmsCouponBO> targetList, OrderMemberCouponVO vo) {
         int achieveIntegral = res.getAchieveAmount().intValue();
-        int orderProductTotalIntegral = targetList.stream().map(OrderMemberSmsCouponBO::getRealIntegral).reduce(Integer::sum).orElse(0);
+        int orderProductTotalIntegral = targetList.stream().map(e -> e.getRealIntegral() * e.getNumber()).reduce(Integer::sum).orElse(0);
         if (orderProductTotalIntegral == 0) {
             vo.setDisabled(CouponConstant.Disabled.DISCOUNT_ZERO);
             return false;
@@ -1083,7 +1083,7 @@ public class SmsCouponServiceImpl implements SmsCouponService {
 
     private boolean orderCashCouponInfoHandler(MemberCouponCenterVO res, List<OrderMemberSmsCouponBO> targetList, OrderMemberCouponVO vo) {
         BigDecimal achieveAmount = res.getAchieveAmount();
-        BigDecimal orderProductTotalAmount = targetList.stream().map(OrderMemberSmsCouponBO::getRealAmount).reduce(BigDecimal::add).orElse(BigDecimal.ZERO);
+        BigDecimal orderProductTotalAmount = targetList.stream().map(e -> e.getRealAmount().multiply(BigDecimal.valueOf(e.getNumber()))).reduce(BigDecimal::add).orElse(BigDecimal.ZERO);
         if (orderProductTotalAmount.compareTo(BigDecimal.ZERO) == 0) {
             vo.setDisabled(CouponConstant.Disabled.DISCOUNT_ZERO);
             return false;

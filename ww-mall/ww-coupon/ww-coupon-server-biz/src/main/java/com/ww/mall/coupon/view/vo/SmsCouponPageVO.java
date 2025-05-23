@@ -24,22 +24,22 @@ public class SmsCouponPageVO extends BaseCouponInfoVO {
     /**
      * 初始化优惠券数量
      */
-    private Integer number;
+    private int number;
 
     /**
      * 优惠券剩余可用数量
      */
-    private Integer availableNumber;
+    private int availableNumber;
 
     /**
      * 已领取数量
      */
-    private Integer receiveNumber;
+    private int receiveNumber;
 
     /**
      * 已使用数量
      */
-    private Integer usedNumber;
+    private int useNumber;
 
     /**
      * 开始领取时间

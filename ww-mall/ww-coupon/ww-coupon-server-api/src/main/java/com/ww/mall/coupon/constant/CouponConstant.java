@@ -30,6 +30,13 @@ public class CouponConstant {
         EXPIRE
     }
 
+    public enum ActivityStatus {
+        ALL,
+        WAIT_EFFECTIVE,
+        EFFECTIVE,
+        EXPIRED,
+    }
+
     public enum Disabled {
         // 未到可用时间
         UN_REACHED_TIME,

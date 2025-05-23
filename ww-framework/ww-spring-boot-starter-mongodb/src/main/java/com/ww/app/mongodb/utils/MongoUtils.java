@@ -106,7 +106,15 @@ public class MongoUtils {
 
         // 添加游标条件
         if (cursorValue != null) {
-            query.addCriteria(Criteria.where(cursorField).gt(new ObjectId(cursorValue.toString())));
+            ObjectId target = new ObjectId(cursorValue.toString());
+            switch (sort) {
+                case ASC:
+                    query.addCriteria(Criteria.where(cursorField).gt(target));
+                    break;
+                case DESC:
+                    query.addCriteria(Criteria.where(cursorField).lt(target));
+                    break;
+            }
         }
 
         // 添加字段过滤

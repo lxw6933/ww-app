@@ -1,6 +1,9 @@
 package com.ww.mall.coupon.view.vo;
 
+import com.ww.mall.coupon.constant.CouponConstant;
 import com.ww.mall.coupon.eunms.ApplyProductRangeType;
+import com.ww.mall.coupon.eunms.EffectTimeType;
+import com.ww.mall.coupon.eunms.LimitReceiveTimeType;
 import com.ww.mall.coupon.view.vo.base.BaseCouponInfoVO;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
@@ -42,5 +45,62 @@ public class CouponActivityCenterVO extends BaseCouponInfoVO {
      * 领取比例
      */
     private BigDecimal ratio;
+
+    /**
+     * 总数量
+     */
+    private int totalNumber;
+
+    /**
+     * 领取数量
+     */
+    private int receiveNumber;
+
+    /**
+     * 可领取数量
+     */
+    private int availableNumber;
+
+    /**
+     * 领取限制类型
+     */
+    private LimitReceiveTimeType limitReceiveTimeType;
+
+    /**
+     * 领取限制数量
+     */
+    private int limitReceiveNumber;
+
+    /**
+     * 优惠券领取后有效期计算类型
+     * [固定有效期]
+     * [根据领取时间计算]
+     */
+    private EffectTimeType effectTimeType;
+
+    /**
+     * 优惠券有效开始时间【固定有效期】
+     */
+    private Date useStartTime;
+
+    /**
+     * 优惠券有效结束时间【固定有效期】
+     */
+    private Date useEndTime;
+
+    /**
+     * 领取多少天后生效【根据领取时间计算】
+     */
+    private int receiveDay;
+
+    /**
+     * 有效单位【天，分】【根据领取时间计算】
+     */
+    private CouponConstant.EffectTimeUnit effectTimeUnit;
+
+    /**
+     * 有效期【根据领取时间计算】
+     */
+    private int effectNumber;
 
 }

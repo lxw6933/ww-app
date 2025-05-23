@@ -1,5 +1,6 @@
 package com.ww.mall.coupon.view.bo;
 
+import com.ww.app.common.utils.SpecialCharacterUtil;
 import com.ww.app.mongodb.common.AbstractMongoPage;
 import com.ww.mall.coupon.constant.CouponConstant;
 import com.ww.mall.coupon.entity.SmsCouponActivity;
@@ -8,6 +9,8 @@ import lombok.Data;
 import lombok.EqualsAndHashCode;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.data.mongodb.core.query.Criteria;
+
+import java.util.Date;
 
 import static com.ww.app.common.constant.Constant.MONGO_PRIMARY_KEY;
 
@@ -55,15 +58,23 @@ public class SmsCouponPageBO extends AbstractMongoPage<SmsCouponActivity> {
      */
     private CouponDiscountType couponDiscountType;
 
+    /**
+     * 活动状态
+     */
+    private CouponConstant.ActivityStatus activityStatus;
+
     @Override
     public Criteria buildQuery() {
+        Date now = new Date();
         Criteria criteria = new Criteria();
         criteria.and("channelId").is(this.channelId);
         if (StringUtils.isNotBlank(this.id)) {
             criteria.and(MONGO_PRIMARY_KEY).is(this.id);
         }
         if (StringUtils.isNotBlank(this.name)) {
-            criteria.and("name").is(this.name);
+            String escapedKeyword = SpecialCharacterUtil.escapeSpecialCharacters(this.name);
+            String pattern = ".*" + escapedKeyword + ".*";
+            criteria.and("name").regex(pattern, "i");
         }
         if (StringUtils.isNotBlank(this.activityCode)) {
             criteria.and("activityCode").is(this.activityCode);
@@ -83,6 +94,20 @@ public class SmsCouponPageBO extends AbstractMongoPage<SmsCouponActivity> {
             case CASH:
                 criteria.and("couponDiscountType").in(CouponDiscountType.FULL_DISCOUNT, CouponDiscountType.FULL_REDUCTION, CouponDiscountType.DIRECT_REDUCTION);
                 break;
+        }
+        switch (activityStatus) {
+            case WAIT_EFFECTIVE:
+                criteria.and("receiveStartTime").lt(now);
+                break;
+            case EFFECTIVE:
+                criteria.and("receiveStartTime").lte(now)
+                        .and("receiveEndTime").gte(now);
+                break;
+            case EXPIRED:
+                criteria.and("receiveEndTime").lt(now);
+                break;
+            case ALL:
+            default:
         }
         return criteria;
     }

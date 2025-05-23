@@ -122,6 +122,8 @@ public class CouponComponent {
         if (updateMemberCouponStatus(channelId, couponRecordId, CouponStatus.USED)) {
             SmsCouponRecord couponRecord = mongoTemplate.findOne(BaseDoc.buildIdQuery(couponRecordId), SmsCouponRecord.class, SmsCouponRecord.buildCollectionName(channelId));
             smsCouponStatisticsComponent.statisticsCouponUse(couponRecord.getActivityCode());
+            // 清除redis数据
+            unFreezeMemberCoupon(couponRecordId);
         }
     }
 
