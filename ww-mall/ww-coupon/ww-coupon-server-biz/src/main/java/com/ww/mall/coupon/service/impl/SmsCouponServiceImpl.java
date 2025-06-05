@@ -311,8 +311,6 @@ public class SmsCouponServiceImpl implements SmsCouponService {
         return updateResult.getModifiedCount() == 1;
     }
 
-    private final static MD5 md5 = MD5.create();
-
     /**
      * 生成平台优惠券券码
      *
@@ -325,7 +323,7 @@ public class SmsCouponServiceImpl implements SmsCouponService {
         Set<String> smsCouponCodes = new HashSet<>();
         while (smsCouponCodes.size() < codeNumber) {
             String uuid = UUID.randomUUID().toString(true);
-            String code = md5.digestHex16(uuid);
+            String code = MD5.create().digestHex16(uuid);
             smsCouponCodes.add(code);
             smsCouponCodeDocs.add(new SmsCouponCode(smsCouponActivity.getActivityCode(), batchNo, code));
         }

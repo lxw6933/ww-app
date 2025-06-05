@@ -14,8 +14,6 @@ public class PasswordUtil {
 
     private static final int WORKLOAD = 12;
 
-    private static final MD5 md5 = MD5.create();
-
     private PasswordUtil() {}
 
     /**
@@ -25,7 +23,7 @@ public class PasswordUtil {
      * @return 重置密码
      */
     public static String resetPassword(String resetSalt) {
-        String md5Password = md5.digestHex(DEFAULT_PASSWORD);
+        String md5Password = MD5.create().digestHex(DEFAULT_PASSWORD);
         return generatePassword(md5Password, resetSalt);
     }
 
@@ -66,7 +64,7 @@ public class PasswordUtil {
     public static void main(String[] args) {
         String userPassword = "admin";
 
-        String plainPassword = md5.digestHex(userPassword);
+        String plainPassword = MD5.create().digestHex(userPassword);
         String salt = generateSalt();
 
         String hashedPassword = PasswordUtil.generatePassword(plainPassword, salt);
@@ -75,13 +73,13 @@ public class PasswordUtil {
         System.out.println("salt：" + salt);
         System.out.println("加密后的密码: " + hashedPassword);
 
-        boolean isMatch = PasswordUtil.checkPassword(md5.digestHex("admin"), salt + hashedPassword);
+        boolean isMatch = PasswordUtil.checkPassword(MD5.create().digestHex("admin"), salt + hashedPassword);
         System.out.println("密码匹配: " + isMatch);
 
         System.out.println("====================");
         String resetSalt = generateSalt();
         String res = resetPassword(resetSalt);
-        System.out.println("重置结果：" + checkPassword(md5.digestHex(DEFAULT_PASSWORD), resetSalt + res));
+        System.out.println("重置结果：" + checkPassword(MD5.create().digestHex(DEFAULT_PASSWORD), resetSalt + res));
     }
 
 }
