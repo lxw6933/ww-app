@@ -1,0 +1,27 @@
+spring:
+  application:
+    name: ww-lottery
+  profiles:
+    active: dev
+  cloud:
+    sentinel:
+      transport:
+        dashboard: localhost:8000
+    nacos:
+      discovery:
+        server-addr: 172.28.174.84:8848
+        namespace: ww-${spring.profiles.active}
+        username: nacos
+        password: nacos
+      config:
+        server-addr: ${spring.cloud.nacos.discovery.server-addr}
+        namespace: ww-${spring.profiles.active}
+        username: ${spring.cloud.nacos.discovery.username}
+        password: ${spring.cloud.nacos.discovery.password}
+        file-extension: yml
+        shared-configs:
+          - data-Id: ww-common.yml
+            refresh: true
+          - data-id: sentinel-rules.yml
+            refresh: true
+
