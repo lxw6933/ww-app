@@ -6,11 +6,11 @@ import com.ww.app.lottery.domain.model.entity.PrizeConfig;
 import com.ww.app.lottery.domain.result.LotteryResult;
 import com.ww.app.lottery.domain.strategy.LotteryStrategy;
 import com.ww.app.lottery.enums.LotteryStrategyType;
-import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 
-import java.util.*;
+import java.util.Date;
+import java.util.List;
 import java.util.concurrent.ThreadLocalRandom;
 
 @Slf4j
@@ -28,14 +28,14 @@ public class WeightRandomLotteryStrategy implements LotteryStrategy {
             log.error("奖品总概率大于100");
             throw new IllegalArgumentException("Total probability cannot exceed 100%. Current total: " + totalProbability);
         }
-        List<ProbabilityRange> probabilityRanges = buildProbabilityRanges(lotteryActivity.getPrizes());
+        List<LotteryActivity.ProbabilityRange> probabilityRanges = lotteryActivity.getProbabilityRanges();
         // 生成[0,100)之间的随机数
         double randomValue = ThreadLocalRandom.current().nextDouble() * 100.0;
         // 检查是否落在某个区间
         PrizeConfig prize = null;
-        for (ProbabilityRange range : probabilityRanges) {
-            if (randomValue >= range.start && randomValue < range.end) {
-                prize = range.prize;
+        for (LotteryActivity.ProbabilityRange range : probabilityRanges) {
+            if (randomValue >= range.getStart() && randomValue < range.getEnd()) {
+                prize = range.getPrize();
                 break;
             }
         }
@@ -59,43 +59,9 @@ public class WeightRandomLotteryStrategy implements LotteryStrategy {
         return lotteryResult;
     }
 
-    /**
-     * 构建奖品轮盘概率区间
-     *
-     * @param prizes 奖品
-     * @return 奖品轮盘概率区间
-     */
-    private List<ProbabilityRange> buildProbabilityRanges(List<PrizeConfig> prizes) {
-        List<ProbabilityRange> probabilityRanges = new ArrayList<>();
-        double currentStart = 0.0;
-
-        for (PrizeConfig prize : prizes) {
-            double end = currentStart + prize.getProbability();
-            probabilityRanges.add(new ProbabilityRange(prize, currentStart, end));
-            currentStart = end;
-        }
-        return probabilityRanges;
-    }
-
     @Override
     public LotteryStrategyType support() {
         return LotteryStrategyType.WEIGHT;
-    }
-
-    /**
-     * 概率区间类
-     */
-    @Data
-    private static class ProbabilityRange {
-        PrizeConfig prize;
-        double start;
-        double end;
-
-        ProbabilityRange(PrizeConfig prize, double start, double end) {
-            this.prize = prize;
-            this.start = start;
-            this.end = end;
-        }
     }
 
 }

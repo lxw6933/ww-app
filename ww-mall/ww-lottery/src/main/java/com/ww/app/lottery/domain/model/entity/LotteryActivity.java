@@ -10,6 +10,7 @@ import org.springframework.data.mongodb.core.mapping.Document;
 import org.springframework.data.mongodb.core.query.Criteria;
 import org.springframework.data.mongodb.core.query.Query;
 
+import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 import java.util.Map;
@@ -51,6 +52,9 @@ public class LotteryActivity extends BaseDoc {
     /** 奖品列表配置 */
     private List<PrizeConfig> prizes;
 
+    /** 奖品概率分布 */
+    private List<ProbabilityRange> probabilityRanges;
+
     /** 活动规则 */
     private LotteryRuleConfig lotteryRuleConfig;
 
@@ -71,6 +75,39 @@ public class LotteryActivity extends BaseDoc {
         }
         if (!this.status) {
             throw new LotteryException(LotteryResult.ResultCode.ACTIVITY_STATUS_ERROR);
+        }
+    }
+
+    /**
+     * 构建奖品轮盘概率区间
+     *
+     * @return 奖品轮盘概率区间
+     */
+    private List<ProbabilityRange> buildProbabilityRanges() {
+        List<ProbabilityRange> probabilityRanges = new ArrayList<>();
+        double currentStart = 0.0;
+
+        for (PrizeConfig prize : this.prizes) {
+            double end = currentStart + prize.getProbability();
+            probabilityRanges.add(new ProbabilityRange(prize, currentStart, end));
+            currentStart = end;
+        }
+        return probabilityRanges;
+    }
+
+    /**
+     * 概率区间类
+     */
+    @Data
+    public static class ProbabilityRange {
+        PrizeConfig prize;
+        double start;
+        double end;
+
+        ProbabilityRange(PrizeConfig prize, double start, double end) {
+            this.prize = prize;
+            this.start = start;
+            this.end = end;
         }
     }
 
