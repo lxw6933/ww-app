@@ -19,7 +19,7 @@ public class WeightRandomLotteryStrategy implements LotteryStrategy {
 
     @Override
     public LotteryResult draw(LotteryContext context) {
-        LotteryActivity lotteryActivity = getLotteryActivity(context.getActivityCode());
+        LotteryActivity lotteryActivity = context.getParamValue(LotteryContext.ACTIVITY_KEY, LotteryActivity.class);
         // 计算总权重
         double totalProbability = lotteryActivity.getPrizes().stream()
                 .mapToDouble(PrizeConfig::getProbability)

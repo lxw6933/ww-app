@@ -55,6 +55,7 @@ public class LotteryServiceImpl implements LotteryService {
             Assert.notNull(lotteryActivity, () -> new LotteryException(LotteryResult.ResultCode.ACTIVITY_NOT_FOUND));
             // 活动校验
             lotteryActivity.validateActivity();
+            context.buildParam(LotteryContext.ACTIVITY_KEY, lotteryActivity);
             // TODO 用户抽奖次数校验
 
             // 获取抽奖活动策略
@@ -62,7 +63,7 @@ public class LotteryServiceImpl implements LotteryService {
             // 抽奖
             LotteryResult result = lotteryStrategy.draw(context);
             // 抽奖结果处理
-            processLotteryResult(result, context, lotteryActivity);
+            processLotteryResult(result, context);
             return result;
         } catch (LotteryException e) {
             return buildFailedResult(e.getMessage(), LotteryResult.ResultCode.FAIL);
@@ -72,7 +73,7 @@ public class LotteryServiceImpl implements LotteryService {
         }
     }
 
-    private void processLotteryResult(LotteryResult result, LotteryContext context, LotteryActivity activity) {
+    private void processLotteryResult(LotteryResult result, LotteryContext context) {
         // TODO 记录抽奖次数
 
         if (result.isSuccess()) {
