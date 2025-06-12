@@ -29,8 +29,8 @@ public class WeightRandomLotteryStrategy implements LotteryStrategy {
             throw new IllegalArgumentException("Total probability cannot exceed 100%. Current total: " + totalProbability);
         }
         List<LotteryActivity.ProbabilityRange> probabilityRanges = lotteryActivity.getProbabilityRanges();
-        // 生成[0,10000)之间的随机数
-        double randomValue = ThreadLocalRandom.current().nextDouble() * 10000.0;
+        // 生成[0,100)之间的随机数
+        double randomValue = ThreadLocalRandom.current().nextDouble() * 100.0;
         // 检查是否落在某个区间
         PrizeConfig prize = null;
         for (LotteryActivity.ProbabilityRange range : probabilityRanges) {
