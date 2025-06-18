@@ -64,6 +64,8 @@
         <springdoc.version>1.7.0</springdoc.version>
         <!-- pool -->
         <commons.pool.version>2.11.1</commons.pool.version>
+        <!-- captcha -->
+        <anji-plus-captcha.version>1.4.0</anji-plus-captcha.version>
     </properties>
 
     <dependencyManagement>
@@ -404,6 +406,12 @@
                 <groupId>org.apache.commons</groupId>
                 <artifactId>commons-pool2</artifactId>
                 <version>${commons.pool.version}</version>
+            </dependency>
+            <!-- captcha component -->
+            <dependency>
+                <groupId>com.anji-plus</groupId>
+                <artifactId>captcha-spring-boot-starter</artifactId>
+                <version>${anji-plus-captcha.version}</version>
             </dependency>
         </dependencies>
     </dependencyManagement>
