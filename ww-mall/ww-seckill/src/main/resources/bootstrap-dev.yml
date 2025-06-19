@@ -32,7 +32,7 @@ server:
     context-path: /ww-seckill
 spring:
   redis:
-    host: localhost
+    host: 172.28.174.84
     password: 123456
     port: 6379
   data:
