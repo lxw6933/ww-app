@@ -1,7 +1,7 @@
 package com.ww.app.member.controller;
 
 import com.ww.app.common.context.AuthorizationContext;
-import com.ww.app.member.service.SignService;
+import com.ww.app.member.service.impl.SignServiceImpl;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -22,31 +22,59 @@ import java.util.Map;
 public class SignController {
 
     @Resource
-    private SignService signService;
+    private SignServiceImpl signService;
 
+    /**
+     * 当日签到
+     *
+     * @return 连续签到天数
+     */
     @GetMapping("/in")
     public int doSign() {
         return signService.doSign(null, AuthorizationContext.getClientUser());
     }
 
+    /**
+     * 补签
+     *
+     * @param date 日期
+     * @return 连续签到天数
+     */
     @GetMapping("/back")
-    public int doSign(@RequestParam("date") String date) {
+    public int doBackSign(@RequestParam("date") String date) {
         return signService.doSign(date, AuthorizationContext.getClientUser());
     }
 
+    /**
+     * 获取签到次数
+     *
+     * @param date 日期
+     * @return 签到次数
+     */
     @GetMapping("/count")
     public int signCount(@RequestParam("date") String date) {
         return signService.getSignCount(date, AuthorizationContext.getClientUser());
     }
 
+    /**
+     * 获取连续签到次数
+     *
+     * @param date 日期
+     * @return 连续签到次数
+     */
     @GetMapping("/continuousSignCount")
     public int continuousSignCount(@RequestParam("date") String date) {
         return signService.getContinuousSignCount(date, AuthorizationContext.getClientUser());
     }
 
+    /**
+     * 获取签到详情
+     *
+     * @param date 日期
+     * @return 签到详情
+     */
     @GetMapping("/detail")
     public Map<String, Boolean> signInfo(@RequestParam("date") String date) {
         return signService.getSignInfo(date, AuthorizationContext.getClientUser());
     }
-
 }

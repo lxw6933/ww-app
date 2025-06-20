@@ -1,26 +1,23 @@
 package com.ww.app.member.service.impl;
 
 import cn.hutool.core.date.DatePattern;
-import cn.hutool.core.date.DateUtil;
-import cn.hutool.core.date.LocalDateTimeUtil;
+import cn.hutool.core.util.StrUtil;
 import com.ww.app.common.common.ClientUser;
-import com.ww.app.common.enums.GlobalResCodeConstants;
 import com.ww.app.common.exception.ApiException;
+import com.ww.app.member.component.key.SignRedisKeyBuilder;
 import com.ww.app.member.service.SignService;
-import com.ww.app.redis.annotation.DistributedLock;
+import com.ww.app.member.strategy.sign.SignStrategy;
+import com.ww.app.member.strategy.sign.SignStrategyFactory;
+import com.ww.app.member.util.SignDateValidator;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.commons.lang3.StringUtils;
-import org.springframework.data.redis.connection.BitFieldSubCommands;
-import org.springframework.data.redis.core.RedisCallback;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Service;
 
 import javax.annotation.Resource;
-import java.time.LocalDateTime;
-import java.util.Date;
-import java.util.List;
+import java.time.LocalDate;
+import java.time.temporal.TemporalAdjusters;
 import java.util.Map;
-import java.util.TreeMap;
+import java.util.concurrent.TimeUnit;
 
 /**
  * @author ww
@@ -31,152 +28,167 @@ import java.util.TreeMap;
 @Service
 public class SignServiceImpl implements SignService {
 
+    /**
+     * 用户每月补签次数上限
+     */
+    private static final int MONTHLY_RESIGN_LIMIT = 3;
+
+    @Resource
+    private SignStrategyFactory signStrategyFactory;
+
+    @Resource
+    private SignDateValidator signDateValidator;
+
     @Resource
     private StringRedisTemplate stringRedisTemplate;
 
+    @Resource
+    private SignRedisKeyBuilder signRedisKeyBuilder;
+
     @Override
-    @DistributedLock(enableUserLock = true, operationKey = "'sign'", waitTime = 3, leaseTime = 3)
-    public int doSign(String dateStr, ClientUser clientUser) {
-        Date now = new Date();
-        Date date = getDate(dateStr);
-        // 获得指定日期是所在月份的第几天：2023-06-14，返回14，代表这个月份的第14天
-        int dayOfMonth = DateUtil.dayOfMonth(date);
-        if (dateStr != null) {
-            if (DateUtil.month(date) != DateUtil.month(now) || DateUtil.year(date) != DateUtil.year(now)) {
-                throw new ApiException("只能补签当前月的日期");
-            }
-            if (date.after(now)) {
-                throw new ApiException("还未到签到时间");
-            }
+    public int doSign(String date, ClientUser clientUser) {
+        // 判断是签到还是补签
+        if (StrUtil.isBlank(date)) {
+            // 日期为空，执行当天签到
+            return doTodaySign(clientUser);
+        } else {
+            // 日期不为空，执行指定日期签到（可能是补签）
+            return doSpecificDateSign(date, clientUser);
         }
-        // 偏移量 offset 从 0 开始
-        int offset = dayOfMonth - 1;
-        // 构建 Key user:sign:5:yyyyMM
-        String signKey = buildSignKey(clientUser.getId(), date);
-        // 查看是否已签到
-        Boolean isSigned = stringRedisTemplate.opsForValue().getBit(signKey, offset);
-        if (Boolean.TRUE.equals(isSigned)) {
-            log.warn("当前日期已完成签到，无需再签");
-            throw new ApiException("当前日期已完成签到，无需再签");
+    }
+
+    /**
+     * 执行当天签到
+     */
+    private int doTodaySign(ClientUser clientUser) {
+        // 获取当天日期字符串
+        String today = LocalDate.now().format(DatePattern.NORM_DATE_FORMATTER);
+        // 检查是否已签到
+        if (isSignedOn(today, clientUser)) {
+            throw new ApiException("今日已签到，请勿重复签到");
         }
-        // 签到
+        // 使用策略模式进行签到
+        SignStrategy strategy = signStrategyFactory.getDefaultStrategy();
+        return strategy.doSign(today, clientUser);
+    }
+
+    /**
+     * 执行指定日期签到（包括补签）
+     */
+    private int doSpecificDateSign(String date, ClientUser clientUser) {
+        LocalDate today = LocalDate.now();
+        LocalDate signDate = LocalDate.parse(date, DatePattern.NORM_DATE_FORMATTER);
+        // 如果是今天，直接签到
+        if (signDate.isEqual(today)) {
+            return doTodaySign(clientUser);
+        }
+        // 如果是未来日期，抛出异常
+        if (signDate.isAfter(today)) {
+            throw new ApiException("不能签到未来日期");
+        }
+        // 校验补签日期
+        if (!signDateValidator.isValidResignDate(date)) {
+            throw new ApiException("补签日期无效，仅支持补签过去30天内的日期");
+        }
+        // 检查是否已签到
+        if (isSignedOn(date, clientUser)) {
+            throw new ApiException("该日期已签到，无需重复补签");
+        }
+        // 检查剩余补签次数
+        int remainingCount = getRemainingResignCount(clientUser);
+        if (remainingCount <= 0) {
+            throw new ApiException("本月补签次数已用完");
+        }
+        // 获取签到策略
+        SignStrategy strategy = signStrategyFactory.getDefaultStrategy();
+        // 构建签到Key
+        String signKey = signRedisKeyBuilder.buildMonthlySignPrefixKey(clientUser.getId(), signDate);
+        // 获取偏移量
+        int offset = signDate.getDayOfMonth() - 1;
+        // 执行补签
         stringRedisTemplate.opsForValue().setBit(signKey, offset, true);
-        // 统计连续签到的次数
-        return getContinuousSignCount(dateStr, clientUser);
+        // 更新补签次数
+        decrementResignCount(clientUser);
+        // 记录补签日志
+        log.info("用户{}在{}成功补签日期{}", clientUser.getId(), today, date);
+        // 返回连续签到天数
+        return strategy.getContinuousSignCount(date, clientUser);
     }
 
     @Override
-    public int getContinuousSignCount(String dateStr, ClientUser clientUser) {
-        Date date = getDate(dateStr);
-        // 获取日期对应的天数，多少号，假设是 30
-        int dayOfMonth = DateUtil.dayOfMonth(date);
-        // 构建 Key
-        String signKey = buildSignKey(clientUser.getId(), date);
-        // bitfield user:sign:5:202011 u30 0
-        BitFieldSubCommands bitFieldSubCommands
-                = BitFieldSubCommands.create()
-                .get(BitFieldSubCommands.BitFieldType.unsigned(dayOfMonth))
-                .valueAt(0);
-        List<Long> list = stringRedisTemplate.opsForValue().bitField(signKey, bitFieldSubCommands);
-        if (list == null || list.isEmpty()) {
-            return 0;
-        }
-        int signCount = 0;
-        long v = list.get(0) == null ? 0 : list.get(0);
-        for (int i = dayOfMonth; i > 0; i--) {
-            // i 表示位移操作次数
-            // 右移再左移，如果等于自己说明最低位是 0，表示未签到
-            if (v >> 1 << 1 == v) {
-                // 低位 0 且非当天说明连续签到中断了
-                if (i != dayOfMonth) {
-                    break;
-                }
-            } else {
-                signCount++;
-            }
-            // 右移一位并重新赋值，相当于把最低位丢弃一位
-            v >>= 1;
-        }
-        return signCount;
+    public int getContinuousSignCount(String date, ClientUser clientUser) {
+        // 获取有效的签到日期
+        String validDate = signDateValidator.getValidSignDate(date);
+
+        SignStrategy strategy = signStrategyFactory.getDefaultStrategy();
+        return strategy.getContinuousSignCount(validDate, clientUser);
     }
 
     @Override
-    public int getSignCount(String dateStr, ClientUser clientUser) {
-        Date date = getDate(dateStr);
-        // 构建 Key
-        String signKey = buildSignKey(clientUser.getId(), date);
-        // bitcount user:sign:5:202011
-        Long signCount = stringRedisTemplate.execute(
-                (RedisCallback<Long>) con -> con.bitCount(signKey.getBytes())
-        );
-        return signCount == null ? 0 : signCount.intValue();
+    public int getSignCount(String date, ClientUser clientUser) {
+        // 获取有效的签到日期
+        String validDate = signDateValidator.getValidSignDate(date);
+
+        SignStrategy strategy = signStrategyFactory.getDefaultStrategy();
+        return strategy.getSignCount(validDate, clientUser);
     }
 
     @Override
-    public Map<String, Boolean> getSignInfo(String dateStr, ClientUser clientUser) {
-        Date date = getDate(dateStr);
-        // 构建 Key
-        String signKey = buildSignKey(clientUser.getId(), date);
-        // 构建一个自动排序的 Map
-        Map<String, Boolean> signInfo = new TreeMap<>();
-        // 获取月份，从0开始：0-11
-        int month = DateUtil.month(date);
-        // 是否是闰年
-        boolean leapYear = DateUtil.isLeapYear(DateUtil.year(date));
-        // 获取某月的总天数（考虑闰年）
-        int dayOfMonth = DateUtil.lengthOfMonth(month + 1, leapYear);
-        // bitfield user:sign:5:202011 u30 0
-        BitFieldSubCommands bitFieldSubCommands = BitFieldSubCommands.create()
-                .get(BitFieldSubCommands.BitFieldType.unsigned(dayOfMonth))
-                .valueAt(0);
-        // 从偏移量offset=0开始取dayOfMonth位，获取无符号整数的值
-        List<Long> list = stringRedisTemplate.opsForValue().bitField(signKey, bitFieldSubCommands);
-        if (list == null || list.isEmpty()) {
-            return signInfo;
-        }
-        long v = list.get(0) == null ? 0 : list.get(0);
-        // 从低位到高位进行遍历，为 0 表示未签到，为 1 表示已签到
-        for (int i = dayOfMonth; i > 0; i--) {
-            /*
-                签到：  yyyy-MM-01 true
-                未签到：yyyy-MM-01 false
-             */
-            LocalDateTime localDateTime = LocalDateTimeUtil.of(date).withDayOfMonth(i);
-            // 先右移再左移，如果不等于自己说明签到，否则未签到
-            boolean flag = v >> 1 << 1 != v;
-            // 存放当月每天的签到情况
-            signInfo.put(DateUtil.format(localDateTime, DatePattern.NORM_DATE_PATTERN), flag);
-            v >>= 1;
-        }
-        return signInfo;
+    public Map<String, Boolean> getSignInfo(String date, ClientUser clientUser) {
+        // 获取有效的签到日期
+        String validDate = signDateValidator.getValidSignDate(date);
+
+        SignStrategy strategy = signStrategyFactory.getDefaultStrategy();
+        return strategy.getSignInfo(validDate, clientUser);
     }
 
     /**
-     * 构建 Key -- user:sign:5:yyyyMM
-     *
-     * @param userId 用户id
-     * @param date   签到日期
-     * @return redis key
+     * 检查用户在指定日期是否已签到
      */
-    private String buildSignKey(Long userId, Date date) {
-        return String.format("user:sign:%d:%s", userId, DateUtil.format(date, DatePattern.SIMPLE_MONTH_PATTERN));
+    private boolean isSignedOn(String date, ClientUser clientUser) {
+        // 解析日期
+        LocalDate signDate = LocalDate.parse(date, DatePattern.NORM_DATE_FORMATTER);
+        // 构建签到Key
+        String signKey = signRedisKeyBuilder.buildMonthlySignPrefixKey(clientUser.getId(), signDate);
+        // 获取偏移量
+        int offset = signDate.getDayOfMonth() - 1;
+        // 查询是否已签到
+        Boolean isSigned = stringRedisTemplate.opsForValue().getBit(signKey, offset);
+        return Boolean.TRUE.equals(isSigned);
     }
 
     /**
-     * 获取日期
-     *
-     * @param dateStr 日期字符串 yyyy-MM-dd
-     * @return 日期格式
+     * 获取用户可补签的次数
      */
-    private Date getDate(String dateStr) {
-        if (StringUtils.isEmpty(dateStr)) {
-            return new Date();
-        }
-        try {
-            return DateUtil.parseDate(dateStr);
-        } catch (Exception e) {
-            log.error("日期格式解析失败：{}", dateStr);
-            throw new ApiException(GlobalResCodeConstants.BAD_REQUEST);
+    private int getRemainingResignCount(ClientUser clientUser) {
+        // 构建补签计数器Key
+        String countKey = signRedisKeyBuilder.buildResignCountPrefixKey(clientUser.getId(), LocalDate.now());
+        // 获取已使用的补签次数
+        String countStr = stringRedisTemplate.opsForValue().get(countKey);
+        int usedCount = countStr == null ? 0 : Integer.parseInt(countStr);
+
+        return Math.max(0, MONTHLY_RESIGN_LIMIT - usedCount);
+    }
+
+    /**
+     * 减少补签次数
+     */
+    private void decrementResignCount(ClientUser clientUser) {
+        // 构建补签计数器Key
+        String countKey = signRedisKeyBuilder.buildResignCountPrefixKey(clientUser.getId(), LocalDate.now());
+        // 获取当前计数
+        String countStr = stringRedisTemplate.opsForValue().get(countKey);
+        int currentCount = countStr == null ? 0 : Integer.parseInt(countStr);
+        // 增加计数
+        stringRedisTemplate.opsForValue().set(countKey, String.valueOf(currentCount + 1));
+        // 如果是本月第一次补签，设置过期时间（到本月底）
+        if (currentCount == 0) {
+            // 计算到月底的过期时间
+            LocalDate now = LocalDate.now();
+            LocalDate endOfMonth = now.with(TemporalAdjusters.lastDayOfMonth());
+            long seconds = now.until(endOfMonth.plusDays(1), java.time.temporal.ChronoUnit.SECONDS);
+
+            stringRedisTemplate.expire(countKey, seconds, TimeUnit.SECONDS);
         }
     }
 
