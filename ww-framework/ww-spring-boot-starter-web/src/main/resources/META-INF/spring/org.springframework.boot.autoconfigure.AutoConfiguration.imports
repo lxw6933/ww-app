@@ -8,3 +8,4 @@ com.ww.app.web.config.LoadBalancerConfiguration
 com.ww.app.web.filter.ServerRequestFilter
 com.ww.app.web.config.GracefulShutdownConfiguration
 com.ww.app.web.config.doc.OpenApiDocAutoConfiguration
+com.ww.app.web.config.sys.StartupPerformanceMonitor
