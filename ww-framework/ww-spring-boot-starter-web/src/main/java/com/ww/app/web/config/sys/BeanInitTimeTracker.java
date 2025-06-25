@@ -9,7 +9,6 @@ import org.springframework.beans.factory.config.BeanPostProcessor;
 import org.springframework.context.ApplicationListener;
 import org.springframework.context.event.ContextRefreshedEvent;
 import org.springframework.core.annotation.Order;
-import org.springframework.stereotype.Component;
 
 import java.util.Comparator;
 import java.util.List;
@@ -23,7 +22,6 @@ import java.util.stream.Collectors;
  */
 @Slf4j
 @Order(Integer.MIN_VALUE) // 确保这个处理器最先执行
-@Component
 public class BeanInitTimeTracker implements BeanPostProcessor, ApplicationListener<ContextRefreshedEvent> {
 
     /**

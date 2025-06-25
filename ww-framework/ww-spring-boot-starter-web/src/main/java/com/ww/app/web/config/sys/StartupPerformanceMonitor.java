@@ -26,6 +26,22 @@ public class StartupPerformanceMonitor {
     }
 
     /**
+     * 启动监控bean初始化时间信息
+     */
+    @Bean
+    public BeanInitTimeTracker beanInitTimeTracker() {
+        return new BeanInitTimeTracker();
+    }
+
+    /**
+     * 启动监控springboot各个阶段启动时间信息
+     */
+    @Bean
+    public AppSpringApplicationRunListener appSpringApplicationRunListener() {
+        return new AppSpringApplicationRunListener();
+    }
+
+    /**
      * JVM信息收集器
      * 用于收集和记录JVM相关信息，帮助分析性能问题
      */
@@ -40,7 +56,7 @@ public class StartupPerformanceMonitor {
      * 在应用启动完成后监控系统资源使用情况
      */
     @Bean
-    @ConditionalOnProperty(prefix = "app.startup.monitor", name = "system-resources-enabled", havingValue = "false", matchIfMissing = true)
+    @ConditionalOnProperty(prefix = "app.startup.monitor", name = "system-resources-enabled", havingValue = "true")
     public SystemResourcesMonitor systemResourcesMonitor() {
         return new SystemResourcesMonitor();
     }

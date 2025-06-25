@@ -7,7 +7,6 @@ import org.springframework.boot.context.event.*;
 import org.springframework.context.ApplicationListener;
 import org.springframework.context.ConfigurableApplicationContext;
 import org.springframework.core.env.ConfigurableEnvironment;
-import org.springframework.stereotype.Component;
 
 import java.util.LinkedHashMap;
 import java.util.Map;
@@ -17,13 +16,12 @@ import java.util.Map;
  * 完整记录Spring应用启动各阶段耗时，识别启动瓶颈
  */
 @Slf4j
-@Component
 public class AppSpringApplicationRunListener implements ApplicationListener<SpringApplicationEvent> {
 
     /**
      * 是否打印详细的启动时间信息
      */
-    @Value("${app.startup.detailed-log:false}")
+    @Value("${app.startup.detailed-log:true}")
     private boolean detailedLog;
 
     /**
