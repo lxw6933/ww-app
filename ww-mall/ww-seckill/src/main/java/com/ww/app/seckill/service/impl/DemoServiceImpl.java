@@ -129,7 +129,7 @@ public class DemoServiceImpl implements DemoService {
 
     @Override
     public void testPuAndUv() {
-        redisPvUvManager.recordEventPvAndUv("testActivity", cn.hutool.core.lang.UUID.randomUUID(true).toString());
+        redisPvUvManager.recordTotalPvAndUv("testActivity", cn.hutool.core.lang.UUID.randomUUID(true).toString());
     }
 
     @Override

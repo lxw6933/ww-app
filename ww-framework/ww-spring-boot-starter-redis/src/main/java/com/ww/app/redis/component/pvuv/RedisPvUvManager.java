@@ -77,14 +77,14 @@ public class RedisPvUvManager {
         this.redisStorage = Objects.requireNonNull(redisStorage, "redisStorage不能为null");
         this.keyBuilder = Objects.requireNonNull(keyBuilder, "keyBuilder不能为null");
         this.localCache = new LocalPvUvCache();
-        
+
         // 使用带名称的线程工厂
-        this.scheduledExecutorService = Executors.newScheduledThreadPool(1, 
-            r -> new Thread(r, "PvUv-Sync-Thread"));
-        
+        this.scheduledExecutorService = Executors.newScheduledThreadPool(1,
+                r -> new Thread(r, "PvUv-Sync-Thread"));
+
         // 开启定时任务
-        scheduledExecutorService.scheduleAtFixedRate(this::scheduledSyncToRedis, 
-            0, syncIntervalSeconds, TimeUnit.SECONDS);
+        scheduledExecutorService.scheduleAtFixedRate(this::scheduledSyncToRedis,
+                0, syncIntervalSeconds, TimeUnit.SECONDS);
 
         log.info("RedisPvUvManager初始化成功，数据同步间隔: {}秒", syncIntervalSeconds);
     }
@@ -95,7 +95,7 @@ public class RedisPvUvManager {
      * @param key 业务键
      */
     public void recordPv(String key) {
-        recordPv(key, null);
+        recordPv(key, LocalDate.now());
     }
 
     /**
@@ -118,7 +118,7 @@ public class RedisPvUvManager {
      * @param userId 用户标识
      */
     public void recordUv(String key, String userId) {
-        recordUv(key, userId, null);
+        recordUv(key, userId, LocalDate.now());
     }
 
     /**
@@ -148,7 +148,7 @@ public class RedisPvUvManager {
      * @param userId 用户标识
      */
     public void recordPvAndUv(String key, String userId) {
-        recordPvAndUv(key, userId, null);
+        recordPvAndUv(key, userId, LocalDate.now());
     }
 
     /**
@@ -168,31 +168,31 @@ public class RedisPvUvManager {
     /**
      * 记录活动的PV和UV[无日期]
      *
-     * @param eventId 活动ID
-     * @param userId  用户标识
+     * @param key    活动ID
+     * @param userId 用户标识
      */
-    public void recordEventPvAndUv(String eventId, String userId) {
+    public void recordTotalPvAndUv(String key, String userId) {
         // 直接调用无日期版本，实现全局活动统计
-        validateAndExecute(eventId, "记录活动PV/UV", () -> {
-            // 记录PV - 不带日期
-            String pvKey = keyBuilder.buildPvEventKey(eventId);
-            localCache.incrementPv(pvKey);
-            
-            // 记录UV - 不带日期
-            if (userId != null && !userId.isEmpty()) {
-                String uvKey = keyBuilder.buildUvEventKey(eventId);
-                localCache.addUserToUv(uvKey, userId);
-            }
-        });
+        validateAndExecute(key, "记录总PV/UV", () -> recordPvAndUv(key, userId, null));
     }
 
     /**
-     * 获取PV值
+     * 获取PV值[有日期，默认当日]
      *
      * @param key 业务键
      * @return PV值
      */
     public long getPv(String key) {
+        return getPv(key, LocalDate.now());
+    }
+
+    /**
+     * 获取PV值[无日期]
+     *
+     * @param key 业务键
+     * @return PV值
+     */
+    public long getTotalPv(String key) {
         return getPv(key, null);
     }
 
@@ -218,12 +218,22 @@ public class RedisPvUvManager {
     }
 
     /**
-     * 获取UV值
+     * 获取UV值[有日期，默认当日]
      *
      * @param key 业务键
      * @return UV值
      */
     public long getUv(String key) {
+        return getUv(key, LocalDate.now());
+    }
+
+    /**
+     * 获取UV值[无日期]
+     *
+     * @param key 业务键
+     * @return UV值
+     */
+    public long getTotalUv(String key) {
         return getUv(key, null);
     }
 
@@ -249,12 +259,22 @@ public class RedisPvUvManager {
     }
 
     /**
-     * 同时获取PV和UV值
+     * 同时获取PV和UV值[有日期，默认当日]
      *
      * @param key 业务键
      * @return PV/UV结果
      */
     public PvUvResult getPvAndUv(String key) {
+        return getPvAndUv(key, LocalDate.now());
+    }
+
+    /**
+     * 同时获取PV和UV值[无日期]
+     *
+     * @param key 业务键
+     * @return PV/UV结果
+     */
+    public PvUvResult getTotalPvAndUv(String key) {
         return getPvAndUv(key, null);
     }
 
@@ -397,16 +417,16 @@ public class RedisPvUvManager {
         try {
             // 最后一次同步
             syncToRedisNow();
-            
+
             // 关闭线程池
             scheduledExecutorService.shutdown();
-            
+
             // 等待任务完成
             if (!scheduledExecutorService.awaitTermination(SHUTDOWN_TIMEOUT_SECONDS, TimeUnit.SECONDS)) {
                 log.warn("线程池未在{}秒内正常关闭，强制关闭", SHUTDOWN_TIMEOUT_SECONDS);
                 scheduledExecutorService.shutdownNow();
             }
-            
+
             log.info("RedisPvUvManager关闭完成");
         } catch (InterruptedException e) {
             log.warn("关闭过程被中断", e);
