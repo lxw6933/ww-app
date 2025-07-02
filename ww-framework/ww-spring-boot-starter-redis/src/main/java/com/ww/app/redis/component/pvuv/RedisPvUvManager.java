@@ -173,20 +173,49 @@ public class RedisPvUvManager {
      * @param userId  用户标识
      */
     public void recordEventPvAndUv(String eventId, String userId) {
-        recordEventPvAndUv(eventId, userId, null);
+        // 直接调用无日期版本，实现全局活动统计
+        validateAndExecute(eventId, "记录活动PV/UV", () -> {
+            String eventKey = keyBuilder.buildEventKey(eventId);
+            
+            // 记录PV - 不带日期
+            String pvKey = keyBuilder.getPrefix() + "pv:" + eventKey;
+            localCache.incrementPv(pvKey);
+            
+            // 记录UV - 不带日期
+            if (userId != null && !userId.isEmpty()) {
+                String uvKey = keyBuilder.getPrefix() + "uv:" + eventKey;
+                localCache.addUserToUv(uvKey, userId);
+            }
+        });
     }
 
     /**
-     * 记录活动的PV和UV
+     * 记录活动的PV和UV（带日期）
      *
      * @param eventId 活动ID
      * @param userId  用户标识
-     * @param date    日期，null表示不区分日期的全局活动统计
+     * @param date    日期，不能为null
      */
     public void recordEventPvAndUv(String eventId, String userId, LocalDate date) {
         validateAndExecute(eventId, "记录活动PV/UV", () -> {
+            if (date == null) {
+                // 如果日期为null，调用无日期版本
+                recordEventPvAndUv(eventId, userId);
+                return;
+            }
+            
+            // 直接在这里记录PV和UV，避免多次构建key
             String eventKey = keyBuilder.buildEventKey(eventId);
-            recordPvAndUv(eventKey, userId, date);
+            
+            // 记录PV
+            String pvKey = keyBuilder.buildPvKey(eventKey, date);
+            localCache.incrementPv(pvKey);
+            
+            // 记录UV
+            if (userId != null && !userId.isEmpty()) {
+                String uvKey = keyBuilder.buildUvKey(eventKey, date);
+                localCache.addUserToUv(uvKey, userId);
+            }
         });
     }
 
