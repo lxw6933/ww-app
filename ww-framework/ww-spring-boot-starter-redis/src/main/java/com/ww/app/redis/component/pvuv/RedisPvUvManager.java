@@ -16,7 +16,6 @@ import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Supplier;
-import java.util.function.Consumer;
 
 /**
  * Redis PV/UV统计管理器
@@ -167,7 +166,7 @@ public class RedisPvUvManager {
     }
 
     /**
-     * 记录活动的PV和UV
+     * 记录活动的PV和UV[无日期]
      *
      * @param eventId 活动ID
      * @param userId  用户标识
@@ -175,45 +174,13 @@ public class RedisPvUvManager {
     public void recordEventPvAndUv(String eventId, String userId) {
         // 直接调用无日期版本，实现全局活动统计
         validateAndExecute(eventId, "记录活动PV/UV", () -> {
-            String eventKey = keyBuilder.buildEventKey(eventId);
-            
             // 记录PV - 不带日期
-            String pvKey = keyBuilder.getPrefix() + "pv:" + eventKey;
+            String pvKey = keyBuilder.buildPvEventKey(eventId);
             localCache.incrementPv(pvKey);
             
             // 记录UV - 不带日期
             if (userId != null && !userId.isEmpty()) {
-                String uvKey = keyBuilder.getPrefix() + "uv:" + eventKey;
-                localCache.addUserToUv(uvKey, userId);
-            }
-        });
-    }
-
-    /**
-     * 记录活动的PV和UV（带日期）
-     *
-     * @param eventId 活动ID
-     * @param userId  用户标识
-     * @param date    日期，不能为null
-     */
-    public void recordEventPvAndUv(String eventId, String userId, LocalDate date) {
-        validateAndExecute(eventId, "记录活动PV/UV", () -> {
-            if (date == null) {
-                // 如果日期为null，调用无日期版本
-                recordEventPvAndUv(eventId, userId);
-                return;
-            }
-            
-            // 直接在这里记录PV和UV，避免多次构建key
-            String eventKey = keyBuilder.buildEventKey(eventId);
-            
-            // 记录PV
-            String pvKey = keyBuilder.buildPvKey(eventKey, date);
-            localCache.incrementPv(pvKey);
-            
-            // 记录UV
-            if (userId != null && !userId.isEmpty()) {
-                String uvKey = keyBuilder.buildUvKey(eventKey, date);
+                String uvKey = keyBuilder.buildUvEventKey(eventId);
                 localCache.addUserToUv(uvKey, userId);
             }
         });

@@ -29,6 +29,7 @@ import com.ww.app.rabbitmq.routekey.RouteKeyConstant;
 import com.ww.app.redis.AppRedisTemplate;
 import com.ww.app.redis.annotation.RateLimit;
 import com.ww.app.redis.component.StockRedisComponent;
+import com.ww.app.redis.component.pvuv.RedisPvUvManager;
 import com.ww.app.seckill.component.CodeGeneratorService;
 import com.ww.app.seckill.component.IssueCodeService;
 import com.ww.app.seckill.component.RedPacketComponent;
@@ -122,6 +123,14 @@ public class DemoServiceImpl implements DemoService {
 
     @Resource
     private CodeGeneratorService codeGeneratorService;
+
+    @Resource
+    private RedisPvUvManager redisPvUvManager;
+
+    @Override
+    public void testPuAndUv() {
+        redisPvUvManager.recordEventPvAndUv("testActivity", cn.hutool.core.lang.UUID.randomUUID(true).toString());
+    }
 
     @Override
     public int generatorCode(String batchNo, int length, int totalCount) {

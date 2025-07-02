@@ -38,6 +38,12 @@ public class DemoController {
     @Resource
     private DemoService demoService;
 
+    @Operation(summary = "测试记录pv-uv性能")
+    @GetMapping("/testPvUv")
+    public void testPvUv() {
+        demoService.testPuAndUv();
+    }
+
     @Operation(summary = "发放红包")
     @GetMapping("/testRedPacket")
     @Parameters({

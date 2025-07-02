@@ -6,12 +6,10 @@ import org.apache.commons.lang3.StringUtils;
 
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
-import java.util.ArrayList;
-import java.util.List;
 
 /**
- * PVUV Redis键构建器
- * 继承自RedisKeyBuilder，提供PVUV相关的键构建方法
+ * PV UV Redis键构建器
+ * 继承自RedisKeyBuilder，提供PV UV相关的键构建方法
  */
 public class PvUvRedisKeyBuilder extends RedisKeyBuilder {
 
@@ -43,15 +41,10 @@ public class PvUvRedisKeyBuilder extends RedisKeyBuilder {
      * @return 完整的PV键
      */
     public String buildPvKey(String key, LocalDate date) {
-        List<Object> keys = new ArrayList<>();
-        keys.add(PV_KEY);
-        keys.add(key);
-        
         LocalDate targetDate = date != null ? date : LocalDate.now();
         String dateStr = targetDate.format(DATE_FORMATTER);
-        keys.add(dateStr);
-        
-        return super.getPrefix() + StringUtils.joinWith(SPLIT_ITEM, keys.toArray());
+
+        return super.getPrefix() + StringUtils.joinWith(SPLIT_ITEM, PV_KEY, key, dateStr);
     }
 
     /**
@@ -62,15 +55,10 @@ public class PvUvRedisKeyBuilder extends RedisKeyBuilder {
      * @return 完整的UV键
      */
     public String buildUvKey(String key, LocalDate date) {
-        List<Object> keys = new ArrayList<>();
-        keys.add(UV_KEY);
-        keys.add(key);
-        
         LocalDate targetDate = date != null ? date : LocalDate.now();
         String dateStr = targetDate.format(DATE_FORMATTER);
-        keys.add(dateStr);
-        
-        return super.getPrefix() + StringUtils.joinWith(SPLIT_ITEM, keys.toArray());
+
+        return super.getPrefix() + StringUtils.joinWith(SPLIT_ITEM, UV_KEY, key, dateStr);
     }
 
     /**
@@ -79,11 +67,11 @@ public class PvUvRedisKeyBuilder extends RedisKeyBuilder {
      * @param eventId 活动ID
      * @return 活动键
      */
-    public String buildEventKey(String eventId) {
-        List<Object> keys = new ArrayList<>();
-        keys.add(EVENT_KEY);
-        keys.add(eventId);
-        
-        return super.getPrefix() + StringUtils.joinWith(SPLIT_ITEM, keys.toArray());
+    public String buildPvEventKey(String eventId) {
+        return super.getPrefix() + StringUtils.joinWith(SPLIT_ITEM, PV_KEY, EVENT_KEY, eventId);
+    }
+
+    public String buildUvEventKey(String eventId) {
+        return super.getPrefix() + StringUtils.joinWith(SPLIT_ITEM, UV_KEY, EVENT_KEY, eventId);
     }
 } 

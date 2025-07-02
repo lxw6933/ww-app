@@ -49,15 +49,14 @@ public class LocalPvUvCache {
      * 增加PV计数
      *
      * @param key 键
-     * @return 增加后的计数
      */
-    public long incrementPv(String key) {
+    public void incrementPv(String key) {
         // 使用computeIfAbsent确保线程安全地创建LongAdder
         LongAdder adder = pvCache.computeIfAbsent(key, k -> new LongAdder());
         adder.increment();
         
         // 返回当前值（注意：这不是原子操作，仅用于近似展示）
-        return adder.sum();
+        adder.sum();
     }
 
     /**
@@ -65,13 +64,12 @@ public class LocalPvUvCache {
      *
      * @param key    键
      * @param userId 用户ID
-     * @return 是否是新用户
      */
-    public boolean addUserToUv(String key, String userId) {
+    public void addUserToUv(String key, String userId) {
         // 处理无效用户ID
         if (userId == null || userId.isEmpty()) {
             // 默认不记录异常用户ID
-            return false;
+            return;
         }
         
         // 从当前缓冲区获取用户集合，如果不存在则创建
@@ -79,7 +77,7 @@ public class LocalPvUvCache {
             Collections.newSetFromMap(new ConcurrentHashMap<>()));
         
         // 添加用户并返回是否是新用户
-        return userSet.add(userId);
+        userSet.add(userId);
     }
 
     /**

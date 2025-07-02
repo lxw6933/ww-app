@@ -16,6 +16,8 @@ import java.util.List;
  */
 public interface DemoService {
 
+    void testPuAndUv();
+
     int generatorCode(String batchNo, int length, int totalCount);
 
     List<String> issueCode(String outOrderCode, int quantity);
