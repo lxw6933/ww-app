@@ -9,6 +9,7 @@ import lombok.extern.slf4j.Slf4j;
 
 import java.time.LocalDate;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
@@ -32,6 +33,10 @@ public class RedisPvUvManager {
      * 默认的PV/UV结果
      */
     private static final PvUvResult DEFAULT_RESULT = new PvUvResult(DEFAULT_COUNT, DEFAULT_COUNT);
+
+    // 添加配置参数
+    private static final int DEFAULT_SYNC_INTERVAL_SECONDS = 30;
+    private static final int SHUTDOWN_TIMEOUT_SECONDS = 30;
 
     /**
      * 用于异步任务的线程池
@@ -65,14 +70,23 @@ public class RedisPvUvManager {
      * @param keyBuilder   Redis键构建器
      */
     public RedisPvUvManager(RedisPvUvStorage redisStorage, PvUvRedisKeyBuilder keyBuilder) {
-        this.redisStorage = redisStorage;
-        this.keyBuilder = keyBuilder;
-        this.localCache = new LocalPvUvCache();
-        this.scheduledExecutorService = Executors.newScheduledThreadPool(1);
-        // 开启定时任务
-        scheduledExecutorService.scheduleAtFixedRate(this::scheduledSyncToRedis, 0, 30, TimeUnit.SECONDS);
+        this(redisStorage, keyBuilder, DEFAULT_SYNC_INTERVAL_SECONDS);
+    }
 
-        log.info("RedisPvUvManager初始化成功，数据同步间隔: 30秒");
+    public RedisPvUvManager(RedisPvUvStorage redisStorage, PvUvRedisKeyBuilder keyBuilder, int syncIntervalSeconds) {
+        this.redisStorage = Objects.requireNonNull(redisStorage, "redisStorage不能为null");
+        this.keyBuilder = Objects.requireNonNull(keyBuilder, "keyBuilder不能为null");
+        this.localCache = new LocalPvUvCache();
+        
+        // 使用带名称的线程工厂
+        this.scheduledExecutorService = Executors.newScheduledThreadPool(1, 
+            r -> new Thread(r, "PvUv-Sync-Thread"));
+        
+        // 开启定时任务
+        scheduledExecutorService.scheduleAtFixedRate(this::scheduledSyncToRedis, 
+            0, syncIntervalSeconds, TimeUnit.SECONDS);
+
+        log.info("RedisPvUvManager初始化成功，数据同步间隔: {}秒", syncIntervalSeconds);
     }
 
     /**
@@ -377,10 +391,27 @@ public class RedisPvUvManager {
      * 关闭，释放资源
      */
     public void shutdown() {
+        log.info("开始关闭RedisPvUvManager...");
         try {
+            // 最后一次同步
             syncToRedisNow();
-        } finally {
+            
+            // 关闭线程池
             scheduledExecutorService.shutdown();
+            
+            // 等待任务完成
+            if (!scheduledExecutorService.awaitTermination(SHUTDOWN_TIMEOUT_SECONDS, TimeUnit.SECONDS)) {
+                log.warn("线程池未在{}秒内正常关闭，强制关闭", SHUTDOWN_TIMEOUT_SECONDS);
+                scheduledExecutorService.shutdownNow();
+            }
+            
+            log.info("RedisPvUvManager关闭完成");
+        } catch (InterruptedException e) {
+            log.warn("关闭过程被中断", e);
+            scheduledExecutorService.shutdownNow();
+            Thread.currentThread().interrupt();
+        } catch (Exception e) {
+            log.error("关闭RedisPvUvManager时发生异常", e);
         }
     }
 
@@ -400,4 +431,4 @@ public class RedisPvUvManager {
          */
         private final long uv;
     }
-} 
+}
