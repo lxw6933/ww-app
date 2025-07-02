@@ -16,6 +16,7 @@ import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Supplier;
+import java.util.function.Consumer;
 
 /**
  * Redis PV/UV统计管理器
@@ -93,10 +94,9 @@ public class RedisPvUvManager {
      * 记录PV
      *
      * @param key 业务键
-     * @return 当前PV值
      */
-    public long recordPv(String key) {
-        return recordPv(key, null);
+    public void recordPv(String key) {
+        recordPv(key, null);
     }
 
     /**
@@ -104,13 +104,12 @@ public class RedisPvUvManager {
      *
      * @param key  业务键
      * @param date 日期，null表示当天
-     * @return 当前PV值
      */
-    public long recordPv(String key, LocalDate date) {
-        return validateAndExecute(key, "记录PV", () -> {
+    public void recordPv(String key, LocalDate date) {
+        validateAndExecute(key, "记录PV", () -> {
             String pvKey = keyBuilder.buildPvKey(key, date);
-            return localCache.incrementPv(pvKey);
-        }, DEFAULT_COUNT);
+            localCache.incrementPv(pvKey);
+        });
     }
 
     /**
@@ -118,10 +117,9 @@ public class RedisPvUvManager {
      *
      * @param key    业务键
      * @param userId 用户标识
-     * @return 当前UV值
      */
-    public long recordUv(String key, String userId) {
-        return recordUv(key, userId, null);
+    public void recordUv(String key, String userId) {
+        recordUv(key, userId, null);
     }
 
     /**
@@ -130,20 +128,18 @@ public class RedisPvUvManager {
      * @param key    业务键
      * @param userId 用户标识
      * @param date   日期，null表示当天
-     * @return 当前UV值
      */
-    public long recordUv(String key, String userId, LocalDate date) {
-        return validateAndExecute(key, "记录UV", () -> {
+    public void recordUv(String key, String userId, LocalDate date) {
+        validateAndExecute(key, "记录UV", () -> {
             // 处理无效用户ID
             if (userId == null || userId.isEmpty()) {
                 // 默认不记录异常用户ID
-                return getUv(key, date);
+                return;
             }
 
             String uvKey = keyBuilder.buildUvKey(key, date);
             localCache.addUserToUv(uvKey, userId);
-            return localCache.getUvCount(uvKey);
-        }, DEFAULT_COUNT);
+        });
     }
 
     /**
@@ -151,10 +147,9 @@ public class RedisPvUvManager {
      *
      * @param key    业务键
      * @param userId 用户标识
-     * @return PV/UV结果
      */
-    public PvUvResult recordPvAndUv(String key, String userId) {
-        return recordPvAndUv(key, userId, null);
+    public void recordPvAndUv(String key, String userId) {
+        recordPvAndUv(key, userId, null);
     }
 
     /**
@@ -163,14 +158,12 @@ public class RedisPvUvManager {
      * @param key    业务键
      * @param userId 用户标识
      * @param date   日期，null表示当天
-     * @return PV/UV结果
      */
-    public PvUvResult recordPvAndUv(String key, String userId, LocalDate date) {
-        return validateAndExecute(key, "记录PV/UV", () -> {
-            long pv = recordPv(key, date);
-            long uv = recordUv(key, userId, date);
-            return new PvUvResult(pv, uv);
-        }, DEFAULT_RESULT);
+    public void recordPvAndUv(String key, String userId, LocalDate date) {
+        validateAndExecute(key, "记录PV/UV", () -> {
+            recordPv(key, date);
+            recordUv(key, userId, date);
+        });
     }
 
     /**
@@ -178,10 +171,9 @@ public class RedisPvUvManager {
      *
      * @param eventId 活动ID
      * @param userId  用户标识
-     * @return PV/UV结果
      */
-    public PvUvResult recordEventPvAndUv(String eventId, String userId) {
-        return recordEventPvAndUv(eventId, userId, null);
+    public void recordEventPvAndUv(String eventId, String userId) {
+        recordEventPvAndUv(eventId, userId, null);
     }
 
     /**
@@ -190,13 +182,12 @@ public class RedisPvUvManager {
      * @param eventId 活动ID
      * @param userId  用户标识
      * @param date    日期，null表示不区分日期的全局活动统计
-     * @return PV/UV结果
      */
-    public PvUvResult recordEventPvAndUv(String eventId, String userId, LocalDate date) {
-        return validateAndExecute(eventId, "记录活动PV/UV", () -> {
+    public void recordEventPvAndUv(String eventId, String userId, LocalDate date) {
+        validateAndExecute(eventId, "记录活动PV/UV", () -> {
             String eventKey = keyBuilder.buildEventKey(eventId);
-            return recordPvAndUv(eventKey, userId, date);
-        }, DEFAULT_RESULT);
+            recordPvAndUv(eventKey, userId, date);
+        });
     }
 
     /**
@@ -385,6 +376,21 @@ public class RedisPvUvManager {
             return defaultValue;
         }
         return supplier.get();
+    }
+
+    /**
+     * 通用参数校验和执行方法（无返回值）
+     *
+     * @param key       需要校验的键
+     * @param operation 操作名称（用于日志）
+     * @param runnable  校验通过后执行的操作
+     */
+    private void validateAndExecute(String key, String operation, Runnable runnable) {
+        if (key == null || key.isEmpty()) {
+            log.warn("{}时传入的key为空", operation);
+            return;
+        }
+        runnable.run();
     }
 
     /**

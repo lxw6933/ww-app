@@ -76,32 +76,25 @@ public class RedisPvUvManagerTest {
         
         // 测试记录PV
         String key = "test:page:index";
-        long pv1 = manager.recordPv(key);
-        assertEquals(1, pv1);
-        
-        long pv2 = manager.recordPv(key);
-        assertEquals(2, pv2);
-        
+        manager.recordPv(key);
+
+        manager.recordPv(key);
+
         // 测试记录UV
         String userId1 = "user1";
-        long uv1 = manager.recordUv(key, userId1);
-        assertEquals(1, uv1);
-        
+        manager.recordUv(key, userId1);
+
         // 同一用户多次访问，UV不变
-        long uv2 = manager.recordUv(key, userId1);
-        assertEquals(1, uv2);
-        
+        manager.recordUv(key, userId1);
+
         // 不同用户访问，UV增加
         String userId2 = "user2";
-        long uv3 = manager.recordUv(key, userId2);
-        assertEquals(2, uv3);
-        
+        manager.recordUv(key, userId2);
+
         // 测试同时记录PV和UV
         String userId3 = "user3";
-        RedisPvUvManager.PvUvResult result = manager.recordPvAndUv(key, userId3);
-        assertEquals(3, result.getPv());
-        assertEquals(3, result.getUv());
-        
+        manager.recordPvAndUv(key, userId3);
+
         // 测试获取PV和UV
         assertEquals(3, manager.getPv(key));
         assertEquals(3, manager.getUv(key));
