@@ -1,6 +1,7 @@
 package com.ww.app.redis.component.pvuv.report;
 
 import com.ww.app.redis.component.pvuv.RedisPvUvManager;
+import com.ww.app.redis.component.pvuv.enums.PvUvBizTypeEnum;
 import lombok.extern.slf4j.Slf4j;
 
 import java.time.LocalDate;
@@ -50,44 +51,48 @@ public class RedisPvUvReport {
     /**
      * 获取指定天数的每日PV报表
      *
-     * @param key  统计键
-     * @param days 天数
+     * @param bizType 业务类型，如PAGE、PRODUCT、ARTICLE等
+     * @param key     统计键
+     * @param days    天数
      * @return 每日PV报表
      */
-    public Map<LocalDate, Long> getDailyPvReport(String key, int days) {
-        return getDailyReport(key, days, date -> pvUvManager.getPv(key, date));
+    public Map<LocalDate, Long> getDailyPvReport(PvUvBizTypeEnum bizType, String key, int days) {
+        return getDailyReport(bizType, key, days, date -> pvUvManager.getPv(bizType, key, date));
     }
 
     /**
      * 获取指定天数的每日UV报表
      *
-     * @param key  统计键
-     * @param days 天数
+     * @param bizType 业务类型，如PAGE、PRODUCT、ARTICLE等
+     * @param key     统计键
+     * @param days    天数
      * @return 每日UV报表
      */
-    public Map<LocalDate, Long> getDailyUvReport(String key, int days) {
-        return getDailyReport(key, days, date -> pvUvManager.getUv(key, date));
+    public Map<LocalDate, Long> getDailyUvReport(PvUvBizTypeEnum bizType, String key, int days) {
+        return getDailyReport(bizType, key, days, date -> pvUvManager.getUv(bizType, key, date));
     }
 
     /**
      * 获取指定天数的每日PV/UV报表
      *
-     * @param key  统计键
-     * @param days 天数
+     * @param bizType 业务类型，如PAGE、PRODUCT、ARTICLE等
+     * @param key     统计键
+     * @param days    天数
      * @return 每日PV/UV报表
      */
-    public Map<LocalDate, RedisPvUvManager.PvUvResult> getDailyPvUvReport(String key, int days) {
-        return getDailyReport(key, days, date -> pvUvManager.getPvAndUv(key, date));
+    public Map<LocalDate, RedisPvUvManager.PvUvResult> getDailyPvUvReport(PvUvBizTypeEnum bizType, String key, int days) {
+        return getDailyReport(bizType, key, days, date -> pvUvManager.getPvAndUv(bizType, key, date));
     }
 
     /**
      * 获取最近几周的每周PV统计
      *
-     * @param key   统计键
-     * @param weeks 周数
+     * @param bizType 业务类型，如PAGE、PRODUCT、ARTICLE等
+     * @param key     统计键
+     * @param weeks   周数
      * @return 每周PV统计
      */
-    public Map<String, Long> getWeeklyPvReport(String key, int weeks) {
+    public Map<String, Long> getWeeklyPvReport(PvUvBizTypeEnum bizType, String key, int weeks) {
         if (key == null || weeks <= 0) {
             return new LinkedHashMap<>();
         }
@@ -106,7 +111,7 @@ public class RedisPvUvReport {
                     .parallelStream()
                     .mapToLong(date -> {
                         try {
-                            return pvUvManager.getPv(key, date);
+                            return pvUvManager.getPv(bizType, key, date);
                         } catch (Exception e) {
                             log.warn("获取[{}]在[{}]的PV失败: {}", key, date, e.getMessage());
                             return 0;
@@ -123,11 +128,12 @@ public class RedisPvUvReport {
     /**
      * 获取最近几周的每周UV统计
      *
-     * @param key   统计键
-     * @param weeks 周数
+     * @param bizType 业务类型，如PAGE、PRODUCT、ARTICLE等
+     * @param key     统计键
+     * @param weeks   周数
      * @return 每周UV统计
      */
-    public Map<String, Long> getWeeklyUvReport(String key, int weeks) {
+    public Map<String, Long> getWeeklyUvReport(PvUvBizTypeEnum bizType, String key, int weeks) {
         if (key == null || weeks <= 0) {
             return new LinkedHashMap<>();
         }
@@ -146,7 +152,7 @@ public class RedisPvUvReport {
                     .parallelStream()
                     .mapToLong(date -> {
                         try {
-                            return pvUvManager.getUv(key, date);
+                            return pvUvManager.getUv(bizType, key, date);
                         } catch (Exception e) {
                             log.warn("获取[{}]在[{}]的UV失败: {}", key, date, e.getMessage());
                             return 0;
@@ -163,11 +169,12 @@ public class RedisPvUvReport {
     /**
      * 获取最近几个月的每月PV统计
      *
-     * @param key    统计键
-     * @param months 月数
+     * @param bizType 业务类型，如PAGE、PRODUCT、ARTICLE等
+     * @param key     统计键
+     * @param months  月数
      * @return 每月PV统计
      */
-    public Map<String, Long> getMonthlyPvReport(String key, int months) {
+    public Map<String, Long> getMonthlyPvReport(PvUvBizTypeEnum bizType, String key, int months) {
         if (key == null || months <= 0) {
             return new LinkedHashMap<>();
         }
@@ -186,7 +193,7 @@ public class RedisPvUvReport {
                     .parallelStream()
                     .mapToLong(day -> {
                         try {
-                            return pvUvManager.getPv(key, day);
+                            return pvUvManager.getPv(bizType, key, day);
                         } catch (Exception e) {
                             log.warn("获取[{}]在[{}]的PV失败: {}", key, day, e.getMessage());
                             return 0;
@@ -203,11 +210,12 @@ public class RedisPvUvReport {
     /**
      * 获取最近几个月的每月UV统计
      *
-     * @param key    统计键
-     * @param months 月数
+     * @param bizType 业务类型，如PAGE、PRODUCT、ARTICLE等
+     * @param key     统计键
+     * @param months  月数
      * @return 每月UV统计
      */
-    public Map<String, Long> getMonthlyUvReport(String key, int months) {
+    public Map<String, Long> getMonthlyUvReport(PvUvBizTypeEnum bizType, String key, int months) {
         if (key == null || months <= 0) {
             return new LinkedHashMap<>();
         }
@@ -226,7 +234,7 @@ public class RedisPvUvReport {
                     .parallelStream()
                     .mapToLong(day -> {
                         try {
-                            return pvUvManager.getUv(key, day);
+                            return pvUvManager.getUv(bizType, key, day);
                         } catch (Exception e) {
                             log.warn("获取[{}]在[{}]的UV失败: {}", key, day, e.getMessage());
                             return 0;
@@ -243,19 +251,20 @@ public class RedisPvUvReport {
     /**
      * 获取指定日期范围的每日PV统计
      *
+     * @param bizType   业务类型，如PAGE、PRODUCT、ARTICLE等
      * @param key       统计键
      * @param startDate 开始日期
      * @param endDate   结束日期
      * @return 每日PV统计
      */
-    public Map<LocalDate, Long> getRangePvReport(String key, LocalDate startDate, LocalDate endDate) {
+    public Map<LocalDate, Long> getRangePvReport(PvUvBizTypeEnum bizType, String key, LocalDate startDate, LocalDate endDate) {
         if (key == null || startDate == null || endDate == null || startDate.isAfter(endDate)) {
             return new LinkedHashMap<>();
         }
 
-        return getDailyReport(key, startDate, endDate, date -> {
+        return getDailyReport(bizType, key, startDate, endDate, date -> {
             try {
-                return pvUvManager.getPv(key, date);
+                return pvUvManager.getPv(bizType, key, date);
             } catch (Exception e) {
                 log.warn("获取[{}]在[{}]的PV失败: {}", key, date, e.getMessage());
                 return 0L;
@@ -266,19 +275,20 @@ public class RedisPvUvReport {
     /**
      * 获取指定日期范围的每日UV统计
      *
+     * @param bizType   业务类型，如PAGE、PRODUCT、ARTICLE等
      * @param key       统计键
      * @param startDate 开始日期
      * @param endDate   结束日期
      * @return 每日UV统计
      */
-    public Map<LocalDate, Long> getRangeUvReport(String key, LocalDate startDate, LocalDate endDate) {
+    public Map<LocalDate, Long> getRangeUvReport(PvUvBizTypeEnum bizType, String key, LocalDate startDate, LocalDate endDate) {
         if (key == null || startDate == null || endDate == null || startDate.isAfter(endDate)) {
             return new LinkedHashMap<>();
         }
 
-        return getDailyReport(key, startDate, endDate, date -> {
+        return getDailyReport(bizType, key, startDate, endDate, date -> {
             try {
-                return pvUvManager.getUv(key, date);
+                return pvUvManager.getUv(bizType, key, date);
             } catch (Exception e) {
                 log.warn("获取[{}]在[{}]的UV失败: {}", key, date, e.getMessage());
                 return 0L;
@@ -289,19 +299,20 @@ public class RedisPvUvReport {
     /**
      * 获取指定日期范围的每日PV/UV统计
      *
+     * @param bizType   业务类型，如PAGE、PRODUCT、ARTICLE等
      * @param key       统计键
      * @param startDate 开始日期
      * @param endDate   结束日期
      * @return 每日PV/UV统计
      */
-    public Map<LocalDate, RedisPvUvManager.PvUvResult> getRangePvUvReport(String key, LocalDate startDate, LocalDate endDate) {
+    public Map<LocalDate, RedisPvUvManager.PvUvResult> getRangePvUvReport(PvUvBizTypeEnum bizType, String key, LocalDate startDate, LocalDate endDate) {
         if (key == null || startDate == null || endDate == null || startDate.isAfter(endDate)) {
             return new LinkedHashMap<>();
         }
 
-        return getDailyReport(key, startDate, endDate, date -> {
+        return getDailyReport(bizType, key, startDate, endDate, date -> {
             try {
-                return pvUvManager.getPvAndUv(key, date);
+                return pvUvManager.getPvAndUv(bizType, key, date);
             } catch (Exception e) {
                 log.warn("获取[{}]在[{}]的PV/UV失败: {}", key, date, e.getMessage());
                 return new RedisPvUvManager.PvUvResult(0, 0);
@@ -312,13 +323,14 @@ public class RedisPvUvReport {
     /**
      * 通用的每日报表生成方法
      *
+     * @param bizType        业务类型，如PAGE、PRODUCT、ARTICLE等
      * @param key            统计键
      * @param days           天数
      * @param valueExtractor 值提取器
      * @param <T>            值类型
      * @return 报表
      */
-    private <T> Map<LocalDate, T> getDailyReport(String key, int days, Function<LocalDate, T> valueExtractor) {
+    private <T> Map<LocalDate, T> getDailyReport(PvUvBizTypeEnum bizType, String key, int days, Function<LocalDate, T> valueExtractor) {
         if (key == null || days <= 0 || valueExtractor == null) {
             return new LinkedHashMap<>();
         }
@@ -326,12 +338,13 @@ public class RedisPvUvReport {
         LocalDate today = LocalDate.now();
         LocalDate startDate = today.minusDays(days - 1);
 
-        return getDailyReport(key, startDate, today, valueExtractor);
+        return getDailyReport(bizType, key, startDate, today, valueExtractor);
     }
 
     /**
      * 通用的日期范围报表生成方法
      *
+     * @param bizType        业务类型，如PAGE、PRODUCT、ARTICLE等
      * @param key            统计键
      * @param startDate      开始日期
      * @param endDate        结束日期
@@ -339,7 +352,7 @@ public class RedisPvUvReport {
      * @param <T>            值类型
      * @return 报表
      */
-    private <T> Map<LocalDate, T> getDailyReport(String key, LocalDate startDate, LocalDate endDate,
+    private <T> Map<LocalDate, T> getDailyReport(PvUvBizTypeEnum bizType, String key, LocalDate startDate, LocalDate endDate,
                                                  Function<LocalDate, T> valueExtractor) {
         if (key == null || startDate == null || endDate == null || valueExtractor == null || startDate.isAfter(endDate)) {
             return new LinkedHashMap<>();

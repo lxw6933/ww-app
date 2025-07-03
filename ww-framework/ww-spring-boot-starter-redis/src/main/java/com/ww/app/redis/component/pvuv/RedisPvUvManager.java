@@ -1,5 +1,6 @@
 package com.ww.app.redis.component.pvuv;
 
+import com.ww.app.redis.component.pvuv.enums.PvUvBizTypeEnum;
 import com.ww.app.redis.component.pvuv.keys.PvUvRedisKeyBuilder;
 import com.ww.app.redis.component.pvuv.storage.LocalPvUvCache;
 import com.ww.app.redis.component.pvuv.storage.RedisPvUvStorage;
@@ -90,123 +91,130 @@ public class RedisPvUvManager {
     }
 
     /**
-     * 记录PV
+     * 记录PV（带业务类型）
+     * 记录指定业务类型下的页面访问量
      *
-     * @param key 业务键
+     * @param bizType 业务类型，如PAGE、PRODUCT、ARTICLE等
+     * @param key     业务键，如页面ID、商品ID、文章ID等
      */
-    public void recordPv(String key) {
-        recordPv(key, LocalDate.now());
+    public void recordPv(PvUvBizTypeEnum bizType, String key) {
+        recordPv(bizType, key, LocalDate.now());
     }
 
     /**
-     * 记录PV
+     * 记录PV（带业务类型和日期）
+     * 记录指定业务类型和日期下的页面访问量
      *
-     * @param key  业务键
-     * @param date 日期，null表示当天
+     * @param bizType 业务类型，如PAGE、PRODUCT、ARTICLE等
+     * @param key     业务键，如页面ID、商品ID、文章ID等
+     * @param date    日期，null表示不区分日期的全局统计
      */
-    public void recordPv(String key, LocalDate date) {
-        validateAndExecute(key, "记录PV", () -> {
-            String pvKey = keyBuilder.buildPvKey(key, date);
+    public void recordPv(PvUvBizTypeEnum bizType, String key, LocalDate date) {
+        validateAndExecute(key, () -> {
+            String pvKey = keyBuilder.buildPvKey(bizType, key, date);
             localCache.incrementPv(pvKey);
         });
     }
 
     /**
-     * 记录UV
+     * 记录UV（带业务类型）
+     * 记录指定业务类型下的独立访客数
      *
-     * @param key    业务键
-     * @param userId 用户标识
+     * @param bizType 业务类型，如PAGE、PRODUCT、ARTICLE等
+     * @param key     业务键，如页面ID、商品ID、文章ID等
+     * @param userId  用户标识，用于UV去重统计
      */
-    public void recordUv(String key, String userId) {
-        recordUv(key, userId, LocalDate.now());
+    public void recordUv(PvUvBizTypeEnum bizType, String key, String userId) {
+        recordUv(bizType, key, userId, LocalDate.now());
     }
 
     /**
-     * 记录UV
+     * 记录UV（带业务类型和日期）
+     * 记录指定业务类型和日期下的独立访客数
      *
-     * @param key    业务键
-     * @param userId 用户标识
-     * @param date   日期，null表示当天
+     * @param bizType 业务类型，如PAGE、PRODUCT、ARTICLE等
+     * @param key     业务键，如页面ID、商品ID、文章ID等
+     * @param userId  用户标识，用于UV去重统计
+     * @param date    日期，null表示不区分日期的全局统计
      */
-    public void recordUv(String key, String userId, LocalDate date) {
-        validateAndExecute(key, "记录UV", () -> {
+    public void recordUv(PvUvBizTypeEnum bizType, String key, String userId, LocalDate date) {
+        validateAndExecute(key, () -> {
             // 处理无效用户ID
             if (userId == null || userId.isEmpty()) {
                 // 默认不记录异常用户ID
                 return;
             }
 
-            String uvKey = keyBuilder.buildUvKey(key, date);
+            String uvKey = keyBuilder.buildUvKey(bizType, key, date);
             localCache.addUserToUv(uvKey, userId);
         });
     }
 
     /**
-     * 同时记录PV和UV
+     * 同时记录PV和UV（带业务类型）
+     * 同时记录指定业务类型下的页面访问量和独立访客数
      *
-     * @param key    业务键
-     * @param userId 用户标识
+     * @param bizType 业务类型，如PAGE、PRODUCT、ARTICLE等
+     * @param key     业务键，如页面ID、商品ID、文章ID等
+     * @param userId  用户标识，用于UV去重统计
      */
-    public void recordPvAndUv(String key, String userId) {
-        recordPvAndUv(key, userId, LocalDate.now());
+    public void recordPvAndUv(PvUvBizTypeEnum bizType, String key, String userId) {
+        recordPvAndUv(bizType, key, userId, LocalDate.now());
     }
 
     /**
-     * 同时记录PV和UV
+     * 同时记录PV和UV（带业务类型和日期）
+     * 同时记录指定业务类型和日期下的页面访问量和独立访客数
      *
-     * @param key    业务键
-     * @param userId 用户标识
-     * @param date   日期，null表示当天
+     * @param bizType 业务类型，如PAGE、PRODUCT、ARTICLE等
+     * @param key     业务键，如页面ID、商品ID、文章ID等
+     * @param userId  用户标识，用于UV去重统计
+     * @param date    日期，null表示不区分日期的全局统计
      */
-    public void recordPvAndUv(String key, String userId, LocalDate date) {
-        validateAndExecute(key, "记录PV/UV", () -> {
-            recordPv(key, date);
-            recordUv(key, userId, date);
+    public void recordPvAndUv(PvUvBizTypeEnum bizType, String key, String userId, LocalDate date) {
+        validateAndExecute(key, () -> {
+            recordPv(bizType, key, date);
+            recordUv(bizType, key, userId, date);
         });
     }
 
     /**
      * 记录活动的PV和UV[无日期]
+     * 记录活动的全局PV/UV统计（不区分日期）
      *
+     * @param bizType 业务类型，如EVENT、PRODUCT等
      * @param key    活动ID
      * @param userId 用户标识
      */
-    public void recordTotalPvAndUv(String key, String userId) {
+    public void recordTotalPvAndUv(PvUvBizTypeEnum bizType, String key, String userId) {
         // 直接调用无日期版本，实现全局活动统计
-        validateAndExecute(key, "记录总PV/UV", () -> recordPvAndUv(key, userId, null));
+        recordPvAndUv(bizType, key, userId, null);
     }
 
     /**
-     * 获取PV值[有日期，默认当日]
+     * 获取PV值（带业务类型）
+     * 获取指定业务类型下的页面访问量
      *
-     * @param key 业务键
+     * @param bizType 业务类型，如PAGE、PRODUCT、ARTICLE等
+     * @param key     业务键，如页面ID、商品ID、文章ID等
      * @return PV值
      */
-    public long getPv(String key) {
-        return getPv(key, LocalDate.now());
+    public long getPv(PvUvBizTypeEnum bizType, String key) {
+        return getPv(bizType, key, LocalDate.now());
     }
 
     /**
-     * 获取PV值[无日期]
+     * 获取PV值（带业务类型和日期）
+     * 获取指定业务类型和日期下的页面访问量
      *
-     * @param key 业务键
+     * @param bizType 业务类型，如PAGE、PRODUCT、ARTICLE等
+     * @param key     业务键，如页面ID、商品ID、文章ID等
+     * @param date    日期，null表示不区分日期的全局统计
      * @return PV值
      */
-    public long getTotalPv(String key) {
-        return getPv(key, null);
-    }
-
-    /**
-     * 获取PV值
-     * 注意：查询方法直接访问Redis，Redis失败直接返回0
-     *
-     * @param key  业务键
-     * @param date 日期，null表示当天
-     * @return PV值
-     */
-    public long getPv(String key, LocalDate date) {
-        return validateAndExecute(key, "获取PV", () -> {
-            String pvKey = keyBuilder.buildPvKey(key, date);
+    public long getPv(PvUvBizTypeEnum bizType, String key, LocalDate date) {
+        return validateAndExecute(key, () -> {
+            String pvKey = keyBuilder.buildPvKey(bizType, key, date);
 
             try {
                 return redisStorage.getPv(pvKey);
@@ -218,36 +226,40 @@ public class RedisPvUvManager {
     }
 
     /**
-     * 获取UV值[有日期，默认当日]
+     * 获取不区分日期的全局PV值
      *
-     * @param key 业务键
-     * @return UV值
+     * @param bizType 业务类型，如PAGE、PRODUCT、ARTICLE等
+     * @param key     业务键，如页面ID、商品ID、文章ID等
+     * @return PV值
      */
-    public long getUv(String key) {
-        return getUv(key, LocalDate.now());
+    public long getTotalPv(PvUvBizTypeEnum bizType, String key) {
+        return getPv(bizType, key, null);
     }
 
     /**
-     * 获取UV值[无日期]
+     * 获取UV值（带业务类型）
+     * 获取指定业务类型下的独立访客数
      *
-     * @param key 业务键
+     * @param bizType 业务类型，如PAGE、PRODUCT、ARTICLE等
+     * @param key     业务键，如页面ID、商品ID、文章ID等
      * @return UV值
      */
-    public long getTotalUv(String key) {
-        return getUv(key, null);
+    public long getUv(PvUvBizTypeEnum bizType, String key) {
+        return getUv(bizType, key, LocalDate.now());
     }
 
     /**
-     * 获取UV值
-     * 注意：查询方法直接访问Redis，Redis失败直接返回0
+     * 获取UV值（带业务类型和日期）
+     * 获取指定业务类型和日期下的独立访客数
      *
-     * @param key  业务键
-     * @param date 日期，null表示当天
+     * @param bizType 业务类型，如PAGE、PRODUCT、ARTICLE等
+     * @param key     业务键，如页面ID、商品ID、文章ID等
+     * @param date    日期，null表示不区分日期的全局统计
      * @return UV值
      */
-    public long getUv(String key, LocalDate date) {
-        return validateAndExecute(key, "获取UV", () -> {
-            String uvKey = keyBuilder.buildUvKey(key, date);
+    public long getUv(PvUvBizTypeEnum bizType, String key, LocalDate date) {
+        return validateAndExecute(key, () -> {
+            String uvKey = keyBuilder.buildUvKey(bizType, key, date);
 
             try {
                 return redisStorage.getUvCount(uvKey);
@@ -259,38 +271,54 @@ public class RedisPvUvManager {
     }
 
     /**
-     * 同时获取PV和UV值[有日期，默认当日]
+     * 获取不区分日期的全局UV值
      *
-     * @param key 业务键
-     * @return PV/UV结果
+     * @param bizType 业务类型，如PAGE、PRODUCT、ARTICLE等
+     * @param key     业务键，如页面ID、商品ID、文章ID等
+     * @return UV值
      */
-    public PvUvResult getPvAndUv(String key) {
-        return getPvAndUv(key, LocalDate.now());
+    public long getTotalUv(PvUvBizTypeEnum bizType, String key) {
+        return getUv(bizType, key, null);
     }
 
     /**
-     * 同时获取PV和UV值[无日期]
+     * 同时获取PV和UV值（带业务类型）
+     * 获取指定业务类型下的页面访问量和独立访客数
      *
-     * @param key 业务键
+     * @param bizType 业务类型，如PAGE、PRODUCT、ARTICLE等
+     * @param key     业务键，如页面ID、商品ID、文章ID等
      * @return PV/UV结果
      */
-    public PvUvResult getTotalPvAndUv(String key) {
-        return getPvAndUv(key, null);
+    public PvUvResult getPvAndUv(PvUvBizTypeEnum bizType, String key) {
+        return getPvAndUv(bizType, key, LocalDate.now());
     }
 
     /**
-     * 同时获取PV和UV值
+     * 同时获取PV和UV值（带业务类型和日期）
+     * 获取指定业务类型和日期下的页面访问量和独立访客数
      *
-     * @param key  业务键
-     * @param date 日期，null表示当天
+     * @param bizType 业务类型，如PAGE、PRODUCT、ARTICLE等
+     * @param key     业务键，如页面ID、商品ID、文章ID等
+     * @param date    日期，null表示不区分日期的全局统计
      * @return PV/UV结果
      */
-    public PvUvResult getPvAndUv(String key, LocalDate date) {
-        return validateAndExecute(key, "获取PV/UV", () -> {
-            long pv = getPv(key, date);
-            long uv = getUv(key, date);
+    public PvUvResult getPvAndUv(PvUvBizTypeEnum bizType, String key, LocalDate date) {
+        return validateAndExecute(key, () -> {
+            long pv = getPv(bizType, key, date);
+            long uv = getUv(bizType, key, date);
             return new PvUvResult(pv, uv);
         }, DEFAULT_RESULT);
+    }
+
+    /**
+     * 获取不区分日期的全局PV/UV值
+     *
+     * @param bizType 业务类型，如PAGE、PRODUCT、ARTICLE等
+     * @param key     业务键，如页面ID、商品ID、文章ID等
+     * @return PV/UV结果
+     */
+    public PvUvResult getTotalPvAndUv(PvUvBizTypeEnum bizType, String key) {
+        return getPvAndUv(bizType, key, null);
     }
 
     /**
@@ -377,18 +405,26 @@ public class RedisPvUvManager {
     }
 
     /**
+     * 获取业务类型描述，用于日志记录
+     *
+     * @param bizType 业务类型
+     * @return 业务类型描述
+     */
+    private String getBizTypeDesc(PvUvBizTypeEnum bizType) {
+        return bizType != null ? "[" + bizType.getDesc() + "]" : "";
+    }
+
+    /**
      * 通用参数校验和执行方法（带默认值）
      *
      * @param key          需要校验的键
-     * @param operation    操作名称（用于日志）
      * @param supplier     校验通过后执行的函数
      * @param defaultValue 校验失败时返回的默认值
      * @param <T>          返回值类型
      * @return 执行结果或默认值
      */
-    private <T> T validateAndExecute(String key, String operation, Supplier<T> supplier, T defaultValue) {
+    private <T> T validateAndExecute(String key, Supplier<T> supplier, T defaultValue) {
         if (key == null || key.isEmpty()) {
-            log.warn("{}时传入的key为空", operation);
             return defaultValue;
         }
         return supplier.get();
@@ -398,12 +434,10 @@ public class RedisPvUvManager {
      * 通用参数校验和执行方法（无返回值）
      *
      * @param key       需要校验的键
-     * @param operation 操作名称（用于日志）
      * @param runnable  校验通过后执行的操作
      */
-    private void validateAndExecute(String key, String operation, Runnable runnable) {
+    private void validateAndExecute(String key, Runnable runnable) {
         if (key == null || key.isEmpty()) {
-            log.warn("{}时传入的key为空", operation);
             return;
         }
         runnable.run();

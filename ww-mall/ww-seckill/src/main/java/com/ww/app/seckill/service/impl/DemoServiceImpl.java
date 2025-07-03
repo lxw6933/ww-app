@@ -30,6 +30,7 @@ import com.ww.app.redis.AppRedisTemplate;
 import com.ww.app.redis.annotation.RateLimit;
 import com.ww.app.redis.component.StockRedisComponent;
 import com.ww.app.redis.component.pvuv.RedisPvUvManager;
+import com.ww.app.redis.component.pvuv.enums.PvUvBizTypeEnum;
 import com.ww.app.seckill.component.CodeGeneratorService;
 import com.ww.app.seckill.component.IssueCodeService;
 import com.ww.app.seckill.component.RedPacketComponent;
@@ -129,7 +130,7 @@ public class DemoServiceImpl implements DemoService {
 
     @Override
     public void testPuAndUv() {
-        redisPvUvManager.recordTotalPvAndUv("testActivity", cn.hutool.core.lang.UUID.randomUUID(true).toString());
+        redisPvUvManager.recordTotalPvAndUv(PvUvBizTypeEnum.ACTIVITY, "testActivity", cn.hutool.core.lang.UUID.randomUUID(true).toString());
     }
 
     @Override
