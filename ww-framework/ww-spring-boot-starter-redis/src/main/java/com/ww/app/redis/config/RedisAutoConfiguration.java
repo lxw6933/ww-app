@@ -5,7 +5,6 @@ import com.ww.app.redis.AppRedisTemplate;
 import com.ww.app.redis.aspect.RateLimitAspect;
 import com.ww.app.redis.aspect.ResubmissionAspect;
 import com.ww.app.redis.component.ShortCodeRedisComponent;
-import com.ww.app.redis.component.StatisticsRedisComponent;
 import com.ww.app.redis.component.StockRedisComponent;
 import com.ww.app.redis.component.key.*;
 import com.ww.app.redis.component.lua.RedisScriptComponent;
@@ -171,11 +170,6 @@ public class RedisAutoConfiguration implements ApplicationContextAware {
     @Bean
     public RedisStockHandlerManager redisStockHandlerManager() {
         return new RedisStockHandlerManager();
-    }
-
-    @Bean
-    public StatisticsRedisComponent statisticsRedisComponent() {
-        return new StatisticsRedisComponent();
     }
 
     @Bean
