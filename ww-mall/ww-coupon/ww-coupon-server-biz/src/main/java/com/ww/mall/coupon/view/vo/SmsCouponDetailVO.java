@@ -1,6 +1,7 @@
 package com.ww.mall.coupon.view.vo;
 
 import com.ww.mall.coupon.constant.CouponConstant;
+import com.ww.mall.coupon.entity.SmsCouponActivity;
 import com.ww.mall.coupon.eunms.*;
 import com.ww.mall.coupon.view.vo.base.BaseCouponInfoVO;
 import lombok.Data;
@@ -93,4 +94,40 @@ public class SmsCouponDetailVO extends BaseCouponInfoVO {
      */
     private Integer number;
 
+    /**
+     * 将SmsCouponActivity对象转换为SmsCouponDetailVO对象
+     * 
+     * @param smsCouponActivity 优惠券活动
+     * @return SmsCouponDetailVO
+     */
+    public static SmsCouponDetailVO convertFrom(SmsCouponActivity smsCouponActivity) {
+        SmsCouponDetailVO vo = new SmsCouponDetailVO();
+        // 从BaseCouponInfoVO继承的属性
+        vo.setId(smsCouponActivity.getId());
+        vo.setActivityCode(smsCouponActivity.getActivityCode());
+        vo.setName(smsCouponActivity.getName());
+        vo.setDesc(smsCouponActivity.getDesc());
+        vo.setCouponDiscountType(smsCouponActivity.getCouponDiscountType());
+        vo.setAchieveAmount(smsCouponActivity.getAchieveAmount());
+        vo.setDeductionAmount(smsCouponActivity.getDeductionAmount());
+        
+        // 本类属性
+        vo.setReceiveStartTime(smsCouponActivity.getReceiveStartTime());
+        vo.setReceiveEndTime(smsCouponActivity.getReceiveEndTime());
+        vo.setEffectTimeType(smsCouponActivity.getEffectTimeType());
+        vo.setUseStartTime(smsCouponActivity.getUseStartTime());
+        vo.setUseEndTime(smsCouponActivity.getUseEndTime());
+        vo.setReceiveDay(smsCouponActivity.getReceiveDay());
+        vo.setEffectTimeUnit(smsCouponActivity.getEffectTimeUnit());
+        vo.setEffectNumber(smsCouponActivity.getEffectNumber());
+        vo.setIssueType(smsCouponActivity.getIssueType());
+        vo.setApplyMemberType(smsCouponActivity.getApplyMemberType());
+        vo.setApplyProductRangeType(smsCouponActivity.getApplyProductRangeType());
+        vo.setIdList(smsCouponActivity.getIdList());
+        vo.setLimitReceiveTimeType(smsCouponActivity.getLimitReceiveTimeType());
+        vo.setLimitReceiveNumber(smsCouponActivity.getLimitReceiveNumber());
+        vo.setNumber(smsCouponActivity.getNumber());
+        
+        return vo;
+    }
 }

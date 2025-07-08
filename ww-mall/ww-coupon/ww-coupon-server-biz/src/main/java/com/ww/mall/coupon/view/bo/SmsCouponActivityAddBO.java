@@ -1,7 +1,9 @@
 package com.ww.mall.coupon.view.bo;
 
 import com.ww.mall.coupon.constant.CouponConstant;
+import com.ww.mall.coupon.entity.SmsCouponActivity;
 import com.ww.mall.coupon.eunms.*;
+import com.ww.mall.coupon.utils.CouponUtils;
 import lombok.Data;
 
 import javax.validation.constraints.Max;
@@ -139,5 +141,43 @@ public class SmsCouponActivityAddBO {
      */
     @NotBlank(message = "活动说明不能为空")
     private String desc;
+
+    /**
+     * 将SmsCouponActivityAddBO转换为SmsCouponActivity
+     *
+     * @return SmsCouponActivity
+     */
+    public SmsCouponActivity convertSmsCouponActivity() {
+        SmsCouponActivity activity = new SmsCouponActivity();
+        activity.setName(this.getName());
+        activity.setDesc(this.getDesc());
+        activity.setCouponDiscountType(this.getCouponDiscountType());
+        activity.setAchieveAmount(this.getAchieveAmount());
+        activity.setDeductionAmount(this.getDeductionAmount());
+        activity.setReceiveStartTime(this.getReceiveStartTime());
+        activity.setReceiveEndTime(this.getReceiveEndTime());
+        activity.setEffectTimeType(this.getEffectTimeType());
+        activity.setUseStartTime(this.getUseStartTime());
+        activity.setUseEndTime(this.getUseEndTime());
+        activity.setReceiveDay(this.getReceiveDay());
+        activity.setEffectTimeUnit(this.getEffectTimeUnit());
+        activity.setEffectNumber(this.getEffectNumber());
+        activity.setIssueType(this.getIssueType());
+        activity.setApplyMemberType(this.getApplyMemberType());
+        activity.setApplyProductRangeType(this.getApplyProductRangeType());
+        activity.setIdList(this.getIdList());
+        activity.setLimitReceiveTimeType(this.getLimitReceiveTimeType());
+        activity.setLimitReceiveNumber(this.getLimitReceiveNumber());
+        activity.setNumber(this.getNumber());
+
+        // 设置默认值
+        activity.setActivityCode(CouponUtils.getSmsCouponCode());
+        activity.setStatus(false);
+        activity.setChannelId(this.getChannelId());
+        activity.setReceiveNumber(0);
+        activity.setUseNumber(0);
+
+        return activity;
+    }
 
 }

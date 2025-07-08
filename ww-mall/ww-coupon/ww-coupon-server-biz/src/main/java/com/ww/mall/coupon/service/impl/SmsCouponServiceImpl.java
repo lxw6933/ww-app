@@ -1,6 +1,5 @@
 package com.ww.mall.coupon.service.impl;
 
-import cn.hutool.core.bean.BeanUtil;
 import cn.hutool.core.collection.CollectionUtil;
 import cn.hutool.core.date.DatePattern;
 import cn.hutool.core.date.DateUtil;
@@ -128,7 +127,7 @@ public class SmsCouponServiceImpl implements SmsCouponService {
     @Override
     public AppPageResult<SmsCouponPageVO> pageList(SmsCouponPageBO smsCouponPageBO) {
         return smsCouponPageBO.simplePageConvertResult(smsCouponActivity -> {
-            SmsCouponPageVO vo = BeanUtil.toBean(smsCouponActivity, SmsCouponPageVO.class);
+            SmsCouponPageVO vo = SmsCouponPageVO.convertFrom(smsCouponActivity);
             int availableNumber = 0;
             switch (vo.getIssueType()) {
                 case RECEIVE:
@@ -176,8 +175,10 @@ public class SmsCouponServiceImpl implements SmsCouponService {
         if (couponStatus == null || CouponStatus.USED.equals(couponStatus)) {
             if (vo.getMemberId() != null) {
                 SmsCouponRecord couponRecord = mongoTemplate.findOne(SmsCouponRecord.buildCodeQuery(vo.getCode()), SmsCouponRecord.class, smsCouponRecordCollectionName);
-                vo.setVerificationTime(couponRecord.getUpdateTime());
-                vo.setCouponStatus(couponRecord.getCouponStatus());
+                if (couponRecord != null) {
+                    vo.setVerificationTime(couponRecord.getUpdateTime());
+                    vo.setCouponStatus(couponRecord.getCouponStatus());
+                }
             }
         }
         return vo;
@@ -255,14 +256,10 @@ public class SmsCouponServiceImpl implements SmsCouponService {
     @Override
     @Resubmission
     public boolean add(SmsCouponActivityAddBO smsCouponActivityAddBO) {
-        // 生成优惠券记录
-        SmsCouponActivity addSmsCouponActivityInfo = BeanUtil.toBean(smsCouponActivityAddBO, SmsCouponActivity.class);
-        addSmsCouponActivityInfo.setActivityCode(CouponUtils.getSmsCouponCode());
-        addSmsCouponActivityInfo.setStatus(false);
-        addSmsCouponActivityInfo.setChannelId(smsCouponActivityAddBO.getChannelId());
-        addSmsCouponActivityInfo.setReceiveNumber(0);
-        addSmsCouponActivityInfo.setUseNumber(0);
-        SmsCouponActivity smsCouponActivity = mongoTemplate.save(addSmsCouponActivityInfo);
+        // 生成优惠券记录 - 使用转换方法
+        SmsCouponActivity smsCouponActivity = smsCouponActivityAddBO.convertSmsCouponActivity();
+        smsCouponActivity = mongoTemplate.save(smsCouponActivity);
+        
         // 生成优惠券数量记录
         switch (smsCouponActivity.getIssueType()) {
             case RECEIVE:
@@ -300,7 +297,7 @@ public class SmsCouponServiceImpl implements SmsCouponService {
     public SmsCouponDetailVO info(String id) {
         SmsCouponActivity smsCouponActivity = mongoTemplate.findOne(BaseDoc.buildIdQuery(id), SmsCouponActivity.class);
         Assert.notNull(smsCouponActivity, () -> new ApiException(CouponResCodeConstants.UN_FOUND_ACTIVITY));
-        return BeanUtil.toBean(smsCouponActivity, SmsCouponDetailVO.class);
+        return SmsCouponDetailVO.convertFrom(smsCouponActivity);
     }
 
     @Override
@@ -687,7 +684,7 @@ public class SmsCouponServiceImpl implements SmsCouponService {
             return null;
         }
         return convertList(targetList, res -> {
-            CouponActivityCenterVO vo = BeanUtil.toBean(res, CouponActivityCenterVO.class);
+            CouponActivityCenterVO vo = CouponActivityCenterVO.convertFrom(res);
             int availableNumber = stockRedisComponent.getStrStock(couponRedisKeyBuilder.buildCouponNumberKey(res.getActivityCode()));
             // 获取当前优惠券领取数量
             int receiveNumber1 = res.getReceiveNumber();
@@ -713,7 +710,7 @@ public class SmsCouponServiceImpl implements SmsCouponService {
                     res.setCouponStatus(CouponStatus.OCCUPIED);
                 }
             }
-            MemberCouponCenterVO vo = BeanUtil.toBean(res, MemberCouponCenterVO.class);
+            MemberCouponCenterVO vo = MemberCouponCenterVO.convertFrom(res);
             // 查询活动信息
             switch (res.getCouponType()) {
                 case PLATFORM:
@@ -954,7 +951,7 @@ public class SmsCouponServiceImpl implements SmsCouponService {
 
         List<ProductCouponActivityVO> sortedIntegralCouponActivityTagList = integralCouponActivityList.stream()
                 .sorted(Comparator.comparing(SmsCouponActivity::getDeductionAmount).reversed())
-                .map(res -> BeanUtil.toBean(res, ProductCouponActivityVO.class))
+                .map(ProductCouponActivityVO::convertFrom)
                 .collect(Collectors.toList());
 
         List<ProductCouponActivityVO> sortedCashCouponActivityTagList = cashCouponActivityList.stream()
@@ -970,7 +967,7 @@ public class SmsCouponServiceImpl implements SmsCouponService {
                         target2 = e2.getAchieveAmount().subtract(minPayAmount);
                     }
                     return target2.compareTo(target1);
-                }).map(res -> BeanUtil.toBean(res, ProductCouponActivityVO.class))
+                }).map(ProductCouponActivityVO::convertFrom)
                 .collect(Collectors.toList());
         sortedIntegralCouponActivityTagList.addAll(sortedCashCouponActivityTagList);
         return sortedIntegralCouponActivityTagList;
@@ -1006,7 +1003,7 @@ public class SmsCouponServiceImpl implements SmsCouponService {
         orderBOList = orderBOList.stream().filter(OrderMemberSmsCouponBO::isActivityUseCoupon).collect(Collectors.toList());
         // 积分
         for (MemberCouponCenterVO res : memberIntegralCouponList) {
-            OrderMemberCouponVO vo = BeanUtil.toBean(res, OrderMemberCouponVO.class);
+            OrderMemberCouponVO vo = OrderMemberCouponVO.convertFrom(res);
             if (orderCouponInfoHandler(res, orderBOList, vo)) {
                 availableIntegralCouponList.add(vo);
             } else {
@@ -1015,7 +1012,7 @@ public class SmsCouponServiceImpl implements SmsCouponService {
         }
         // 现金
         for (MemberCouponCenterVO res : memberCashCouponList) {
-            OrderMemberCouponVO vo = BeanUtil.toBean(res, OrderMemberCouponVO.class);
+            OrderMemberCouponVO vo = OrderMemberCouponVO.convertFrom(res);
             if (orderCouponInfoHandler(res, orderBOList, vo)) {
                 availableCashCouponList.add(vo);
             } else {
