@@ -884,16 +884,22 @@ public class SmsCouponServiceImpl implements SmsCouponService {
         return smsCouponActivity;
     }
 
+    private final List<String> fields = Arrays.asList("activityCode", "receiveNumber");
+
     private List<SmsCouponActivity> getSmsCouponActivityCursorList(Query query, String cursorIdValue, int size) {
-        List<SmsCouponActivity> resultList = MongoUtils.descQueryByIdCursorForFields(query, cursorIdValue, size, Collections.singletonList("activityCode"), SmsCouponActivity.class);
+        List<SmsCouponActivity> resultList = MongoUtils.descQueryByIdCursorForFields(query, cursorIdValue, size, fields, SmsCouponActivity.class);
         if (CollectionUtils.isEmpty(resultList)) {
             return null;
         }
         List<String> activityCodeList = resultList.stream().map(BaseCouponInfo::getActivityCode).collect(Collectors.toList());
         List<SmsCouponActivity> targetList = new ArrayList<>();
+        Map<String, Integer> resMap = resultList.stream().collect(Collectors.toMap(SmsCouponActivity::getActivityCode, SmsCouponActivity::getReceiveNumber));
+
         activityCodeList.forEach(activityCode -> {
             try {
                 SmsCouponActivity smsCouponActivity = getSmsCouponActivity(activityCode);
+                Integer receiveNumber = resMap.get(activityCode);
+                smsCouponActivity.setReceiveNumber(receiveNumber);
                 targetList.add(smsCouponActivity);
             } catch (Exception e) {
                 log.error("查询平台优惠券活动异常", e);
