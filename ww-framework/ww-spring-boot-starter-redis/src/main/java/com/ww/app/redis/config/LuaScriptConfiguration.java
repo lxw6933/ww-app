@@ -1,6 +1,6 @@
 package com.ww.app.redis.config;
 
-import com.ww.app.redis.constant.LuaConstant;
+import com.ww.app.redis.component.stock.constant.StockLuaConstant;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -29,7 +29,7 @@ public class LuaScriptConfiguration {
     public DefaultRedisScript<Long> decrementStockScript() {
         DefaultRedisScript<Long> redisScript = new DefaultRedisScript<>();
 //        redisScript.setScriptSource(new ResourceScriptSource(new ClassPathResource("/lua/decrement_stock_script.lua")));
-        redisScript.setScriptText(LuaConstant.DECREMENT_STOCK_LUA);
+        redisScript.setScriptText(StockLuaConstant.DECREMENT_STOCK_LUA);
         redisScript.setResultType(Long.class);
         return redisScript;
     }

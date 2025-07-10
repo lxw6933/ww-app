@@ -23,7 +23,7 @@ import java.util.function.Supplier;
  * 提供PV/UV记录和查询功能，采用本地缓存+Redis存储
  */
 @Slf4j
-public class RedisPvUvManager {
+public class RedisPvUvComponent {
 
     /**
      * 默认的计数值
@@ -70,11 +70,11 @@ public class RedisPvUvManager {
      * @param redisStorage Redis存储
      * @param keyBuilder   Redis键构建器
      */
-    public RedisPvUvManager(RedisPvUvStorage redisStorage, PvUvRedisKeyBuilder keyBuilder) {
+    public RedisPvUvComponent(RedisPvUvStorage redisStorage, PvUvRedisKeyBuilder keyBuilder) {
         this(redisStorage, keyBuilder, DEFAULT_SYNC_INTERVAL_SECONDS);
     }
 
-    public RedisPvUvManager(RedisPvUvStorage redisStorage, PvUvRedisKeyBuilder keyBuilder, int syncIntervalSeconds) {
+    public RedisPvUvComponent(RedisPvUvStorage redisStorage, PvUvRedisKeyBuilder keyBuilder, int syncIntervalSeconds) {
         this.redisStorage = Objects.requireNonNull(redisStorage, "redisStorage不能为null");
         this.keyBuilder = Objects.requireNonNull(keyBuilder, "keyBuilder不能为null");
         this.localCache = new LocalPvUvCache();

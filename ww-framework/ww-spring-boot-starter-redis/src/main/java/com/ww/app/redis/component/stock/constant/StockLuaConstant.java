@@ -1,11 +1,11 @@
-package com.ww.app.redis.constant;
+package com.ww.app.redis.component.stock.constant;
 
 /**
  * @author ww
  * @create 2024-06-14- 13:34
  * @description:
  */
-public class LuaConstant {
+public class StockLuaConstant {
 
     public static final String DECREMENT_STOCK_LUA = "local current_stock = tonumber(redis.call('get', KEYS[1]) or 0);\n" +
             "if current_stock >= tonumber(ARGV[1]) then\n" +

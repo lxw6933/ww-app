@@ -1,6 +1,6 @@
 package com.ww.app.seckill;
 
-import com.ww.app.redis.annotation.component.EnableAppRedisPuUvComponent;
+import com.ww.app.redis.component.pvuv.EnableAppRedisPuUvComponent;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.cloud.client.discovery.EnableDiscoveryClient;

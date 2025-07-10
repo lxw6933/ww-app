@@ -5,10 +5,8 @@ import com.ww.app.redis.AppRedisTemplate;
 import com.ww.app.redis.aspect.RateLimitAspect;
 import com.ww.app.redis.aspect.ResubmissionAspect;
 import com.ww.app.redis.component.ShortCodeRedisComponent;
-import com.ww.app.redis.component.StockRedisComponent;
 import com.ww.app.redis.component.key.*;
 import com.ww.app.redis.component.lua.RedisScriptComponent;
-import com.ww.app.redis.handler.RedisStockHandlerManager;
 import com.ww.app.redis.listener.RedisChannelListener;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
@@ -128,11 +126,6 @@ public class RedisAutoConfiguration implements ApplicationContextAware {
     }
 
     @Bean
-    public StockRedisComponent stockRedisComponent() {
-        return new StockRedisComponent();
-    }
-
-    @Bean
     public ShortCodeRedisComponent shortCodeRedisComponent() {
         return new ShortCodeRedisComponent();
     }
@@ -140,11 +133,6 @@ public class RedisAutoConfiguration implements ApplicationContextAware {
     @Bean
     public RedisScriptComponent redisScriptComponent() {
         return new RedisScriptComponent();
-    }
-
-    @Bean
-    public StockRedisKeyBuilder stockRedisKeyBuilder() {
-        return new StockRedisKeyBuilder();
     }
 
     @Bean
@@ -165,11 +153,6 @@ public class RedisAutoConfiguration implements ApplicationContextAware {
     @Bean
     public ShortCodeRedisKeyBuilder shortCodeRedisKeyBuilder() {
         return new ShortCodeRedisKeyBuilder();
-    }
-
-    @Bean
-    public RedisStockHandlerManager redisStockHandlerManager() {
-        return new RedisStockHandlerManager();
     }
 
     @Bean

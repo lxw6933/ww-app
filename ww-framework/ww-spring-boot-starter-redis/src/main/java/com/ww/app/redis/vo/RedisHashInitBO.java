@@ -10,7 +10,7 @@ import java.util.Map;
  * @description:
  */
 @Data
-public class ActivityHashStockInitBO {
+public class RedisHashInitBO {
 
     /**
      * hashKey

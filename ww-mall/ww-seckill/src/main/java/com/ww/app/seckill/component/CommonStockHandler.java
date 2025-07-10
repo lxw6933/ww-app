@@ -2,7 +2,7 @@ package com.ww.app.seckill.component;
 
 import cn.hutool.core.date.DatePattern;
 import cn.hutool.core.date.DateUtil;
-import com.ww.app.redis.handler.IRedisStockHandler;
+import com.ww.app.redis.component.stock.handler.IRedisStockHandler;
 import com.ww.app.seckill.entity.StockExceptionData;
 import org.springframework.data.mongodb.core.MongoTemplate;
 import org.springframework.stereotype.Component;

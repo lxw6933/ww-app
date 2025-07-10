@@ -1,4 +1,4 @@
-package com.ww.app.redis.component.key;
+package com.ww.app.redis.component.stock.keys;
 
 import com.ww.app.redis.key.RedisKeyBuilder;
 import org.apache.commons.lang3.StringUtils;

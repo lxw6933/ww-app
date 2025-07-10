@@ -1,4 +1,4 @@
-package com.ww.app.redis.annotation.component;
+package com.ww.app.redis.component.pvuv;
 
 import com.ww.app.redis.component.pvuv.config.RedisPvUvAutoConfiguration;
 import org.springframework.context.annotation.Import;

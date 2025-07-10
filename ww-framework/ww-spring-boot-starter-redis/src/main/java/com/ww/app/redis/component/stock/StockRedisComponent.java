@@ -1,10 +1,10 @@
-package com.ww.app.redis.component;
+package com.ww.app.redis.component.stock;
 
 import cn.hutool.core.map.MapUtil;
 import cn.hutool.core.util.StrUtil;
-import com.ww.app.redis.constant.LuaConstant;
-import com.ww.app.redis.handler.RedisStockHandlerManager;
-import com.ww.app.redis.vo.ActivityStockVO;
+import com.ww.app.redis.component.stock.constant.StockLuaConstant;
+import com.ww.app.redis.component.stock.handler.RedisStockHandlerManager;
+import com.ww.app.redis.component.stock.entity.ActivityStockVO;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.redis.connection.ReturnType;
 import org.springframework.data.redis.core.BoundHashOperations;
@@ -69,15 +69,15 @@ public class StockRedisComponent {
      * 预加载lua script，redis服务重启，需重新加载脚本，否则报错NOSCRIPT
      */
     private void preloadLuaScript() {
-        decrementStockSha1 = stringRedisTemplate.execute((RedisCallback<String>) connection -> connection.scriptLoad(LuaConstant.DECREMENT_STOCK_LUA_BYTE));
-        lockHashStockSha1 = stringRedisTemplate.execute((RedisCallback<String>) connection -> connection.scriptLoad(LuaConstant.LOCK_STOCK_HASH_LUA_BYTE));
-        useHashStockSha1 = stringRedisTemplate.execute((RedisCallback<String>) connection -> connection.scriptLoad(LuaConstant.USE_STOCK_HASH_LUA_BYTE));
-        rollbackHashStockSha1 = stringRedisTemplate.execute((RedisCallback<String>) connection -> connection.scriptLoad(LuaConstant.ROLLBACK_STOCK_HASH_LUA_BYTE));
-        rollbackHashAfterStockSha1 = stringRedisTemplate.execute((RedisCallback<String>) connection -> connection.scriptLoad(LuaConstant.ROLLBACK_AFTER_STOCK_HASH_LUA_BYTE));
+        decrementStockSha1 = stringRedisTemplate.execute((RedisCallback<String>) connection -> connection.scriptLoad(StockLuaConstant.DECREMENT_STOCK_LUA_BYTE));
+        lockHashStockSha1 = stringRedisTemplate.execute((RedisCallback<String>) connection -> connection.scriptLoad(StockLuaConstant.LOCK_STOCK_HASH_LUA_BYTE));
+        useHashStockSha1 = stringRedisTemplate.execute((RedisCallback<String>) connection -> connection.scriptLoad(StockLuaConstant.USE_STOCK_HASH_LUA_BYTE));
+        rollbackHashStockSha1 = stringRedisTemplate.execute((RedisCallback<String>) connection -> connection.scriptLoad(StockLuaConstant.ROLLBACK_STOCK_HASH_LUA_BYTE));
+        rollbackHashAfterStockSha1 = stringRedisTemplate.execute((RedisCallback<String>) connection -> connection.scriptLoad(StockLuaConstant.ROLLBACK_AFTER_STOCK_HASH_LUA_BYTE));
         // 批量处理lua脚本
-        batchLockHashStockSha1 = stringRedisTemplate.execute((RedisCallback<String>) connection -> connection.scriptLoad(LuaConstant.BATCH_LOCK_STOCK_HASH_LUA_BYTE));
-        batchUseHashStockSha1 = stringRedisTemplate.execute((RedisCallback<String>) connection -> connection.scriptLoad(LuaConstant.BATCH_USE_STOCK_HASH_LUA_BYTE));
-        batchRollbackHashStockSha1 = stringRedisTemplate.execute((RedisCallback<String>) connection -> connection.scriptLoad(LuaConstant.BATCH_ROLLBACK_STOCK_HASH_LUA_BYTE));
+        batchLockHashStockSha1 = stringRedisTemplate.execute((RedisCallback<String>) connection -> connection.scriptLoad(StockLuaConstant.BATCH_LOCK_STOCK_HASH_LUA_BYTE));
+        batchUseHashStockSha1 = stringRedisTemplate.execute((RedisCallback<String>) connection -> connection.scriptLoad(StockLuaConstant.BATCH_USE_STOCK_HASH_LUA_BYTE));
+        batchRollbackHashStockSha1 = stringRedisTemplate.execute((RedisCallback<String>) connection -> connection.scriptLoad(StockLuaConstant.BATCH_ROLLBACK_STOCK_HASH_LUA_BYTE));
     }
 
     /**

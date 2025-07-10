@@ -1,6 +1,6 @@
 package com.ww.app.redis.component.pvuv.report;
 
-import com.ww.app.redis.component.pvuv.RedisPvUvManager;
+import com.ww.app.redis.component.pvuv.RedisPvUvComponent;
 import com.ww.app.redis.component.pvuv.enums.PvUvBizTypeEnum;
 import lombok.extern.slf4j.Slf4j;
 
@@ -23,7 +23,7 @@ public class RedisPvUvReport {
     /**
      * Redis PV/UV管理器
      */
-    private final RedisPvUvManager pvUvManager;
+    private final RedisPvUvComponent pvUvManager;
 
     /**
      * 并发查询线程池
@@ -35,7 +35,7 @@ public class RedisPvUvReport {
      *
      * @param pvUvManager Redis PV/UV管理器
      */
-    public RedisPvUvReport(RedisPvUvManager pvUvManager) {
+    public RedisPvUvReport(RedisPvUvComponent pvUvManager) {
         this.pvUvManager = Objects.requireNonNull(pvUvManager, "PvUvManager不能为空");
         // 创建守护线程的线程池，避免阻止JVM退出
         this.queryExecutor = Executors.newFixedThreadPool(
@@ -80,7 +80,7 @@ public class RedisPvUvReport {
      * @param days    天数
      * @return 每日PV/UV报表
      */
-    public Map<LocalDate, RedisPvUvManager.PvUvResult> getDailyPvUvReport(PvUvBizTypeEnum bizType, String key, int days) {
+    public Map<LocalDate, RedisPvUvComponent.PvUvResult> getDailyPvUvReport(PvUvBizTypeEnum bizType, String key, int days) {
         return getDailyReport(bizType, key, days, date -> pvUvManager.getPvAndUv(bizType, key, date));
     }
 
@@ -305,7 +305,7 @@ public class RedisPvUvReport {
      * @param endDate   结束日期
      * @return 每日PV/UV统计
      */
-    public Map<LocalDate, RedisPvUvManager.PvUvResult> getRangePvUvReport(PvUvBizTypeEnum bizType, String key, LocalDate startDate, LocalDate endDate) {
+    public Map<LocalDate, RedisPvUvComponent.PvUvResult> getRangePvUvReport(PvUvBizTypeEnum bizType, String key, LocalDate startDate, LocalDate endDate) {
         if (key == null || startDate == null || endDate == null || startDate.isAfter(endDate)) {
             return new LinkedHashMap<>();
         }
@@ -315,7 +315,7 @@ public class RedisPvUvReport {
                 return pvUvManager.getPvAndUv(bizType, key, date);
             } catch (Exception e) {
                 log.warn("获取[{}]在[{}]的PV/UV失败: {}", key, date, e.getMessage());
-                return new RedisPvUvManager.PvUvResult(0, 0);
+                return new RedisPvUvComponent.PvUvResult(0, 0);
             }
         });
     }

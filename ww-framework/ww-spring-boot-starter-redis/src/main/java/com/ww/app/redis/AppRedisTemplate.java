@@ -2,7 +2,7 @@ package com.ww.app.redis;
 
 import com.ww.app.common.exception.ApiException;
 import com.ww.app.redis.component.key.GeoRedisKeyBuilder;
-import com.ww.app.redis.vo.ActivityHashStockInitBO;
+import com.ww.app.redis.vo.RedisHashInitBO;
 import lombok.Data;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
@@ -365,7 +365,7 @@ public class AppRedisTemplate {
      * @param initBOList 初始化数据列表
      * @return 是否成功
      */
-    public boolean initializeHashStockInTransaction(List<ActivityHashStockInitBO> initBOList) {
+    public boolean initializeHashStockInTransaction(List<RedisHashInitBO> initBOList) {
         if (CollectionUtils.isEmpty(initBOList)) {
             return false;
         }
@@ -375,7 +375,7 @@ public class AppRedisTemplate {
                 @Override
                 public Void execute(@NonNull RedisOperations operations) {
                     operations.multi();
-                    for (ActivityHashStockInitBO initBO : initBOList) {
+                    for (RedisHashInitBO initBO : initBOList) {
                         if (initBO != null && StringUtils.isNotBlank(initBO.getStockHashKey()) && 
                                 initBO.getDataMap() != null && !initBO.getDataMap().isEmpty()) {
                             operations.opsForHash().putAll(initBO.getStockHashKey(), initBO.getDataMap());

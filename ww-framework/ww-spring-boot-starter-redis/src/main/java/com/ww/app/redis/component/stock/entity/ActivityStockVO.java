@@ -1,4 +1,4 @@
-package com.ww.app.redis.vo;
+package com.ww.app.redis.component.stock.entity;
 
 import lombok.Data;
 

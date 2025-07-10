@@ -1,4 +1,4 @@
-package com.ww.app.redis.handler;
+package com.ww.app.redis.component.stock.handler;
 
 import org.springframework.beans.BeansException;
 import org.springframework.context.ApplicationContext;

@@ -13,7 +13,7 @@ import com.ww.app.lottery.infrastructure.component.key.LotteryRedisKeyBuilder;
 import com.ww.app.lottery.infrastructure.exception.LotteryException;
 import com.ww.app.lottery.utils.LotteryCacheUtils;
 import com.ww.app.redis.annotation.DistributedLock;
-import com.ww.app.redis.component.StockRedisComponent;
+import com.ww.app.redis.component.stock.StockRedisComponent;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.mongodb.core.MongoTemplate;
 import org.springframework.stereotype.Service;
