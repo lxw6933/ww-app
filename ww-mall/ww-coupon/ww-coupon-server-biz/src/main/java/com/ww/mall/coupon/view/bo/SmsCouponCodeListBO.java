@@ -15,6 +15,7 @@ import org.springframework.data.mongodb.core.query.Query;
 
 import javax.validation.constraints.NotBlank;
 import javax.validation.constraints.NotNull;
+import java.util.ArrayList;
 import java.util.List;
 
 import static com.ww.app.common.utils.CollectionUtils.convertList;
@@ -59,10 +60,11 @@ public class SmsCouponCodeListBO extends AbstractMongoPage<SmsCouponCode> {
         if (StringUtils.isNotBlank(this.batchNo)) {
             criteria.and("batchNo").is(this.batchNo);
         }
-        if (StringUtils.isNotBlank(this.code)) {
-            criteria.and("code").is(this.code);
-        }
         if (this.couponStatus != null) {
+            List<String> codes = new ArrayList<>();
+            if (StringUtils.isNotBlank(this.code)) {
+                codes.add(this.code);
+            }
             MongoTemplate mongoTemplate = SpringUtil.getBean(MongoTemplate.class);
             String smsCouponRecordCollectionName = SmsCouponRecord.buildCollectionName(this.channelId);
             if (CouponStatus.WAIT.equals(this.couponStatus)) {
@@ -75,8 +77,17 @@ public class SmsCouponCodeListBO extends AbstractMongoPage<SmsCouponCode> {
                     criteria.and("code").is("-");
                 } else {
                     List<String> codesCondition = convertList(couponRecordList, SmsCouponRecord::getCouponCode);
-                    criteria.and("code").in(codesCondition);
+                    codesCondition.retainAll(codes);
+                    if (!codesCondition.isEmpty()) {
+                        criteria.and("code").in(codesCondition);
+                    } else {
+                        criteria.and("code").is("-");
+                    }
                 }
+            }
+        } else {
+            if (StringUtils.isNotBlank(this.code)) {
+                criteria.and("code").is(this.code);
             }
         }
         return criteria;
