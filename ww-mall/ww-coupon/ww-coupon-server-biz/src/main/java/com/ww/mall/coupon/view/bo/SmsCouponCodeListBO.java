@@ -69,6 +69,9 @@ public class SmsCouponCodeListBO extends AbstractMongoPage<SmsCouponCode> {
             String smsCouponRecordCollectionName = SmsCouponRecord.buildCollectionName(this.channelId);
             if (CouponStatus.WAIT.equals(this.couponStatus)) {
                 criteria.and("userId").isNull();
+                if (!codes.isEmpty()) {
+                    criteria.and("code").is(this.code);
+                }
             } else {
                 Query query = SmsCouponRecord.buildStatusQuery(this.activityCode, this.couponStatus);
                 query.fields().include("couponCode");
