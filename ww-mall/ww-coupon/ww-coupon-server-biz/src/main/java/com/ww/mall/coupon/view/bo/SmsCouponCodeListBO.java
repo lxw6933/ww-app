@@ -69,7 +69,7 @@ public class SmsCouponCodeListBO extends AbstractMongoPage<SmsCouponCode> {
                 criteria.and("userId").isNull();
             } else {
                 Query query = SmsCouponRecord.buildStatusQuery(this.activityCode, this.couponStatus);
-                query.fields().exclude("couponCode");
+                query.fields().include("couponCode");
                 List<SmsCouponRecord> couponRecordList = mongoTemplate.find(query, SmsCouponRecord.class, smsCouponRecordCollectionName);
                 if (CollectionUtils.isEmpty(couponRecordList)) {
                     criteria.and("code").is("-");
