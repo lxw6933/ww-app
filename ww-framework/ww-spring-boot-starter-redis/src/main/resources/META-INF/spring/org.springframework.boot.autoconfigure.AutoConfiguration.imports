@@ -2,4 +2,3 @@ com.ww.app.redis.config.LuaScriptConfiguration
 com.ww.app.redis.config.RedisAutoConfiguration
 com.ww.app.redis.config.RedissonAutoConfiguration
 com.ww.app.redis.config.RedisPoolAutoConfiguration
-com.ww.app.redis.component.pvuv.config.RedisPvUvAutoConfiguration

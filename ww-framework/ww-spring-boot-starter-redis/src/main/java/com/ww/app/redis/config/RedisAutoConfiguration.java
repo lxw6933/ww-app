@@ -173,11 +173,6 @@ public class RedisAutoConfiguration implements ApplicationContextAware {
     }
 
     @Bean
-    public StatisticsRedisKeyBuilder statisticsRedisKeyBuilder() {
-        return new StatisticsRedisKeyBuilder();
-    }
-
-    @Bean
     public RateLimitRedisKeyBuilder rateLimitRedisKeyBuilder() {
         return new RateLimitRedisKeyBuilder();
     }
