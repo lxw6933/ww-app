@@ -163,6 +163,10 @@ public class SmsCouponRecord extends BaseDoc {
         return new Query().addCriteria(Criteria.where("couponCode").is(couponCode));
     }
 
+    public static Query buildCodeAndStatusQuery(String couponCode, CouponStatus couponStatus) {
+        return new Query().addCriteria(Criteria.where("couponCode").is(couponCode).and("couponStatus").is(couponStatus));
+    }
+
     public static Update buildStatusUpdate(CouponStatus couponStatus) {
         return new Update().set("couponStatus", couponStatus);
     }

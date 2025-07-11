@@ -171,15 +171,24 @@ public class SmsCouponServiceImpl implements SmsCouponService {
         vo.setMemberId(res.getUserId());
         vo.setReceiveTime(vo.getMemberId() == null ? null : res.getUpdateTime());
         vo.setCouponStatus(vo.getMemberId() == null ? CouponStatus.WAIT : couponStatus);
-        // 全部、已使用
-        if (couponStatus == null || CouponStatus.USED.equals(couponStatus)) {
-            if (vo.getMemberId() != null) {
-                SmsCouponRecord couponRecord = mongoTemplate.findOne(SmsCouponRecord.buildCodeQuery(vo.getCode()), SmsCouponRecord.class, smsCouponRecordCollectionName);
-                if (couponRecord != null) {
-                    vo.setVerificationTime(couponRecord.getUpdateTime());
-                    vo.setCouponStatus(couponRecord.getCouponStatus());
+        // 状态更新
+        if (vo.getMemberId() != null) {
+            SmsCouponRecord couponRecord = mongoTemplate.findOne(SmsCouponRecord.buildCodeQuery(vo.getCode()), SmsCouponRecord.class, smsCouponRecordCollectionName);
+            Date now = new Date();
+            if (CouponStatus.TO_TAKE_EFFECT.equals(couponRecord.getCouponStatus())) {
+                // 是否已生效
+                if (couponRecord.getUseStartTime().before(now) && couponRecord.getUseEndTime().after(now)) {
+                    mongoTemplate.updateFirst(SmsCouponRecord.buildCodeAndStatusQuery(vo.getCode(), CouponStatus.TO_TAKE_EFFECT), SmsCouponRecord.buildStatusUpdate(CouponStatus.IN_EFFECT), SmsCouponRecord.class, smsCouponRecordCollectionName);
                 }
             }
+            if (CouponStatus.IN_EFFECT.equals(couponRecord.getCouponStatus())) {
+                // 是否已过期
+                if (couponRecord.getUseEndTime().before(now)) {
+                    mongoTemplate.updateFirst(SmsCouponRecord.buildCodeAndStatusQuery(vo.getCode(), CouponStatus.IN_EFFECT), SmsCouponRecord.buildStatusUpdate(CouponStatus.EXPIRED), SmsCouponRecord.class, smsCouponRecordCollectionName);
+                }
+            }
+            vo.setVerificationTime(couponRecord.getUpdateTime());
+            vo.setCouponStatus(couponRecord.getCouponStatus());
         }
         return vo;
     }
