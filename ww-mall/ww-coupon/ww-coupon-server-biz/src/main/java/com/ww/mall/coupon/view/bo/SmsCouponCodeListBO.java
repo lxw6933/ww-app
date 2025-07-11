@@ -80,7 +80,9 @@ public class SmsCouponCodeListBO extends AbstractMongoPage<SmsCouponCode> {
                     criteria.and("code").is("-");
                 } else {
                     List<String> codesCondition = convertList(couponRecordList, SmsCouponRecord::getCouponCode);
-                    codesCondition.retainAll(codes);
+                    if (!codes.isEmpty()) {
+                        codesCondition.retainAll(codes);
+                    }
                     if (!codesCondition.isEmpty()) {
                         criteria.and("code").in(codesCondition);
                     } else {
