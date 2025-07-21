@@ -71,6 +71,14 @@ ww:
     license:
       name: Apache License 2.0
       url: https://gitee.com/ww6933/ww-app/blob/master/LICENSE
+  sentinel:
+    cluster:
+      role: client
+      nacos:
+        host: ${spring.cloud.nacos.discovery.server-addr}
+        namespace: ${spring.cloud.nacos.discovery.namespace}
+        username: ${spring.cloud.nacos.discovery.username}
+        password: ${spring.cloud.nacos.discovery.password}
 
 # API文档相关配置[knife4j的增强配置，不需要增强可以不配]
 knife4j:
@@ -101,6 +109,7 @@ springdoc:
         - /**
       paths-to-exclude:
         - /error
+
 
   # 流控规则持久化
 #  cloud:

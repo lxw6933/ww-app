@@ -35,13 +35,13 @@ import java.util.Set;
 @ConditionalOnProperty(name = "ww.sentinel.cluster.enabled", havingValue = "true", matchIfMissing = true)
 public class SentinelClusterConfiguration {
 
-    @Value("${ww.sentinel.cluster.nacos.host:127.0.0.1}")
+    @Value("${ww.sentinel.cluster.nacos.host}")
     private String nacosHost;
-    @Value("${ww.sentinel.cluster.nacos.namespace:ww-dev}")
+    @Value("${ww.sentinel.cluster.nacos.namespace}")
     private String nacosNamespace;
-    @Value("${ww.sentinel.cluster.nacos.username:nacos}")
+    @Value("${ww.sentinel.cluster.nacos.username}")
     private String nacosUsername;
-    @Value("${ww.sentinel.cluster.nacos.password:nacos}")
+    @Value("${ww.sentinel.cluster.nacos.password}")
     private String nacosPassword;
 
     private final static String FLOW_POSTFIX = "-sentinel-flow.json";
@@ -52,32 +52,72 @@ public class SentinelClusterConfiguration {
 
     private final static String SENTINEL_CLUSTER_GROUP = "SENTINEL_CLUSTER_GROUP";
 
-    @Value("${mall.sentinel.cluster.server.namespace-set:sentinel-cluster-namespace-set.json}")
+    /**
+     * 配置 Sentinel 集群 server 端管理的 namespace 集合，即 server 负责哪些业务命名空间的流控
+     * [
+     *   "ww-order",
+     *   "ww-seckill"
+     * ]
+     */
+    @Value("${ww.sentinel.cluster.server.namespace-set:sentinel-cluster-namespace-set.json}")
     private String sentinelNamespaceSet;
 
-    @Value("${mall.sentinel.cluster.server.cluster-server:sentinel-cluster-server-config.json}")
+    /**
+     * 配置 Sentinel 集群 server 端自身的参数，如 server 监听的端口、token server 的最大连接数等
+     * {
+     *   "port": 18700,
+     *   "idleSeconds": 600,
+     *   "bindIp": "0.0.0.0"
+     * }
+     */
+    @Value("${ww.sentinel.cluster.server.cluster-server:sentinel-cluster-server-config.json}")
     private String serverTransportConfig;
 
-    @Value("${mall.sentinel.cluster.client.dataId:sentinel-cluster-client-config.json}")
+    /**
+     * 配置 Sentinel 集群 client 端与 server 通信的参数，如请求超时时间、重试次数等
+     * {
+     *   "requestTimeout": 2000,      // client请求server的超时时间（毫秒）
+     *   "idleSeconds": 600           // client空闲多少秒后自动断开与server的连接
+     * }
+     */
+    @Value("${ww.sentinel.cluster.client.dataId:sentinel-cluster-client-config.json}")
     private String sentinelClusterClientConfig;
 
-    @Value("${mall.sentinel.cluster.client.token-server.dataId:sentinel-cluster-token-server-config.json}")
+    /**
+     * 配置 Sentinel 集群 client 端要连接的 server 地址，即告诉 client 该去哪个 server 获取 token
+     * {
+     *   "serverHost": "192.168.1.100",
+     *   "serverPort": 18700
+     * }
+     */
+    @Value("${ww.sentinel.cluster.client.token-server.dataId:sentinel-cluster-token-server-config.json}")
     private String sentinelClusterTokenServerConfig;
+
+    @Value("${ww.sentinel.cluster.role}")
+    private String clusterRole;
 
     @PostConstruct
     public void init() {
-        log.info("-----------初始化加载Sentinel cluster server!!!!");
-        // 从nacos注册动态集群规则
-        registerClusterRuleSupplier();
-        // 从nacos注册并加载 Namespace Set 数据
-        registerServerNamespaceDatasource();
-        // 从nacos注册并加载传输配置
-        registerServerTransportDataSource();
-        log.info("-----------初始化加载Sentinel cluster client!!!!");
-        // 配置客户端连接服务端的超时时间
-        initClientConfigProperty();
-        // 配置服务端（token server）的连接，例如：ip、port等
-        initClientServerAssignProperty();
+        if ("server".equalsIgnoreCase(clusterRole)) {
+            log.info("-----------初始化加载Sentinel cluster server!!!!");
+            // 仅server模式下注册namespace和传输配置
+            registerServerNamespaceDatasource();
+            registerServerTransportDataSource();
+            // server端也需要注册规则
+            registerClusterRuleSupplier();
+            // 设置为server角色
+            ClusterStateManager.applyState(ClusterStateManager.CLUSTER_SERVER);
+        } else {
+            log.info("-----------初始化加载Sentinel cluster client!!!!");
+            // client模式下注册规则
+            registerClusterRuleSupplier();
+            // 配置客户端连接服务端的超时时间
+            initClientConfigProperty();
+            // 配置服务端（token server）的连接，例如：ip、port等
+            initClientServerAssignProperty();
+            // 设置为client角色
+            ClusterStateManager.applyState(ClusterStateManager.CLUSTER_CLIENT);
+        }
     }
 
     /**
@@ -108,13 +148,6 @@ public class SentinelClusterConfiguration {
         );
         log.info("【sentinel cluster】刷新客户端链接服务端的链接地址：{}", clientAssignConfigDataSource.getProperty());
         ClusterClientConfigManager.registerServerAssignProperty(clientAssignConfigDataSource.getProperty());
-    }
-
-    /**
-     * Alone mode use
-     */
-    public void initClusterRole() {
-        ClusterStateManager.applyState(ClusterStateManager.CLUSTER_CLIENT);
     }
 
     /**
