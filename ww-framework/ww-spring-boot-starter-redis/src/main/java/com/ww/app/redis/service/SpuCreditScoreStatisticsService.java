@@ -1,8 +1,9 @@
 package com.ww.app.redis.service;
 
 import cn.hutool.core.collection.CollectionUtil;
-import com.ww.app.redis.key.RedisKeyBuilder;
+import com.ww.app.common.utils.ThreadUtil;
 import com.ww.app.redis.component.key.SpuRedisKeyBuilder;
+import com.ww.app.redis.key.RedisKeyBuilder;
 import com.ww.app.redis.vo.SpuScore;
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
@@ -19,8 +20,6 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
-
-import static com.ww.app.common.constant.Constant.SHUTDOWN_TIMEOUT_SECONDS;
 
 /**
  * @author ww
@@ -99,25 +98,7 @@ public class SpuCreditScoreStatisticsService {
 
     @PreDestroy
     public void destroy() {
-        log.info("开始关闭SpuCreditScoreStatisticsService...");
-        try {
-            // 最后一次同步
-            syncCommentDataToRedis();
-            // 关闭线程池
-            commentDataSyncScheduler.shutdown();
-            // 等待任务完成
-            if (!commentDataSyncScheduler.awaitTermination(SHUTDOWN_TIMEOUT_SECONDS, TimeUnit.SECONDS)) {
-                log.warn("线程池未在{}秒内正常关闭，强制关闭", SHUTDOWN_TIMEOUT_SECONDS);
-                commentDataSyncScheduler.shutdownNow();
-            }
-            log.info("SpuCreditScoreStatisticsService关闭完成");
-        } catch (InterruptedException e) {
-            log.warn("关闭过程被中断", e);
-            commentDataSyncScheduler.shutdownNow();
-            Thread.currentThread().interrupt();
-        } catch (Exception e) {
-            log.error("关闭SpuCreditScoreStatisticsService时发生异常", e);
-        }
+        ThreadUtil.shutdown("SpuCreditScoreStatisticsService", this::syncCommentDataToRedis, commentDataSyncScheduler);
     }
 
     @Data

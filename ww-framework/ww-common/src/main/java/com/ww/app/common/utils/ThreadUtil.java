@@ -7,6 +7,8 @@ import lombok.extern.slf4j.Slf4j;
 
 import java.util.concurrent.*;
 
+import static com.ww.app.common.constant.Constant.SHUTDOWN_TIMEOUT_SECONDS;
+
 /**
  * @author ww
  * @create 2024-04-22- 11:07
@@ -56,6 +58,27 @@ public class ThreadUtil {
                 threadFactory
         );
         return TtlExecutors.getTtlExecutorService(threadPoolExecutorMdcWrapper);
+    }
+
+    public static void shutdown(String name, Runnable task, ExecutorService executorService) {
+        try {
+            // 执行最后一次同步
+            task.run();
+            // 关闭线程池
+            executorService.shutdown();
+            // 等待任务完成
+            if (!executorService.awaitTermination(SHUTDOWN_TIMEOUT_SECONDS, TimeUnit.SECONDS)) {
+                log.warn("{}线程池未在{}秒内正常关闭，强制关闭", name, SHUTDOWN_TIMEOUT_SECONDS);
+                executorService.shutdownNow();
+            }
+            log.info("{}关闭完成", name);
+        } catch (InterruptedException e) {
+            log.warn("{}关闭过程被中断", name, e);
+            executorService.shutdownNow();
+            Thread.currentThread().interrupt();
+        } catch (Exception e) {
+            log.error("关闭{}时发生异常", name, e);
+        }
     }
 
 }
