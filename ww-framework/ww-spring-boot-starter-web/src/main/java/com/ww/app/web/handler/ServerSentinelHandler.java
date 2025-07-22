@@ -31,22 +31,22 @@ public class ServerSentinelHandler implements BlockExceptionHandler {
     public void handle(HttpServletRequest request, HttpServletResponse response, BlockException e) throws Exception {
         Result<Object> result;
         if (e instanceof FlowException) {
-            log.error("服务请求：[{}]接口限流：{}", request.getRequestURL(), e.getMessage());
+            log.error("服务请求：[{}]接口限流", request.getRequestURL(), e);
             result = error(GlobalResCodeConstants.FLOW_EXCEPTION);
         } else if (e instanceof DegradeException) {
-            log.error("服务请求：[{}]接口降级：{}", request.getRequestURL(), e.getMessage());
+            log.error("服务请求：[{}]接口降级", request.getRequestURL(), e);
             result = error(GlobalResCodeConstants.DEGRADE_EXCEPTION);
         } else if (e instanceof ParamFlowException) {
-            log.error("服务请求：[{}]参数限流：{}", request.getRequestURL(), e.getMessage());
+            log.error("服务请求：[{}]参数限流", request.getRequestURL(), e);
             result = error(GlobalResCodeConstants.PARMA_FLOW_EXCEPTION);
         } else if (e instanceof SystemBlockException) {
-            log.error("服务请求：[{}]系统限流：{}", request.getRequestURL(), e.getMessage());
+            log.error("服务请求：[{}]系统限流", request.getRequestURL(), e);
             result = error(GlobalResCodeConstants.SYSTEM_BLOCK_EXCEPTION);
         } else if (e instanceof AuthorityException) {
-            log.error("服务请求：[{}]权限控制：{}", request.getRequestURL(), e.getMessage());
+            log.error("服务请求：[{}]权限控制", request.getRequestURL(), e);
             result = error(GlobalResCodeConstants.AUTH_LIMIT_EXCEPTION);
         } else {
-            log.error("服务请求：[{}]未知异常：{}", request.getRequestURL(), e.getMessage());
+            log.error("服务请求：[{}]未知异常", request.getRequestURL(), e);
             result = error(GlobalResCodeConstants.UNKNOWN);
         }
         response.setCharacterEncoding(StandardCharsets.UTF_8.name());
