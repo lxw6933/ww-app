@@ -18,6 +18,8 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Supplier;
 
+import static com.ww.app.common.constant.Constant.SHUTDOWN_TIMEOUT_SECONDS;
+
 /**
  * Redis PV/UV统计管理器
  * 提供PV/UV记录和查询功能，采用本地缓存+Redis存储
@@ -37,7 +39,6 @@ public class RedisPvUvComponent {
 
     // 添加配置参数
     private static final int DEFAULT_SYNC_INTERVAL_SECONDS = 30;
-    private static final int SHUTDOWN_TIMEOUT_SECONDS = 30;
 
     /**
      * 用于异步任务的线程池
@@ -447,27 +448,24 @@ public class RedisPvUvComponent {
      * 关闭，释放资源
      */
     public void shutdown() {
-        log.info("开始关闭RedisPvUvManager...");
+        log.info("开始关闭RedisPvUvComponent...");
         try {
             // 最后一次同步
             syncToRedisNow();
-
             // 关闭线程池
             scheduledExecutorService.shutdown();
-
             // 等待任务完成
             if (!scheduledExecutorService.awaitTermination(SHUTDOWN_TIMEOUT_SECONDS, TimeUnit.SECONDS)) {
                 log.warn("线程池未在{}秒内正常关闭，强制关闭", SHUTDOWN_TIMEOUT_SECONDS);
                 scheduledExecutorService.shutdownNow();
             }
-
-            log.info("RedisPvUvManager关闭完成");
+            log.info("RedisPvUvComponent关闭完成");
         } catch (InterruptedException e) {
             log.warn("关闭过程被中断", e);
             scheduledExecutorService.shutdownNow();
             Thread.currentThread().interrupt();
         } catch (Exception e) {
-            log.error("关闭RedisPvUvManager时发生异常", e);
+            log.error("关闭RedisPvUvComponent时发生异常", e);
         }
     }
 

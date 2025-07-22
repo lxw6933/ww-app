@@ -65,4 +65,9 @@ public class Constant {
      */
     public static final String UPDATE_TIP = "当前版本过低，请及时更新最新版本app!";
 
+    /**
+     * 默认线程池shutdown超时等待时间
+     */
+    public static final int SHUTDOWN_TIMEOUT_SECONDS = 30;
+
 }

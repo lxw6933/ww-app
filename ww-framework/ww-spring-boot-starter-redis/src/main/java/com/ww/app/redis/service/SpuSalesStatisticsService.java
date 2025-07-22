@@ -16,6 +16,8 @@ import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.LongAdder;
 
+import static com.ww.app.common.constant.Constant.SHUTDOWN_TIMEOUT_SECONDS;
+
 /**
  * @author ww
  * @create 2024-08-14- 14:50
@@ -68,8 +70,25 @@ public class SpuSalesStatisticsService {
 
     @PreDestroy
     public void destroy() {
-        salesDataSyncScheduler.shutdown();
-        syncSaleDataToRedis();
+        log.info("开始关闭SpuSalesStatisticsService...");
+        try {
+            // 最后一次同步
+            syncSaleDataToRedis();
+            // 关闭线程池
+            salesDataSyncScheduler.shutdown();
+            // 等待任务完成
+            if (!salesDataSyncScheduler.awaitTermination(SHUTDOWN_TIMEOUT_SECONDS, TimeUnit.SECONDS)) {
+                log.warn("线程池未在{}秒内正常关闭，强制关闭", SHUTDOWN_TIMEOUT_SECONDS);
+                salesDataSyncScheduler.shutdownNow();
+            }
+            log.info("SpuSalesStatisticsService关闭完成");
+        } catch (InterruptedException e) {
+            log.warn("关闭过程被中断", e);
+            salesDataSyncScheduler.shutdownNow();
+            Thread.currentThread().interrupt();
+        } catch (Exception e) {
+            log.error("关闭SpuSalesStatisticsService时发生异常", e);
+        }
     }
 
 }

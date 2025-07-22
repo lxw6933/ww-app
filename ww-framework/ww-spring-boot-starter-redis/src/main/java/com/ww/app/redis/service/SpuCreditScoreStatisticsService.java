@@ -20,6 +20,8 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 
+import static com.ww.app.common.constant.Constant.SHUTDOWN_TIMEOUT_SECONDS;
+
 /**
  * @author ww
  * @create 2024-08-14- 14:50
@@ -97,8 +99,25 @@ public class SpuCreditScoreStatisticsService {
 
     @PreDestroy
     public void destroy() {
-        commentDataSyncScheduler.shutdown();
-        syncCommentDataToRedis();
+        log.info("开始关闭SpuCreditScoreStatisticsService...");
+        try {
+            // 最后一次同步
+            syncCommentDataToRedis();
+            // 关闭线程池
+            commentDataSyncScheduler.shutdown();
+            // 等待任务完成
+            if (!commentDataSyncScheduler.awaitTermination(SHUTDOWN_TIMEOUT_SECONDS, TimeUnit.SECONDS)) {
+                log.warn("线程池未在{}秒内正常关闭，强制关闭", SHUTDOWN_TIMEOUT_SECONDS);
+                commentDataSyncScheduler.shutdownNow();
+            }
+            log.info("SpuCreditScoreStatisticsService关闭完成");
+        } catch (InterruptedException e) {
+            log.warn("关闭过程被中断", e);
+            commentDataSyncScheduler.shutdownNow();
+            Thread.currentThread().interrupt();
+        } catch (Exception e) {
+            log.error("关闭SpuCreditScoreStatisticsService时发生异常", e);
+        }
     }
 
     @Data
