@@ -20,7 +20,7 @@ import org.springframework.web.bind.annotation.RestController;
 public class AdminUserApiRpc extends AbstractController implements AdminUserApi {
 
     @Override
-    @PostMapping("/getAdminLoginUserInfo")
+    @PostMapping("/adminLogin")
     public Result<SysUserDTO> adminLogin(SysUserLoginBO sysUserLoginBO) {
         return Result.success(sf.getSysUserService().login(sysUserLoginBO));
     }
