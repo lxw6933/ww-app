@@ -84,7 +84,20 @@ public class SystemResourcesMonitor implements ApplicationListener<ApplicationRe
     public void stopMonitoring() {
         if (running.compareAndSet(true, false)) {
             log.info("系统资源监控已停止");
-            scheduler.shutdown();
+            try {
+                // 设置较短的超时时间
+                scheduler.shutdown();
+                if (!scheduler.awaitTermination(3, TimeUnit.SECONDS)) {
+                    log.warn("系统资源监控器关闭超时，强制关闭");
+                    scheduler.shutdownNow();
+                    if (!scheduler.awaitTermination(2, TimeUnit.SECONDS)) {
+                        log.error("系统资源监控器无法正常关闭");
+                    }
+                }
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+                scheduler.shutdownNow();
+            }
         }
     }
 
