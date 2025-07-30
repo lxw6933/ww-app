@@ -12,6 +12,7 @@ import org.springframework.context.SmartLifecycle;
 import org.springframework.stereotype.Component;
 
 import javax.annotation.Resource;
+import java.util.Map;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -153,13 +154,30 @@ public class GracefulShutdownConfiguration implements SmartLifecycle {
             // 先退出，再关闭
             CompletableFuture<Integer> exitFuture = CompletableFuture.supplyAsync(() -> 
                 SpringApplication.exit(applicationContext), shutdownExecutor);
-            Integer exitCode = exitFuture.get(gracePeriodMs / 2, TimeUnit.MILLISECONDS);
+            Integer exitCode = exitFuture.get(gracePeriodMs, TimeUnit.MILLISECONDS);
             log.info("Spring应用退出完成，退出码: {}", exitCode);
-            CompletableFuture<Void> closeFuture = CompletableFuture.runAsync(applicationContext::close, shutdownExecutor);
-            closeFuture.get(gracePeriodMs / 2, TimeUnit.MILLISECONDS);
-            log.info("Spring应用上下文已关闭");
         } catch (Exception e) {
             log.error("关闭Spring应用上下文过程中发生异常", e);
+            printSuspectThreads();
+        }
+    }
+
+    private void printSuspectThreads() {
+        Map<Thread, StackTraceElement[]> all = Thread.getAllStackTraces();
+        for (Map.Entry<Thread, StackTraceElement[]> entry : all.entrySet()) {
+            Thread t = entry.getKey();
+            // 只关注非守护线程，且状态为 RUNNABLE 或 BLOCKED
+            if (!t.isDaemon() && (t.getState() == Thread.State.RUNNABLE || t.getState() == Thread.State.BLOCKED)) {
+                // 可选：只关注名字包含关键字的线程
+                String name = t.getName().toLowerCase();
+                if (name.contains("redisson") || name.contains("netty") || name.contains("redis") ||
+                        name.contains("pool") || name.contains("main") || name.contains("shutdown")) {
+                    System.out.println("【可疑线程】" + t.getName() + " 状态: " + t.getState() + " 守护: " + t.isDaemon());
+                    for (StackTraceElement ste : entry.getValue()) {
+                        System.out.println("    at " + ste);
+                    }
+                }
+            }
         }
     }
 
