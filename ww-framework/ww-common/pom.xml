@@ -118,6 +118,11 @@
             <artifactId>spring-web</artifactId>
             <scope>provided</scope>
         </dependency>
+        <!-- trace -->
+        <dependency>
+            <groupId>org.apache.skywalking</groupId>
+            <artifactId>apm-toolkit-trace</artifactId>
+        </dependency>
     </dependencies>
 
 </project>

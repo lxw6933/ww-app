@@ -2,7 +2,6 @@ package com.ww.app.common.utils;
 
 import com.alibaba.ttl.threadpool.TtlExecutors;
 import com.ww.app.common.thread.DefaultThreadFactoryBuilder;
-import com.ww.app.common.thread.ThreadPoolExecutorMdcWrapper;
 import lombok.extern.slf4j.Slf4j;
 
 import java.util.concurrent.*;
@@ -37,7 +36,7 @@ public class ThreadUtil {
                                                      Integer queueLength,
                                                      RejectedExecutionHandler handler) {
         ThreadFactory threadFactory = new DefaultThreadFactoryBuilder().setNamePrefix(threadName).build();
-        ThreadPoolExecutorMdcWrapper threadPoolExecutorMdcWrapper = new ThreadPoolExecutorMdcWrapper(coreSize,
+        ThreadPoolExecutor threadPoolExecutor = new ThreadPoolExecutor(coreSize,
                 maxSize,
                 keepAliveTime,
                 timeUnit,
@@ -45,19 +44,19 @@ public class ThreadUtil {
                 threadFactory,
                 handler
         );
-        return TtlExecutors.getTtlExecutorService(threadPoolExecutorMdcWrapper);
+        return TtlExecutors.getTtlExecutorService(threadPoolExecutor);
     }
 
     public static ExecutorService initFixedThreadPoolExecutor(String threadName, int threadSize) {
         ThreadFactory threadFactory = new DefaultThreadFactoryBuilder().setNamePrefix(threadName).build();
-        ThreadPoolExecutorMdcWrapper threadPoolExecutorMdcWrapper = new ThreadPoolExecutorMdcWrapper(threadSize,
+        ThreadPoolExecutor threadPoolExecutor = new ThreadPoolExecutor(threadSize,
                 threadSize,
                 0L,
                 TimeUnit.MILLISECONDS,
                 new LinkedBlockingQueue<>(),
                 threadFactory
         );
-        return TtlExecutors.getTtlExecutorService(threadPoolExecutorMdcWrapper);
+        return TtlExecutors.getTtlExecutorService(threadPoolExecutor);
     }
 
     public static void shutdown(String name, Runnable task, ExecutorService executorService) {

@@ -1,13 +1,10 @@
 package com.ww.app.im.consumer;
 
-import com.ww.app.common.constant.Constant;
-import com.ww.app.common.thread.ThreadMdcUtil;
 import com.ww.app.im.core.api.common.ImMsgBody;
 import com.ww.app.im.router.api.common.ImRouterMqConstant;
 import com.ww.app.im.service.ImRouterService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.amqp.core.Message;
-import org.springframework.amqp.core.MessageProperties;
 import org.springframework.amqp.rabbit.annotation.RabbitListener;
 import org.springframework.stereotype.Component;
 
@@ -29,9 +26,6 @@ public class ImRouterConsumer {
 
     @RabbitListener(queues = {ImRouterMqConstant.IM_ROUTER_MSG_QUEUE}, containerFactory = "appDirectContainerFactory")
     public void imRouterMsg(Message message, ImMsgBody imMsgBody) {
-        MessageProperties properties = message.getMessageProperties();
-        String traceId = properties.getHeader(Constant.TRACE_ID);
-        ThreadMdcUtil.setTraceId(traceId);
         log.info("消费消息[{}]", imMsgBody);
         imRouterService.sendMsg(imMsgBody);
     }

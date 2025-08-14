@@ -18,6 +18,7 @@ import java.lang.reflect.Method;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutorService;
 import java.util.concurrent.ThreadPoolExecutor;
 
 /**
@@ -35,7 +36,7 @@ public class RedisPublishAspect {
     private AppRedisTemplate appRedisTemplate;
 
     @Resource
-    private ThreadPoolExecutor defaultThreadPoolExecutor;
+    private ExecutorService defaultThreadPoolExecutor;
 
     @Around("@annotation(com.ww.app.redis.annotation.RedisPublishMsg)")
     public Object redisPublishAdvise(ProceedingJoinPoint joinPoint) throws Throwable {

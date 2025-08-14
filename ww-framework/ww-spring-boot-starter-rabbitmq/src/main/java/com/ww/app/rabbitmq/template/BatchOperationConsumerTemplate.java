@@ -3,7 +3,6 @@ package com.ww.app.rabbitmq.template;
 import cn.hutool.core.collection.CollUtil;
 import cn.hutool.core.lang.UUID;
 import com.rabbitmq.client.Channel;
-import com.ww.app.common.thread.ThreadMdcUtil;
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.amqp.core.Message;
@@ -47,8 +46,7 @@ public abstract class BatchOperationConsumerTemplate<T, R> extends AbstractMsgCo
 
         // 设置批次ID用于日志跟踪
         String batchId = UUID.randomUUID(true).toString();
-        ThreadMdcUtil.setTraceId(batchId);
-        
+
         int batchSize = messages.size();
         log.info("开始批量处理 [批次ID: {}] [批次大小: {}]", batchId, batchSize);
         try {
@@ -94,8 +92,6 @@ public abstract class BatchOperationConsumerTemplate<T, R> extends AbstractMsgCo
             log.error("批量处理过程中发生异常 [批次ID: {}]", batchId, e);
             // 处理异常情况
             handleProcessException(channel, messages, e);
-        } finally {
-            cleanupContext();
         }
     }
 

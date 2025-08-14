@@ -1,7 +1,7 @@
 package com.ww.app.web.interceptor;
 
 import com.ww.app.common.constant.Constant;
-import com.ww.app.common.thread.ThreadMdcUtil;
+import com.ww.app.common.utils.TracerUtils;
 import com.ww.app.web.holder.ServerIpContextHolder;
 import feign.RequestInterceptor;
 import feign.RequestTemplate;
@@ -41,8 +41,6 @@ public class FeignRequestInterceptor implements RequestInterceptor {
             }
         }
         // 讲当前服务traceId传递到远程调用的服务
-        String traceId = ThreadMdcUtil.getTraceId();
-        requestTemplate.header(Constant.TRACE_ID, traceId);
         requestTemplate.header(Constant.FEIGN_FLAG, "true");
         // 远程调用是否指定服务
         String serverIp = ServerIpContextHolder.get();

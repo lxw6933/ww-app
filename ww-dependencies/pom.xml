@@ -107,7 +107,7 @@
             <!-- skywalking -->
             <dependency>
                 <groupId>org.apache.skywalking</groupId>
-                <artifactId>apm-toolkit-opentracing</artifactId>
+                <artifactId>apm-toolkit-trace</artifactId>
                 <version>${skywalking.version}</version>
             </dependency>
             <dependency>

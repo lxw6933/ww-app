@@ -89,7 +89,7 @@ public class SmsCouponServiceImpl implements SmsCouponService {
     private SmsCouponService smsCouponService;
 
     @Resource
-    private ThreadPoolExecutor defaultThreadPoolExecutor;
+    private ExecutorService defaultThreadPoolExecutor;
 
     @Resource
     private CouponComponent couponComponent;

@@ -4,8 +4,8 @@ import cn.hutool.extra.servlet.ServletUtil;
 import cn.hutool.http.Header;
 import com.ww.app.common.enums.LoginType;
 import com.ww.app.common.enums.UserType;
-import com.ww.app.common.thread.ThreadMdcUtil;
 import com.ww.app.common.utils.HttpContextUtils;
+import com.ww.app.common.utils.TracerUtils;
 import com.ww.app.mongodb.common.BaseDoc;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
@@ -70,7 +70,7 @@ public class LoginLog extends BaseDoc {
 
     public static LoginLog build(Long userId, UserType userType, LoginType loginType) {
         LoginLog loginLog = new LoginLog();
-        loginLog.setTraceId(ThreadMdcUtil.getTraceId());
+        loginLog.setTraceId(TracerUtils.getTraceId());
         loginLog.setUserId(userId);
         loginLog.setUserType(userType);
         loginLog.setLoginType(loginType);
@@ -84,7 +84,7 @@ public class LoginLog extends BaseDoc {
 
     public static LoginLog build(String account, UserType userType, LoginType loginType, String loginResult) {
         LoginLog loginLog = new LoginLog();
-        loginLog.setTraceId(ThreadMdcUtil.getTraceId());
+        loginLog.setTraceId(TracerUtils.getTraceId());
         loginLog.setAccount(account);
         loginLog.setUserType(userType);
         loginLog.setLoginType(loginType);

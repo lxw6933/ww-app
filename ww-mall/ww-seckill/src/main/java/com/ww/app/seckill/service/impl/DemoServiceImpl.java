@@ -88,7 +88,7 @@ public class DemoServiceImpl implements DemoService {
     private SmsApi smsApi;
 
     @Resource
-    private ThreadPoolExecutor defaultThreadPoolExecutor;
+    private ExecutorService defaultThreadPoolExecutor;
 
     @Resource
     private RabbitMqPublisher rabbitMqPublisher;

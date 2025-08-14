@@ -5,6 +5,7 @@ import cn.hutool.core.map.MapUtil;
 import cn.hutool.json.JSONUtil;
 import com.alibaba.nacos.common.utils.StringUtils;
 import com.ww.app.common.constant.Constant;
+import com.ww.app.common.utils.TracerUtils;
 import com.ww.app.gateway.log.AccessLog;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
@@ -116,7 +117,7 @@ public class AccessLogFilter implements GlobalFilter, Ordered {
         gatewayLog.setRequestHeaders(request.getHeaders());
         gatewayLog.setStartTime(LocalDateTime.now());
         gatewayLog.setUserIp(request.getHeaders().getFirst(Constant.USER_REAL_IP));
-        gatewayLog.setTraceId(request.getHeaders().getFirst(Constant.TRACE_ID));
+        gatewayLog.setTraceId(TracerUtils.getTraceId());
 
         MediaType mediaType = request.getHeaders().getContentType();
         if (MediaType.APPLICATION_FORM_URLENCODED.isCompatibleWith(mediaType)

@@ -1,7 +1,5 @@
 package com.ww.app.im.consumer;
 
-import com.ww.app.common.constant.Constant;
-import com.ww.app.common.thread.ThreadMdcUtil;
 import com.ww.app.im.api.common.ImBizMqConstant;
 import com.ww.app.im.core.api.common.ImMsgBody;
 import com.ww.app.im.entity.SingleChatMessage;
@@ -9,7 +7,6 @@ import com.ww.app.im.service.MsgService;
 import com.ww.app.im.utils.DocShardUtils;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.amqp.core.Message;
-import org.springframework.amqp.core.MessageProperties;
 import org.springframework.amqp.rabbit.annotation.RabbitListener;
 import org.springframework.data.mongodb.core.BulkOperations;
 import org.springframework.data.mongodb.core.MongoTemplate;
@@ -39,9 +36,6 @@ public class ImBizConsumer {
 
     @RabbitListener(queues = {ImBizMqConstant.IM_BIZ_MSG_QUEUE}, containerFactory = "appDirectContainerFactory")
     public void imBizMsg(Message message, ImMsgBody imMsgBody) {
-        MessageProperties properties = message.getMessageProperties();
-        String traceId = properties.getHeader(Constant.TRACE_ID);
-        ThreadMdcUtil.setTraceId(traceId);
         msgService.handleImMsg(imMsgBody);
     }
 

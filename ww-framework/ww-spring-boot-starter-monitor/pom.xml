@@ -17,6 +17,11 @@
     </description>
 
     <dependencies>
+        <dependency>
+            <groupId>com.ww.app</groupId>
+            <artifactId>ww-common</artifactId>
+            <version>${revision}</version>
+        </dependency>
         <!-- actuator -->
         <dependency>
             <groupId>org.springframework.boot</groupId>
@@ -31,12 +36,10 @@
         <dependency>
             <groupId>org.apache.skywalking</groupId>
             <artifactId>apm-toolkit-trace</artifactId>
-            <optional>true</optional>
         </dependency>
         <dependency>
             <groupId>org.apache.skywalking</groupId>
             <artifactId>apm-toolkit-logback-1.x</artifactId>
-            <optional>true</optional>
         </dependency>
     </dependencies>
 

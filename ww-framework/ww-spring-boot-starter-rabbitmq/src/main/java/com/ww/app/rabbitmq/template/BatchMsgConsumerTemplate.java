@@ -3,7 +3,6 @@ package com.ww.app.rabbitmq.template;
 import cn.hutool.core.collection.CollUtil;
 import cn.hutool.core.lang.UUID;
 import com.rabbitmq.client.Channel;
-import com.ww.app.common.thread.ThreadMdcUtil;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -47,8 +46,7 @@ public abstract class BatchMsgConsumerTemplate<T> extends AbstractMsgConsumerTem
 
         // 设置批次ID用于日志跟踪
         String batchId = UUID.randomUUID(true).toString();
-        ThreadMdcUtil.setTraceId(batchId);
-        
+
         int batchSize = messages.size();
         log.info("开始批量处理消息 [批次ID: {}] [批次大小: {}]", batchId, batchSize);
         
@@ -89,8 +87,6 @@ public abstract class BatchMsgConsumerTemplate<T> extends AbstractMsgConsumerTem
             log.error("批量消息处理过程中发生异常 [批次ID: {}]", batchId, e);
             // 批处理整体失败，根据策略决定是全部拒绝还是进行部分确认
             handleBatchException(channel, messages, e);
-        } finally {
-            cleanupContext();
         }
     }
 

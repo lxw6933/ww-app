@@ -1,9 +1,7 @@
 package com.ww.app.gateway.filters;
 
-import cn.hutool.core.util.IdUtil;
 import com.ww.app.common.constant.Constant;
 import com.ww.app.common.enums.GlobalResCodeConstants;
-import com.ww.app.common.thread.ThreadMdcUtil;
 import com.ww.app.gateway.properties.AppGatewayProperties;
 import com.ww.app.gateway.properties.ServerGrayProperties;
 import com.ww.app.gateway.utils.GatewayIpUtil;
@@ -41,10 +39,6 @@ public class IpFilter implements GlobalFilter, Ordered {
 
     @Override
     public Mono<Void> filter(ServerWebExchange exchange, GatewayFilterChain chain) {
-        String traceId = IdUtil.objectId();
-        // 2.将traceId设置到slf4j中，日志打印模板配置打印traceId
-        ThreadMdcUtil.setTraceId(traceId);
-
         String userRealIp = GatewayIpUtil.getIpAddress(exchange.getRequest());
         // ip黑名单校验
         if (CollectionUtils.isNotEmpty(appGatewayProperties.getBlackIpList()) && appGatewayProperties.getBlackIpList().contains(userRealIp)) {
@@ -64,7 +58,6 @@ public class IpFilter implements GlobalFilter, Ordered {
         if (Boolean.TRUE.equals(enableGray) && grayIpFlag) {
             ipRequest = exchange.getRequest()
                     .mutate()
-                    .header(Constant.TRACE_ID, traceId)
                     .header(Constant.GRAY_VERSION, grayVersion)
                     .header(Constant.PROD_VERSION, prodVersion)
                     .header(Constant.GRAY_TAG, Constant.GRAY_TAG_VALUE)
@@ -73,7 +66,6 @@ public class IpFilter implements GlobalFilter, Ordered {
         } else {
             ipRequest = exchange.getRequest()
                     .mutate()
-                    .header(Constant.TRACE_ID, traceId)
                     .header(Constant.GRAY_VERSION, grayVersion)
                     .header(Constant.PROD_VERSION, prodVersion)
                     .header(Constant.USER_REAL_IP, userRealIp)

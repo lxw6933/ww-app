@@ -1,12 +1,7 @@
 package com.ww.app.rabbitmq.template;
 
-import cn.hutool.core.lang.UUID;
 import com.rabbitmq.client.Channel;
-import com.ww.app.common.constant.Constant;
-import com.ww.app.common.thread.ThreadMdcUtil;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.amqp.core.MessageProperties;
-import org.springframework.util.StringUtils;
 
 import java.io.IOException;
 import java.util.Collections;
@@ -38,22 +33,6 @@ public abstract class AbstractMsgConsumerTemplate<T> {
      */
     protected void handleDeadLetterMessage(long deliveryTag, T message, Exception exception) {
         log.error("消息进入死信队列 [投递标签: {}] [异常: {}]", deliveryTag, exception.getMessage());
-    }
-
-    /**
-     * 设置跟踪ID
-     */
-    protected void setupTraceId(MessageProperties properties) {
-        String traceId = properties.getHeader(Constant.TRACE_ID);
-        String finalTraceId = StringUtils.hasText(traceId) ? traceId : UUID.randomUUID(true).toString();
-        ThreadMdcUtil.setTraceId(finalTraceId);
-    }
-
-    /**
-     * 清理线程上下文
-     */
-    protected void cleanupContext() {
-        ThreadMdcUtil.removeTraceId();
     }
 
     /**

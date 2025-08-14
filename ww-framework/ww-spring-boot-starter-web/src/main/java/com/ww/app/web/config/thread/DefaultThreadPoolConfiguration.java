@@ -1,14 +1,12 @@
 package com.ww.app.web.config.thread;
 
-import com.ww.app.common.thread.DefaultThreadFactoryBuilder;
-import com.ww.app.common.thread.ThreadPoolExecutorMdcWrapper;
+import com.ww.app.common.utils.ThreadUtil;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
-import java.util.concurrent.ArrayBlockingQueue;
-import java.util.concurrent.ThreadFactory;
+import java.util.concurrent.ExecutorService;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 
@@ -50,19 +48,18 @@ public class DefaultThreadPoolConfiguration {
      * @return ThreadPoolExecutor
      */
     @Bean(name = "defaultThreadPoolExecutor")
-    public ThreadPoolExecutor defaultThreadPoolExecutor(DefaultThreadPoolProperties defaultThreadPoolProperties) {
-        ThreadFactory threadFactory = new DefaultThreadFactoryBuilder().setNamePrefix(defaultThreadPoolProperties.getThreadName()).build();
-        ThreadPoolExecutorMdcWrapper executor =
-                new ThreadPoolExecutorMdcWrapper(defaultThreadPoolProperties.getCoreSize(),
-                        defaultThreadPoolProperties.getMaxSize(),
-                        defaultThreadPoolProperties.getKeepAliveTime(),
-                        TimeUnit.SECONDS,
-                        new ArrayBlockingQueue<>(defaultThreadPoolProperties.getQueueLength()),
-                        threadFactory,
-                        new ThreadPoolExecutor.CallerRunsPolicy()
-                );
+    public ExecutorService defaultThreadPoolExecutor(DefaultThreadPoolProperties defaultThreadPoolProperties) {
+        ExecutorService executorService = ThreadUtil.initThreadPoolExecutor(
+                defaultThreadPoolProperties.getThreadName(),
+                defaultThreadPoolProperties.getCoreSize(),
+                defaultThreadPoolProperties.getMaxSize(),
+                defaultThreadPoolProperties.getKeepAliveTime(),
+                TimeUnit.SECONDS,
+                defaultThreadPoolProperties.getQueueLength(),
+                new ThreadPoolExecutor.CallerRunsPolicy()
+        );
         log.info("初始化线程池DefaultThreadPoolExecutor成功...");
-        return executor;
+        return executorService;
     }
 
 //    @Bean

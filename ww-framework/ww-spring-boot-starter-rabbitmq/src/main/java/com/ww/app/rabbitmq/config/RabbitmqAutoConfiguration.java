@@ -4,7 +4,6 @@ import cn.hutool.extra.spring.SpringUtil;
 import com.ww.app.common.constant.Constant;
 import com.ww.app.common.enums.MqMsgStatus;
 import com.ww.app.common.exception.ApiException;
-import com.ww.app.common.thread.ThreadMdcUtil;
 import com.ww.app.common.utils.json.JacksonUtils;
 import com.ww.app.rabbitmq.RabbitMqPublisher;
 import com.ww.app.rabbitmq.common.BaseMqLog;
@@ -83,7 +82,6 @@ public class RabbitmqAutoConfiguration {
                 throw new ApiException("发送失败，请按照规范发送消息");
             }
             MyCorrelationData<?> myCorrelationData = (MyCorrelationData<?>) correlationData;
-            ThreadMdcUtil.setTraceId(myCorrelationData.getTraceId());
             if (!ack) {
                 log.error("消息发送到Exchange失败, {}, cause: {}", correlationData, cause);
                 myCorrelationData.setFailCause(cause);
@@ -102,13 +100,11 @@ public class RabbitmqAutoConfiguration {
          * @param routingKey 交换机通过哪个路由键发送到queue
          */
         rabbitTemplate.setReturnsCallback(returned -> {
-            String traceId = returned.getMessage().getMessageProperties().getHeader(Constant.TRACE_ID);
             Integer delay = returned.getMessage().getMessageProperties().getHeader(RabbitmqConstant.DELAY_HEADER);
             if (delay > 0) {
                 // 解决延时消息会触发的bug
                 return;
             }
-            ThreadMdcUtil.setTraceId(traceId);
             // 消息到达queue失败
             log.error("消息发送到Queue失败\n" +
                             "[消息]  >>>  {}\n" +
@@ -126,7 +122,6 @@ public class RabbitmqAutoConfiguration {
             correlationData.setMessage(JacksonUtils.parseObject(returned.getMessage().getBody(), Object.class));
             correlationData.setExchange(returned.getExchange());
             correlationData.setRoutingKey(returned.getRoutingKey());
-            correlationData.setTraceId(traceId);
             correlationData.setFailCause(returned.getReplyText());
             mqLogRepository.save(correlationData, MqMsgStatus.DELIVER_FAIL);
         });
@@ -149,7 +144,6 @@ public class RabbitmqAutoConfiguration {
                 }
                 if (correlation instanceof MyCorrelationData) {
                     MyCorrelationData<?> myCorrelationData = (MyCorrelationData<?>) correlation;
-                    messageProperties.setHeader(Constant.TRACE_ID, myCorrelationData.getTraceId());
                     messageProperties.setHeader(RabbitmqConstant.EXCHANGE_HEADER, myCorrelationData.getExchange());
                     messageProperties.setHeader(RabbitmqConstant.ROUTING_KEY_HEADER, myCorrelationData.getRoutingKey());
                     messageProperties.setHeader(RabbitmqConstant.MESSAGE_HEADER, myCorrelationData.getMessage());

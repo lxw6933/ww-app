@@ -9,7 +9,9 @@ import java.util.concurrent.*;
  * @description: 子线程日志打印丢失 traceId
  * @author: ww
  * @create: 2023/7/8 11:29
+ * @deprecated 使用skywalking agent
  **/
+@Deprecated
 public class ThreadPoolExecutorMdcWrapper extends ThreadPoolExecutor {
 
     public ThreadPoolExecutorMdcWrapper(int corePoolSize, int maximumPoolSize, long keepAliveTime, TimeUnit unit,

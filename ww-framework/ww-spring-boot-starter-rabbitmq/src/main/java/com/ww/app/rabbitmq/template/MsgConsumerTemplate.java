@@ -33,8 +33,7 @@ public abstract class MsgConsumerTemplate<T> extends AbstractMsgConsumerTemplate
      */
     public final void consumer(Message message, T msg, Channel channel) throws IOException {
         MessageProperties properties = message.getMessageProperties();
-        setupTraceId(properties);
-        
+
         long deliveryTag = properties.getDeliveryTag();
         String correlationId = Optional.ofNullable(properties.getCorrelationId()).orElse("未指定");
         
@@ -71,7 +70,6 @@ public abstract class MsgConsumerTemplate<T> extends AbstractMsgConsumerTemplate
         } finally {
             // 清理ThreadLocal
             retryCount.remove();
-            cleanupContext();
         }
     }
 

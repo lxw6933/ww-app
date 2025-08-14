@@ -11,7 +11,9 @@ import java.util.concurrent.Callable;
  * @description: 解决多线程丢失traceId问题
  * @author: ww
  * @create: 2023/7/8 11:30
+ * @deprecated 使用skywalking agent
  **/
+@Deprecated
 public class ThreadMdcUtil {
 
     public static String getTraceId() {

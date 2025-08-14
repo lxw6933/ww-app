@@ -1,6 +1,6 @@
 package com.ww.app.rabbitmq.common;
 
-import com.ww.app.common.thread.ThreadMdcUtil;
+import com.ww.app.common.utils.TracerUtils;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
@@ -51,7 +51,7 @@ public class MyCorrelationData<T> extends CorrelationData {
     public MyCorrelationData(boolean init) {
         if (init) {
             this.setId(UUID.randomUUID().toString());
-            this.traceId = ThreadMdcUtil.getTraceId();
+            this.traceId = TracerUtils.getTraceId();
         }
     }
 
