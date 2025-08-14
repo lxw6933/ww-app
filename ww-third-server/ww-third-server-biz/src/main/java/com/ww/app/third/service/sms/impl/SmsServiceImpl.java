@@ -14,11 +14,11 @@ import org.springframework.stereotype.Service;
 public class SmsServiceImpl implements SmsService {
     @Override
     public boolean sendSms(String mobile, String code) {
-        try {
-            Thread.sleep(6000);
-        } catch (InterruptedException e) {
-            throw new RuntimeException(e);
-        }
+//        try {
+//            Thread.sleep(6000);
+//        } catch (InterruptedException e) {
+//            throw new RuntimeException(e);
+//        }
         log.info("发送手机号：{} 短信验证码：{}", mobile, code);
         return true;
     }

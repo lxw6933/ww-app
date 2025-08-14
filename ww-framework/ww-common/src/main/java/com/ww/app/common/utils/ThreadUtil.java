@@ -2,6 +2,7 @@ package com.ww.app.common.utils;
 
 import com.alibaba.ttl.threadpool.TtlExecutors;
 import com.ww.app.common.thread.DefaultThreadFactoryBuilder;
+import com.ww.app.common.thread.ThreadPoolExecutorTracerWrapper;
 import lombok.extern.slf4j.Slf4j;
 
 import java.util.concurrent.*;
@@ -36,7 +37,7 @@ public class ThreadUtil {
                                                      Integer queueLength,
                                                      RejectedExecutionHandler handler) {
         ThreadFactory threadFactory = new DefaultThreadFactoryBuilder().setNamePrefix(threadName).build();
-        ThreadPoolExecutor threadPoolExecutor = new ThreadPoolExecutor(coreSize,
+        ThreadPoolExecutorTracerWrapper threadPoolExecutor = new ThreadPoolExecutorTracerWrapper(coreSize,
                 maxSize,
                 keepAliveTime,
                 timeUnit,
@@ -49,7 +50,7 @@ public class ThreadUtil {
 
     public static ExecutorService initFixedThreadPoolExecutor(String threadName, int threadSize) {
         ThreadFactory threadFactory = new DefaultThreadFactoryBuilder().setNamePrefix(threadName).build();
-        ThreadPoolExecutor threadPoolExecutor = new ThreadPoolExecutor(threadSize,
+        ThreadPoolExecutorTracerWrapper threadPoolExecutor = new ThreadPoolExecutorTracerWrapper(threadSize,
                 threadSize,
                 0L,
                 TimeUnit.MILLISECONDS,
