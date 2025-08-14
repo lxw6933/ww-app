@@ -18,12 +18,6 @@
             <artifactId>ww-spring-boot-starter-web</artifactId>
             <version>${revision}</version>
         </dependency>
-        <!-- monitor starter -->
-        <dependency>
-            <groupId>com.ww.app</groupId>
-            <artifactId>ww-spring-boot-starter-monitor</artifactId>
-            <version>${revision}</version>
-        </dependency>
         <!-- grpc-client -->
         <dependency>
             <groupId>net.devh</groupId>

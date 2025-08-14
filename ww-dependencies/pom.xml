@@ -19,6 +19,8 @@
         <spring-cloud.version>2021.0.9</spring-cloud.version>
         <spring-alibaba.version>2021.0.6.0</spring-alibaba.version>
 
+        <skywalking.version>9.4.0</skywalking.version>
+
         <lombok.version>1.18.24</lombok.version>
         <mapstruct-plus.version>1.4.5</mapstruct-plus.version>
         <slf4j.version>1.7.36</slf4j.version>
@@ -101,6 +103,17 @@
                 <version>${spring-alibaba.version}</version>
                 <type>pom</type>
                 <scope>import</scope>
+            </dependency>
+            <!-- skywalking -->
+            <dependency>
+                <groupId>org.apache.skywalking</groupId>
+                <artifactId>apm-toolkit-opentracing</artifactId>
+                <version>${skywalking.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.apache.skywalking</groupId>
+                <artifactId>apm-toolkit-logback-1.x</artifactId>
+                <version>${skywalking.version}</version>
             </dependency>
             <!-- 实现 Spring Boot Admin Server 服务端 -->
             <dependency>

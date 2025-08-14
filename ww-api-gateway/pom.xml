@@ -52,10 +52,11 @@
             <groupId>org.springframework.cloud</groupId>
             <artifactId>spring-cloud-starter-gateway</artifactId>
         </dependency>
-        <!-- actuator 端口监控 -->
+        <!-- monitor starter -->
         <dependency>
-            <groupId>org.springframework.boot</groupId>
-            <artifactId>spring-boot-starter-actuator</artifactId>
+            <groupId>com.ww.app</groupId>
+            <artifactId>ww-spring-boot-starter-monitor</artifactId>
+            <version>${revision}</version>
         </dependency>
         <!-- test -->
         <dependency>

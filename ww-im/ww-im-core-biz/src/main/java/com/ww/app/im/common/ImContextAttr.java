@@ -1,5 +1,6 @@
 package com.ww.app.im.common;
 
+import com.ww.app.common.constant.Constant;
 import io.netty.util.AttributeKey;
 
 /**
@@ -12,7 +13,7 @@ public class ImContextAttr {
     /**
      * traceId
      */
-    public static AttributeKey<String> TRACE_ID = AttributeKey.valueOf("traceId");
+    public static AttributeKey<String> TRACE_ID = AttributeKey.valueOf(Constant.TRACE_ID);
 
     /**
      * 绑定用户id
