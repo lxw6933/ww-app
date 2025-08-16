@@ -9,9 +9,13 @@
     
     <!-- 日志存放路径 - 使用系统属性或环境变量，如果没有则使用默认值 -->
     <property name="LOG_HOME" value="${LOG_PATH:-./target/logs}"/>
+
+    <!-- %d 表示日期，%X{tid} SkWalking 链路追踪编号，%thread 表示线程名，%-5level：级别从左显示 5 个字符宽度，%msg：日志消息，%n是换行符  -->
+    <!-- 控制台输出格式：包含颜色代码 -->
+    <property name="PATTERN_CONSOLE" value="%d{${LOG_DATEFORMAT_PATTERN:-yyyy-MM-dd HH:mm:ss.SSS}} | %highlight(${LOG_LEVEL_PATTERN:-%5p} ${PID:- }) | %boldYellow(%thread [%tid]) %boldGreen(%-40.40logger{39}) | %m%n${LOG_EXCEPTION_CONVERSION_WORD:-%wEx}"/>
     
-    <!-- 格式化输出：%d 表示日期，%X{tid} SkWalking 链路追踪编号，%thread 表示线程名，%-5level：级别从左显示 5 个字符宽度，%msg：日志消息，%n是换行符 -->
-    <property name="PATTERN_DEFAULT" value="%d{${LOG_DATEFORMAT_PATTERN:-yyyy-MM-dd HH:mm:ss.SSS}} | %highlight(${LOG_LEVEL_PATTERN:-%5p} ${PID:- }) | %boldYellow(%thread [%tid]) %boldGreen(%-40.40logger{39}) | %m%n${LOG_EXCEPTION_CONVERSION_WORD:-%wEx}"/>
+    <!-- 文件输出格式：不包含颜色代码，保持纯文本 -->
+    <property name="PATTERN_FILE" value="%d{${LOG_DATEFORMAT_PATTERN:-yyyy-MM-dd HH:mm:ss.SSS}} | %5p ${PID:- } | %thread [%tid] %-40.40logger{39} | %m%n${LOG_EXCEPTION_CONVERSION_WORD:-%wEx}"/>
     
     <!-- 计算日志文件路径 -->
     <property name="LOG_FILE" value="${LOG_HOME}/log"/>
@@ -19,16 +23,16 @@
     <appender name="STDOUT" class="ch.qos.logback.core.ConsoleAppender">
         <encoder class="ch.qos.logback.core.encoder.LayoutWrappingEncoder">
             <layout class="org.apache.skywalking.apm.toolkit.log.logback.v1.x.TraceIdPatternLogbackLayout">
-                <pattern>${PATTERN_DEFAULT}</pattern>
+                <pattern>${PATTERN_CONSOLE}</pattern>
             </layout>
         </encoder>
     </appender>
 
-    <!-- 文件 Appender - 使用带颜色的格式 -->
+    <!-- 文件 Appender - 使用不包含颜色代码的格式 -->
     <appender name="FILE"  class="ch.qos.logback.core.rolling.RollingFileAppender">
         <encoder class="ch.qos.logback.core.encoder.LayoutWrappingEncoder">
             <layout class="org.apache.skywalking.apm.toolkit.log.logback.v1.x.TraceIdPatternLogbackLayout">
-                <pattern>${PATTERN_DEFAULT}</pattern>
+                <pattern>${PATTERN_FILE}</pattern>
             </layout>
         </encoder>
         <!-- 日志文件名 -->
@@ -55,7 +59,7 @@
     <appender name="GRPC" class="org.apache.skywalking.apm.toolkit.log.logback.v1.x.log.GRPCLogClientAppender">
         <encoder class="ch.qos.logback.core.encoder.LayoutWrappingEncoder">
             <layout class="org.apache.skywalking.apm.toolkit.log.logback.v1.x.TraceIdPatternLogbackLayout">
-                <pattern>${PATTERN_DEFAULT}</pattern>
+                <pattern>${PATTERN_FILE}</pattern>
             </layout>
         </encoder>
     </appender>
