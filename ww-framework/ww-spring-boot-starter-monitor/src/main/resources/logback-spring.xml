@@ -7,8 +7,8 @@
      -->
     <include resource="org/springframework/boot/logging/logback/defaults.xml" />
     
-    <!-- 日志存放路径 - 使用系统属性或环境变量，如果没有则使用默认值 -->
-    <property name="LOG_HOME" value="${LOG_PATH:-./target/logs}"/>
+    <!-- 日志存放路径 - 优先使用系统属性LOG_PATH，其次使用Spring Boot的logging.file.path配置，最后使用默认值 -->
+    <property name="LOG_HOME" value="${LOG_PATH:-${logging.file.path:-./target/logs}}"/>
 
     <!-- %d 表示日期，%X{tid} SkWalking 链路追踪编号，%thread 表示线程名，%-5level：级别从左显示 5 个字符宽度，%msg：日志消息，%n是换行符  -->
     <!-- 控制台输出格式：包含颜色代码 -->
@@ -40,7 +40,7 @@
             <!-- 日志文件输出的文件名 -->
             <fileNamePattern>${LOG_FILE}.%d{yyyy-MM-dd}.%i.log</fileNamePattern>
             <!-- 日志文件的保留天数 -->
-            <maxHistory>30</maxHistory>
+            <maxHistory>7</maxHistory>
             <!-- 日志文件，到达多少容量，进行滚动 -->
             <maxFileSize>10MB</maxFileSize>
         </rollingPolicy>
@@ -51,7 +51,7 @@
         <!-- 不丢失日志。默认的，如果队列的 80% 已满,则会丢弃 TRACT、DEBUG、INFO 级别的日志 -->
         <discardingThreshold>0</discardingThreshold>
         <!-- 更改默认的队列的深度，该值会影响性能。默认值为 256 -->
-        <queueSize>256</queueSize>
+        <queueSize>512</queueSize>
         <appender-ref ref="FILE"/>
     </appender>
 
