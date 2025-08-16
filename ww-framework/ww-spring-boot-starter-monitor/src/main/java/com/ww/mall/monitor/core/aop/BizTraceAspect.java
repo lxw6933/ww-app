@@ -3,6 +3,7 @@ package com.ww.mall.monitor.core.aop;
 import cn.hutool.core.util.StrUtil;
 import com.ww.app.common.common.ClientUser;
 import com.ww.app.common.context.AuthorizationContext;
+import com.ww.app.common.utils.TracerUtils;
 import com.ww.mall.monitor.core.annotation.BizTrace;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.skywalking.apm.toolkit.trace.ActiveSpan;
@@ -32,6 +33,7 @@ public class BizTraceAspect {
 
         // 主动创建本地埋点
         ActiveSpan.tag("biz.name", operation);
+        ActiveSpan.tag("biz.traceId", TracerUtils.getTraceId());
         if (ann != null && ann.includeArgs()) {
             try {
                 ActiveSpan.tag("biz.params", truncate(Arrays.toString(pjp.getArgs())));
