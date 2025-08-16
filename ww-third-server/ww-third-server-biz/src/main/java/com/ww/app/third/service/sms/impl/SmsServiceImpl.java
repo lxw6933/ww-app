@@ -1,6 +1,7 @@
 package com.ww.app.third.service.sms.impl;
 
 import com.ww.app.third.service.sms.SmsService;
+import com.ww.mall.monitor.core.annotation.BizTrace;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
@@ -13,6 +14,8 @@ import org.springframework.stereotype.Service;
 @Service
 public class SmsServiceImpl implements SmsService {
     @Override
+//    @Trace(operationName = "发送短信")
+    @BizTrace(operation = "发送短信")
     public boolean sendSms(String mobile, String code) {
 //        try {
 //            Thread.sleep(6000);

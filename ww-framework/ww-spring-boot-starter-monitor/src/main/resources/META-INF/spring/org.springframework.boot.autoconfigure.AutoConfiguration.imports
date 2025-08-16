@@ -1,1 +1,2 @@
 com.ww.mall.monitor.config.AppMonitorAutoConfiguration
+com.ww.mall.monitor.config.AppTracerAutoConfiguration

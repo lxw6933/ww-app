@@ -28,9 +28,9 @@ import com.ww.app.rabbitmq.exchange.ExchangeConstant;
 import com.ww.app.rabbitmq.routekey.RouteKeyConstant;
 import com.ww.app.redis.AppRedisTemplate;
 import com.ww.app.redis.annotation.RateLimit;
-import com.ww.app.redis.component.stock.StockRedisComponent;
 import com.ww.app.redis.component.pvuv.RedisPvUvComponent;
 import com.ww.app.redis.component.pvuv.enums.PvUvBizTypeEnum;
+import com.ww.app.redis.component.stock.StockRedisComponent;
 import com.ww.app.seckill.component.CodeGeneratorService;
 import com.ww.app.seckill.component.IssueCodeService;
 import com.ww.app.seckill.component.RedPacketComponent;
@@ -43,6 +43,7 @@ import com.ww.app.seckill.service.DemoService;
 import com.ww.app.seckill.view.bo.SensitiveWordBO;
 import com.ww.app.sensitive.annotation.SensitiveWord;
 import com.ww.app.third.sms.rpc.SmsApi;
+import com.ww.mall.monitor.core.annotation.BizTrace;
 import io.github.linpeilie.Converter;
 import lombok.extern.slf4j.Slf4j;
 import org.redisson.api.RBloomFilter;
@@ -231,6 +232,8 @@ public class DemoServiceImpl implements DemoService {
     }
 
     @Override
+//    @Trace(operationName = "测试traceId")
+    @BizTrace(operation = "测试traceId")
     public void traceId() {
         // interface 日志
         log.info("interface start log");

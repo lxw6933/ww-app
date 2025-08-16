@@ -6,10 +6,15 @@
      默认的日志级别
      -->
     <include resource="org/springframework/boot/logging/logback/defaults.xml" />
-    <!-- 日志存放路径 -->
-    <property name="LOG_HOME" value="../target/logs"/>
+    
+    <!-- 日志存放路径 - 使用系统属性或环境变量，如果没有则使用默认值 -->
+    <property name="LOG_HOME" value="${LOG_PATH:-./target/logs}"/>
+    
     <!-- 格式化输出：%d 表示日期，%X{tid} SkWalking 链路追踪编号，%thread 表示线程名，%-5level：级别从左显示 5 个字符宽度，%msg：日志消息，%n是换行符 -->
     <property name="PATTERN_DEFAULT" value="%d{${LOG_DATEFORMAT_PATTERN:-yyyy-MM-dd HH:mm:ss.SSS}} | %highlight(${LOG_LEVEL_PATTERN:-%5p} ${PID:- }) | %boldYellow(%thread [%tid]) %boldGreen(%-40.40logger{39}) | %m%n${LOG_EXCEPTION_CONVERSION_WORD:-%wEx}"/>
+    
+    <!-- 计算日志文件路径 -->
+    <property name="LOG_FILE" value="${LOG_HOME}/log"/>
 
     <appender name="STDOUT" class="ch.qos.logback.core.ConsoleAppender">
         <encoder class="ch.qos.logback.core.encoder.LayoutWrappingEncoder">
@@ -19,7 +24,7 @@
         </encoder>
     </appender>
 
-    <!-- 文件 Appender -->
+    <!-- 文件 Appender - 使用带颜色的格式 -->
     <appender name="FILE"  class="ch.qos.logback.core.rolling.RollingFileAppender">
         <encoder class="ch.qos.logback.core.encoder.LayoutWrappingEncoder">
             <layout class="org.apache.skywalking.apm.toolkit.log.logback.v1.x.TraceIdPatternLogbackLayout">
@@ -27,18 +32,13 @@
             </layout>
         </encoder>
         <!-- 日志文件名 -->
-        <file>${LOG_FILE}</file>
         <rollingPolicy class="ch.qos.logback.core.rolling.SizeAndTimeBasedRollingPolicy">
-            <!-- 滚动后的日志文件名 -->
-            <fileNamePattern>${LOGBACK_ROLLINGPOLICY_FILE_NAME_PATTERN:-${LOG_FILE}.%d{yyyy-MM-dd}.%i.gz}</fileNamePattern>
-            <!-- 启动服务时，是否清理历史日志，一般不建议清理 -->
-            <cleanHistoryOnStart>${LOGBACK_ROLLINGPOLICY_CLEAN_HISTORY_ON_START:-false}</cleanHistoryOnStart>
-            <!-- 日志文件，到达多少容量，进行滚动 -->
-            <maxFileSize>${LOGBACK_ROLLINGPOLICY_MAX_FILE_SIZE:-10MB}</maxFileSize>
-            <!-- 日志文件的总大小，0 表示不限制 -->
-            <totalSizeCap>${LOGBACK_ROLLINGPOLICY_TOTAL_SIZE_CAP:-0}</totalSizeCap>
+            <!-- 日志文件输出的文件名 -->
+            <fileNamePattern>${LOG_FILE}.%d{yyyy-MM-dd}.%i.log</fileNamePattern>
             <!-- 日志文件的保留天数 -->
-            <maxHistory>${LOGBACK_ROLLINGPOLICY_MAX_HISTORY:-30}</maxHistory>
+            <maxHistory>30</maxHistory>
+            <!-- 日志文件，到达多少容量，进行滚动 -->
+            <maxFileSize>10MB</maxFileSize>
         </rollingPolicy>
     </appender>
 
