@@ -73,7 +73,7 @@ public class ResubmissionAspect {
     /**
      * 本地缓存过期时间（秒）
      */
-    @Value("${resubmission.local-cache.expire-after-write:300}")
+    @Value("${resubmission.local-cache.expire-after-write:3}")
     private int localCacheExpireAfterWrite;
 
     /**

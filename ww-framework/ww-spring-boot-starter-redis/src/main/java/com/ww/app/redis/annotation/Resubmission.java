@@ -17,9 +17,9 @@ import java.util.concurrent.TimeUnit;
 public @interface Resubmission {
 
     /**
-     * 过期秒数,默认为5秒
+     * 过期秒数,默认为3秒
      */
-    long expire() default 5;
+    long expire() default 3;
 
     /**
      * 超时时间单位
