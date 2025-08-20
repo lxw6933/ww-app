@@ -2,7 +2,6 @@ package com.ww.app.common.utils;
 
 import com.alibaba.ttl.threadpool.TtlExecutors;
 import com.ww.app.common.thread.DefaultThreadFactoryBuilder;
-import com.ww.app.common.thread.ThreadPoolExecutorTracerWrapper;
 import lombok.extern.slf4j.Slf4j;
 
 import java.util.concurrent.*;
@@ -12,7 +11,7 @@ import static com.ww.app.common.constant.Constant.SHUTDOWN_TIMEOUT_SECONDS;
 /**
  * @author ww
  * @create 2024-04-22- 11:07
- * @description:
+ * @description: 使用skywalking bootstrap-plugin解决线程池异步任务丢失traceId
  */
 @Slf4j
 public class ThreadUtil {
@@ -37,7 +36,7 @@ public class ThreadUtil {
                                                      Integer queueLength,
                                                      RejectedExecutionHandler handler) {
         ThreadFactory threadFactory = new DefaultThreadFactoryBuilder().setNamePrefix(threadName).build();
-        ThreadPoolExecutorTracerWrapper threadPoolExecutor = new ThreadPoolExecutorTracerWrapper(coreSize,
+        ThreadPoolExecutor threadPoolExecutor = new ThreadPoolExecutor(coreSize,
                 maxSize,
                 keepAliveTime,
                 timeUnit,
@@ -50,7 +49,7 @@ public class ThreadUtil {
 
     public static ExecutorService initFixedThreadPoolExecutor(String threadName, int threadSize) {
         ThreadFactory threadFactory = new DefaultThreadFactoryBuilder().setNamePrefix(threadName).build();
-        ThreadPoolExecutorTracerWrapper threadPoolExecutor = new ThreadPoolExecutorTracerWrapper(threadSize,
+        ThreadPoolExecutor threadPoolExecutor = new ThreadPoolExecutor(threadSize,
                 threadSize,
                 0L,
                 TimeUnit.MILLISECONDS,
