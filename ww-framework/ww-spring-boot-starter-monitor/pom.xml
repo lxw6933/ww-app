@@ -33,10 +33,10 @@
             <artifactId>micrometer-registry-prometheus</artifactId>
         </dependency>
         <!-- skywalking -->
-        <dependency>
-            <groupId>org.apache.skywalking</groupId>
-            <artifactId>apm-toolkit-trace</artifactId>
-        </dependency>
+<!--        <dependency>-->
+<!--            <groupId>org.apache.skywalking</groupId>-->
+<!--            <artifactId>apm-toolkit-trace</artifactId>-->
+<!--        </dependency>-->
         <dependency>
             <groupId>org.apache.skywalking</groupId>
             <artifactId>apm-toolkit-logback-1.x</artifactId>
