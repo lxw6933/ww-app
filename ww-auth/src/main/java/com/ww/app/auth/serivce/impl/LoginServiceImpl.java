@@ -112,8 +112,8 @@ public class LoginServiceImpl extends BaseService implements LoginService {
         Date now = new Date();
         Date tokenExpTime = DateUtils.addHours(now, jwtProperties.getExpire());
         Map<String, Object> map = new HashMap<>();
-        map.put("id", userId);
-        map.put("userType", userType);
+        map.put(Constant.USER_ID, userId);
+        map.put(Constant.USER_TYPE, userType);
         map.put("exp", tokenExpTime.getTime());
         map.put("nbf", now);
         map.put("iss", jwtProperties.getIss());

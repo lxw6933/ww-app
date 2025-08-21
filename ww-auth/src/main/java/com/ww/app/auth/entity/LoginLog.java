@@ -77,7 +77,7 @@ public class LoginLog extends BaseDoc {
         loginLog.setLoginSuccess(true);
         loginLog.setLoginMsg("登录成功");
         HttpServletRequest request = HttpContextUtils.getHttpServletRequest();
-        loginLog.setIp(ServletUtil.getClientIP(request));
+        loginLog.setIp(HttpContextUtils.getAppReqIp());
         loginLog.setUserAgent(request.getHeader(Header.USER_AGENT.toString()));
         return loginLog;
     }
@@ -91,7 +91,7 @@ public class LoginLog extends BaseDoc {
         loginLog.setLoginSuccess(false);
         loginLog.setLoginMsg(loginResult);
         HttpServletRequest request = HttpContextUtils.getHttpServletRequest();
-        loginLog.setIp(ServletUtil.getClientIP(request));
+        loginLog.setIp(HttpContextUtils.getAppReqIp());
         loginLog.setUserAgent(request.getHeader(Header.USER_AGENT.toString()));
         return loginLog;
     }

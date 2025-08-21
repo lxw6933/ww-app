@@ -34,14 +34,15 @@ public class Constant {
     public static final String USER_TOKEN_KEY = "Authorization";
     public static final String USER_REAL_IP = "user-real-ip";
     public static final String USER_TOKEN_INFO = "tokenInfo";
-    public static final String USER_TYPE = "ww-user-type";
+    public static final String USER_ID = "id";
+    public static final String USER_TYPE = "userType";
     public static final String TEMP_USER_KEY = "temp-user-key";
     public static final Integer TEMP_USER_COOKIE_TIMEOUT = 30 * 24 * 60 * 60;
 
     public static final String TRACE_ID = "traceId";
     public static final String MSG_MODE= "msgMode";
 
-    public static final String ENCRYPT_HEADER = "ww-encrypt";
+    public static final String ENCRYPT_HEADER = "app-encrypt";
 
     /**
      * 远程调用标识【相应结果不加密】

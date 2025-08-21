@@ -82,7 +82,7 @@ public class PermissionFilter implements GlobalFilter, Ordered {
                     // 已过期
                     return WebFluxResultUtils.result(exchange, GlobalResCodeConstants.TOKEN_TIMEOUT, HttpStatus.UNAUTHORIZED);
                 }
-                switch (claimsJson.get("userType", UserType.class)) {
+                switch (claimsJson.get(Constant.USER_TYPE, UserType.class)) {
                     case ADMIN:
                         userType = UserType.ADMIN.name();
                         tokenInfo = claimsJson.toString();

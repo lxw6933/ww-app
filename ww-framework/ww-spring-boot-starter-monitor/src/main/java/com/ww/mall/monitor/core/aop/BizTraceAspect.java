@@ -3,6 +3,7 @@ package com.ww.mall.monitor.core.aop;
 import cn.hutool.core.util.StrUtil;
 import com.ww.app.common.common.ClientUser;
 import com.ww.app.common.context.AuthorizationContext;
+import com.ww.app.common.utils.HttpContextUtils;
 import com.ww.app.common.utils.TracerUtils;
 import com.ww.mall.monitor.core.annotation.BizTrace;
 import lombok.extern.slf4j.Slf4j;
@@ -14,6 +15,8 @@ import org.aspectj.lang.reflect.MethodSignature;
 
 import java.lang.reflect.Method;
 import java.util.Arrays;
+
+import static com.ww.mall.monitor.constant.SkywalkingConstant.*;
 
 @Slf4j
 @Aspect
@@ -32,11 +35,12 @@ public class BizTraceAspect {
                 ? ann.operation() : method.getDeclaringClass().getSimpleName() + StrUtil.COLON + method.getName();
 
         // 主动创建本地埋点
-        ActiveSpan.tag("biz.name", operation);
-        ActiveSpan.tag("biz.traceId", TracerUtils.getTraceId());
+        ActiveSpan.tag(BIZ_NAME, operation);
+        ActiveSpan.tag(REQ_IP, HttpContextUtils.getAppReqIp());
+        ActiveSpan.tag(BIZ_TRACE_ID, TracerUtils.getTraceId());
         if (ann != null && ann.includeArgs()) {
             try {
-                ActiveSpan.tag("biz.params", truncate(Arrays.toString(pjp.getArgs())));
+                ActiveSpan.tag(BIZ_PARAMS, truncate(Arrays.toString(pjp.getArgs())));
             } catch (Throwable ignore) { }
         }
 
@@ -45,9 +49,9 @@ public class BizTraceAspect {
             try {
                 ClientUser clientUser = AuthorizationContext.getClientUser(false);
                 if (clientUser != null) {
-                    ActiveSpan.tag("user.id", String.valueOf(clientUser.getId()));
+                    ActiveSpan.tag(REQ_USER_ID, String.valueOf(clientUser.getId()));
                     if (clientUser.getChannelId() != null) {
-                        ActiveSpan.tag("user.channelId", String.valueOf(clientUser.getChannelId()));
+                        ActiveSpan.tag(BIZ_CHANNEL_ID, String.valueOf(clientUser.getChannelId()));
                     }
                 }
             } catch (Throwable ignore) { }
@@ -57,7 +61,7 @@ public class BizTraceAspect {
             Object ret = pjp.proceed();
             if (ann != null && ann.includeReturn() && ret != null) {
                 try {
-                    ActiveSpan.tag("biz.res", truncate(String.valueOf(ret)));
+                    ActiveSpan.tag(BIZ_RETURN_OBJ, truncate(String.valueOf(ret)));
                 } catch (Throwable ignore) { }
             }
             return ret;
