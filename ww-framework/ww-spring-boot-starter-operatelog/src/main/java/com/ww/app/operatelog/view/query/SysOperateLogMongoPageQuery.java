@@ -1,8 +1,8 @@
-package com.ww.app.admin.view.query;
+package com.ww.app.operatelog.view.query;
 
-import com.ww.app.admin.entity.mongo.OperateLog;
 import com.ww.app.common.utils.SpecialCharacterUtil;
 import com.ww.app.mongodb.common.AbstractMongoPage;
+import com.ww.app.operatelog.core.entity.OperateLog;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import org.apache.commons.lang3.StringUtils;
@@ -15,7 +15,7 @@ import org.springframework.data.mongodb.core.query.Criteria;
  */
 @Data
 @EqualsAndHashCode(callSuper = true)
-public class SysOperateLogMongoPage extends AbstractMongoPage<OperateLog> {
+public class SysOperateLogMongoPageQuery extends AbstractMongoPage<OperateLog> {
 
     /**
      * 操作用户id

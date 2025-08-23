@@ -41,11 +41,11 @@
             <artifactId>ww-spring-boot-starter-mongodb</artifactId>
             <version>${revision}</version>
         </dependency>
-        <!-- operate log -->
+        <!-- operatelog starter -->
         <dependency>
-            <groupId>io.github.mouzt</groupId>
-            <artifactId>bizlog-sdk</artifactId>
-            <optional>true</optional>
+            <groupId>com.ww.app</groupId>
+            <artifactId>ww-spring-boot-starter-operatelog</artifactId>
+            <version>${revision}</version>
         </dependency>
         <!-- mybatis starter -->
         <dependency>

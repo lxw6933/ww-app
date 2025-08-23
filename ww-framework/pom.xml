@@ -26,6 +26,7 @@
         <module>ww-spring-boot-starter-websocket</module>
         <module>ww-spring-boot-starter-job</module>
         <module>ww-spring-boot-starter-captcha</module>
+        <module>ww-spring-boot-starter-operatelog</module>
     </modules>
 
     <artifactId>ww-framework</artifactId>

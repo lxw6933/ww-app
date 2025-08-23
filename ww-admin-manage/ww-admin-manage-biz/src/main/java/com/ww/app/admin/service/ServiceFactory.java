@@ -1,6 +1,7 @@
 package com.ww.app.admin.service;
 
 import com.ww.app.admin.component.key.AuthorityRedisKeyBuilder;
+import com.ww.app.operatelog.core.service.OperateLogService;
 import lombok.Getter;
 import org.springframework.stereotype.Component;
 

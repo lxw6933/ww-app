@@ -1,6 +1,10 @@
-package com.ww.app.admin.view.vo;
+package com.ww.app.operatelog.core.entity;
 
+import com.ww.app.common.enums.UserType;
+import com.ww.app.mongodb.common.BaseDoc;
 import lombok.Data;
+import lombok.EqualsAndHashCode;
+import org.springframework.data.mongodb.core.mapping.Document;
 
 /**
  * @author ww
@@ -8,7 +12,9 @@ import lombok.Data;
  * @description: 操作记录
  */
 @Data
-public class OperateLogVO {
+@Document("sys_operate_log")
+@EqualsAndHashCode(callSuper = true)
+public class OperateLog extends BaseDoc {
 
     /**
      * traceId
@@ -16,14 +22,14 @@ public class OperateLogVO {
     private String traceId;
 
     /**
-     * 操作用户id
+     * 操作用户
      */
     private Long userId;
 
     /**
-     * 操作用户名称
+     * 用户类型
      */
-    private String nickName;
+    private UserType userType;
 
     /**
      * 操作模块类型
@@ -71,10 +77,5 @@ public class OperateLogVO {
      * 浏览器 UA
      */
     private String userAgent;
-
-    /**
-     * 日志时间
-     */
-    private String createTime;
 
 }

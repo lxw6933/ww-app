@@ -1,9 +1,6 @@
-package com.ww.app.admin.view.dto;
+package com.ww.app.operatelog.view.vo;
 
-import com.ww.app.common.enums.UserType;
 import lombok.Data;
-
-import java.util.Date;
 
 /**
  * @author ww
@@ -11,7 +8,7 @@ import java.util.Date;
  * @description: 操作记录
  */
 @Data
-public class OperateLogDTO {
+public class OperateLogVO {
 
     /**
      * traceId
@@ -19,14 +16,14 @@ public class OperateLogDTO {
     private String traceId;
 
     /**
-     * 操作用户
+     * 操作用户id
      */
     private Long userId;
 
     /**
-     * 用户类型
+     * 操作用户名称
      */
-    private UserType userType;
+    private String nickName;
 
     /**
      * 操作模块类型
@@ -76,8 +73,8 @@ public class OperateLogDTO {
     private String userAgent;
 
     /**
-     * 日志记录时间
+     * 日志时间
      */
-    private Date createTime;
+    private String createTime;
 
 }

@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+    <parent>
+        <groupId>com.ww.app</groupId>
+        <artifactId>ww-framework</artifactId>
+        <version>${revision}</version>
+    </parent>
+
+    <artifactId>ww-spring-boot-starter-operatelog</artifactId>
+    <packaging>jar</packaging>
+
+    <name>${project.artifactId}</name>
+    <description>
+        操作日志模块
+    </description>
+
+    <dependencies>
+        <dependency>
+            <groupId>com.ww.app</groupId>
+            <artifactId>ww-common</artifactId>
+            <version>${revision}</version>
+        </dependency>
+        <!-- operate log -->
+        <dependency>
+            <groupId>io.github.mouzt</groupId>
+            <artifactId>bizlog-sdk</artifactId>
+        </dependency>
+        <!-- mongodb starter -->
+        <dependency>
+            <groupId>com.ww.app</groupId>
+            <artifactId>ww-spring-boot-starter-mongodb</artifactId>
+            <version>${revision}</version>
+            <optional>true</optional>
+        </dependency>
+    </dependencies>
+</project>

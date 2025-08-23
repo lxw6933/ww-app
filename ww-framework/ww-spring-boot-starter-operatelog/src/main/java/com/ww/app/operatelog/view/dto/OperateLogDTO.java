@@ -1,10 +1,9 @@
-package com.ww.app.admin.entity.mongo;
+package com.ww.app.operatelog.view.dto;
 
 import com.ww.app.common.enums.UserType;
-import com.ww.app.mongodb.common.BaseDoc;
 import lombok.Data;
-import lombok.EqualsAndHashCode;
-import org.springframework.data.mongodb.core.mapping.Document;
+
+import java.util.Date;
 
 /**
  * @author ww
@@ -12,9 +11,7 @@ import org.springframework.data.mongodb.core.mapping.Document;
  * @description: 操作记录
  */
 @Data
-@Document("sys_operate_log")
-@EqualsAndHashCode(callSuper = true)
-public class OperateLog extends BaseDoc {
+public class OperateLogDTO {
 
     /**
      * traceId
@@ -77,5 +74,10 @@ public class OperateLog extends BaseDoc {
      * 浏览器 UA
      */
     private String userAgent;
+
+    /**
+     * 日志记录时间
+     */
+    private Date createTime;
 
 }

@@ -1,21 +1,19 @@
-package com.ww.app.admin.service.impl;
+package com.ww.app.operatelog.core.service.impl;
 
 import cn.hutool.core.bean.BeanUtil;
-import com.ww.app.admin.entity.SysUser;
-import com.ww.app.admin.entity.mongo.OperateLog;
-import com.ww.app.admin.service.OperateLogService;
-import com.ww.app.admin.service.SysUserService;
-import com.ww.app.admin.view.dto.OperateLogDTO;
-import com.ww.app.admin.view.query.SysOperateLogMongoPage;
-import com.ww.app.admin.view.vo.OperateLogVO;
 import com.ww.app.common.common.AppPageResult;
+import com.ww.app.operatelog.core.entity.OperateLog;
+import com.ww.app.operatelog.core.service.OperateLogService;
+import com.ww.app.operatelog.view.dto.OperateLogDTO;
+import com.ww.app.operatelog.view.query.SysOperateLogMongoPageQuery;
+import com.ww.app.operatelog.view.vo.OperateLogVO;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.BeanUtils;
 import org.springframework.data.mongodb.core.MongoTemplate;
 import org.springframework.scheduling.annotation.Async;
-import org.springframework.stereotype.Service;
 
 import javax.annotation.Resource;
+import java.util.function.Function;
 
 /**
  * @author ww
@@ -23,14 +21,10 @@ import javax.annotation.Resource;
  * @description:
  */
 @Slf4j
-@Service
 public class OperateLogServiceImpl implements OperateLogService {
 
     @Resource
     private MongoTemplate mongoTemplate;
-
-    @Resource
-    private SysUserService sysUserService;
 
     @Async
     @Override
@@ -41,12 +35,11 @@ public class OperateLogServiceImpl implements OperateLogService {
     }
 
     @Override
-    public AppPageResult<OperateLogVO> page(SysOperateLogMongoPage query) {
+    public AppPageResult<OperateLogVO> page(SysOperateLogMongoPageQuery query, Function<Long, String> nameFun) {
         return query.buildPageConvertResult(operateLog -> {
             OperateLogVO vo = new OperateLogVO();
             BeanUtils.copyProperties(operateLog, vo);
-            SysUser sysUser = sysUserService.getById(vo.getUserId());
-            vo.setNickName(sysUser.getRealName());
+            vo.setNickName(nameFun.apply(vo.getUserId()));
             return vo;
         });
     }

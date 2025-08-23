@@ -1,9 +1,11 @@
-package com.ww.app.admin.service;
+package com.ww.app.operatelog.core.service;
 
-import com.ww.app.admin.view.dto.OperateLogDTO;
-import com.ww.app.admin.view.query.SysOperateLogMongoPage;
-import com.ww.app.admin.view.vo.OperateLogVO;
 import com.ww.app.common.common.AppPageResult;
+import com.ww.app.operatelog.view.dto.OperateLogDTO;
+import com.ww.app.operatelog.view.query.SysOperateLogMongoPageQuery;
+import com.ww.app.operatelog.view.vo.OperateLogVO;
+
+import java.util.function.Function;
 
 /**
  * @author ww
@@ -25,6 +27,6 @@ public interface OperateLogService {
      * @param query 分页条件
      * @return 操作日志分页列表
      */
-    AppPageResult<OperateLogVO> page(SysOperateLogMongoPage query);
+    AppPageResult<OperateLogVO> page(SysOperateLogMongoPageQuery query, Function<Long, String> nameFun);
 
 }
