@@ -21,6 +21,7 @@ import com.ww.app.common.common.AppPageResult;
 import com.ww.app.mybatis.common.AppPlusPageResult;
 import com.ww.app.redis.annotation.Resubmission;
 import com.ww.app.common.common.IdForm;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.CollectionUtils;
 import org.springframework.beans.BeanUtils;
 import org.springframework.stereotype.Service;
@@ -36,6 +37,7 @@ import static com.ww.app.admin.constant.LogRecordConstants.*;
  * @create 2024-05-20 14:02:20
  * @description:
  */
+@Slf4j
 @Service
 public class SysRoleServiceImpl extends BaseService<SysRoleMapper, SysRole> implements SysRoleService {
 
@@ -66,6 +68,7 @@ public class SysRoleServiceImpl extends BaseService<SysRoleMapper, SysRole> impl
     @Resubmission
     @LogRecord(type = SYSTEM_ROLE_TYPE, subType = SYSTEM_ROLE_CREATE_SUB_TYPE, bizNo = "{{#form.id}}", success = SYSTEM_ROLE_CREATE_SUCCESS)
     public boolean save(SysRoleForm form) {
+        log.info("保存角色");
         SysRole sysRole = new SysRole();
         BeanUtils.copyProperties(form, sysRole);
         sysRole.setStatus(true);

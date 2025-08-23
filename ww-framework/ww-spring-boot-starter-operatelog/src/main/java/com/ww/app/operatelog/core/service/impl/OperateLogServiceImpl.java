@@ -26,7 +26,7 @@ public class OperateLogServiceImpl implements OperateLogService {
     @Resource
     private MongoTemplate mongoTemplate;
 
-    @Async
+    @Async("operateLogTaskExecutor")
     @Override
     public void save(OperateLogDTO operateLogDTO) {
         log.info("保存操作日志traceId[{}]", operateLogDTO.getTraceId());
