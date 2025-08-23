@@ -1,4 +1,4 @@
-package com.ww.app.seckill.framework.captcha.core;
+package com.ww.app.captcha.core;
 
 import com.anji.captcha.service.CaptchaCacheService;
 import lombok.Getter;

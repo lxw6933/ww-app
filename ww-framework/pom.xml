@@ -25,6 +25,7 @@
         <module>ww-spring-boot-starter-sensitive</module>
         <module>ww-spring-boot-starter-websocket</module>
         <module>ww-spring-boot-starter-job</module>
+        <module>ww-spring-boot-starter-captcha</module>
     </modules>
 
     <artifactId>ww-framework</artifactId>

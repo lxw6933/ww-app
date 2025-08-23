@@ -8,12 +8,12 @@
         <version>${revision}</version>
     </parent>
 
-    <artifactId>ww-spring-boot-starter-minio</artifactId>
+    <artifactId>ww-spring-boot-starter-captcha</artifactId>
     <packaging>jar</packaging>
 
     <name>${project.artifactId}</name>
     <description>
-        minio 业务模块
+        图形验证码模块
     </description>
 
     <dependencies>
@@ -22,21 +22,15 @@
             <artifactId>ww-common</artifactId>
             <version>${revision}</version>
         </dependency>
-        <!-- minio -->
+        <!-- anji captcha component -->
         <dependency>
-            <groupId>io.minio</groupId>
-            <artifactId>minio</artifactId>
+            <groupId>com.anji-plus</groupId>
+            <artifactId>captcha-spring-boot-starter</artifactId>
         </dependency>
-        <!-- web -->
-        <dependency>
-            <groupId>org.springframework.boot</groupId>
-            <artifactId>spring-boot-starter-web</artifactId>
-            <optional>true</optional>
-        </dependency>
-        <!-- mongodb starter -->
+        <!-- redis starter -->
         <dependency>
             <groupId>com.ww.app</groupId>
-            <artifactId>ww-spring-boot-starter-mongodb</artifactId>
+            <artifactId>ww-spring-boot-starter-redis</artifactId>
             <version>${revision}</version>
         </dependency>
     </dependencies>

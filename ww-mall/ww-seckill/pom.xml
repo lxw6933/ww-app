@@ -46,10 +46,11 @@
             <groupId>com.github.whvcse</groupId>
             <artifactId>easy-captcha</artifactId>
         </dependency>
-        <!-- captcha component -->
+        <!-- captcha starter -->
         <dependency>
-            <groupId>com.anji-plus</groupId>
-            <artifactId>captcha-spring-boot-starter</artifactId>
+            <groupId>com.ww.app</groupId>
+            <artifactId>ww-spring-boot-starter-captcha</artifactId>
+            <version>${revision}</version>
         </dependency>
         <!-- excel starter -->
         <dependency>
