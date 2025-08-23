@@ -31,14 +31,14 @@ public class CaptchaController {
     private CaptchaService captchaService;
 
     @PostMapping({"/get"})
-    @Operation(summary = "获得验证码")
+    @Operation(summary = "获得图像验证码")
     public ResponseModel get(@RequestBody CaptchaVO data, HttpServletRequest request) {
         data.setBrowserInfo(getRemoteId(request));
         return captchaService.get(data);
     }
 
     @PostMapping("/check")
-    @Operation(summary = "校验验证码")
+    @Operation(summary = "校验图像验证码")
     public ResponseModel check(@RequestBody CaptchaVO data, HttpServletRequest request) {
         data.setBrowserInfo(getRemoteId(request));
         return captchaService.check(data);

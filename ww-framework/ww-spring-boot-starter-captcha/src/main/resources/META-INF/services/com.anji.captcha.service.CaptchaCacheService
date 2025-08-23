@@ -1,1 +1,1 @@
-com.ww.app.captcha.core.RedisCaptchaServiceImpl
+com.ww.app.captcha.core.anji.RedisCaptchaServiceImpl

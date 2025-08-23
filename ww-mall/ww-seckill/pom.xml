@@ -41,11 +41,6 @@
             <artifactId>ww-spring-boot-starter-mongodb</artifactId>
             <version>${revision}</version>
         </dependency>
-        <!-- captcha -->
-        <dependency>
-            <groupId>com.github.whvcse</groupId>
-            <artifactId>easy-captcha</artifactId>
-        </dependency>
         <!-- captcha starter -->
         <dependency>
             <groupId>com.ww.app</groupId>
