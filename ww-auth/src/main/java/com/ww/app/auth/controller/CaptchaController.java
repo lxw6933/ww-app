@@ -1,4 +1,4 @@
-package com.ww.app.seckill.controller;
+package com.ww.app.auth.controller;
 
 import cn.hutool.core.util.StrUtil;
 import com.anji.captcha.model.common.ResponseModel;
