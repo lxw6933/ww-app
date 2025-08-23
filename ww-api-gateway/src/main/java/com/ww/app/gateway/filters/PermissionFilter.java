@@ -8,6 +8,7 @@ import com.ww.app.common.constant.Constant;
 import com.ww.app.common.enums.GlobalResCodeConstants;
 import com.ww.app.common.enums.UserType;
 import com.ww.app.gateway.properties.AppGatewayProperties;
+import com.ww.app.gateway.utils.BearerTokenExtractor;
 import com.ww.app.gateway.utils.WebFluxResultUtils;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
@@ -40,6 +41,7 @@ import java.util.Date;
 public class PermissionFilter implements GlobalFilter, Ordered {
 
     private final PathMatcher matcher = new AntPathMatcher();
+    private final BearerTokenExtractor tokenExtractor = new BearerTokenExtractor();
 
     @Value("${jwt.secret}")
     public String jwtSecret = Constant.SECRET_KEY;
@@ -50,7 +52,8 @@ public class PermissionFilter implements GlobalFilter, Ordered {
     @Override
     public Mono<Void> filter(ServerWebExchange exchange, GatewayFilterChain chain) {
         ServerHttpRequest request = exchange.getRequest();
-        String token = request.getHeaders().getFirst(Constant.USER_TOKEN_KEY);
+
+        String token = tokenExtractor.extractToken(request);
         String tokenInfo = null;
         String userType = null;
 

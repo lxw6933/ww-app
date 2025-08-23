@@ -18,4 +18,10 @@ public class SysUserLoginBO {
     @NotEmpty(message = "密码不能为空")
     private String password;
 
+    @NotEmpty(message = "验证码不能为空")
+    private String captcha;
+
+    @NotEmpty(message = "验证码uuid不能为空")
+    private String uuid;
+
 }

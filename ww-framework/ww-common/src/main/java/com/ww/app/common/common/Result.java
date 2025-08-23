@@ -1,6 +1,7 @@
 package com.ww.app.common.common;
 
 import cn.hutool.core.lang.Assert;
+import com.fasterxml.jackson.annotation.JsonAnyGetter;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.ww.app.common.enums.GlobalResCodeConstants;
 import com.ww.app.common.exception.ApiException;
@@ -9,6 +10,8 @@ import lombok.Setter;
 import org.apache.commons.lang3.builder.ToStringBuilder;
 
 import java.io.Serializable;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Objects;
 import java.util.function.Supplier;
 
@@ -60,6 +63,13 @@ public class Result<T> implements Serializable {
     @JsonIgnore
     public boolean isError() {
         return !isSuccess();
+    }
+
+    @JsonAnyGetter
+    public Map<String, Object> jsonAnyGetter() {
+        Map<String, Object> result = new HashMap<>();
+        result.put("message", msg);
+        return result;
     }
 
     public void checkError() throws ApiException {

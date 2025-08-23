@@ -30,11 +30,10 @@
             <artifactId>ww-spring-boot-starter-mongodb</artifactId>
             <version>${revision}</version>
         </dependency>
-        <!-- captcha starter -->
+        <!-- captcha -->
         <dependency>
-            <groupId>com.ww.app</groupId>
-            <artifactId>ww-spring-boot-starter-captcha</artifactId>
-            <version>${revision}</version>
+            <groupId>com.github.whvcse</groupId>
+            <artifactId>easy-captcha</artifactId>
         </dependency>
         <!-- spring security starter -->
         <dependency>
