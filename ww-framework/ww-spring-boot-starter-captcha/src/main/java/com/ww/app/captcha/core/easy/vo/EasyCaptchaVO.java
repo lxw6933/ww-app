@@ -1,4 +1,4 @@
-package com.ww.app.auth.view.vo;
+package com.ww.app.captcha.core.easy.vo;
 
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Data;
@@ -12,7 +12,7 @@ import java.io.Serializable;
 @Data
 @NoArgsConstructor
 @Schema(description = "图形验证码")
-public class CaptchaResp implements Serializable {
+public class EasyCaptchaVO implements Serializable {
 
     private static final long serialVersionUID = -5197079323089523966L;
 
@@ -23,7 +23,7 @@ public class CaptchaResp implements Serializable {
     @Schema(description = "过期时间")
     private Long expire;
 
-    public CaptchaResp(String uuid, String base64, Long expire) {
+    public EasyCaptchaVO(String uuid, String base64, Long expire) {
         this.uuid = uuid;
         this.base64 = base64;
         this.expire = expire;

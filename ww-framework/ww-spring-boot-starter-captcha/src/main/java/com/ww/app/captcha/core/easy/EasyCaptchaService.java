@@ -1,11 +1,13 @@
-package com.ww.app.auth.serivce;
+package com.ww.app.captcha.core.easy;
 
-import com.ww.app.auth.view.vo.CaptchaResp;
+import com.ww.app.captcha.core.easy.vo.EasyCaptchaVO;
 
 /**
- * @author NineSu
+ * @author ww
+ * @create 2025-08-24 9:53
+ * @description:
  */
-public interface ICaptchaService {
+public interface EasyCaptchaService {
 
     /**
      * 生成图形验证码
@@ -14,7 +16,7 @@ public interface ICaptchaService {
      * @param height 高度
      * @return CaptchaResp
      */
-    CaptchaResp image(int width, int height);
+    EasyCaptchaVO image(int width, int height);
 
     /**
      * 校验验证码是否正确
@@ -24,4 +26,5 @@ public interface ICaptchaService {
      * @return true if successful, false if failed
      */
     boolean validate(String uuid, String value);
+
 }

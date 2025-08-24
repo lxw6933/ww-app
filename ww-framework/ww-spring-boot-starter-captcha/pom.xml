@@ -38,6 +38,12 @@
             <artifactId>ww-spring-boot-starter-redis</artifactId>
             <version>${revision}</version>
         </dependency>
+        <!-- 接口文档 UI：knife4j -->
+        <dependency>
+            <groupId>com.github.xiaoymin</groupId>
+            <artifactId>knife4j-openapi3-spring-boot-starter</artifactId>
+            <optional>true</optional>
+        </dependency>
     </dependencies>
 
 </project>
