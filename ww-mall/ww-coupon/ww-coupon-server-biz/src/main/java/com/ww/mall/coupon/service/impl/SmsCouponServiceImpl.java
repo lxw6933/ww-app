@@ -1,5 +1,6 @@
 package com.ww.mall.coupon.service.impl;
 
+import cn.hutool.core.bean.BeanUtil;
 import cn.hutool.core.collection.CollectionUtil;
 import cn.hutool.core.date.DatePattern;
 import cn.hutool.core.date.DateUtil;
@@ -13,6 +14,9 @@ import com.alibaba.fastjson.JSON;
 import com.google.common.collect.Lists;
 import com.mongodb.bulk.BulkWriteResult;
 import com.mongodb.client.result.UpdateResult;
+import com.mzt.logapi.context.LogRecordContext;
+import com.mzt.logapi.service.impl.DiffParseFunction;
+import com.mzt.logapi.starter.annotation.LogRecord;
 import com.ww.app.common.common.AppPageResult;
 import com.ww.app.common.common.ClientUser;
 import com.ww.app.common.context.AuthorizationContext;
@@ -67,12 +71,16 @@ import java.io.FileInputStream;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.util.*;
-import java.util.concurrent.*;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ExecutorService;
 import java.util.concurrent.atomic.LongAdder;
 import java.util.stream.Collectors;
 
 import static com.ww.app.common.utils.CollectionUtils.convertList;
 import static com.ww.app.common.utils.CollectionUtils.filterList;
+import static com.ww.mall.coupon.constant.LogRecordConstants.*;
 
 /**
  * @author ww
@@ -204,6 +212,7 @@ public class SmsCouponServiceImpl implements SmsCouponService {
     @Override
     @Resubmission
     @ExcelExportTimer
+    @LogRecord(type = SYSTEM_COUPON_TYPE, subType = SYSTEM_COUPON_EXPORT_SUB_TYPE, bizNo = "{{#smsCouponCodeListBO.activityCode}}", success = SYSTEM_COUPON_EXPORT_SUCCESS)
     public String exportCouponCode(SmsCouponCodeListBO smsCouponCodeListBO) {
         log.info("导出优惠券券码[{}]", JSON.toJSON(smsCouponCodeListBO));
         String bucket = "coupon-code-export";
@@ -245,6 +254,8 @@ public class SmsCouponServiceImpl implements SmsCouponService {
                 }
             }
             log.info("上传压缩文件至Minio完成");
+            // 记录导出日志
+            LogRecordContext.putVariable("export", smsCouponCodeListBO);
             return minioTemplate.getFileUrl(bucket, targetFile.getName(), null);
         } catch (Exception e) {
             throw new RuntimeException(e);
@@ -264,6 +275,7 @@ public class SmsCouponServiceImpl implements SmsCouponService {
 
     @Override
     @Resubmission
+    @LogRecord(type = SYSTEM_COUPON_TYPE, subType = SYSTEM_COUPON_CREATE_SUB_TYPE, bizNo = "{{#smsCouponActivity.activityCode}}", success = SYSTEM_COUPON_CREATE_SUCCESS)
     public boolean add(SmsCouponActivityAddBO smsCouponActivityAddBO) {
         // 生成优惠券记录 - 使用转换方法
         SmsCouponActivity smsCouponActivity = smsCouponActivityAddBO.convertSmsCouponActivity();
@@ -281,11 +293,14 @@ public class SmsCouponServiceImpl implements SmsCouponService {
                 break;
             default:
         }
+        // 记录操作日志上下文
+        LogRecordContext.putVariable("smsCouponActivity", smsCouponActivity);
         return true;
     }
 
     @Override
     @Resubmission
+    @LogRecord(type = SYSTEM_COUPON_TYPE, subType = SYSTEM_COUPON_UPDATE_SUB_TYPE, bizNo = "{{#smsCouponActivityEditBO.activityCode}}", success = SYSTEM_COUPON_UPDATE_SUCCESS)
     public boolean edit(SmsCouponActivityEditBO smsCouponActivityEditBO) {
         SmsCouponActivity smsCouponActivity = mongoTemplate.findOne(BaseCouponInfo.buildActivityCodeQuery(smsCouponActivityEditBO.getActivityCode(), smsCouponActivityEditBO.getChannelId()), SmsCouponActivity.class);
         Assert.notNull(smsCouponActivity, () -> new ApiException(CouponResCodeConstants.UN_FOUND_ACTIVITY));
@@ -299,6 +314,9 @@ public class SmsCouponServiceImpl implements SmsCouponService {
             updateResult = mongoTemplate.updateFirst(BaseCouponInfo.buildActivityCodeQuery(smsCouponActivityEditBO.getActivityCode(), smsCouponActivityEditBO.getChannelId()), smsCouponActivityEditBO.buildInfoUpdate(), SmsCouponActivity.class);
         }
         CouponCacheUtils.updateSmsCouponActivityCache(smsCouponActivityEditBO.getActivityCode());
+        // 记录操作日志上下文
+        LogRecordContext.putVariable(DiffParseFunction.OLD_OBJECT, BeanUtil.toBean(smsCouponActivity, SmsCouponActivityEditBO.class));
+        LogRecordContext.putVariable("smsCouponActivityName", smsCouponActivity.getName());
         return updateResult.getModifiedCount() == 1;
     }
 
@@ -311,9 +329,13 @@ public class SmsCouponServiceImpl implements SmsCouponService {
 
     @Override
     @Resubmission
+    @LogRecord(type = SYSTEM_COUPON_TYPE, subType = SYSTEM_COUPON_STATUS_SUB_TYPE, bizNo = "{{#smsCouponActivityStatusBO.activityCode}}", success = SYSTEM_COUPON_STATUS_SUCCESS)
     public boolean status(SmsCouponActivityStatusBO smsCouponActivityStatusBO) {
         UpdateResult updateResult = mongoTemplate.updateFirst(BaseCouponInfo.buildActivityCodeQuery(smsCouponActivityStatusBO.getActivityCode(), smsCouponActivityStatusBO.getChannelId()), BaseCouponInfo.buildActivityStatusUpdate(smsCouponActivityStatusBO.getStatus()), SmsCouponActivity.class);
         CouponCacheUtils.updateSmsCouponActivityCache(smsCouponActivityStatusBO.getActivityCode());
+        // 记录操作日志上下文
+        LogRecordContext.putVariable("newStatus", smsCouponActivityStatusBO.getStatus());
+        LogRecordContext.putVariable("activityCode", smsCouponActivityStatusBO.getActivityCode());
         return updateResult.getModifiedCount() == 1;
     }
 
@@ -578,6 +600,7 @@ public class SmsCouponServiceImpl implements SmsCouponService {
 
     @Override
     @DistributedLock(operationKey = "#addCouponCodeBO.activityCode")
+    @LogRecord(type = SYSTEM_COUPON_TYPE, subType = SYSTEM_COUPON_ADD_CODE_SUB_TYPE, bizNo = "{{#addCouponCodeBO.activityCode}}", success = SYSTEM_COUPON_ADD_CODE_SUCCESS)
     public boolean addSmsCouponCode(AddCouponCodeBO addCouponCodeBO) {
         SmsCouponActivity smsCouponActivity = getSmsCouponActivity(addCouponCodeBO.getActivityCode(), addCouponCodeBO.getChannelId());
         if (addCouponCodeBO.getNumber() + smsCouponActivity.getNumber() > CouponConstant.ACTIVITY_MAX_NUMBER) {
@@ -618,6 +641,9 @@ public class SmsCouponServiceImpl implements SmsCouponService {
             log.error("优惠券活动[{}]更新活动数量[{}]失败", smsCouponActivity.getActivityCode(), generateCodeNumber, e);
         }
         CouponCacheUtils.updateSmsCouponActivityCache(addCouponCodeBO.getActivityCode());
+        // 记录操作日志上下文
+        LogRecordContext.putVariable("num", addCouponCodeBO.getNumber());
+        LogRecordContext.putVariable("activityCode", smsCouponActivity.getActivityCode());
         return true;
     }
 

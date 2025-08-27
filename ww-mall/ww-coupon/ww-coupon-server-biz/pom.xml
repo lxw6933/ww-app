@@ -71,6 +71,12 @@
             <artifactId>ww-spring-boot-starter-job</artifactId>
             <version>${revision}</version>
         </dependency>
+        <!-- operate log starter -->
+        <dependency>
+            <groupId>com.ww.app</groupId>
+            <artifactId>ww-spring-boot-starter-operatelog</artifactId>
+            <version>${revision}</version>
+        </dependency>
         <!-- test -->
         <dependency>
             <groupId>org.springframework.boot</groupId>

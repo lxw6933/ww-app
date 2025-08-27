@@ -1,4 +1,4 @@
-package com.ww.mall.coupon.controller;
+package com.ww.mall.coupon.controller.admin;
 
 import com.ww.app.common.common.AppPageResult;
 import com.ww.mall.coupon.service.SmsCouponService;
@@ -79,40 +79,10 @@ public class SmsCouponController {
         return smsCouponService.status(smsCouponActivityStatusBO);
     }
 
-    @Operation(summary = "领取优惠券")
-    @Parameters({
-            @Parameter(name = "activityCode", description = "平台优惠券活动编码", required = true, in = ParameterIn.QUERY),
-    })
-    @GetMapping("/receiveCoupon")
-    public boolean receiveCoupon(@RequestParam("activityCode") String activityCode) {
-        return smsCouponService.receiveCoupon(activityCode);
-    }
-
-    @Operation(summary = "兑换优惠券")
-    @Parameters({
-            @Parameter(name = "couponCode", description = "平台优惠券券码", required = true, in = ParameterIn.QUERY),
-    })
-    @GetMapping("/convertCoupon")
-    public boolean convertCoupon(@RequestParam("couponCode") String couponCode) {
-        return smsCouponService.convertCoupon(couponCode);
-    }
-
     @Operation(summary = "新增优惠券数量")
     @PostMapping("/addCouponCoupon")
     public boolean addCouponCoupon(@RequestBody @Validated AddCouponCodeBO addCouponCodeBO) {
         return smsCouponService.addSmsCouponCode(addCouponCodeBO);
-    }
-
-    @Operation(summary = "平台领券中心")
-    @PostMapping("/smsCouponActivityCenter")
-    public List<CouponActivityCenterVO> smsCouponActivityCenter(@RequestBody @Validated CouponActivityCenterBO couponActivityCenterBO) {
-        return smsCouponService.smsCouponActivityCenter(couponActivityCenterBO);
-    }
-
-    @Operation(summary = "会员卡券中心")
-    @PostMapping("/memberCouponCenter")
-    public List<MemberCouponCenterVO> memberCouponCenter(@RequestBody @Validated MemberCouponCenterBO memberCouponCenterBO) {
-        return smsCouponService.memberCouponCenter(memberCouponCenterBO);
     }
 
 }
