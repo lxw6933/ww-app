@@ -23,7 +23,7 @@ import java.util.List;
  */
 @RestController
 @RequestMapping("/coupon/portal")
-@Tag(name = "优惠券服务 API")
+@Tag(name = "[C端]优惠券 API")
 public class PortalSmsCouponController {
 
     @Resource

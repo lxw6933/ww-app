@@ -1,5 +1,6 @@
 package com.ww.app.common.common;
 
+import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -16,8 +17,10 @@ import java.io.Serializable;
 @NoArgsConstructor
 public class AppPage implements Serializable {
 
+    @Schema(description = "当前页数")
     private Integer pageNum = 1;
 
+    @Schema(description = "每页数量")
     private Integer pageSize = 10;
 
     public Integer getPageNum() {

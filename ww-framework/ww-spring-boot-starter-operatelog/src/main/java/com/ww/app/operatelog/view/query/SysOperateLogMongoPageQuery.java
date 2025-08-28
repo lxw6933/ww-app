@@ -3,6 +3,7 @@ package com.ww.app.operatelog.view.query;
 import com.ww.app.common.utils.SpecialCharacterUtil;
 import com.ww.app.mongodb.common.AbstractMongoPage;
 import com.ww.app.operatelog.core.entity.OperateLog;
+import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import org.apache.commons.lang3.StringUtils;
@@ -15,41 +16,49 @@ import org.springframework.data.mongodb.core.query.Criteria;
  */
 @Data
 @EqualsAndHashCode(callSuper = true)
+@Schema(description = "操作日志列表查询")
 public class SysOperateLogMongoPageQuery extends AbstractMongoPage<OperateLog> {
 
     /**
      * 操作用户id
      */
+    @Schema(description = "操作用户id")
     private Long userId;
 
     /**
      * 业务模块id
      */
+    @Schema(description = "业务模块id")
     private String bizId;
 
     /**
      * 业务模块类型
      */
+    @Schema(description = "业务模块类型")
     private String type;
 
     /**
      * 业务模块子类型
      */
+    @Schema(description = "业务模块子类型")
     private String subType;
 
     /**
      * 操作明细
      */
+    @Schema(description = "操作明细")
     private String action;
 
     /**
      * 开始时间
      */
+    @Schema(description = "开始时间")
     private String startTime;
 
     /**
      * 结束时间
      */
+    @Schema(description = "结束时间")
     private String endTime;
 
     @Override

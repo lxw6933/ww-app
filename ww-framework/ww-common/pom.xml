@@ -123,6 +123,11 @@
             <groupId>org.apache.skywalking</groupId>
             <artifactId>apm-toolkit-trace</artifactId>
         </dependency>
+        <!-- 接口文档 UI：knife4j -->
+        <dependency>
+            <groupId>com.github.xiaoymin</groupId>
+            <artifactId>knife4j-openapi3-spring-boot-starter</artifactId>
+        </dependency>
     </dependencies>
 
 </project>
