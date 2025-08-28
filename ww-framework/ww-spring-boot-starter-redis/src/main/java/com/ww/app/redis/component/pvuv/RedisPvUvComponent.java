@@ -13,7 +13,6 @@ import java.time.LocalDate;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
-import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -80,8 +79,7 @@ public class RedisPvUvComponent {
         this.localCache = new LocalPvUvCache();
 
         // 使用带名称的线程工厂
-        this.scheduledExecutorService = Executors.newScheduledThreadPool(1,
-                r -> new Thread(r, "PvUv-Sync-Thread"));
+        this.scheduledExecutorService = ThreadUtil.initScheduledExecutorService("PvUv-Sync-Thread", 1);
 
         // 开启定时任务
         scheduledExecutorService.scheduleAtFixedRate(this::scheduledSyncToRedis,
