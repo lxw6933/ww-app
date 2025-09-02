@@ -12,14 +12,16 @@ import com.ww.app.admin.view.form.SysMenuForm;
 import com.ww.app.admin.view.vo.SysMenuParentVO;
 import com.ww.app.admin.view.vo.SysMenuTreeNodeVO;
 import com.ww.app.admin.view.vo.SysMenuVO;
+import com.ww.app.common.common.IdForm;
 import com.ww.app.common.exception.ApiException;
 import com.ww.app.redis.annotation.Resubmission;
-import com.ww.app.common.common.IdForm;
+import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.BeanUtils;
 import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 
 /**
  * @author ww
@@ -32,7 +34,7 @@ public class SysMenuServiceImpl extends BaseService<SysMenuMapper, SysMenu> impl
     @Override
     public List<Tree<Long>> tree() {
         List<SysMenu> menuList = this.list(new QueryWrapper<SysMenu>()
-                .eq("valid", true)
+                // .eq("valid", true)
         );
         return SysMenuTreeNodeVO.menuTree(menuList);
     }
@@ -69,30 +71,54 @@ public class SysMenuServiceImpl extends BaseService<SysMenuMapper, SysMenu> impl
         return this.removeById(idForm.getId());
     }
 
+    // @Override
+    // public List<SysMenuParentVO> allParent(SysMenuType menuType) {
+    //     List<SysMenu> allParentMenu = new ArrayList<>();
+    //     switch (menuType) {
+    //         case LEVEL_1_MENU:
+    //             break;
+    //         case LEVEL_2_MENU:
+    //             allParentMenu = sf.getSysMenuService().list(new QueryWrapper<SysMenu>().eq("type", SysMenuType.LEVEL_1_MENU));
+    //             break;
+    //         case BUTTON:
+    //         case ROUTE_PAGE:
+    //         case ROUTE_BUTTON:
+    //         default:
+    //             allParentMenu = sf.getSysMenuService().list(new QueryWrapper<SysMenu>().eq("type", SysMenuType.LEVEL_2_MENU));
+    //     }
+    //     List<SysMenuParentVO> result = new ArrayList<>();
+    //     allParentMenu.forEach(res -> {
+    //         SysMenuParentVO vo = new SysMenuParentVO();
+    //         vo.setId(res.getId());
+    //         vo.setType(res.getType());
+    //         vo.setName(res.getName());
+    //         result.add(vo);
+    //     });
+    //     return result;
+    // }
+
     @Override
-    public List<SysMenuParentVO> allParent(SysMenuType menuType) {
-        List<SysMenu> allParentMenu = new ArrayList<>();
-        switch (menuType) {
-            case LEVEL_1_MENU:
-                break;
-            case LEVEL_2_MENU:
-                allParentMenu = sf.getSysMenuService().list(new QueryWrapper<SysMenu>().eq("type", SysMenuType.LEVEL_1_MENU));
-                break;
-            case BUTTON:
-            case ROUTE_PAGE:
-            case ROUTE_BUTTON:
-            default:
-                allParentMenu = sf.getSysMenuService().list(new QueryWrapper<SysMenu>().eq("type", SysMenuType.LEVEL_2_MENU));
+    public boolean pathExists(Long id, String path) {
+        if (StringUtils.isEmpty(path)) {
+            return false;
         }
-        List<SysMenuParentVO> result = new ArrayList<>();
-        allParentMenu.forEach(res -> {
-            SysMenuParentVO vo = new SysMenuParentVO();
-            vo.setId(res.getId());
-            vo.setType(res.getType());
-            vo.setName(res.getName());
-            result.add(vo);
-        });
-        return result;
+        return sf.getSysMenuService()
+                .lambdaQuery()
+                .eq(SysMenu::getUrl, path)
+                .ne(Objects.nonNull(id), SysMenu::getId, id)
+                .exists();
+    }
+
+    @Override
+    public boolean nameExists(Long id, String name) {
+        if (StringUtils.isEmpty(name)) {
+            return false;
+        }
+        return sf.getSysMenuService()
+                .lambdaQuery()
+                .eq(SysMenu::getName, name)
+                .ne(Objects.nonNull(id), SysMenu::getId, id)
+                .exists();
     }
 }
 

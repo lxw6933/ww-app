@@ -1,10 +1,14 @@
 package com.ww.app.admin.entity;
 
+import com.baomidou.mybatisplus.annotation.TableField;
 import com.baomidou.mybatisplus.annotation.TableName;
+import com.baomidou.mybatisplus.extension.handlers.JacksonTypeHandler;
 import com.ww.app.admin.enums.SysMenuType;
 import com.ww.app.mybatis.common.BaseEntity;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
+
+import java.util.Map;
 
 /**
  * @author ww
@@ -12,7 +16,7 @@ import lombok.EqualsAndHashCode;
  * @description:
  */
 @Data
-@TableName("sys_menu")
+@TableName(value = "sys_menu", autoResultMap = true)
 @EqualsAndHashCode(callSuper = true)
 public class SysMenu extends BaseEntity {
 
@@ -38,6 +42,11 @@ public class SysMenu extends BaseEntity {
     private String url;
 
     /**
+     * 重定向地址
+     */
+    private String redirect;
+
+    /**
      * 图标
      */
     private String icon;
@@ -49,6 +58,11 @@ public class SysMenu extends BaseEntity {
      * - 对于前端，配合前端标签，配置按钮是否展示，避免用户没有该权限时，结果可以看到该操作。
      */
     private String permission;
+
+    /**
+     * 前端组件路径
+     */
+    private String component;
 
     /**
      * 排序
@@ -65,6 +79,9 @@ public class SysMenu extends BaseEntity {
      * 是否有效
      */
     private Boolean valid;
+
+    @TableField(typeHandler = JacksonTypeHandler.class)
+    private Map<String, Object> meta;
 
     public SysMenu() {
         this.pid = 0L;

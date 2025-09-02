@@ -1,0 +1,27 @@
+###
+GET {{admin-manager}}/ww-admin-manage/sysUser/user/self
+Authorization: Bearer {{token}}
+
+### 所有菜单列表
+GET {{admin-manager}}/ww-admin-manage/sysMenu/menu/tree
+Authorization: Bearer {{token}}
+
+### 菜单名称校验
+POST {{admin-manager}}/ww-admin-manage/sysMenu/menu/name-exists
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "id": null,
+  "name": "权限管理"
+}
+
+### 菜单路径校验
+POST {{admin-manager}}/ww-admin-manage/sysMenu/menu/path-exists
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "id": null,
+  "path": "权限管理"
+}

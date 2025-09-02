@@ -49,7 +49,7 @@ public class SysRoleController extends AbstractController {
         return sf.getSysRoleService().getAllRole();
     }
 
-    @GetMapping("/role/modifyStatus/{roleId}")
+    @PostMapping("/role/modifyStatus/{roleId}")
     @Operation(summary = "修改角色状态")
     @Parameters({
             @Parameter(name = "roleId", description = "角色id", required = true, in = ParameterIn.PATH),

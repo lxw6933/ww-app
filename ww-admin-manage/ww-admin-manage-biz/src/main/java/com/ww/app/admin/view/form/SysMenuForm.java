@@ -1,16 +1,17 @@
 package com.ww.app.admin.view.form;
 
+import com.fasterxml.jackson.annotation.JsonAlias;
 import com.ww.app.admin.enums.SysMenuType;
 import com.ww.app.common.valid.group.UpdateGroup;
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Data;
 
 import javax.validation.constraints.NotNull;
+import java.util.Map;
 
 /**
  * @author ww
  * @create 2024-05-21- 13:32
- * @description:
  */
 @Data
 @Schema(description = "新增修改菜单权限表单")
@@ -45,7 +46,13 @@ public class SysMenuForm {
      * URL地址
      */
     @Schema(description = "URL地址")
+    @JsonAlias({"url", "path"})
     private String url;
+
+    @Schema(description = "重定向地址")
+    private String redirect;
+
+    private Boolean valid;
 
     /**
      * 图标
@@ -63,6 +70,18 @@ public class SysMenuForm {
      * 权限标识
      */
     @Schema(description = "权限标识", requiredMode = Schema.RequiredMode.REQUIRED)
-    private String permission;
+    @JsonAlias({"permission", "authCode"})
+    private String permission = "";
 
+    @Schema(description = "路由组件")
+    private String component;
+
+    @Schema(description = "元数据")
+    private Map<String, Object> meta;
+
+    @Schema(description = "状态")
+    public void setStatus(Integer status) {
+        if (status == null) return;
+        this.valid = status == 1;
+    }
 }

@@ -1,8 +1,9 @@
 package com.ww.app.admin.enums;
 
+import com.baomidou.mybatisplus.annotation.IEnum;
+import com.fasterxml.jackson.annotation.JsonValue;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
-import lombok.NoArgsConstructor;
 
 /**
  * @author ww
@@ -10,16 +11,17 @@ import lombok.NoArgsConstructor;
  * @description:
  */
 @Getter
-@NoArgsConstructor
 @AllArgsConstructor
-public enum SysMenuType {
+public enum SysMenuType implements IEnum<String> {
 
-    LEVEL_1_MENU("一级菜单"),
-    LEVEL_2_MENU("二级菜单"),
-    BUTTON("功能按钮"),
-    ROUTE_BUTTON("路由按钮"),
-    ROUTE_PAGE("路由页面");
+    CATALOG("catalog", "目录"),
+    MENU("menu", "菜单"),
+    EMBEDDED("embedded", "按钮"),
+    LINK("link", "内嵌"),
+    BUTTON("button", "外链");
 
-    private String menuTypeName;
+    @JsonValue
+    private final String value;
+    private final String desc;
 
 }

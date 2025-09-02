@@ -6,74 +6,48 @@ import cn.hutool.core.lang.tree.TreeNode;
 import cn.hutool.core.lang.tree.TreeNodeConfig;
 import cn.hutool.core.lang.tree.TreeUtil;
 import com.ww.app.admin.entity.SysMenu;
-import com.ww.app.admin.enums.SysMenuType;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import org.apache.commons.collections4.CollectionUtils;
+import org.apache.commons.lang3.ObjectUtils;
 
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 /**
  * @author ww
  * @create 2024-05-22- 09:13
- * @description:
  */
 @Data
 @EqualsAndHashCode(callSuper = true)
 public class SysMenuTreeNodeVO extends TreeNode<Long> {
 
-    /**
-     * 菜单类型
-     */
-    private SysMenuType type;
-
-    /**
-     * URL地址
-     */
-    private String url;
-
-    /**
-     * 图标
-     */
-    private String icon;
-
-    /**
-     * 权限标识
-     */
-    private String permission;
-
-    public SysMenuTreeNodeVO(Long id, Long pid, String name, Integer sort, SysMenuType type, String url, String icon, String permission) {
-        super(id, pid, name, sort);
-        this.type = type;
-        this.url = url;
-        this.icon = icon;
-        this.permission = permission;
-    }
-
     public static List<Tree<Long>> menuTree(List<SysMenu> sysMenuList) {
         if (CollectionUtils.isEmpty(sysMenuList)) {
             return CollUtil.newArrayList();
         }
-        List<SysMenuTreeNodeVO> nodeList = CollUtil.newArrayList();
-        sysMenuList.forEach(menu -> {
-            SysMenuTreeNodeVO node = new SysMenuTreeNodeVO(menu.getId(), menu.getPid(), menu.getName(), menu.getSort(), menu.getType(), menu.getUrl(), menu.getIcon(), menu.getPermission());
-            nodeList.add(node);
-        });
         TreeNodeConfig treeNodeConfig = new TreeNodeConfig();
         // 自定义属性名 都要默认值的
         treeNodeConfig.setWeightKey("sort");
         // 最大递归深度
         treeNodeConfig.setDeep(3);
-        return TreeUtil.build(nodeList, 0L, treeNodeConfig,
+        return TreeUtil.build(sysMenuList, 0L, treeNodeConfig,
                 (treeNode, tree) -> {
                     tree.setId(treeNode.getId());
-                    tree.setParentId(treeNode.getParentId());
-                    tree.setWeight(treeNode.getWeight());
+                    tree.setParentId(treeNode.getPid());
+                    tree.setWeight(treeNode.getSort());
                     tree.setName(treeNode.getName());
-                    tree.putExtra("type", treeNode.getType());
-                    tree.putExtra("url", treeNode.getUrl());
-                    tree.putExtra("icon", treeNode.getIcon());
-                    tree.putExtra("permission", treeNode.getPermission());
+                    tree.putExtra("pid", treeNode.getPid());
+                    tree.putExtra("type", treeNode.getType().getValue());
+                    tree.putExtra("path", treeNode.getUrl());
+                    tree.putExtra("authCode", treeNode.getPermission());
+                    tree.putExtra("component", treeNode.getComponent());
+                    tree.putExtra("status", Boolean.TRUE.equals(treeNode.getValid()) ? 1 : 0);
+                    Map<String, Object> meta = ObjectUtils.defaultIfNull(treeNode.getMeta(), new HashMap<>());
+                    meta.putIfAbsent("icon", treeNode.getIcon());
+                    meta.putIfAbsent("title", treeNode.getName());
+                    tree.putExtra("meta", meta);
                 }
         );
     }

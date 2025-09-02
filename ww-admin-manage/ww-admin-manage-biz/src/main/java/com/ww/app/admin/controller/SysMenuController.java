@@ -2,19 +2,29 @@ package com.ww.app.admin.controller;
 
 import cn.hutool.core.lang.tree.Tree;
 import com.ww.app.admin.enums.SysMenuType;
+import com.ww.app.admin.view.form.NameExistsForm;
+import com.ww.app.admin.view.form.PathExistsForm;
 import com.ww.app.admin.view.form.SysMenuForm;
 import com.ww.app.admin.view.vo.SysMenuParentVO;
 import com.ww.app.admin.view.vo.SysMenuVO;
+import com.ww.app.common.common.IdForm;
 import com.ww.app.common.valid.group.DeleteGroup;
 import com.ww.app.common.valid.group.UpdateGroup;
-import com.ww.app.common.common.IdForm;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.Parameters;
 import io.swagger.v3.oas.annotations.enums.ParameterIn;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import org.apache.commons.lang3.StringUtils;
 import org.springframework.validation.annotation.Validated;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RestController;
 
 import java.util.List;
 
@@ -43,13 +53,16 @@ public class SysMenuController extends AbstractController {
         return sf.getSysMenuService().info(menuId);
     }
 
-    @GetMapping("/menu/allParent")
-    @Operation(summary = "上级菜单列表")
-    @Parameters({
-            @Parameter(name = "type", description = "菜单权限类型", required = true, in = ParameterIn.QUERY),
-    })
-    public List<SysMenuParentVO> allParent(@RequestParam("type") SysMenuType type) {
-        return sf.getSysMenuService().allParent(type);
+    @Operation(summary = "名称校验")
+    @PostMapping("/menu/name-exists")
+    public boolean nameExists(@RequestBody @Validated NameExistsForm form) {
+        return sf.getSysMenuService().nameExists(form.getId(), form.getName());
+    }
+
+    @Operation(summary = "路径校验")
+    @PostMapping("/menu/path-exists")
+    public boolean pathExists(@RequestBody @Validated PathExistsForm form) {
+        return sf.getSysMenuService().pathExists(form.getId(), form.getPath());
     }
 
     @PostMapping("/menu")

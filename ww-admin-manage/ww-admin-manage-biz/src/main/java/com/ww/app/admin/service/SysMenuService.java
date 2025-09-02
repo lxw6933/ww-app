@@ -3,9 +3,7 @@ package com.ww.app.admin.service;
 import cn.hutool.core.lang.tree.Tree;
 import com.baomidou.mybatisplus.extension.service.IService;
 import com.ww.app.admin.entity.SysMenu;
-import com.ww.app.admin.enums.SysMenuType;
 import com.ww.app.admin.view.form.SysMenuForm;
-import com.ww.app.admin.view.vo.SysMenuParentVO;
 import com.ww.app.admin.view.vo.SysMenuVO;
 import com.ww.app.common.common.IdForm;
 
@@ -14,7 +12,6 @@ import java.util.List;
 /**
  * @author ww
  * @create 2024-05-20 14:02:20
- * @description:
  */
 public interface SysMenuService extends IService<SysMenu> {
 
@@ -27,6 +24,7 @@ public interface SysMenuService extends IService<SysMenu> {
 
     /**
      * 详情
+     *
      * @param id 主键ID
      * @return SysPermissionVO
      */
@@ -34,6 +32,7 @@ public interface SysMenuService extends IService<SysMenu> {
 
     /**
      * 新增
+     *
      * @param form 表单信息
      * @return SysPermissionVO
      */
@@ -41,22 +40,34 @@ public interface SysMenuService extends IService<SysMenu> {
 
     /**
      * 编辑
+     *
      * @param form 表单信息
      */
     boolean update(SysMenuForm form);
 
     /**
      * 删除
+     *
      * @param idForm idForm
      */
     boolean delete(IdForm idForm);
 
     /**
-     * 获取菜单类型下的上一级父级菜单
+     * 校验菜单路由地址是否存在
      *
-     * @param menuType 菜单类型
-     * @return SysMenuParentVO
+     * @param id   主键，编辑时存在
+     * @param path 路由地址，允许为空，为空时不进行校验，返回false
+     * @return 当路由地址不为空时，如果存在返回true，否则返回false
      */
-    List<SysMenuParentVO> allParent(SysMenuType menuType);
+    boolean pathExists(Long id, String path);
+
+    /**
+     * 校验菜单名称是否存在
+     *
+     * @param id   主键，编辑时存在
+     * @param path 菜单名称，允许为空，为空时不进行校验，返回false
+     * @return 当菜单名称不为空时，如果存在返回true，否则返回false
+     */
+    boolean nameExists(Long id, String name);
 }
 

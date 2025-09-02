@@ -39,13 +39,16 @@ CREATE TABLE `sys_role`
 
 CREATE TABLE `sys_menu`
 (
-    `id`          bigint                                                        NOT NULL AUTO_INCREMENT COMMENT '物理主键',
+    `id`          bigint                                                                   NOT NULL AUTO_INCREMENT COMMENT '物理主键',
     `pid`         bigint                                                        DEFAULT NULL COMMENT '父级编号',
-    `name`        varchar(50) CHARACTER SET utf8mb3 COLLATE utf8mb3_general_ci  NOT NULL COMMENT '菜单名称',
-    `type`        varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci  NOT NULL COMMENT '类型',
+    `name`        varchar(50) CHARACTER SET utf8mb3 COLLATE utf8mb3_general_ci             NOT NULL COMMENT '菜单名称',
+    `type`        varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci             NOT NULL COMMENT '类型',
     `url`         varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci DEFAULT NULL COMMENT 'URL地址',
+    `redirect`    VARCHAR(100)                                                  DEFAULT '' NOT NULL COMMENT '重定向',
     `icon`        varchar(50) CHARACTER SET utf8mb3 COLLATE utf8mb3_general_ci  DEFAULT NULL COMMENT '图标',
-    `permission`  varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NOT NULL COMMENT '权限标识',
+    `permission`  varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci            NOT NULL COMMENT '权限标识',
+    `component`   VARCHAR(255)                                                  DEFAULT '' NOT NULL COMMENT '组件',
+    `meta`        JSON NULL COMMENT '元数据',
     `sort`        int                                                           DEFAULT NULL COMMENT '排序',
     `visible`     tinyint(1)                                                    DEFAULT '1' COMMENT '是否可见【仅菜单使用】',
     `valid`       tinyint(1)                                                    NOT NULL COMMENT '是否有效',

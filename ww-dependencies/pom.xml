@@ -30,7 +30,7 @@
         <fastjson.version>1.2.83</fastjson.version>
         <easyexcel.version>3.3.4</easyexcel.version>
         <poi.version>5.2.5</poi.version>
-        <druid.version>1.1.13</druid.version>
+        <druid.version>1.2.27</druid.version>
         <mysql.version>8.0.28</mysql.version>
         <redisson.version>3.22.1</redisson.version>
         <mybatisplus.starter.version>3.5.7</mybatisplus.starter.version>
