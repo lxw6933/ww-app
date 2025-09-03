@@ -6,6 +6,8 @@ import lombok.Data;
 import lombok.EqualsAndHashCode;
 import org.springframework.data.mongodb.core.mapping.Document;
 
+import java.util.Date;
+
 /**
  * @author ww
  * @create 2023-07-29- 10:48
@@ -94,6 +96,6 @@ public class ProductComment extends BaseDoc {
     /**
      * 创建时间
      */
-    private String createTime;
+    private Date createTime;
 
 }
