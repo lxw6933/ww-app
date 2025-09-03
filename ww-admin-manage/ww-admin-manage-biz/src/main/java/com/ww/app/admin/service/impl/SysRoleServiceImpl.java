@@ -16,11 +16,11 @@ import com.ww.app.admin.view.form.SysRoleForm;
 import com.ww.app.admin.view.query.SysRolePageQuery;
 import com.ww.app.admin.view.vo.SysRoleSelectVO;
 import com.ww.app.admin.view.vo.SysRoleVO;
-import com.ww.app.common.exception.ApiException;
 import com.ww.app.common.common.AppPageResult;
+import com.ww.app.common.common.IdForm;
+import com.ww.app.common.exception.ApiException;
 import com.ww.app.mybatis.common.AppPlusPageResult;
 import com.ww.app.redis.annotation.Resubmission;
-import com.ww.app.common.common.IdForm;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.CollectionUtils;
 import org.springframework.beans.BeanUtils;
@@ -30,7 +30,13 @@ import org.springframework.transaction.annotation.Transactional;
 import java.util.ArrayList;
 import java.util.List;
 
-import static com.ww.app.admin.constant.LogRecordConstants.*;
+import static com.ww.app.admin.constant.LogRecordConstants.SYSTEM_ROLE_CREATE_SUB_TYPE;
+import static com.ww.app.admin.constant.LogRecordConstants.SYSTEM_ROLE_CREATE_SUCCESS;
+import static com.ww.app.admin.constant.LogRecordConstants.SYSTEM_ROLE_DELETE_SUB_TYPE;
+import static com.ww.app.admin.constant.LogRecordConstants.SYSTEM_ROLE_DELETE_SUCCESS;
+import static com.ww.app.admin.constant.LogRecordConstants.SYSTEM_ROLE_TYPE;
+import static com.ww.app.admin.constant.LogRecordConstants.SYSTEM_ROLE_UPDATE_SUB_TYPE;
+import static com.ww.app.admin.constant.LogRecordConstants.SYSTEM_ROLE_UPDATE_SUCCESS;
 
 /**
  * @author ww
@@ -71,6 +77,7 @@ public class SysRoleServiceImpl extends BaseService<SysRoleMapper, SysRole> impl
         log.info("保存角色");
         SysRole sysRole = new SysRole();
         BeanUtils.copyProperties(form, sysRole);
+        sysRole.setRoleNo(sysRole.getName());
         sysRole.setStatus(true);
         this.save(sysRole);
         saveRolePermissions(sysRole.getId(), form.getPermissionIds());
@@ -94,7 +101,7 @@ public class SysRoleServiceImpl extends BaseService<SysRoleMapper, SysRole> impl
         if (CollectionUtils.isEmpty(rolePermissionIds)) {
             saveRolePermissions(updateSysRole.getId(), form.getPermissionIds());
         } else {
-            if (!CollectionUtils.isEqualCollection(form.getPermissionIds(), rolePermissionIds)) {
+            if (CollectionUtils.isEmpty(form.getPermissionIds()) || !CollectionUtils.isEqualCollection(form.getPermissionIds(), rolePermissionIds)) {
                 // 删除之前所有的关联信息，新增目前的关联信息
                 df.getSysRoleMapper().removeRoleAndPermission(updateSysRole.getId());
                 saveRolePermissions(updateSysRole.getId(), form.getPermissionIds());
@@ -143,7 +150,7 @@ public class SysRoleServiceImpl extends BaseService<SysRoleMapper, SysRole> impl
     /**
      * 维护角色权限关联信息
      *
-     * @param sysRoleId 角色id
+     * @param sysRoleId     角色id
      * @param permissionIds 权限id集合
      */
     private void saveRolePermissions(Long sysRoleId, List<Long> permissionIds) {

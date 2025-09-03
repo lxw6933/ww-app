@@ -1,5 +1,6 @@
 package com.ww.app.admin.view.vo;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.Data;
 
 import java.util.Date;
@@ -50,4 +51,7 @@ public class SysRoleVO {
      */
     private List<Long> permissionIds;
 
+    public List<Long> getPermissions() {
+        return permissionIds;
+    }
 }

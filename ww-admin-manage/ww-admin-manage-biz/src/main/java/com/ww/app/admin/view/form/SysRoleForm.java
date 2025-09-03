@@ -1,5 +1,6 @@
 package com.ww.app.admin.view.form;
 
+import com.fasterxml.jackson.annotation.JsonAlias;
 import com.mzt.logapi.starter.annotation.DiffLogField;
 import com.ww.app.admin.operatelog.MenuParseFunction;
 import com.ww.app.common.valid.group.UpdateGroup;
@@ -39,6 +40,10 @@ public class SysRoleForm {
     @Schema(description = "角色标识")
     private String roleNo;
 
+    @DiffLogField(name = "角色状态")
+    @Schema(description = "角色状态")
+    private Boolean status;
+
     /**
      * 备注
      */
@@ -51,6 +56,7 @@ public class SysRoleForm {
      */
     @DiffLogField(name = "角色权限", function = MenuParseFunction.NAME)
     @Schema(description = "角色权限")
+    @JsonAlias({"permissionIds", "permissions"})
     private List<Long> permissionIds;
 
 }
