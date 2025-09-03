@@ -8,62 +8,17 @@
         <version>${revision}</version>
     </parent>
 
+    <modules>
+        <module>ww-product-server-api</module>
+        <module>ww-product-server-biz</module>
+    </modules>
+
     <artifactId>ww-product</artifactId>
-    <description>商品服务</description>
+    <packaging>pom</packaging>
 
-    <dependencies>
-        <!-- web通用服务依赖 -->
-        <dependency>
-            <groupId>com.ww.app</groupId>
-            <artifactId>ww-spring-boot-starter-web</artifactId>
-            <version>${revision}</version>
-        </dependency>
-        <!-- redis starter -->
-        <dependency>
-            <groupId>com.ww.app</groupId>
-            <artifactId>ww-spring-boot-starter-redis</artifactId>
-            <version>${revision}</version>
-        </dependency>
-        <!-- rabbitmq starter -->
-        <dependency>
-            <groupId>com.ww.app</groupId>
-            <artifactId>ww-spring-boot-starter-rabbitmq</artifactId>
-            <version>${revision}</version>
-        </dependency>
-        <!-- mongodb -->
-        <dependency>
-            <groupId>org.springframework.boot</groupId>
-            <artifactId>spring-boot-starter-data-mongodb</artifactId>
-        </dependency>
-        <!-- mybatis starter -->
-        <dependency>
-            <groupId>com.ww.app</groupId>
-            <artifactId>ww-spring-boot-starter-mybatis</artifactId>
-            <version>${revision}</version>
-        </dependency>
-        <!-- test -->
-        <dependency>
-            <groupId>org.springframework.boot</groupId>
-            <artifactId>spring-boot-starter-test</artifactId>
-            <scope>test</scope>
-        </dependency>
-    </dependencies>
-
-    <build>
-        <plugins>
-            <plugin>
-                <groupId>org.springframework.boot</groupId>
-                <artifactId>spring-boot-maven-plugin</artifactId>
-                <configuration>
-                    <excludes>
-                        <exclude>
-                            <groupId>org.projectlombok</groupId>
-                            <artifactId>lombok</artifactId>
-                        </exclude>
-                    </excludes>
-                </configuration>
-            </plugin>
-        </plugins>
-    </build>
+    <name>${project.artifactId}</name>
+    <description>
+        商品模块
+    </description>
 
 </project>
