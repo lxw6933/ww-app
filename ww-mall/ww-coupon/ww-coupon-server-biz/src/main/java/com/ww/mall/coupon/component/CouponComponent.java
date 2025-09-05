@@ -5,7 +5,7 @@ import com.ww.app.common.exception.ApiException;
 import com.ww.app.mongodb.common.BaseDoc;
 import com.ww.mall.coupon.component.key.CouponRedisKeyBuilder;
 import com.ww.mall.coupon.entity.SmsCouponRecord;
-import com.ww.mall.coupon.enums.CouponResCodeConstants;
+import com.ww.mall.coupon.eunms.ErrorCodeConstants;
 import com.ww.mall.coupon.eunms.CouponStatus;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.mongodb.core.MongoTemplate;
@@ -49,7 +49,7 @@ public class CouponComponent {
             log.info("冻结用户[{}]优惠券[{}]成功", userId, couponRecordId);
         } else {
             log.error("用户[{}]优惠券[{}]已经被占用", userId, couponRecordId);
-            throw new ApiException(CouponResCodeConstants.COUPON_USED_EXCEPTION);
+            throw new ApiException(ErrorCodeConstants.COUPON_USED_EXCEPTION);
         }
     }
 

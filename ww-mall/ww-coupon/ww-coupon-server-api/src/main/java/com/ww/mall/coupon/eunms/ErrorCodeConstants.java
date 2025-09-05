@@ -1,4 +1,4 @@
-package com.ww.mall.coupon.enums;
+package com.ww.mall.coupon.eunms;
 
 import com.ww.app.common.common.ResCode;
 
@@ -7,7 +7,7 @@ import com.ww.app.common.common.ResCode;
  * @create 2025-03-17- 09:43
  * @description: 优惠券异常汇总
  */
-public interface CouponResCodeConstants {
+public interface ErrorCodeConstants {
 
     // TODO 命名、code、msg 临时想的，后续维护规范
     ResCode DATA_ERROR = new ResCode(500, "数据异常");
