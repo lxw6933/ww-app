@@ -1,6 +1,7 @@
 package com.ww.app.common.common;
 
 import com.ww.app.common.exception.ApiException;
+import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 
@@ -18,19 +19,13 @@ import static com.ww.app.common.utils.CollectionUtils.convertList;
 @EqualsAndHashCode(callSuper = true)
 public class AppPageResult<T> extends AppPage {
 
-    /**
-     * 当前页数据集
-     */
+    @Schema(description = "当前页数据集", requiredMode = Schema.RequiredMode.REQUIRED)
     private List<T> result;
 
-    /**
-     * 总页数
-     */
+    @Schema(description = "总页数", requiredMode = Schema.RequiredMode.REQUIRED)
     private Integer totalPage;
 
-    /**
-     * 总记录数
-     */
+    @Schema(description = "总记录数", requiredMode = Schema.RequiredMode.REQUIRED)
     private Integer totalCount;
 
     public AppPageResult(int pageNum, int pageSize, int totalCount, List<T> result) {
