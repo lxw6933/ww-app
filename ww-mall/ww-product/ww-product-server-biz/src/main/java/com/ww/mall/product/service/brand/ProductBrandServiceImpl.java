@@ -8,7 +8,7 @@ import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.ww.app.common.common.AppPageResult;
 import com.ww.app.common.exception.ApiException;
 import com.ww.app.mybatis.common.AppPlusPageResult;
-import com.ww.mall.product.dao.ProductBrandMapper;
+import com.ww.mall.product.dao.brand.ProductBrandMapper;
 import com.ww.mall.product.entity.brand.ProductBrand;
 import com.ww.mall.product.view.bo.ProductBrandBO;
 import com.ww.mall.product.view.query.ProductBrandPageQuery;

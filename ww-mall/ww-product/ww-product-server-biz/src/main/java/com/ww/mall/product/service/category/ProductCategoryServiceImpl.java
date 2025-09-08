@@ -4,7 +4,7 @@ import cn.hutool.core.bean.BeanUtil;
 import cn.hutool.core.util.StrUtil;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.ww.app.common.exception.ApiException;
-import com.ww.mall.product.dao.ProductCategoryMapper;
+import com.ww.mall.product.dao.category.ProductCategoryMapper;
 import com.ww.mall.product.entity.category.ProductCategory;
 import com.ww.mall.product.view.bo.ProductCategoryBO;
 import com.ww.mall.product.view.query.ProductCategoryQuery;

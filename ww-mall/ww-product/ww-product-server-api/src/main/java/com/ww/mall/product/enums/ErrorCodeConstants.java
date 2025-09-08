@@ -22,4 +22,14 @@ public interface ErrorCodeConstants {
     ResCode BRAND_DISABLED = new ResCode(1_008_002_001, "品牌已禁用");
     ResCode BRAND_NAME_EXISTS = new ResCode(1_008_002_002, "品牌名称已存在");
 
+    // ========== 商品属性项 1-008-003-000 ==========
+    ResCode PROPERTY_NOT_EXISTS = new ResCode(1_008_003_000, "属性项不存在");
+    ResCode PROPERTY_EXISTS = new ResCode(1_008_003_001, "属性项的名称已存在");
+    ResCode PROPERTY_DELETE_FAIL_VALUE_EXISTS = new ResCode(1_008_003_002, "属性项下存在属性值，无法删除");
+
+    // ========== 商品属性值 1-008-004-000 ==========
+    ResCode PROPERTY_VALUE_NOT_EXISTS = new ResCode(1_008_004_000, "属性值不存在");
+    ResCode PROPERTY_VALUE_EXISTS = new ResCode(1_008_004_001, "属性值的名称已存在");
+
+
 }

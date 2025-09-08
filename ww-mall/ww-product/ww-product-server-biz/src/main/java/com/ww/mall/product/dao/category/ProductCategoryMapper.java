@@ -1,7 +1,7 @@
-package com.ww.mall.product.dao;
+package com.ww.mall.product.dao.category;
 
 import com.baomidou.mybatisplus.core.mapper.BaseMapper;
-import com.ww.mall.product.entity.brand.ProductBrand;
+import com.ww.mall.product.entity.category.ProductCategory;
 import org.apache.ibatis.annotations.Mapper;
 
 /**
@@ -10,6 +10,6 @@ import org.apache.ibatis.annotations.Mapper;
  * @description:
  */
 @Mapper
-public interface ProductBrandMapper extends BaseMapper<ProductBrand> {
+public interface ProductCategoryMapper extends BaseMapper<ProductCategory> {
 
 }
