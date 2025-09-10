@@ -1,0 +1,29 @@
+package com.ww.mall.product.rpc;
+
+import cn.hutool.core.bean.BeanUtil;
+import com.ww.app.common.common.Result;
+import com.ww.mall.product.dto.spu.ProductSpuDTO;
+import com.ww.mall.product.entity.spu.ProductSpu;
+import com.ww.mall.product.service.spu.ProductSpuService;
+import org.springframework.web.bind.annotation.RestController;
+
+import javax.annotation.Resource;
+
+/**
+ * @author ww
+ * @create 2025-09-10 16:21
+ * @description:
+ */
+@RestController
+public class ProductSpuApiRpc implements ProductSpuApi {
+
+    @Resource
+    private ProductSpuService productSpuService;
+
+    @Override
+    public Result<ProductSpuDTO> getSpu(Long id) {
+        ProductSpu spu = productSpuService.get(id);
+        return Result.success(BeanUtil.toBean(spu, ProductSpuDTO.class));
+    }
+
+}

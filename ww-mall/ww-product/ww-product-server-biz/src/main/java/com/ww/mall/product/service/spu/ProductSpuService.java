@@ -40,6 +40,14 @@ public interface ProductSpuService extends IService<ProductSpu> {
     boolean update(ProductSpuBO productSpuBO);
 
     /**
+     * 获得商品 SPU
+     *
+     * @param id 编号
+     * @return 商品 SPU
+     */
+    ProductSpu get(Long id);
+
+    /**
      * 更新 SPU 状态
      *
      * @param productSpuStatusBO 更新请求

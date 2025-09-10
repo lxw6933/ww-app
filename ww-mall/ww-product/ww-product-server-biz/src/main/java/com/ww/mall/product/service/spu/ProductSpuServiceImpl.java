@@ -99,11 +99,17 @@ public class ProductSpuServiceImpl extends ServiceImpl<ProductSpuMapper, Product
 
         // 更新 SPU
         ProductSpu updateObj = BeanUtil.toBean(productSpuBO, ProductSpu.class);
+        updateObj.setStatus(spu.getStatus());
         initSpuFromSkus(updateObj, skus);
         this.updateById(updateObj);
         // 批量更新 SKU
         productSkuService.updateSkuList(updateObj.getId(), productSpuBO.getSkus());
         return true;
+    }
+
+    @Override
+    public ProductSpu get(Long id) {
+        return this.getById(id);
     }
 
     @Override
