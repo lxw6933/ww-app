@@ -17,8 +17,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.BeanUtils;
 import org.springframework.stereotype.Service;
 
-import static com.ww.mall.product.enums.ErrorCodeConstants.BRAND_NAME_EXISTS;
-import static com.ww.mall.product.enums.ErrorCodeConstants.BRAND_NOT_EXISTS;
+import static com.ww.mall.product.enums.ErrorCodeConstants.*;
 
 /**
  * @author ww
@@ -33,7 +32,7 @@ public class ProductBrandServiceImpl extends ServiceImpl<ProductBrandMapper, Pro
     @Override
     public AppPageResult<ProductBrandVO> page(ProductBrandPageQuery productBrandPageQuery) {
         IPage<ProductBrand> page = new Page<>(productBrandPageQuery.getPageNum(), productBrandPageQuery.getPageSize());
-        this.page(page);
+        this.page(page, productBrandPageQuery.buildQuery());
         return new AppPlusPageResult<>(page, result -> {
             ProductBrandVO brandVO = new ProductBrandVO();
             BeanUtils.copyProperties(result, brandVO);
@@ -60,6 +59,17 @@ public class ProductBrandServiceImpl extends ServiceImpl<ProductBrandMapper, Pro
         ProductBrand updateObj = BeanUtil.toBean(productBrandBO, ProductBrand.class);
         this.updateById(updateObj);
         return true;
+    }
+
+    @Override
+    public void validateProductBrand(Long id) {
+        ProductBrand brand = this.getById(id);
+        if (brand == null) {
+            throw new ApiException(BRAND_NOT_EXISTS);
+        }
+        if (brand.getStatus().equals(Boolean.FALSE)) {
+            throw new ApiException(BRAND_DISABLED);
+        }
     }
 
     private void validateBrandExists(Long id) {

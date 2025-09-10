@@ -20,4 +20,11 @@ public interface ProductBrandService extends IService<ProductBrand> {
 
     boolean update(ProductBrandBO productBrandBO);
 
+    /**
+     * 验证选择的商品分类是否合法
+     *
+     * @param id 分类编号
+     */
+    void validateProductBrand(Long id);
+
 }

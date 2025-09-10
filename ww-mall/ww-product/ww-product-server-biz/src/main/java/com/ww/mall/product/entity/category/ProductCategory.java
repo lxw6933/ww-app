@@ -21,6 +21,11 @@ public class ProductCategory extends BaseEntity {
     public static final Long PARENT_ID_NULL = 0L;
 
     /**
+     * 限定分类层级
+     */
+    public static final int CATEGORY_LEVEL = 2;
+
+    /**
      * 分类名称
      */
     private String name;

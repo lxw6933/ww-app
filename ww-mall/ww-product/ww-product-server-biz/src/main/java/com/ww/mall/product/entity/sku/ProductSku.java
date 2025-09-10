@@ -55,7 +55,12 @@ public class ProductSku extends BaseEntity {
     /**
      * 图片地址
      */
-    private String skuImg;
+    private String img;
+
+    /**
+     * 条形码
+     */
+    private String barCode;
 
     /**
      * 库存
@@ -65,10 +70,6 @@ public class ProductSku extends BaseEntity {
     // ========== 营销相关字段 =========
 
     // ========== 统计相关字段 =========
-    /**
-     * 商品销量
-     */
-    private Integer salesCount;
 
     /**
      * 商品属性

@@ -7,10 +7,13 @@ import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.ww.app.common.exception.ApiException;
 import com.ww.mall.product.dao.property.ProductPropertyMapper;
 import com.ww.mall.product.entity.property.ProductProperty;
+import com.ww.mall.product.service.sku.ProductSkuService;
 import com.ww.mall.product.view.bo.ProductPropertyBO;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+
+import javax.annotation.Resource;
 
 import static com.ww.mall.product.enums.ErrorCodeConstants.PROPERTY_EXISTS;
 import static com.ww.mall.product.enums.ErrorCodeConstants.PROPERTY_NOT_EXISTS;
@@ -23,6 +26,9 @@ import static com.ww.mall.product.enums.ErrorCodeConstants.PROPERTY_NOT_EXISTS;
 @Slf4j
 @Service
 public class ProductPropertyServiceImpl extends ServiceImpl<ProductPropertyMapper, ProductProperty> implements ProductPropertyService {
+
+    @Resource
+    private ProductSkuService productSkuService;
 
     @Override
     public boolean add(ProductPropertyBO productPropertyBO) {
@@ -49,7 +55,8 @@ public class ProductPropertyServiceImpl extends ServiceImpl<ProductPropertyMappe
 
         ProductProperty updateObj = BeanUtil.toBean(productPropertyBO, ProductProperty.class);
         this.updateById(updateObj);
-        // TODO 更新 sku 相关属性
+        // 更新 sku 相关属性
+        productSkuService.updateSkuProperty(productPropertyBO.getId(), productPropertyBO.getName());
         return true;
     }
 

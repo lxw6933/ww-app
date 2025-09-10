@@ -25,6 +25,13 @@ public interface ProductCategoryService extends IService<ProductCategory> {
     List<ProductCategoryVO> listCategoryTree(ProductCategoryQuery productCategoryQuery);
 
     /**
+     * 校验商品分类
+     *
+     * @param id 分类编号
+     */
+    void validateCategory(Long id);
+
+    /**
      * 获得商品分类的层级
      *
      * @param id 编号

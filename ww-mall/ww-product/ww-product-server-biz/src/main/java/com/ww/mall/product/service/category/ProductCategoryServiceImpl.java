@@ -86,6 +86,17 @@ public class ProductCategoryServiceImpl extends ServiceImpl<ProductCategoryMappe
     }
 
     @Override
+    public void validateCategory(Long id) {
+        ProductCategory category = this.getById(id);
+        if (category == null) {
+            throw new ApiException(CATEGORY_NOT_EXISTS);
+        }
+        if (Objects.equals(category.getStatus(), Boolean.FALSE)) {
+            throw new ApiException(CATEGORY_DISABLED);
+        }
+    }
+
+    @Override
     public Integer getCategoryLevel(Long id) {
         if (Objects.equals(id, PARENT_ID_NULL)) {
             return 0;

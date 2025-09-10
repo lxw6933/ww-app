@@ -6,9 +6,12 @@ import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.ww.app.common.exception.ApiException;
 import com.ww.mall.product.dao.property.ProductPropertyValueMapper;
 import com.ww.mall.product.entity.property.ProductPropertyValue;
+import com.ww.mall.product.service.sku.ProductSkuService;
 import com.ww.mall.product.view.bo.ProductPropertyValueBO;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
+
+import javax.annotation.Resource;
 
 import static com.ww.mall.product.enums.ErrorCodeConstants.PROPERTY_VALUE_EXISTS;
 import static com.ww.mall.product.enums.ErrorCodeConstants.PROPERTY_VALUE_NOT_EXISTS;
@@ -21,6 +24,9 @@ import static com.ww.mall.product.enums.ErrorCodeConstants.PROPERTY_VALUE_NOT_EX
 @Slf4j
 @Service
 public class ProductPropertyValueServiceImpl extends ServiceImpl<ProductPropertyValueMapper, ProductPropertyValue> implements ProductPropertyValueService {
+
+    @Resource
+    private ProductSkuService productSkuService;
 
     @Override
     public boolean add(ProductPropertyValueBO productPropertyValueBO) {
@@ -52,7 +58,8 @@ public class ProductPropertyValueServiceImpl extends ServiceImpl<ProductProperty
 
         ProductPropertyValue updateObj = BeanUtil.toBean(productPropertyValueBO, ProductPropertyValue.class);
         this.save(updateObj);
-        // TODO 更新 sku 相关属性
+        // 更新 sku 相关属性
+        productSkuService.updateSkuPropertyValue(productPropertyValueBO.getId(), productPropertyValueBO.getName());
         return true;
     }
 
