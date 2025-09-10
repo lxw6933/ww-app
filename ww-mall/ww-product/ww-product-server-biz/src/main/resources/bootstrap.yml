@@ -1,6 +1,6 @@
 spring:
   application:
-    name: ww-product
+    name: product-server
   profiles:
     active: dev
   cloud:

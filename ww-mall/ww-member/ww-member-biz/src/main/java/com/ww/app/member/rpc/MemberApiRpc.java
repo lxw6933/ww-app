@@ -6,7 +6,8 @@ import com.ww.app.member.member.dto.MemberDTO;
 import com.ww.app.member.member.rpc.MemberApi;
 import com.ww.app.member.service.MemberIntegralRecordService;
 import com.ww.app.member.service.MemberService;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RestController;
 
 import javax.annotation.Resource;
 
@@ -16,7 +17,6 @@ import javax.annotation.Resource;
  * @create: 2023/7/22 11:16
  **/
 @RestController
-@RequestMapping("/member/inner")
 public class MemberApiRpc implements MemberApi {
 
     @Resource
@@ -26,19 +26,16 @@ public class MemberApiRpc implements MemberApi {
     private MemberIntegralRecordService memberIntegralRecordService;
 
     @Override
-    @GetMapping("/getMemberByMobile")
     public Result<MemberDTO> getMemberByMobile(@RequestParam("mobile") String mobile) {
         return Result.success(memberService.getMemberByMobile(mobile));
     }
 
     @Override
-    @PostMapping("/addNewMemberIntegral")
     public Result<Boolean> addMemberIntegral(AddMemberIntegralBO addMemberIntegralBO) {
         return Result.success(memberIntegralRecordService.addNewMemberIntegral(addMemberIntegralBO));
     }
 
     @Override
-    @GetMapping("/test")
     public Result<String> test() {
         return Result.success("member openFeign hello");
     }

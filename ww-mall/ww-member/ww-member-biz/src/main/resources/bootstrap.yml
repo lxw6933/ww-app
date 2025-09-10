@@ -1,6 +1,6 @@
 spring:
   application:
-    name: ww-member
+    name: member-server
   profiles:
     active: dev
   cloud:
