@@ -7,6 +7,7 @@ import com.ww.app.mybatis.common.BaseEntity;
 import com.ww.mall.product.entity.property.ProductProperty;
 import com.ww.mall.product.entity.property.ProductPropertyValue;
 import com.ww.mall.product.entity.spu.ProductSpu;
+import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
@@ -77,12 +78,14 @@ public class ProductSku extends BaseEntity {
     @Data
     @NoArgsConstructor
     @AllArgsConstructor
+    @Schema(description = "商品SKU属性")
     public static class Property {
 
         /**
          * 属性编号
          * 关联 {@link ProductProperty#getId()}
          */
+        @Schema(description = "属性的编号", requiredMode = Schema.RequiredMode.REQUIRED)
         private Long propertyId;
 
         /**
@@ -91,12 +94,14 @@ public class ProductSku extends BaseEntity {
          * <p>
          * 注意：每次属性名字发生变化时，需要更新该冗余
          */
+        @Schema(description = "属性的名称", requiredMode = Schema.RequiredMode.REQUIRED)
         private String propertyName;
 
         /**
          * 属性值编号
          * 关联 {@link ProductPropertyValue#getId()}
          */
+        @Schema(description = "属性值的编号", requiredMode = Schema.RequiredMode.REQUIRED)
         private Long valueId;
 
         /**
@@ -105,6 +110,7 @@ public class ProductSku extends BaseEntity {
          * <p>
          * 注意：每次属性值名字发生变化时，需要更新该冗余
          */
+        @Schema(description = "属性值的名称", requiredMode = Schema.RequiredMode.REQUIRED)
         private String valueName;
 
     }

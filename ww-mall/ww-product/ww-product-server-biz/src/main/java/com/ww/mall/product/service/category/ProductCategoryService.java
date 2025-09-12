@@ -2,9 +2,9 @@ package com.ww.mall.product.service.category;
 
 import com.baomidou.mybatisplus.extension.service.IService;
 import com.ww.mall.product.entity.category.ProductCategory;
-import com.ww.mall.product.view.bo.ProductCategoryBO;
-import com.ww.mall.product.view.query.ProductCategoryQuery;
-import com.ww.mall.product.view.vo.ProductCategoryVO;
+import com.ww.mall.product.controller.admin.category.req.ProductCategoryBO;
+import com.ww.mall.product.controller.admin.category.req.ProductCategoryQuery;
+import com.ww.mall.product.controller.admin.category.res.ProductCategoryVO;
 
 import java.util.List;
 

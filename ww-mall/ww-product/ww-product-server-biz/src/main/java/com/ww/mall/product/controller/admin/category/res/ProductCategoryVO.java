@@ -1,4 +1,4 @@
-package com.ww.mall.product.view.vo;
+package com.ww.mall.product.controller.admin.category.res;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 import io.swagger.v3.oas.annotations.media.Schema;

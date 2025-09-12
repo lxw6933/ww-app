@@ -1,9 +1,9 @@
-package com.ww.mall.product.controller;
+package com.ww.mall.product.controller.admin.category;
 
 import com.ww.mall.product.service.category.ProductCategoryService;
-import com.ww.mall.product.view.bo.ProductCategoryBO;
-import com.ww.mall.product.view.query.ProductCategoryQuery;
-import com.ww.mall.product.view.vo.ProductCategoryVO;
+import com.ww.mall.product.controller.admin.category.req.ProductCategoryBO;
+import com.ww.mall.product.controller.admin.category.req.ProductCategoryQuery;
+import com.ww.mall.product.controller.admin.category.res.ProductCategoryVO;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.validation.annotation.Validated;

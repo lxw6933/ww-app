@@ -34,11 +34,6 @@ public class ProductSpu extends BaseEntity {
     private String keyword;
 
     /**
-     * 商品编码
-     */
-    private String spuCode;
-
-    /**
      * 商品类型【虚拟、实物】
      */
     private SpuType spuType;

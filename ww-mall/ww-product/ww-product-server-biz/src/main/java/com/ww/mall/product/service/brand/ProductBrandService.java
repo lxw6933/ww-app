@@ -3,9 +3,9 @@ package com.ww.mall.product.service.brand;
 import com.baomidou.mybatisplus.extension.service.IService;
 import com.ww.app.common.common.AppPageResult;
 import com.ww.mall.product.entity.brand.ProductBrand;
-import com.ww.mall.product.view.bo.ProductBrandBO;
-import com.ww.mall.product.view.query.ProductBrandPageQuery;
-import com.ww.mall.product.view.vo.ProductBrandVO;
+import com.ww.mall.product.controller.admin.brand.req.ProductBrandBO;
+import com.ww.mall.product.controller.admin.brand.req.ProductBrandPageQuery;
+import com.ww.mall.product.controller.admin.brand.res.ProductBrandVO;
 
 /**
  * @author ww

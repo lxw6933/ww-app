@@ -1,11 +1,11 @@
-package com.ww.mall.product.controller;
+package com.ww.mall.product.controller.admin.spu;
 
 import com.ww.app.common.common.AppPageResult;
 import com.ww.mall.product.service.spu.ProductSpuService;
-import com.ww.mall.product.view.bo.ProductSpuBO;
-import com.ww.mall.product.view.bo.ProductSpuStatusBO;
-import com.ww.mall.product.view.query.ProductSpuPageQuery;
-import com.ww.mall.product.view.vo.ProductSpuPageAdminVO;
+import com.ww.mall.product.controller.admin.spu.req.ProductSpuBO;
+import com.ww.mall.product.controller.admin.spu.req.ProductSpuStatusBO;
+import com.ww.mall.product.controller.admin.spu.req.ProductSpuPageQuery;
+import com.ww.mall.product.controller.admin.spu.res.ProductSpuPageAdminVO;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.validation.annotation.Validated;

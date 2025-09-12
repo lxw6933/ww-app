@@ -17,9 +17,6 @@ public class ProductSpuDTO {
     @Schema(description = "id")
     private Long id;
 
-    @Schema(description = "商品编码")
-    private String spuCode;
-
     @Schema(description = "商品名称", requiredMode = Schema.RequiredMode.REQUIRED)
     private String name;
 

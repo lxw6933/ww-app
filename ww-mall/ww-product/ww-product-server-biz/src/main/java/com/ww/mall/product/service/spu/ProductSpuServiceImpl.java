@@ -7,21 +7,22 @@ import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.ww.app.common.common.AppPageResult;
 import com.ww.app.common.exception.ApiException;
-import com.ww.app.common.utils.IdUtil;
 import com.ww.app.mybatis.common.AppPlusPageResult;
+import com.ww.mall.product.controller.admin.sku.req.ProductSkuBO;
+import com.ww.mall.product.controller.admin.spu.req.ProductSpuBO;
+import com.ww.mall.product.controller.admin.spu.req.ProductSpuPageQuery;
+import com.ww.mall.product.controller.admin.spu.req.ProductSpuStatusBO;
+import com.ww.mall.product.controller.admin.spu.res.ProductSpuPageAdminVO;
+import com.ww.mall.product.controller.app.spu.res.AppProductSpuDetailVO;
 import com.ww.mall.product.dao.spu.ProductSpuMapper;
 import com.ww.mall.product.entity.brand.ProductBrand;
 import com.ww.mall.product.entity.category.ProductCategory;
+import com.ww.mall.product.entity.sku.ProductSku;
 import com.ww.mall.product.entity.spu.ProductSpu;
 import com.ww.mall.product.enums.SpuStatus;
 import com.ww.mall.product.service.brand.ProductBrandService;
 import com.ww.mall.product.service.category.ProductCategoryService;
 import com.ww.mall.product.service.sku.ProductSkuService;
-import com.ww.mall.product.view.bo.ProductSkuBO;
-import com.ww.mall.product.view.bo.ProductSpuBO;
-import com.ww.mall.product.view.bo.ProductSpuStatusBO;
-import com.ww.mall.product.view.query.ProductSpuPageQuery;
-import com.ww.mall.product.view.vo.ProductSpuPageAdminVO;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.BeanUtils;
 import org.springframework.stereotype.Service;
@@ -32,8 +33,7 @@ import java.util.List;
 
 import static com.ww.app.common.utils.CollectionUtils.getMinValue;
 import static com.ww.mall.product.entity.category.ProductCategory.CATEGORY_LEVEL;
-import static com.ww.mall.product.enums.ErrorCodeConstants.SPU_NOT_EXISTS;
-import static com.ww.mall.product.enums.ErrorCodeConstants.SPU_SAVE_FAIL_CATEGORY_LEVEL_ERROR;
+import static com.ww.mall.product.enums.ErrorCodeConstants.*;
 
 /**
  * @author ww
@@ -141,6 +141,22 @@ public class ProductSpuServiceImpl extends ServiceImpl<ProductSpuMapper, Product
         productSpuMapper.updateBrowseCount(id, incrCount);
     }
 
+    @Override
+    public AppProductSpuDetailVO detail(Long id) {
+        // 获得商品 SPU
+        ProductSpu spu = this.get(id);
+        if (spu == null) {
+            throw new ApiException(SPU_NOT_EXISTS);
+        }
+        if (!SpuStatus.UP.equals(spu.getStatus())) {
+            throw new ApiException(SPU_NOT_ENABLE);
+        }
+        // 获得商品 SKU
+        List<ProductSku> skus = productSkuService.getSkuListBySpuId(spu.getId());
+        // TODO 增加浏览量
+        return AppProductSpuDetailVO.build(spu, skus);
+    }
+
     private void validateCategory(Long categoryId) {
         productCategoryService.validateCategory(categoryId);
         // 校验层级
@@ -179,8 +195,6 @@ public class ProductSpuServiceImpl extends ServiceImpl<ProductSpuMapper, Product
             spu.setSalesCount(0);
             // 默认商品浏览量
             spu.setBrowseCount(0);
-            // spuCode
-            spu.setSpuCode(IdUtil.nextIdStr());
         }
     }
 

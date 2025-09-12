@@ -1,5 +1,6 @@
-package com.ww.mall.product.view.bo;
+package com.ww.mall.product.controller.admin.spu.req;
 
+import com.ww.mall.product.controller.admin.sku.req.ProductSkuBO;
 import com.ww.mall.product.enums.SpuType;
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Data;

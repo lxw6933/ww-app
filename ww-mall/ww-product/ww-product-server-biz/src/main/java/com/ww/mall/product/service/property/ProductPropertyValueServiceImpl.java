@@ -7,7 +7,7 @@ import com.ww.app.common.exception.ApiException;
 import com.ww.mall.product.dao.property.ProductPropertyValueMapper;
 import com.ww.mall.product.entity.property.ProductPropertyValue;
 import com.ww.mall.product.service.sku.ProductSkuService;
-import com.ww.mall.product.view.bo.ProductPropertyValueBO;
+import com.ww.mall.product.controller.admin.property.req.ProductPropertyValueBO;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 

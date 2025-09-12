@@ -1,4 +1,4 @@
-package com.ww.mall.product.view.bo;
+package com.ww.mall.product.controller.admin.spu.req;
 
 import com.ww.mall.product.enums.SpuStatus;
 import io.swagger.v3.oas.annotations.media.Schema;

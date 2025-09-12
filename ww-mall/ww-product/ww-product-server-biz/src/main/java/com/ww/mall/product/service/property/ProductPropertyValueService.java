@@ -2,7 +2,7 @@ package com.ww.mall.product.service.property;
 
 import com.baomidou.mybatisplus.extension.service.IService;
 import com.ww.mall.product.entity.property.ProductPropertyValue;
-import com.ww.mall.product.view.bo.ProductPropertyValueBO;
+import com.ww.mall.product.controller.admin.property.req.ProductPropertyValueBO;
 
 /**
  * @author ww

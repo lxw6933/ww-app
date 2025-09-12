@@ -1,4 +1,4 @@
-package com.ww.mall.product.view.query;
+package com.ww.mall.product.controller.admin.brand.req;
 
 import com.baomidou.mybatisplus.core.conditions.Wrapper;
 import com.ww.app.common.common.AppPage;

@@ -1,4 +1,4 @@
-package com.ww.mall.product.view.vo;
+package com.ww.mall.product.controller.admin.spu.res;
 
 import com.ww.mall.product.enums.SpuType;
 import io.swagger.v3.oas.annotations.media.Schema;
@@ -16,9 +16,6 @@ public class ProductSpuPageAdminVO {
 
     @Schema(description = "id")
     private Long id;
-
-    @Schema(description = "商品编码")
-    private String spuCode;
 
     @Schema(description = "商品名称", requiredMode = Schema.RequiredMode.REQUIRED)
     private String name;

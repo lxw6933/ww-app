@@ -2,11 +2,12 @@ package com.ww.mall.product.service.spu;
 
 import com.baomidou.mybatisplus.extension.service.IService;
 import com.ww.app.common.common.AppPageResult;
+import com.ww.mall.product.controller.app.spu.res.AppProductSpuDetailVO;
 import com.ww.mall.product.entity.spu.ProductSpu;
-import com.ww.mall.product.view.bo.ProductSpuBO;
-import com.ww.mall.product.view.bo.ProductSpuStatusBO;
-import com.ww.mall.product.view.query.ProductSpuPageQuery;
-import com.ww.mall.product.view.vo.ProductSpuPageAdminVO;
+import com.ww.mall.product.controller.admin.spu.req.ProductSpuBO;
+import com.ww.mall.product.controller.admin.spu.req.ProductSpuStatusBO;
+import com.ww.mall.product.controller.admin.spu.req.ProductSpuPageQuery;
+import com.ww.mall.product.controller.admin.spu.res.ProductSpuPageAdminVO;
 
 /**
  * @author ww
@@ -85,5 +86,9 @@ public interface ProductSpuService extends IService<ProductSpu> {
      * @param incrCount 增加的数量
      */
     void updateBrowseCount(Long id, int incrCount);
+
+    // ========================================App====================================================
+
+    AppProductSpuDetailVO detail(Long id);
 
 }

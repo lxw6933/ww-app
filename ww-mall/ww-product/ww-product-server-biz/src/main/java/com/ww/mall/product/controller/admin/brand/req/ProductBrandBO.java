@@ -1,4 +1,4 @@
-package com.ww.mall.product.view.bo;
+package com.ww.mall.product.controller.admin.brand.req;
 
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Data;
@@ -12,29 +12,28 @@ import javax.validation.constraints.NotNull;
  * @description:
  */
 @Data
-public class ProductCategoryBO {
+public class ProductBrandBO {
 
     @Schema(description = "id")
     private Long id;
 
-    @Schema(description = "分类名称", requiredMode = Schema.RequiredMode.REQUIRED)
-    @NotBlank(message = "分类名称不能为空")
+    @Schema(description = "品牌名称", requiredMode = Schema.RequiredMode.REQUIRED)
+    @NotBlank(message = "品牌名称不能为空")
     private String name;
 
-    @Schema(description = "父分类id", requiredMode = Schema.RequiredMode.REQUIRED)
-    @NotNull(message = "父分类id不能为空")
-    private Long parentId;
+    @Schema(description = "品牌图片地址", requiredMode = Schema.RequiredMode.REQUIRED)
+    @NotBlank(message = "品牌图片地址不能为空")
+    private String img;
 
     @Schema(description = "排序", requiredMode = Schema.RequiredMode.REQUIRED)
     @NotNull(message = "排序不能为空")
     private Integer sort;
 
-    @Schema(description = "图标地址", requiredMode = Schema.RequiredMode.REQUIRED)
-    @NotBlank(message = "移动端分类图不能为空")
-    private String icon;
-
     @Schema(description = "开启状态", requiredMode = Schema.RequiredMode.REQUIRED)
     @NotNull(message = "开启状态不能为空")
     private Boolean status;
+
+    @Schema(description = "品牌描述")
+    private String description;
 
 }

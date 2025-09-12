@@ -35,7 +35,7 @@ public interface ErrorCodeConstants {
     ResCode SPU_NOT_EXISTS = new ResCode(1_008_005_000, "商品 SPU 不存在");
     ResCode SPU_SAVE_FAIL_CATEGORY_LEVEL_ERROR = new ResCode(1_008_005_001, "商品分类不正确，原因：必须使用第二级的商品分类及以下");
     ResCode SPU_SAVE_FAIL_COUPON_TEMPLATE_NOT_EXISTS = new ResCode(1_008_005_002, "商品 SPU 保存失败，原因：优惠劵不存在");
-    ResCode SPU_NOT_ENABLE = new ResCode(1_008_005_003, "商品 SPU【{}】不处于上架状态");
+    ResCode SPU_NOT_ENABLE = new ResCode(1_008_005_003, "商品 SPU 不处于上架状态");
     ResCode SPU_NOT_RECYCLE = new ResCode(1_008_005_004, "商品 SPU 不处于回收站状态");
 
     // ========== 商品 SKU 1-008-006-000 ==========

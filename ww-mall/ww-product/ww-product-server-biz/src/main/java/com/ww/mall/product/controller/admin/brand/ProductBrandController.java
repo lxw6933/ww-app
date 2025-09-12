@@ -1,10 +1,10 @@
-package com.ww.mall.product.controller;
+package com.ww.mall.product.controller.admin.brand;
 
 import com.ww.app.common.common.AppPageResult;
 import com.ww.mall.product.service.brand.ProductBrandService;
-import com.ww.mall.product.view.bo.ProductBrandBO;
-import com.ww.mall.product.view.query.ProductBrandPageQuery;
-import com.ww.mall.product.view.vo.ProductBrandVO;
+import com.ww.mall.product.controller.admin.brand.req.ProductBrandBO;
+import com.ww.mall.product.controller.admin.brand.req.ProductBrandPageQuery;
+import com.ww.mall.product.controller.admin.brand.res.ProductBrandVO;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.validation.annotation.Validated;

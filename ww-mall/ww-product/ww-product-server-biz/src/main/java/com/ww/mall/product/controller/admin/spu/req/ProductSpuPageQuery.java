@@ -1,4 +1,4 @@
-package com.ww.mall.product.view.query;
+package com.ww.mall.product.controller.admin.spu.req;
 
 import cn.hutool.core.util.ObjectUtil;
 import com.baomidou.mybatisplus.core.conditions.Wrapper;
@@ -44,9 +44,6 @@ public class ProductSpuPageQuery extends AppPage {
     @Schema(description = "商品名称")
     private String name;
 
-    @Schema(description = "商品编码")
-    private String spuCode;
-
     @Schema(description = "商品分类Id")
     private Long categoryId;
 
@@ -65,7 +62,6 @@ public class ProductSpuPageQuery extends AppPage {
     public Wrapper<ProductSpu> buildQuery() {
         LambdaQueryWrapperX<ProductSpu> queryWrapperX = new LambdaQueryWrapperX<ProductSpu>()
                 .likeIfPresent(ProductSpu::getName, this.name)
-                .eqIfPresent(ProductSpu::getSpuCode, this.spuCode)
                 .eqIfPresent(ProductSpu::getBrandId, this.brandId)
                 .eqIfPresent(ProductSpu::getCategoryId, this.categoryId)
                 .betweenIfPresent(ProductSpu::getCreateTime, this.startTime, this.endTime);

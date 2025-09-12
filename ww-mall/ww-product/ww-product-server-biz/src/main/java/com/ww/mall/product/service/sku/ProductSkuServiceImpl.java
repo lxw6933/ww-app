@@ -14,7 +14,7 @@ import com.ww.mall.product.entity.property.ProductPropertyValue;
 import com.ww.mall.product.entity.sku.ProductSku;
 import com.ww.mall.product.service.property.ProductPropertyService;
 import com.ww.mall.product.service.property.ProductPropertyValueService;
-import com.ww.mall.product.view.bo.ProductSkuBO;
+import com.ww.mall.product.controller.admin.sku.req.ProductSkuBO;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -114,8 +114,8 @@ public class ProductSkuServiceImpl extends ServiceImpl<ProductSkuMapper, Product
         // 单规格
         if (ObjectUtil.equal(specType, Boolean.FALSE)) {
             ProductSkuBO skuBO = skus.get(0);
-            List<ProductSkuBO.Property> properties = new ArrayList<>();
-            ProductSkuBO.Property property = new ProductSkuBO.Property();
+            List<ProductSku.Property> properties = new ArrayList<>();
+            ProductSku.Property property = new ProductSku.Property();
             property.setPropertyId(ProductProperty.ID_DEFAULT);
             property.setPropertyName(ProductProperty.NAME_DEFAULT);
             property.setValueId(ProductPropertyValue.ID_DEFAULT);
@@ -132,7 +132,7 @@ public class ProductSkuServiceImpl extends ServiceImpl<ProductSkuMapper, Product
                 // 遍历多个 Property 属性
                 .flatMap(p -> p.getProperties().stream())
                 // 将每个 Property 转换成对应的 propertyId
-                .map(ProductSkuBO.Property::getPropertyId)
+                .map(ProductSku.Property::getPropertyId)
                 .collect(Collectors.toSet());
         List<ProductProperty> propertyList = productPropertyService.listByIds(propertyIds);
         if (propertyList.size() != propertyIds.size()) {
@@ -164,7 +164,7 @@ public class ProductSkuServiceImpl extends ServiceImpl<ProductSkuMapper, Product
         Set<Set<Long>> skuAttrValues = new HashSet<>();
         for (ProductSkuBO sku : skus) {
             // 添加失败，说明重复
-            if (!skuAttrValues.add(convertSet(sku.getProperties(), ProductSkuBO.Property::getValueId))) {
+            if (!skuAttrValues.add(convertSet(sku.getProperties(), ProductSku.Property::getValueId))) {
                 throw new ApiException(SPU_SKU_NOT_DUPLICATE);
             }
         }

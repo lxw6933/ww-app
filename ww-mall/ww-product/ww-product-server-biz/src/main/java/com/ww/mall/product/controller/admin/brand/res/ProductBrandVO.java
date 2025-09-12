@@ -1,4 +1,4 @@
-package com.ww.mall.product.view.vo;
+package com.ww.mall.product.controller.admin.brand.res;
 
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Data;

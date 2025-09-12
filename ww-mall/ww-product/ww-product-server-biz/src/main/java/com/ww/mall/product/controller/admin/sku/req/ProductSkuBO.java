@@ -1,9 +1,8 @@
-package com.ww.mall.product.view.bo;
+package com.ww.mall.product.controller.admin.sku.req;
 
+import com.ww.mall.product.entity.sku.ProductSku;
 import io.swagger.v3.oas.annotations.media.Schema;
-import lombok.AllArgsConstructor;
 import lombok.Data;
-import lombok.NoArgsConstructor;
 
 import javax.validation.constraints.NotEmpty;
 import javax.validation.constraints.NotNull;
@@ -43,26 +42,6 @@ public class ProductSkuBO {
     private Integer stock;
 
     @Schema(description = "属性数组")
-    private List<Property> properties;
-
-    @Data
-    @AllArgsConstructor
-    @NoArgsConstructor
-    @Schema(description = "商品属性")
-    public static class Property {
-
-        @Schema(description = "属性名id")
-        private Long propertyId;
-
-        @Schema(description = "属性名")
-        private String propertyName;
-
-        @Schema(description = "属性值id")
-        private Long valueId;
-
-        @Schema(description = "属性值")
-        private String valueName;
-
-    }
+    private List<ProductSku.Property> properties;
 
 }

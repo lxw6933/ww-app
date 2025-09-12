@@ -1,7 +1,7 @@
-package com.ww.mall.product.controller;
+package com.ww.mall.product.controller.admin.property;
 
 import com.ww.mall.product.service.property.ProductPropertyService;
-import com.ww.mall.product.view.bo.ProductPropertyBO;
+import com.ww.mall.product.controller.admin.property.req.ProductPropertyBO;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.validation.annotation.Validated;

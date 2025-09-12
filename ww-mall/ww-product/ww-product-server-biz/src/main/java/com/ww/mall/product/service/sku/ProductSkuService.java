@@ -3,7 +3,7 @@ package com.ww.mall.product.service.sku;
 import com.baomidou.mybatisplus.extension.service.IService;
 import com.ww.mall.product.dto.sku.ProductSkuUpdateStockReqDTO;
 import com.ww.mall.product.entity.sku.ProductSku;
-import com.ww.mall.product.view.bo.ProductSkuBO;
+import com.ww.mall.product.controller.admin.sku.req.ProductSkuBO;
 
 import java.util.List;
 
