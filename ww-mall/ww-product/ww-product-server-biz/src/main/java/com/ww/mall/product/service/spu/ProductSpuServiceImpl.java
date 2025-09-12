@@ -5,9 +5,13 @@ import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
+import com.github.benmanes.caffeine.cache.LoadingCache;
 import com.ww.app.common.common.AppPageResult;
 import com.ww.app.common.exception.ApiException;
 import com.ww.app.mybatis.common.AppPlusPageResult;
+import com.ww.app.redis.annotation.RedisPublishMsg;
+import com.ww.mall.product.cache.ProductSpuCache;
+import com.ww.mall.product.constants.RedisChannelConstant;
 import com.ww.mall.product.controller.admin.sku.req.ProductSkuBO;
 import com.ww.mall.product.controller.admin.spu.req.ProductSpuBO;
 import com.ww.mall.product.controller.admin.spu.req.ProductSpuPageQuery;
@@ -17,7 +21,6 @@ import com.ww.mall.product.controller.app.spu.res.AppProductSpuDetailVO;
 import com.ww.mall.product.dao.spu.ProductSpuMapper;
 import com.ww.mall.product.entity.brand.ProductBrand;
 import com.ww.mall.product.entity.category.ProductCategory;
-import com.ww.mall.product.entity.sku.ProductSku;
 import com.ww.mall.product.entity.spu.ProductSpu;
 import com.ww.mall.product.enums.SpuStatus;
 import com.ww.mall.product.service.brand.ProductBrandService;
@@ -56,6 +59,9 @@ public class ProductSpuServiceImpl extends ServiceImpl<ProductSpuMapper, Product
     @Resource
     private ProductSkuService productSkuService;
 
+    @Resource
+    private LoadingCache<Long, ProductSpuCache> spuCache;
+
     @Override
     public AppPageResult<ProductSpuPageAdminVO> page(ProductSpuPageQuery productSpuPageQuery) {
         IPage<ProductSpu> page = new Page<>(productSpuPageQuery.getPageNum(), productSpuPageQuery.getPageSize());
@@ -86,6 +92,7 @@ public class ProductSpuServiceImpl extends ServiceImpl<ProductSpuMapper, Product
 
     @Override
     @Transactional(rollbackFor = Exception.class)
+    @RedisPublishMsg(value = RedisChannelConstant.SPU_CACHE_CHANNEL, message = "#productSpuBO.id")
     public boolean update(ProductSpuBO productSpuBO) {
         // 校验 SPU 是否存在
         ProductSpu spu = validateSpuExists(productSpuBO.getId());
@@ -113,12 +120,13 @@ public class ProductSpuServiceImpl extends ServiceImpl<ProductSpuMapper, Product
     }
 
     @Override
+    @RedisPublishMsg(value = RedisChannelConstant.SPU_CACHE_CHANNEL, message = "#productSpuBO.id")
     public void updateSpuStatus(ProductSpuStatusBO productSpuStatusBO) {
         validateSpuExists(productSpuStatusBO.getId());
 
-        ProductSpu productSpuDO = productSpuMapper.selectById(productSpuStatusBO.getId());
-        productSpuDO.setStatus(productSpuStatusBO.getStatus());
-        productSpuMapper.updateById(productSpuDO);
+        ProductSpu spu = this.get(productSpuStatusBO.getId());
+        spu.setStatus(productSpuStatusBO.getStatus());
+        productSpuMapper.updateById(spu);
     }
 
     @Override
@@ -144,17 +152,16 @@ public class ProductSpuServiceImpl extends ServiceImpl<ProductSpuMapper, Product
     @Override
     public AppProductSpuDetailVO detail(Long id) {
         // 获得商品 SPU
-        ProductSpu spu = this.get(id);
-        if (spu == null) {
+        ProductSpuCache productSpuCache = spuCache.get(id);
+        if (productSpuCache == null) {
             throw new ApiException(SPU_NOT_EXISTS);
         }
+        ProductSpu spu = productSpuCache.getSpu();
         if (!SpuStatus.UP.equals(spu.getStatus())) {
             throw new ApiException(SPU_NOT_ENABLE);
         }
-        // 获得商品 SKU
-        List<ProductSku> skus = productSkuService.getSkuListBySpuId(spu.getId());
         // TODO 增加浏览量
-        return AppProductSpuDetailVO.build(spu, skus);
+        return AppProductSpuDetailVO.build(productSpuCache.getSpu(), productSpuCache.getSkus());
     }
 
     private void validateCategory(Long categoryId) {

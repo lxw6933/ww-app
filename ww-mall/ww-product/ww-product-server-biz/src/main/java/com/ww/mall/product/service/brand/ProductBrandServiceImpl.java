@@ -8,6 +8,8 @@ import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.ww.app.common.common.AppPageResult;
 import com.ww.app.common.exception.ApiException;
 import com.ww.app.mybatis.common.AppPlusPageResult;
+import com.ww.app.redis.annotation.RedisPublishMsg;
+import com.ww.mall.product.constants.RedisChannelConstant;
 import com.ww.mall.product.dao.brand.ProductBrandMapper;
 import com.ww.mall.product.entity.brand.ProductBrand;
 import com.ww.mall.product.controller.admin.brand.req.ProductBrandBO;
@@ -51,6 +53,7 @@ public class ProductBrandServiceImpl extends ServiceImpl<ProductBrandMapper, Pro
     }
 
     @Override
+    @RedisPublishMsg(value = RedisChannelConstant.BRAND_CACHE_CHANNEL, message = "#productBrandBO.id")
     public boolean update(ProductBrandBO productBrandBO) {
         // 校验存在
         validateBrandExists(productBrandBO.getId());
