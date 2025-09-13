@@ -16,7 +16,7 @@ import java.util.List;
  * @description:
  */
 @RestController
-@RequestMapping("/im/inner")
+@RequestMapping(ImRouterApi.PREFIX)
 public class ImRouterApiRpc implements ImRouterApi {
 
     @Resource

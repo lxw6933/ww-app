@@ -2,6 +2,7 @@ package com.ww.app.im.rpc;
 
 import com.ww.app.common.common.Result;
 import com.ww.app.im.core.api.common.ImMsgBody;
+import com.ww.app.im.core.api.constants.ApiConstants;
 import com.ww.app.im.core.api.rpc.ImMsgRouterApi;
 import com.ww.app.im.service.MsgRouterService;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -17,7 +18,7 @@ import java.util.List;
  * @description:
  */
 @RestController
-@RequestMapping("/im/inner")
+@RequestMapping(ApiConstants.PREFIX)
 public class ImMsgRouterApiRpc implements ImMsgRouterApi {
 
     @Resource

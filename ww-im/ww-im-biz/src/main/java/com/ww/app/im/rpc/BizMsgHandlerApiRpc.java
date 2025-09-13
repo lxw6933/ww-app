@@ -15,7 +15,7 @@ import javax.annotation.Resource;
  * @description:
  */
 @RestController
-@RequestMapping("/im/inner")
+@RequestMapping(BizMsgHandlerApi.PREFIX)
 public class BizMsgHandlerApiRpc implements BizMsgHandlerApi {
 
     @Resource

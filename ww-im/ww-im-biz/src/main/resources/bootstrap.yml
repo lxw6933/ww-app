@@ -1,6 +1,6 @@
 spring:
   application:
-    name: ww-im-biz
+    name: im-biz-server
   profiles:
     active: dev
   cloud:

@@ -1,6 +1,7 @@
 package com.ww.app.admin.user.rpc;
 
 import com.ww.app.admin.user.bo.SysUserLoginBO;
+import com.ww.app.admin.user.constants.ApiConstants;
 import com.ww.app.admin.user.dto.SysUserDTO;
 import com.ww.app.admin.user.fallback.AdminUserApiFallBack;
 import com.ww.app.common.common.Result;
@@ -21,8 +22,10 @@ import org.springframework.web.bind.annotation.RequestParam;
  * @description: 后台用户api
  */
 @Tag(name = "[RPC服务]-后台用户API")
-@FeignClient(value = "ww-admin-manage", fallbackFactory = AdminUserApiFallBack.class)
+@FeignClient(value = ApiConstants.NAME, fallbackFactory = AdminUserApiFallBack.class)
 public interface AdminUserApi {
+
+    String PREFIX = ApiConstants.PREFIX + "/user";
 
     /**
      * 后台登录
@@ -31,7 +34,7 @@ public interface AdminUserApi {
      * @return SysUserDTO
      */
     @Operation(summary = "后台系统登录")
-    @PostMapping("/ww-admin-manage/admin/inner/adminLogin")
+    @PostMapping(PREFIX + "/adminLogin")
     Result<SysUserDTO> adminLogin(@RequestBody SysUserLoginBO sysUserLoginBO);
 
     /**
@@ -41,7 +44,7 @@ public interface AdminUserApi {
      * @return SysUserDTO
      */
     @Operation(summary = "获取后台用户信息")
-    @GetMapping("/ww-admin-manage/admin/inner/loadUserDetails")
+    @GetMapping(PREFIX + "/loadUserDetails")
     @Parameters({
             @Parameter(name = "username", description = "用户昵称", required = true, in = ParameterIn.QUERY),
     })

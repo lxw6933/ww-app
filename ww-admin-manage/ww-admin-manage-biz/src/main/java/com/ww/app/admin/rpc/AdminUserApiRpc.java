@@ -16,7 +16,7 @@ import org.springframework.web.bind.annotation.RestController;
  * @create: 2023/7/22 11:16
  **/
 @RestController
-@RequestMapping("/admin/inner")
+@RequestMapping(AdminUserApi.PREFIX)
 public class AdminUserApiRpc extends AbstractController implements AdminUserApi {
 
     @Override
