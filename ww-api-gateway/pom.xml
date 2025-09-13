@@ -16,6 +16,12 @@
             <groupId>com.ww.app</groupId>
             <artifactId>ww-common</artifactId>
             <version>${revision}</version>
+            <exclusions>
+                <exclusion>
+                    <groupId>com.github.xiaoymin</groupId>
+                    <artifactId>knife4j-openapi3-spring-boot-starter</artifactId>
+                </exclusion>
+            </exclusions>
         </dependency>
         <!-- 服务注册中心 -->
         <dependency>

@@ -1,7 +1,6 @@
 server:
   port: 17700  #服务端口号
-  servlet:
-    context-path: /ww-consumer
+
 spring:
   redis:
     host: 172.28.174.84

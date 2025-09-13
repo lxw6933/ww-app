@@ -1,7 +1,6 @@
 server:
   port: 8800  #服务端口号
-  servlet:
-    context-path: /ww-search
+
 spring:
   data:
     mongodb:

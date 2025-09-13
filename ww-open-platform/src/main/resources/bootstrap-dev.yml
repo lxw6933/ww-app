@@ -16,8 +16,7 @@ grpc:
 
 server:
   port: 20000  #服务端口号
-  servlet:
-    context-path: /ww-open-server
+
 spring:
   data:
     mongodb:

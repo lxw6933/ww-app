@@ -1,7 +1,6 @@
 server:
   port: 9800  #服务端口号
-  servlet:
-    context-path: /ww-product
+
 spring:
   datasource:
     driver-class-name: com.mysql.cj.jdbc.Driver

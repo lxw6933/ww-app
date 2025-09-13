@@ -13,49 +13,49 @@ spring:
       routes:
         # 优惠券服务路由
         - id: coupon_route
-          uri: lb://ww-coupon
+          uri: lb://coupon-server
           predicates:
-            - Path=/api/ww-coupon/**
+            - Path=/api/coupon-server/**
           filters:
             # /api/foo  =>  /foo
             - RewritePath=/api(?<segment>/?.*), $\{segment}
         # 认证服务路由
         - id: auth_route
-          uri: lb://ww-auth
+          uri: lb://auth-server
           predicates:
-            - Path=/api/ww-auth/**
+            - Path=/api/auth-server/**
           filters:
             # /api/foo  =>  /foo
             - RewritePath=/api(?<segment>/?.*), $\{segment}
         # 会员服务路由
         - id: member_route
-          uri: lb://ww-member
+          uri: lb://member-server
           predicates:
-            - Path=/api/ww-member/**
+            - Path=/api/member-server/**
           filters:
             # /api/foo  =>  /foo
             - RewritePath=/api(?<segment>/?.*), $\{segment}
         # 商品服务路由
         - id: product_route
-          uri: lb://ww-product
+          uri: lb://product-server
           predicates:
-            - Path=/api/ww-product/**
+            - Path=/api/product-server/**
           filters:
             # /api/foo  =>  /foo
             - RewritePath=/api(?<segment>/?.*), $\{segment}
         # 购物车服务路由
         - id: cart_route
-          uri: lb://ww-cart
+          uri: lb://cart-server
           predicates:
-            - Path=/api/ww-cart/**
+            - Path=/api/cart-server/**
           filters:
             # /api/foo  =>  /foo
             - RewritePath=/api(?<segment>/?.*), $\{segment}
         # 搜索服务路由
         - id: search_route
-          uri: lb://ww-search
+          uri: lb://search-server
           predicates:
-            - Path=/api/ww-search/**
+            - Path=/api/search-server/**
           filters:
             # /api/foo  =>  /foo
             - RewritePath=/api(?<segment>/?.*), $\{segment}
@@ -69,9 +69,9 @@ spring:
             - RewritePath=/api(?<segment>/?.*), $\{segment}
         # 秒杀服务路由
         - id: seckill_route
-          uri: lb://ww-seckill
+          uri: lb://seckill-server
           predicates:
-            - Path=/api/ww-seckill/**
+            - Path=/api/seckill-server/**
           filters:
             # /api/foo  =>  /foo
             - RewritePath=/api(?<segment>/?.*), $\{segment}
@@ -87,9 +87,9 @@ spring:
             - RewritePath=/api(?<segment>/?.*), $\{segment}
         # 后台管理服务路由
         - id: admin_route
-          uri: lb://ww-admin-manage
+          uri: lb://system-manage-server
           predicates:
-            - Path=/api/ww-admin-manage/**
+            - Path=/api/system-manage-server/**
           filters:
             - RewritePath=/api(?<segment>/?.*), $\{segment}
 

@@ -1,7 +1,5 @@
 server:
   port: 17200  #服务端口号
-  servlet:
-    context-path: /ww-im-core
 
 spring:
   redis:

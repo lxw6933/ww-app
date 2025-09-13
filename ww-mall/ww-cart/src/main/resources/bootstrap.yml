@@ -1,7 +1,7 @@
 
 spring:
   application:
-    name: ww-cart
+    name: cart-server
   profiles:
     active: dev
   cloud:

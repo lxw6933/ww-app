@@ -14,8 +14,7 @@ grpc:
 
 server:
   port: 19400  #服务端口号
-  servlet:
-    context-path: /ww-auth
+
 spring:
   redis:
     host: 172.28.174.84

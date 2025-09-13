@@ -14,8 +14,7 @@ grpc:
 
 server:
   port: 19300  #服务端口号
-  servlet:
-    context-path: /ww-member
+
 spring:
   datasource:
     driver-class-name: com.mysql.cj.jdbc.Driver

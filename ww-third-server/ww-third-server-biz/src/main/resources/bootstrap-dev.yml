@@ -1,7 +1,5 @@
 server:
   port: 18000  #服务端口号
-  servlet:
-    context-path: /ww-third-server
 
 # 开启sentinel feign支持【调用方（调用服务方）的熔断保护、被调用方（服务提供方）的降级保护】
 feign:

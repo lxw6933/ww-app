@@ -1,7 +1,5 @@
 server:
   port: 17300  #服务端口号
-  servlet:
-    context-path: /ww-im-router
 
 spring:
   redis:

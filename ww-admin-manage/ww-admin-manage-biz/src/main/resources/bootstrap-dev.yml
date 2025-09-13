@@ -1,7 +1,6 @@
 server:
   port: 12345  #服务端口号
-  servlet:
-    context-path: /ww-admin-manage
+
 spring:
   datasource:
     driver-class-name: com.mysql.cj.jdbc.Driver

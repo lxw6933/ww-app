@@ -1,6 +1,6 @@
 spring:
   application:
-    name: ww-auth
+    name: auth-server
   profiles:
     active: dev
   cloud:

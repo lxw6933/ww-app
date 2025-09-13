@@ -1,7 +1,6 @@
 server:
   port: 19300  #服务端口号
-  servlet:
-    context-path: /ww-lottery
+
 spring:
   redis:
     host: localhost

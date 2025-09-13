@@ -1,7 +1,6 @@
 server:
   port: 17400  #服务端口号
-  servlet:
-    context-path: /ww-im-redpacket
+
 spring:
   redis:
     host: localhost

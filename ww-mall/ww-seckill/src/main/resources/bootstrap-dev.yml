@@ -28,8 +28,7 @@ grpc:
 
 server:
   port: 19100  #服务端口号
-  servlet:
-    context-path: /ww-seckill
+
 spring:
   redis:
     host: 172.28.174.84

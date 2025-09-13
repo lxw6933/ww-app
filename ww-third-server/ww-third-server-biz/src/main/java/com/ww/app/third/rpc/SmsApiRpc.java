@@ -15,7 +15,7 @@ import javax.annotation.Resource;
  * @create: 2023/7/16 12:27
  **/
 @RestController
-@RequestMapping("/sms")
+@RequestMapping(SmsApi.PREFIX)
 public class SmsApiRpc implements SmsApi {
 
     @Resource

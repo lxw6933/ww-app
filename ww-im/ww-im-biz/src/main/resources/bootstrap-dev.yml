@@ -1,7 +1,5 @@
 server:
   port: 17100  #服务端口号
-  servlet:
-    context-path: /ww-im-biz
 
 spring:
   redis:
