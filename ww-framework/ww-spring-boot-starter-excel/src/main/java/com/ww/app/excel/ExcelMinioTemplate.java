@@ -57,11 +57,9 @@ public class ExcelMinioTemplate {
                     // 生成临时文件
                     File file = excelTemplate.exportExcelOfOneSheetToTempFile(dataList, sheetIndex + StrUtil.EMPTY, UUID.randomUUID() + StrUtil.UNDERLINE + sheetIndex);
                     exportFiles.add(file);
-                    countDownLatch.countDown();
                 }, exportExecutor).exceptionally(e -> {
-                    countDownLatch.countDown();
                     throw new RuntimeException("导出临时文件异常", e);
-                });
+                }).thenRun(countDownLatch::countDown);
             }
             countDownLatch.await();
             targetFile = ZipUtil.zip(FileUtil.createTempFile(UUID.randomUUID().toString(), ".zip", true), true, exportFiles.toArray(new File[]{}));
