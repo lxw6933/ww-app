@@ -91,4 +91,5 @@ public interface ProductSpuService extends IService<ProductSpu> {
 
     AppProductSpuDetailVO detail(Long id);
 
+    String exportSpuList(ProductSpuPageQuery productSpuPageQuery);
 }

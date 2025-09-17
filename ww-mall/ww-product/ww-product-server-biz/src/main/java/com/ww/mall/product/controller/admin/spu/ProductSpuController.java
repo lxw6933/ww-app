@@ -51,4 +51,10 @@ public class ProductSpuController {
         return true;
     }
 
+    @GetMapping("/export-excel")
+    @Operation(summary = "导出商品")
+    public String exportSpuList(ProductSpuPageQuery productSpuPageQuery) {
+        return productSpuService.exportSpuList(productSpuPageQuery);
+    }
+
 }

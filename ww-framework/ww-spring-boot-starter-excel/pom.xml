@@ -66,6 +66,13 @@
             <artifactId>aspectjweaver</artifactId>
             <optional>true</optional>
         </dependency>
+        <!-- minio -->
+        <dependency>
+            <groupId>com.ww.app</groupId>
+            <artifactId>ww-spring-boot-starter-minio</artifactId>
+            <version>${revision}</version>
+            <optional>true</optional>
+        </dependency>
     </dependencies>
 
 </project>

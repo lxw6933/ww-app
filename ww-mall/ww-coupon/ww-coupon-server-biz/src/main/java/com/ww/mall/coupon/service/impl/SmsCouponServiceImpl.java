@@ -4,11 +4,9 @@ import cn.hutool.core.bean.BeanUtil;
 import cn.hutool.core.collection.CollectionUtil;
 import cn.hutool.core.date.DatePattern;
 import cn.hutool.core.date.DateUtil;
-import cn.hutool.core.io.FileUtil;
 import cn.hutool.core.lang.Assert;
 import cn.hutool.core.lang.UUID;
 import cn.hutool.core.util.StrUtil;
-import cn.hutool.core.util.ZipUtil;
 import cn.hutool.crypto.digest.MD5;
 import com.alibaba.fastjson.JSON;
 import com.google.common.collect.Lists;
@@ -24,10 +22,8 @@ import com.ww.app.common.enums.GlobalResCodeConstants;
 import com.ww.app.common.exception.ApiException;
 import com.ww.app.common.utils.CommonUtils;
 import com.ww.app.common.utils.MoneyUtils;
-import com.ww.app.common.utils.ThreadUtil;
-import com.ww.app.excel.ExcelTemplate;
+import com.ww.app.excel.ExcelMinioTemplate;
 import com.ww.app.excel.annotation.ExcelExportTimer;
-import com.ww.app.minio.MinioTemplate;
 import com.ww.app.mongodb.common.BaseDoc;
 import com.ww.app.mongodb.handler.MongoBulkDataHandler;
 import com.ww.app.mongodb.utils.MongoUtils;
@@ -42,11 +38,7 @@ import com.ww.mall.coupon.constant.CouponConstant;
 import com.ww.mall.coupon.constant.CouponLuaConstant;
 import com.ww.mall.coupon.entity.*;
 import com.ww.mall.coupon.entity.base.BaseCouponInfo;
-import com.ww.mall.coupon.eunms.ErrorCodeConstants;
-import com.ww.mall.coupon.eunms.CouponDiscountType;
-import com.ww.mall.coupon.eunms.CouponStatus;
-import com.ww.mall.coupon.eunms.CouponType;
-import com.ww.mall.coupon.eunms.IssueType;
+import com.ww.mall.coupon.eunms.*;
 import com.ww.mall.coupon.service.SmsCouponService;
 import com.ww.mall.coupon.utils.CouponCacheUtils;
 import com.ww.mall.coupon.utils.CouponUtils;
@@ -66,14 +58,10 @@ import org.springframework.stereotype.Service;
 
 import javax.annotation.PostConstruct;
 import javax.annotation.Resource;
-import java.io.File;
-import java.io.FileInputStream;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.CopyOnWriteArrayList;
-import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.atomic.LongAdder;
 import java.util.stream.Collectors;
@@ -202,12 +190,7 @@ public class SmsCouponServiceImpl implements SmsCouponService {
     }
 
     @Resource
-    private MinioTemplate minioTemplate;
-
-    @Resource
-    private ExcelTemplate excelTemplate;
-
-    private static final ExecutorService exportExecutorService = ThreadUtil.initFixedThreadPoolExecutor("coupon-export-thread", 20);
+    private ExcelMinioTemplate excelMinioTemplate;
 
     @Override
     @Resubmission
@@ -215,62 +198,18 @@ public class SmsCouponServiceImpl implements SmsCouponService {
     @LogRecord(type = SYSTEM_COUPON_TYPE, subType = SYSTEM_COUPON_EXPORT_SUB_TYPE, bizNo = "{{#smsCouponCodeListBO.activityCode}}", success = SYSTEM_COUPON_EXPORT_SUCCESS)
     public String exportCouponCode(SmsCouponCodeListBO smsCouponCodeListBO) {
         log.info("导出优惠券券码[{}]", JSON.toJSON(smsCouponCodeListBO));
-        String bucket = "coupon-code-export";
-        String couponCodeCollectionName = SmsCouponCode.buildCollectionName(smsCouponCodeListBO.getChannelId());
+        final String couponCodeCollectionName = SmsCouponCode.buildCollectionName(smsCouponCodeListBO.getChannelId());
         long totalCount = mongoTemplate.count(new Query().addCriteria(smsCouponCodeListBO.buildQuery()), SmsCouponCode.class, couponCodeCollectionName);
         if (totalCount == 0) {
             return null;
         }
-        int perFileSize = 10000;
-        int fileNumber = CommonUtils.getCircleNumber((int) totalCount, perFileSize);
-        CountDownLatch countDownLatch = new CountDownLatch(fileNumber);
-
-        List<File> exportFiles = new CopyOnWriteArrayList<>();
-        File targetFile = null;
-        String smsCouponRecordCollectionName = SmsCouponRecord.buildCollectionName(smsCouponCodeListBO.getChannelId());
-        try {
-            for (int i = 1; i <= fileNumber; i++) {
-                final int fileIndex = i;
-                CompletableFuture.runAsync(() -> {
-                    List<SmsCouponCode> resultList = smsCouponCodeListBO.getSimpleDataResult(couponCodeCollectionName, fileIndex, perFileSize);
-                    List<SmsCouponCodeListVO> couponCodeListVO = resultList.stream().map(res -> convertSmsCouponCodeListVO(res, smsCouponCodeListBO.getCouponStatus(), smsCouponRecordCollectionName)).collect(Collectors.toList());
-                    // 生成临时文件
-                    File file = excelTemplate.exportExcelOfOneSheetToTempFile(couponCodeListVO, fileIndex + StrUtil.EMPTY, UUID.randomUUID().toString(true) + StrUtil.UNDERLINE + fileIndex);
-                    exportFiles.add(file);
-                    countDownLatch.countDown();
-                }, exportExecutorService).exceptionally(e -> {
-                    countDownLatch.countDown();
-                    throw new RuntimeException("导出临时文件异常", e);
-                });
-            }
-            countDownLatch.await();
-            targetFile = ZipUtil.zip(FileUtil.createTempFile(UUID.randomUUID().toString(true), ".zip", true), true, exportFiles.toArray(new File[]{}));
-            log.info("压缩文件完成");
-            try (FileInputStream inputStream = new FileInputStream(targetFile)) {
-                boolean upload = minioTemplate.upload(inputStream, bucket, targetFile.getName());
-                log.info("导出压缩文件上传minio结果[{}]", upload);
-                if (!upload) {
-                    throw new ApiException("上传压缩文件失败");
-                }
-            }
-            log.info("上传压缩文件至Minio完成");
-            // 记录导出日志
-            LogRecordContext.putVariable("export", smsCouponCodeListBO);
-            return minioTemplate.getFileUrl(bucket, targetFile.getName(), null);
-        } catch (Exception e) {
-            throw new RuntimeException(e);
-        } finally {
-            if (targetFile != null) {
-                boolean del = FileUtil.del(targetFile);
-                log.info("导出临时压缩文件删除结果[{}]", del);
-            }
-            if (!exportFiles.isEmpty()) {
-                exportFiles.forEach(res -> {
-                    boolean del = FileUtil.del(res);
-                    log.info("导出临时文件删除结果[{}]", del);
-                });
-            }
-        }
+        final String smsCouponRecordCollectionName = SmsCouponRecord.buildCollectionName(smsCouponCodeListBO.getChannelId());
+        return excelMinioTemplate.exportDataToMinio("coupon-code-export", (int) totalCount, 5000, (pageNum, pageSize) -> {
+            List<SmsCouponCode> resultList = smsCouponCodeListBO.getSimpleDataResult(couponCodeCollectionName, pageNum + 1, pageSize);
+            return resultList.stream()
+                    .map(res -> convertSmsCouponCodeListVO(res, smsCouponCodeListBO.getCouponStatus(), smsCouponRecordCollectionName))
+                    .collect(Collectors.toList());
+        });
     }
 
     @Override

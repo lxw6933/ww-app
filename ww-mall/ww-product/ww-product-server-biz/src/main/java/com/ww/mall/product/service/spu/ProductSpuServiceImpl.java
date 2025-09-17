@@ -8,6 +8,9 @@ import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.github.benmanes.caffeine.cache.LoadingCache;
 import com.ww.app.common.common.AppPageResult;
 import com.ww.app.common.exception.ApiException;
+import com.ww.app.common.utils.CommonUtils;
+import com.ww.app.excel.ExcelMinioTemplate;
+import com.ww.app.excel.annotation.ExcelImportTimer;
 import com.ww.app.mybatis.common.AppPlusPageResult;
 import com.ww.app.redis.annotation.RedisPublishMsg;
 import com.ww.mall.product.cache.ProductSpuCache;
@@ -61,6 +64,9 @@ public class ProductSpuServiceImpl extends ServiceImpl<ProductSpuMapper, Product
 
     @Resource
     private LoadingCache<Long, ProductSpuCache> spuCache;
+
+    @Resource
+    private ExcelMinioTemplate excelMinioTemplate;
 
     @Override
     public AppPageResult<ProductSpuPageAdminVO> page(ProductSpuPageQuery productSpuPageQuery) {
@@ -162,6 +168,23 @@ public class ProductSpuServiceImpl extends ServiceImpl<ProductSpuMapper, Product
         }
         // TODO 增加浏览量
         return AppProductSpuDetailVO.build(productSpuCache.getSpu(), productSpuCache.getSkus());
+    }
+
+    public static void main(String[] args) {
+        System.out.println(CommonUtils.getCircleNumber(10, 5000));
+    }
+
+    @Override
+    @ExcelImportTimer
+    public String exportSpuList(ProductSpuPageQuery productSpuPageQuery) {
+        AppPageResult<ProductSpuPageAdminVO> page = this.page(productSpuPageQuery);
+        return excelMinioTemplate.exportDataToMinio("spu-file-export", page.getTotalCount(), 5000, (pageNum, pageSize) -> {
+            ProductSpuPageQuery pageQuery = BeanUtil.toBean(productSpuPageQuery, ProductSpuPageQuery.class);
+            pageQuery.setPageNum(pageNum + 1);
+            pageQuery.setPageSize(pageSize);
+            AppPageResult<ProductSpuPageAdminVO> pageResult = this.page(pageQuery);
+            return pageResult.getResult();
+        });
     }
 
     private void validateCategory(Long categoryId) {
