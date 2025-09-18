@@ -1,13 +1,19 @@
 package com.ww.app.mybatis.config;
 
+import cn.hutool.core.collection.CollUtil;
 import com.baomidou.mybatisplus.annotation.DbType;
+import com.baomidou.mybatisplus.extension.handlers.JacksonTypeHandler;
 import com.baomidou.mybatisplus.extension.plugins.MybatisPlusInterceptor;
 import com.baomidou.mybatisplus.extension.plugins.inner.OptimisticLockerInnerInterceptor;
 import com.baomidou.mybatisplus.extension.plugins.inner.PaginationInnerInterceptor;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.ww.app.common.utils.json.JacksonUtils;
 import com.ww.app.mybatis.handler.MybatisPlusMetaHandler;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+
+import java.util.List;
 
 /**
  * @description: mybatis-plus 配置类
@@ -33,6 +39,17 @@ public class MybatisPlusAutoConfiguration {
     public MybatisPlusMetaHandler mallMybatisPlusMetaHandler() {
         log.info("初始化mybatis plus源数据处理器成功...");
         return new MybatisPlusMetaHandler();
+    }
+
+    @Bean
+    public JacksonTypeHandler jacksonTypeHandler(List<ObjectMapper> objectMappers) {
+        // 特殊：设置 JacksonTypeHandler 的 ObjectMapper！
+        ObjectMapper objectMapper = CollUtil.getFirst(objectMappers);
+        if (objectMapper == null) {
+            objectMapper = JacksonUtils.getObjectMapper();
+        }
+        JacksonTypeHandler.setObjectMapper(objectMapper);
+        return new JacksonTypeHandler(Object.class);
     }
 
 }
