@@ -106,6 +106,19 @@ public class ProductSkuServiceImpl extends ServiceImpl<ProductSkuMapper, Product
     }
 
     @Override
+    public ProductSku get(Long id) {
+        return this.getById(id);
+    }
+
+    @Override
+    public ProductSku getSku(Long id, boolean includeDeleted) {
+        if (includeDeleted) {
+            return productSkuMapper.selectByIdIncludeDeleted(id);
+        }
+        return get(id);
+    }
+
+    @Override
     public void validateSkuList(List<ProductSkuBO> skus, Boolean specType) {
         // 0、校验skus是否为空
         if (CollUtil.isEmpty(skus)) {

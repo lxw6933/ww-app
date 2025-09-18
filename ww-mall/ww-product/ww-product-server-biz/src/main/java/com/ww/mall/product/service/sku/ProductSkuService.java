@@ -31,6 +31,23 @@ public interface ProductSkuService extends IService<ProductSku> {
     void updateSkuList(Long spuId, List<ProductSkuBO> skus);
 
     /**
+     * 获得商品 SKU 信息
+     *
+     * @param id 编号
+     * @return 商品 SKU 信息
+     */
+    ProductSku get(Long id);
+
+    /**
+     * 获得商品 SKU 信息
+     *
+     * @param id 编号
+     * @param includeDeleted 是否包含已删除的
+     * @return 商品 SKU 信息
+     */
+    ProductSku getSku(Long id, boolean includeDeleted);
+
+    /**
      * 对 sku 的组合的属性等进行合法性校验
      *
      * @param skus sku组合的集合

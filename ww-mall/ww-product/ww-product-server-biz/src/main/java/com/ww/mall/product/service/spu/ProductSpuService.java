@@ -49,6 +49,15 @@ public interface ProductSpuService extends IService<ProductSpu> {
     ProductSpu get(Long id);
 
     /**
+     * 获得商品 SPU
+     *
+     * @param id 编号
+     * @param includeDeleted 是否包含已删除的
+     * @return 商品 SPU
+     */
+    ProductSpu getSpu(Long id, boolean includeDeleted);
+
+    /**
      * 更新 SPU 状态
      *
      * @param productSpuStatusBO 更新请求

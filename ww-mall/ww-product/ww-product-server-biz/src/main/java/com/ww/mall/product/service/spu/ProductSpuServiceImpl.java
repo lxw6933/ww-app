@@ -126,6 +126,14 @@ public class ProductSpuServiceImpl extends ServiceImpl<ProductSpuMapper, Product
     }
 
     @Override
+    public ProductSpu getSpu(Long id, boolean includeDeleted) {
+        if (includeDeleted) {
+            return productSpuMapper.selectByIdIncludeDeleted(id);
+        }
+        return get(id);
+    }
+
+    @Override
     @RedisPublishMsg(value = RedisChannelConstant.SPU_CACHE_CHANNEL, message = "#productSpuBO.id")
     public void updateSpuStatus(ProductSpuStatusBO productSpuStatusBO) {
         validateSpuExists(productSpuStatusBO.getId());

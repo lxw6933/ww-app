@@ -4,6 +4,7 @@ import com.baomidou.mybatisplus.core.mapper.BaseMapper;
 import com.ww.mall.product.entity.sku.ProductSku;
 import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Param;
+import org.apache.ibatis.annotations.Select;
 import org.apache.ibatis.annotations.Update;
 
 /**
@@ -13,6 +14,9 @@ import org.apache.ibatis.annotations.Update;
  */
 @Mapper
 public interface ProductSkuMapper extends BaseMapper<ProductSku> {
+
+    @Select("SELECT * FROM product_sku WHERE id = #{id}")
+    ProductSku selectByIdIncludeDeleted(@Param("id") Long id);
 
     @Update("UPDATE product_sku SET stock = stock + #{num} WHERE id = #{id}")
     void incrStock(@Param("id") Long id, @Param("num") Integer num);
