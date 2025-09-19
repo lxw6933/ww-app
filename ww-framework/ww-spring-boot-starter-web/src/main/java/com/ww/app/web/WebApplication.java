@@ -14,7 +14,6 @@ import com.ww.app.web.handler.ResExceptionHandler;
 import com.ww.app.web.handler.ResponseBodyHandler;
 import com.ww.app.web.handler.ServerSentinelHandler;
 import com.ww.app.web.interceptor.FeignRequestInterceptor;
-import io.github.linpeilie.annotations.ComponentModelConfig;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.autoconfigure.jackson.Jackson2ObjectMapperBuilderCustomizer;
 import org.springframework.cloud.loadbalancer.annotation.LoadBalancerClients;
@@ -35,7 +34,6 @@ import java.time.LocalTime;
 @Slf4j
 @EnableRetry
 @Configuration
-@ComponentModelConfig(componentModel = "default")
 @EnableFeignClients(basePackages = "com.ww.app")
 @LoadBalancerClients(defaultConfiguration = {LoadBalancerConfiguration.class})
 public class WebApplication {

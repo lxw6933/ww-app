@@ -127,10 +127,10 @@
             <artifactId>jsoup</artifactId>
         </dependency>
         <!-- mapstruct-plus -->
-        <dependency>
-            <groupId>io.github.linpeilie</groupId>
-            <artifactId>mapstruct-plus-spring-boot-starter</artifactId>
-        </dependency>
+<!--        <dependency>-->
+<!--            <groupId>io.github.linpeilie</groupId>-->
+<!--            <artifactId>mapstruct-plus-spring-boot-starter</artifactId>-->
+<!--        </dependency>-->
         <!-- admin manage api -->
         <dependency>
             <groupId>com.ww.app</groupId>

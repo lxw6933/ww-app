@@ -34,8 +34,9 @@ import com.ww.app.redis.component.stock.StockRedisComponent;
 import com.ww.app.seckill.component.CodeGeneratorService;
 import com.ww.app.seckill.component.IssueCodeService;
 import com.ww.app.seckill.component.RedPacketComponent;
-import com.ww.app.seckill.entity.A;
-import com.ww.app.seckill.entity.B;
+import com.ww.app.seckill.entity.mapstruct.A;
+import com.ww.app.seckill.entity.mapstruct.AConvert;
+import com.ww.app.seckill.entity.mapstruct.B;
 import com.ww.app.seckill.entity.Demo;
 import com.ww.app.seckill.listener.DemoImportListener;
 import com.ww.app.seckill.model.DemoModel;
@@ -44,7 +45,7 @@ import com.ww.app.seckill.view.bo.SensitiveWordBO;
 import com.ww.app.sensitive.annotation.SensitiveWord;
 import com.ww.app.third.sms.rpc.SmsApi;
 import com.ww.mall.monitor.core.annotation.BizTrace;
-import io.github.linpeilie.Converter;
+//import io.github.linpeilie.Converter;
 import lombok.extern.slf4j.Slf4j;
 import org.redisson.api.RBloomFilter;
 import org.redisson.api.RedissonClient;
@@ -530,15 +531,16 @@ public class DemoServiceImpl implements DemoService {
         return ipInfo.toString();
     }
 
-    @Resource
-    private Converter converter;
+//    @Resource
+//    private Converter converter;
 
     @Override
     public void testBeanCopy(int type) {
         A a = new A("jack", 23, false);
         for (int i = 0; i < 10000000; i++) {
             if (type == 0) {
-                converter.convert(a, B.class);
+//                converter.convert(a, B.class);
+                AConvert.INSTANCE.toB(a);
             } else {
                 BeanUtil.toBean(a, B.class);
             }

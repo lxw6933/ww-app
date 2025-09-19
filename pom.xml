@@ -50,6 +50,7 @@
 
         <spring-boot.version>2.7.18</spring-boot.version>
         <lombok.version>1.18.24</lombok.version>
+        <mapstruct.version>1.6.3</mapstruct.version>
         <mapstruct-plus.version>1.4.5</mapstruct-plus.version>
     </properties>
 
@@ -82,16 +83,22 @@
                             <artifactId>lombok</artifactId>
                             <version>${lombok.version}</version>
                         </path>
-<!--                        <path>-->
-<!--                            <groupId>org.mapstruct</groupId>-->
-<!--                            <artifactId>mapstruct-processor</artifactId>-->
-<!--                            <version>${mapstruct.version}</version>-->
-<!--                        </path>-->
+                        <!-- 如果你使用 Lombok 和 MapStruct 一起，还需要这个 -->
                         <path>
-                            <groupId>io.github.linpeilie</groupId>
-                            <artifactId>mapstruct-plus-processor</artifactId>
-                            <version>${mapstruct-plus.version}</version>
+                            <groupId>org.projectlombok</groupId>
+                            <artifactId>lombok-mapstruct-binding</artifactId>
+                            <version>0.2.0</version>
                         </path>
+                        <path>
+                            <groupId>org.mapstruct</groupId>
+                            <artifactId>mapstruct-processor</artifactId>
+                            <version>${mapstruct.version}</version>
+                        </path>
+<!--                        <path>-->
+<!--                            <groupId>io.github.linpeilie</groupId>-->
+<!--                            <artifactId>mapstruct-plus-processor</artifactId>-->
+<!--                            <version>${mapstruct-plus.version}</version>-->
+<!--                        </path>-->
                         <path>
                             <groupId>org.springframework.boot</groupId>
                             <artifactId>spring-boot-configuration-processor</artifactId>

@@ -1,4 +1,4 @@
-package com.ww.app.seckill.entity;
+package com.ww.app.seckill.entity.mapstruct;
 
 import lombok.Data;
 

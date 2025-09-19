@@ -22,6 +22,7 @@
         <skywalking.version>9.4.0</skywalking.version>
 
         <lombok.version>1.18.24</lombok.version>
+        <mapstruct.version>1.6.3</mapstruct.version>
         <mapstruct-plus.version>1.4.5</mapstruct-plus.version>
         <slf4j.version>1.7.36</slf4j.version>
 
@@ -321,23 +322,22 @@
                 <version>${grpc.springboot.version}</version>
             </dependency>
             <!-- mapStruct -->
-            <!--            <dependency>-->
-            <!--                <groupId>org.mapstruct</groupId>-->
-            <!--                <artifactId>mapstruct</artifactId>-->
-            <!--                <version>${mapstruct.version}</version>-->
-            <!--            </dependency>-->
-            <!--            <dependency>-->
-            <!--                <groupId>org.mapstruct</groupId>-->
-            <!--                <artifactId>mapstruct-processor</artifactId>-->
-            <!--                <version>${mapstruct.version}</version>-->
-            <!--                <scope>provided</scope>-->
-            <!--            </dependency>-->
-            <!-- mapstruct-plus -->
             <dependency>
-                <groupId>io.github.linpeilie</groupId>
-                <artifactId>mapstruct-plus-spring-boot-starter</artifactId>
-                <version>${mapstruct-plus.version}</version>
+                <groupId>org.mapstruct</groupId>
+                <artifactId>mapstruct</artifactId>
+                <version>${mapstruct.version}</version>
             </dependency>
+            <dependency>
+                <groupId>org.mapstruct</groupId>
+                <artifactId>mapstruct-processor</artifactId>
+                <version>${mapstruct.version}</version>
+            </dependency>
+            <!-- mapstruct-plus -->
+<!--            <dependency>-->
+<!--                <groupId>io.github.linpeilie</groupId>-->
+<!--                <artifactId>mapstruct-plus-spring-boot-starter</artifactId>-->
+<!--                <version>${mapstruct-plus.version}</version>-->
+<!--            </dependency>-->
             <!-- sensitive word -->
             <dependency>
                 <groupId>com.github.houbb</groupId>

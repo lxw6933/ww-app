@@ -1,6 +1,5 @@
-package com.ww.app.seckill.entity;
+package com.ww.app.seckill.entity.mapstruct;
 
-import io.github.linpeilie.annotations.AutoMapper;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -13,7 +12,7 @@ import lombok.NoArgsConstructor;
 @Data
 @AllArgsConstructor
 @NoArgsConstructor
-@AutoMapper(target = B.class)
+//@AutoMapper(target = B.class)
 public class A {
 
     private String username;
