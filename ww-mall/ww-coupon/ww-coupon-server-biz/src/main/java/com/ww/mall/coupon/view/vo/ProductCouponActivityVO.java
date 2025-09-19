@@ -1,7 +1,6 @@
 package com.ww.mall.coupon.view.vo;
 
 import com.ww.mall.coupon.constant.CouponConstant;
-import com.ww.mall.coupon.entity.SmsCouponActivity;
 import com.ww.mall.coupon.eunms.EffectTimeType;
 import com.ww.mall.coupon.view.vo.base.BaseCouponInfoVO;
 import lombok.Data;
@@ -50,31 +49,4 @@ public class ProductCouponActivityVO extends BaseCouponInfoVO {
      */
     private int effectNumber;
     
-    /**
-     * 将SmsCouponActivity对象转换为ProductCouponActivityVO对象
-     * 
-     * @param smsCouponActivity 优惠券活动
-     * @return ProductCouponActivityVO
-     */
-    public static ProductCouponActivityVO convertFrom(SmsCouponActivity smsCouponActivity) {
-        ProductCouponActivityVO vo = new ProductCouponActivityVO();
-        // 从BaseCouponInfoVO继承的属性
-        vo.setId(smsCouponActivity.getId());
-        vo.setActivityCode(smsCouponActivity.getActivityCode());
-        vo.setName(smsCouponActivity.getName());
-        vo.setDesc(smsCouponActivity.getDesc());
-        vo.setCouponDiscountType(smsCouponActivity.getCouponDiscountType());
-        vo.setAchieveAmount(smsCouponActivity.getAchieveAmount());
-        vo.setDeductionAmount(smsCouponActivity.getDeductionAmount());
-        
-        // 本类属性
-        vo.setEffectTimeType(smsCouponActivity.getEffectTimeType());
-        vo.setUseStartTime(smsCouponActivity.getUseStartTime());
-        vo.setUseEndTime(smsCouponActivity.getUseEndTime());
-        vo.setReceiveDay(smsCouponActivity.getReceiveDay());
-        vo.setEffectTimeUnit(smsCouponActivity.getEffectTimeUnit());
-        vo.setEffectNumber(smsCouponActivity.getEffectNumber());
-        
-        return vo;
-    }
 }

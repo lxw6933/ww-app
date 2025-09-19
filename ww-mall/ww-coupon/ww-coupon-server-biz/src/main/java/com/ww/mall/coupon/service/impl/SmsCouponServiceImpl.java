@@ -36,6 +36,7 @@ import com.ww.mall.coupon.component.SmsCouponStatisticsComponent;
 import com.ww.mall.coupon.component.key.CouponRedisKeyBuilder;
 import com.ww.mall.coupon.constant.CouponConstant;
 import com.ww.mall.coupon.constant.CouponLuaConstant;
+import com.ww.mall.coupon.convert.CouponConvert;
 import com.ww.mall.coupon.entity.*;
 import com.ww.mall.coupon.entity.base.BaseCouponInfo;
 import com.ww.mall.coupon.eunms.*;
@@ -123,7 +124,7 @@ public class SmsCouponServiceImpl implements SmsCouponService {
     @Override
     public AppPageResult<SmsCouponPageVO> pageList(SmsCouponPageBO smsCouponPageBO) {
         return smsCouponPageBO.simplePageConvertResult(smsCouponActivity -> {
-            SmsCouponPageVO vo = SmsCouponPageVO.convertFrom(smsCouponActivity);
+            SmsCouponPageVO vo = CouponConvert.INSTANCE.convert4(smsCouponActivity);
             int availableNumber = 0;
             switch (vo.getIssueType()) {
                 case RECEIVE:
@@ -263,7 +264,7 @@ public class SmsCouponServiceImpl implements SmsCouponService {
     public SmsCouponDetailVO info(String id) {
         SmsCouponActivity smsCouponActivity = mongoTemplate.findOne(BaseDoc.buildIdQuery(id), SmsCouponActivity.class);
         Assert.notNull(smsCouponActivity, () -> new ApiException(ErrorCodeConstants.UN_FOUND_ACTIVITY));
-        return SmsCouponDetailVO.convertFrom(smsCouponActivity);
+        return CouponConvert.INSTANCE.convert3(smsCouponActivity);
     }
 
     @Override
@@ -658,7 +659,7 @@ public class SmsCouponServiceImpl implements SmsCouponService {
             return null;
         }
         return convertList(targetList, res -> {
-            CouponActivityCenterVO vo = CouponActivityCenterVO.convertFrom(res);
+            CouponActivityCenterVO vo = CouponConvert.INSTANCE.convert(res);
             int availableNumber = stockRedisComponent.getStrStock(couponRedisKeyBuilder.buildCouponNumberKey(res.getActivityCode()));
             // 获取当前优惠券领取数量
             int receiveNumber1 = res.getReceiveNumber();
@@ -684,7 +685,7 @@ public class SmsCouponServiceImpl implements SmsCouponService {
                     res.setCouponStatus(CouponStatus.OCCUPIED);
                 }
             }
-            MemberCouponCenterVO vo = MemberCouponCenterVO.convertFrom(res);
+            MemberCouponCenterVO vo = CouponConvert.INSTANCE.convert(res);
             // 查询活动信息
             switch (res.getCouponType()) {
                 case PLATFORM:
@@ -931,7 +932,7 @@ public class SmsCouponServiceImpl implements SmsCouponService {
 
         List<ProductCouponActivityVO> sortedIntegralCouponActivityTagList = integralCouponActivityList.stream()
                 .sorted(Comparator.comparing(SmsCouponActivity::getDeductionAmount).reversed())
-                .map(ProductCouponActivityVO::convertFrom)
+                .map(CouponConvert.INSTANCE::convert2)
                 .collect(Collectors.toList());
 
         List<ProductCouponActivityVO> sortedCashCouponActivityTagList = cashCouponActivityList.stream()
@@ -947,7 +948,7 @@ public class SmsCouponServiceImpl implements SmsCouponService {
                         target2 = e2.getAchieveAmount().subtract(minPayAmount);
                     }
                     return target2.compareTo(target1);
-                }).map(ProductCouponActivityVO::convertFrom)
+                }).map(CouponConvert.INSTANCE::convert2)
                 .collect(Collectors.toList());
         sortedIntegralCouponActivityTagList.addAll(sortedCashCouponActivityTagList);
         return sortedIntegralCouponActivityTagList;
@@ -983,7 +984,7 @@ public class SmsCouponServiceImpl implements SmsCouponService {
         orderBOList = orderBOList.stream().filter(OrderMemberSmsCouponBO::isActivityUseCoupon).collect(Collectors.toList());
         // 积分
         for (MemberCouponCenterVO res : memberIntegralCouponList) {
-            OrderMemberCouponVO vo = OrderMemberCouponVO.convertFrom(res);
+            OrderMemberCouponVO vo = CouponConvert.INSTANCE.convert(res);
             if (orderCouponInfoHandler(res, orderBOList, vo)) {
                 availableIntegralCouponList.add(vo);
             } else {
@@ -992,7 +993,7 @@ public class SmsCouponServiceImpl implements SmsCouponService {
         }
         // 现金
         for (MemberCouponCenterVO res : memberCashCouponList) {
-            OrderMemberCouponVO vo = OrderMemberCouponVO.convertFrom(res);
+            OrderMemberCouponVO vo = CouponConvert.INSTANCE.convert(res);
             if (orderCouponInfoHandler(res, orderBOList, vo)) {
                 availableCashCouponList.add(vo);
             } else {
