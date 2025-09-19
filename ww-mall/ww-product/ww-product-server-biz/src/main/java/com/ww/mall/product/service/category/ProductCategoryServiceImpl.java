@@ -1,14 +1,14 @@
 package com.ww.mall.product.service.category;
 
-import cn.hutool.core.bean.BeanUtil;
 import cn.hutool.core.util.StrUtil;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.ww.app.common.exception.ApiException;
-import com.ww.mall.product.dao.category.ProductCategoryMapper;
-import com.ww.mall.product.entity.category.ProductCategory;
 import com.ww.mall.product.controller.admin.category.req.ProductCategoryBO;
 import com.ww.mall.product.controller.admin.category.req.ProductCategoryQuery;
 import com.ww.mall.product.controller.admin.category.res.ProductCategoryVO;
+import com.ww.mall.product.convert.category.ProductCategoryConvert;
+import com.ww.mall.product.dao.category.ProductCategoryMapper;
+import com.ww.mall.product.entity.category.ProductCategory;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.cache.annotation.Cacheable;
@@ -20,7 +20,6 @@ import java.util.List;
 import java.util.Objects;
 import java.util.stream.Collectors;
 
-import static com.ww.app.common.utils.CollectionUtils.convertList;
 import static com.ww.app.common.utils.CollectionUtils.filterList;
 import static com.ww.mall.product.entity.category.ProductCategory.PARENT_ID_NULL;
 import static com.ww.mall.product.enums.ErrorCodeConstants.*;
@@ -41,7 +40,8 @@ public class ProductCategoryServiceImpl extends ServiceImpl<ProductCategoryMappe
     @Cacheable(value = "categoryTree", key="'all'", unless = "#result==null or #result?.size() == 0")
     public List<ProductCategoryVO> listCategoryTree() {
         // 获取所有Category
-        List<ProductCategoryVO> allCategory = convertList(this.list(), res -> BeanUtil.toBean(res, ProductCategoryVO.class));
+//        List<ProductCategoryVO> allCategory = convertList(this.list(), res -> BeanUtil.toBean(res, ProductCategoryVO.class));
+        List<ProductCategoryVO> allCategory = ProductCategoryConvert.INSTANCE.convertList(this.list());
         // 遍历所有一级类目，并设置子类集合【递归设置】
         return allCategory.stream()
                 .filter(res -> PARENT_ID_NULL.equals(res.getParentId()))
@@ -122,7 +122,7 @@ public class ProductCategoryServiceImpl extends ServiceImpl<ProductCategoryMappe
         // 校验父分类存在
         validateParentProductCategory(productCategoryBO.getParentId());
 
-        ProductCategory category = BeanUtil.toBean(productCategoryBO, ProductCategory.class);
+        ProductCategory category = ProductCategoryConvert.INSTANCE.convert(productCategoryBO);
         this.save(category);
         return true;
     }
@@ -135,7 +135,7 @@ public class ProductCategoryServiceImpl extends ServiceImpl<ProductCategoryMappe
         // 校验父分类存在
         validateParentProductCategory(productCategoryBO.getParentId());
 
-        ProductCategory updateObj = BeanUtil.toBean(productCategoryBO, ProductCategory.class);
+        ProductCategory updateObj = ProductCategoryConvert.INSTANCE.convert(productCategoryBO);
         this.updateById(updateObj);
         return true;
     }

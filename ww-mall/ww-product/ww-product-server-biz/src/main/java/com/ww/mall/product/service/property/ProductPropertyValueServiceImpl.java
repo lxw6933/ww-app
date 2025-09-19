@@ -1,13 +1,13 @@
 package com.ww.mall.product.service.property;
 
-import cn.hutool.core.bean.BeanUtil;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.ww.app.common.exception.ApiException;
+import com.ww.mall.product.controller.admin.property.req.ProductPropertyValueBO;
+import com.ww.mall.product.convert.property.ProductPropertyConvert;
 import com.ww.mall.product.dao.property.ProductPropertyValueMapper;
 import com.ww.mall.product.entity.property.ProductPropertyValue;
 import com.ww.mall.product.service.sku.ProductSkuService;
-import com.ww.mall.product.controller.admin.property.req.ProductPropertyValueBO;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
@@ -39,7 +39,7 @@ public class ProductPropertyValueServiceImpl extends ServiceImpl<ProductProperty
             throw new ApiException(PROPERTY_VALUE_EXISTS);
         }
 
-        ProductPropertyValue productPropertyValue = BeanUtil.toBean(productPropertyValueBO, ProductPropertyValue.class);
+        ProductPropertyValue productPropertyValue = ProductPropertyConvert.INSTANCE.convert(productPropertyValueBO);
         this.save(productPropertyValue);
         return true;
     }
@@ -56,7 +56,7 @@ public class ProductPropertyValueServiceImpl extends ServiceImpl<ProductProperty
             throw new ApiException(PROPERTY_VALUE_EXISTS);
         }
 
-        ProductPropertyValue updateObj = BeanUtil.toBean(productPropertyValueBO, ProductPropertyValue.class);
+        ProductPropertyValue updateObj = ProductPropertyConvert.INSTANCE.convert(productPropertyValueBO);
         this.save(updateObj);
         // 更新 sku 相关属性
         productSkuService.updateSkuPropertyValue(productPropertyValueBO.getId(), productPropertyValueBO.getName());

@@ -1,12 +1,13 @@
 package com.ww.mall.product.service.sku;
 
-import cn.hutool.core.bean.BeanUtil;
 import cn.hutool.core.collection.CollUtil;
 import cn.hutool.core.util.ObjectUtil;
 import cn.hutool.core.util.StrUtil;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.ww.app.common.exception.ApiException;
+import com.ww.mall.product.controller.admin.sku.req.ProductSkuBO;
+import com.ww.mall.product.convert.sku.ProductSkuConvert;
 import com.ww.mall.product.dao.sku.ProductSkuMapper;
 import com.ww.mall.product.dto.sku.ProductSkuUpdateStockReqDTO;
 import com.ww.mall.product.entity.property.ProductProperty;
@@ -14,7 +15,6 @@ import com.ww.mall.product.entity.property.ProductPropertyValue;
 import com.ww.mall.product.entity.sku.ProductSku;
 import com.ww.mall.product.service.property.ProductPropertyService;
 import com.ww.mall.product.service.property.ProductPropertyValueService;
-import com.ww.mall.product.controller.admin.sku.req.ProductSkuBO;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -53,7 +53,7 @@ public class ProductSkuServiceImpl extends ServiceImpl<ProductSkuMapper, Product
     public void createSkuList(Long spuId, List<ProductSkuBO> skus) {
         List<ProductSku> skuList = new ArrayList<>();
         skus.forEach(sku -> {
-            ProductSku productSku = BeanUtil.toBean(sku, ProductSku.class);
+            ProductSku productSku = ProductSkuConvert.INSTANCE.convert(sku);
             productSku.setSpuId(spuId);
             skuList.add(productSku);
         });
@@ -75,7 +75,7 @@ public class ProductSkuServiceImpl extends ServiceImpl<ProductSkuMapper, Product
 
         List<ProductSku> allUpdateSkus = new ArrayList<>();
         skus.forEach(sku -> {
-            ProductSku productSku = BeanUtil.toBean(sku, ProductSku.class);
+            ProductSku productSku = ProductSkuConvert.INSTANCE.convert(sku);
             productSku.setSpuId(spuId);
             allUpdateSkus.add(productSku);
         });

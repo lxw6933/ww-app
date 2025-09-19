@@ -1,7 +1,7 @@
 package com.ww.app.operatelog.core.service.impl;
 
-import cn.hutool.core.bean.BeanUtil;
 import com.ww.app.common.common.AppPageResult;
+import com.ww.app.operatelog.core.convert.OperateLogConvert;
 import com.ww.app.operatelog.core.entity.OperateLog;
 import com.ww.app.operatelog.core.service.OperateLogService;
 import com.ww.app.operatelog.view.dto.OperateLogDTO;
@@ -30,7 +30,7 @@ public class OperateLogServiceImpl implements OperateLogService {
     @Override
     public void save(OperateLogDTO operateLogDTO) {
         log.info("保存操作日志traceId[{}]", operateLogDTO.getTraceId());
-        OperateLog operateLog = BeanUtil.toBean(operateLogDTO, OperateLog.class);
+        OperateLog operateLog = OperateLogConvert.INSTANCE.convert(operateLogDTO);
         mongoTemplate.save(operateLog);
     }
 

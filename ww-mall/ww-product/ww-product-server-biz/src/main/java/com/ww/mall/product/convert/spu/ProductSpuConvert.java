@@ -3,6 +3,7 @@ package com.ww.mall.product.convert.spu;
 import com.ww.mall.product.controller.admin.spu.req.ProductSpuBO;
 import com.ww.mall.product.controller.admin.spu.res.ProductSpuPageAdminVO;
 import com.ww.mall.product.controller.app.spu.res.AppProductSpuDetailVO;
+import com.ww.mall.product.dto.spu.ProductSpuDTO;
 import com.ww.mall.product.entity.spu.ProductSpu;
 import org.mapstruct.Mapper;
 import org.mapstruct.factory.Mappers;
@@ -20,6 +21,8 @@ public interface ProductSpuConvert {
     AppProductSpuDetailVO convert(ProductSpu spu);
 
     ProductSpuPageAdminVO convert2(ProductSpu spu);
+
+    ProductSpuDTO convert3(ProductSpu spu);
 
     ProductSpu convert(ProductSpuBO productSpuBO);
 

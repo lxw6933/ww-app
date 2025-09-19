@@ -1,7 +1,7 @@
 package com.ww.mall.product.rpc;
 
-import cn.hutool.core.bean.BeanUtil;
 import com.ww.app.common.common.Result;
+import com.ww.mall.product.convert.spu.ProductSpuConvert;
 import com.ww.mall.product.dto.spu.ProductSpuDTO;
 import com.ww.mall.product.entity.spu.ProductSpu;
 import com.ww.mall.product.service.spu.ProductSpuService;
@@ -26,7 +26,7 @@ public class ProductSpuApiRpc implements ProductSpuApi {
     @RequestMapping("/get")
     public Result<ProductSpuDTO> getSpu(Long id) {
         ProductSpu spu = productSpuService.get(id);
-        return Result.success(BeanUtil.toBean(spu, ProductSpuDTO.class));
+        return Result.success(ProductSpuConvert.INSTANCE.convert3(spu));
     }
 
 }

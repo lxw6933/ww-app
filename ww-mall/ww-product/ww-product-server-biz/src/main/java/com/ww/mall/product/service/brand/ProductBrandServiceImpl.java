@@ -1,6 +1,5 @@
 package com.ww.mall.product.service.brand;
 
-import cn.hutool.core.bean.BeanUtil;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
@@ -10,11 +9,12 @@ import com.ww.app.common.exception.ApiException;
 import com.ww.app.mybatis.common.AppPlusPageResult;
 import com.ww.app.redis.annotation.RedisPublishMsg;
 import com.ww.mall.product.constants.RedisChannelConstant;
-import com.ww.mall.product.dao.brand.ProductBrandMapper;
-import com.ww.mall.product.entity.brand.ProductBrand;
 import com.ww.mall.product.controller.admin.brand.req.ProductBrandBO;
 import com.ww.mall.product.controller.admin.brand.req.ProductBrandPageQuery;
 import com.ww.mall.product.controller.admin.brand.res.ProductBrandVO;
+import com.ww.mall.product.convert.brand.ProductBrandConvert;
+import com.ww.mall.product.dao.brand.ProductBrandMapper;
+import com.ww.mall.product.entity.brand.ProductBrand;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.BeanUtils;
 import org.springframework.stereotype.Service;
@@ -47,7 +47,7 @@ public class ProductBrandServiceImpl extends ServiceImpl<ProductBrandMapper, Pro
         // 校验
         validateBrandNameUnique(null, productBrandBO.getName());
 
-        ProductBrand brand = BeanUtil.toBean(productBrandBO, ProductBrand.class);
+        ProductBrand brand = ProductBrandConvert.INSTANCE.convert(productBrandBO);
         this.save(brand);
         return true;
     }
@@ -59,7 +59,7 @@ public class ProductBrandServiceImpl extends ServiceImpl<ProductBrandMapper, Pro
         validateBrandExists(productBrandBO.getId());
         validateBrandNameUnique(productBrandBO.getId(), productBrandBO.getName());
 
-        ProductBrand updateObj = BeanUtil.toBean(productBrandBO, ProductBrand.class);
+        ProductBrand updateObj = ProductBrandConvert.INSTANCE.convert(productBrandBO);
         this.updateById(updateObj);
         return true;
     }
