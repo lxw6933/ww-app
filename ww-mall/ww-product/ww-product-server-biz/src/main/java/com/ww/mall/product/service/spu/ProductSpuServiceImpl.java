@@ -21,6 +21,8 @@ import com.ww.mall.product.controller.admin.spu.req.ProductSpuPageQuery;
 import com.ww.mall.product.controller.admin.spu.req.ProductSpuStatusBO;
 import com.ww.mall.product.controller.admin.spu.res.ProductSpuPageAdminVO;
 import com.ww.mall.product.controller.app.spu.res.AppProductSpuDetailVO;
+import com.ww.mall.product.convert.sku.ProductSkuConvert;
+import com.ww.mall.product.convert.spu.ProductSpuConvert;
 import com.ww.mall.product.dao.spu.ProductSpuMapper;
 import com.ww.mall.product.entity.brand.ProductBrand;
 import com.ww.mall.product.entity.category.ProductCategory;
@@ -30,7 +32,6 @@ import com.ww.mall.product.service.brand.ProductBrandService;
 import com.ww.mall.product.service.category.ProductCategoryService;
 import com.ww.mall.product.service.sku.ProductSkuService;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.BeanUtils;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -86,7 +87,7 @@ public class ProductSpuServiceImpl extends ServiceImpl<ProductSpuMapper, Product
         List<ProductSkuBO> skus = productSpuBO.getSkus();
         productSkuService.validateSkuList(skus, productSpuBO.getSpecType());
 
-        ProductSpu spu = BeanUtil.toBean(productSpuBO, ProductSpu.class);
+        ProductSpu spu = ProductSpuConvert.INSTANCE.convert(productSpuBO);
         // 初始化 SPU 中 SKU 相关属性
         initSpuFromSkus(spu, skus);
         // 插入 SPU
@@ -111,7 +112,7 @@ public class ProductSpuServiceImpl extends ServiceImpl<ProductSpuMapper, Product
         productSkuService.validateSkuList(skus, productSpuBO.getSpecType());
 
         // 更新 SPU
-        ProductSpu updateObj = BeanUtil.toBean(productSpuBO, ProductSpu.class);
+        ProductSpu updateObj = ProductSpuConvert.INSTANCE.convert(productSpuBO);
         updateObj.setStatus(spu.getStatus());
         initSpuFromSkus(updateObj, skus);
         this.updateById(updateObj);
@@ -175,7 +176,11 @@ public class ProductSpuServiceImpl extends ServiceImpl<ProductSpuMapper, Product
             throw new ApiException(SPU_NOT_ENABLE);
         }
         // TODO 增加浏览量
-        return AppProductSpuDetailVO.build(productSpuCache.getSpu(), productSpuCache.getSkus());
+
+        AppProductSpuDetailVO spuVO = ProductSpuConvert.INSTANCE.convert(spu);
+        List<AppProductSpuDetailVO.Sku> skuVOList = ProductSkuConvert.INSTANCE.convertList(productSpuCache.getSkus());
+        spuVO.setSkus(skuVOList);
+        return spuVO;
     }
 
     public static void main(String[] args) {
@@ -237,8 +242,7 @@ public class ProductSpuServiceImpl extends ServiceImpl<ProductSpuMapper, Product
     }
 
     private ProductSpuPageAdminVO getProductSpuAdminVO(ProductSpu result) {
-        ProductSpuPageAdminVO spuPageVO = new ProductSpuPageAdminVO();
-        BeanUtils.copyProperties(result, spuPageVO);
+        ProductSpuPageAdminVO spuPageVO = ProductSpuConvert.INSTANCE.convert2(result);
         ProductBrand brand = productBrandService.getById(result.getBrandId());
         ProductCategory category = productCategoryService.getById(result.getCategoryId());
         spuPageVO.setBrandName(brand.getName());

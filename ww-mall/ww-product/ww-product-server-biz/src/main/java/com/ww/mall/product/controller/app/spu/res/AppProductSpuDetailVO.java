@@ -1,12 +1,10 @@
 package com.ww.mall.product.controller.app.spu.res;
 
 import com.ww.mall.product.entity.sku.ProductSku;
-import com.ww.mall.product.entity.spu.ProductSpu;
 import com.ww.mall.product.enums.SpuType;
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Data;
 
-import java.util.ArrayList;
 import java.util.List;
 
 /**
@@ -81,33 +79,6 @@ public class AppProductSpuDetailVO {
         @Schema(description = "库存", requiredMode = Schema.RequiredMode.REQUIRED)
         private Integer stock;
 
-    }
-
-    public static AppProductSpuDetailVO build(ProductSpu spu, List<ProductSku> skus) {
-        AppProductSpuDetailVO spuVO = new AppProductSpuDetailVO();
-        spuVO.setId(spu.getId());
-        spuVO.setName(spu.getName());
-        spuVO.setSpuType(spu.getSpuType());
-        spuVO.setIntroduction(spu.getIntroduction());
-        spuVO.setDescription(spu.getDescription());
-        spuVO.setCategoryId(spu.getCategoryId());
-        spuVO.setBrandId(spu.getBrandId());
-        spuVO.setImg(spu.getImg());
-        spuVO.setSliderImgList(spu.getSliderImgList());
-        spuVO.setSalesCount(spuVO.getSalesCount());
-        List<AppProductSpuDetailVO.Sku> skuVOList = new ArrayList<>();
-        spuVO.setSkus(skuVOList);
-        skus.forEach(sku -> {
-            AppProductSpuDetailVO.Sku skuVO = new AppProductSpuDetailVO.Sku();
-            skuVO.setId(sku.getId());
-            skuVO.setProperties(sku.getProperties());
-            skuVO.setPrice(sku.getPrice());
-            skuVO.setMarketPrice(sku.getMarketPrice());
-            skuVO.setImg(sku.getImg());
-            skuVO.setStock(sku.getStock());
-            skuVOList.add(skuVO);
-        });
-        return spuVO;
     }
 
 }
