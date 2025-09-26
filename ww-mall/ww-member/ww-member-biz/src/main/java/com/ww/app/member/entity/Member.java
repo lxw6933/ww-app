@@ -13,7 +13,7 @@ import java.util.Date;
  * @description:
  */
 @Data
-@TableName("t_member")
+@TableName("member")
 @EqualsAndHashCode(callSuper = true)
 public class Member extends BaseEntity {
 

@@ -1,4 +1,4 @@
-package com.ww.app.member.service;
+package com.ww.app.member.service.member;
 
 import com.baomidou.mybatisplus.extension.service.IService;
 import com.ww.app.member.entity.Member;

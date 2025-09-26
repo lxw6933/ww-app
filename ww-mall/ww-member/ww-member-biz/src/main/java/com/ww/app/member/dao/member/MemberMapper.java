@@ -1,4 +1,4 @@
-package com.ww.app.member.dao;
+package com.ww.app.member.dao.member;
 
 import com.baomidou.mybatisplus.core.mapper.BaseMapper;
 import com.ww.app.member.entity.Member;

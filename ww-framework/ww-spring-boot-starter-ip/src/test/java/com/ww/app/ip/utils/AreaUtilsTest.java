@@ -36,4 +36,16 @@ public class AreaUtilsTest {
         System.out.println(AreaUtils.format(2));
     }
 
+    @Test
+    public void testTree() {
+        Area area = AreaUtils.getArea(Area.ID_CHINA);
+        area.getChildren().forEach(e -> {
+            System.out.println("id：" + e.getId() + "  name：" + e.getName());
+            e.getChildren().forEach(child -> {
+                System.out.println("--id：" + child.getId() + "  name：" + child.getName());
+                child.getChildren().forEach(child2 -> System.out.println("----id：" + child2.getId() + "  name：" + child2.getName()));
+            });
+        });
+    }
+
 }

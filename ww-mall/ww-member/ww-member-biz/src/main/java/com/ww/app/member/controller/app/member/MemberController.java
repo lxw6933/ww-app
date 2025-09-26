@@ -1,4 +1,4 @@
-package com.ww.app.member.controller;
+package com.ww.app.member.controller.app.member;
 
 import cn.hutool.core.util.RandomUtil;
 import com.baomidou.mybatisplus.core.metadata.IPage;
@@ -10,12 +10,13 @@ import com.ww.app.common.context.AuthorizationContext;
 import com.ww.app.common.enums.GlobalResCodeConstants;
 import com.ww.app.common.exception.ApiException;
 import com.ww.app.common.utils.IdUtil;
+import com.ww.app.member.convert.member.MemberConvert;
 import com.ww.app.member.entity.Member;
 import com.ww.app.member.member.dto.MemberDTO;
-import com.ww.app.member.service.MemberService;
+import com.ww.app.member.service.member.MemberService;
 import com.ww.app.member.view.vo.MemberVO;
 import com.ww.app.mybatis.common.AppPlusPageResult;
-import org.springframework.beans.BeanUtils;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -32,6 +33,7 @@ import java.util.List;
  * @create 2023-07-17- 11:09
  * @description:
  */
+@Tag(name = "用户 APP - 用户信息")
 @RestController
 @RequestMapping("/member")
 public class MemberController {
@@ -59,11 +61,7 @@ public class MemberController {
         }
         IPage<Member> page = new Page<>(appPage.getPageNum(), appPage.getPageSize());
         memberService.page(page);
-        return new AppPlusPageResult<>(page, result -> {
-            MemberVO memberVO = new MemberVO();
-            BeanUtils.copyProperties(result, memberVO);
-            return memberVO;
-        });
+        return new AppPlusPageResult<>(page, MemberConvert.INSTANCE::convert);
     }
 
     @GetMapping("/genericMemberRecord")

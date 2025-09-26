@@ -4,8 +4,8 @@ import com.ww.app.common.common.Result;
 import com.ww.app.member.member.bo.AddMemberIntegralBO;
 import com.ww.app.member.member.dto.MemberDTO;
 import com.ww.app.member.member.rpc.MemberApi;
-import com.ww.app.member.service.MemberIntegralRecordService;
-import com.ww.app.member.service.MemberService;
+import com.ww.app.member.service.integral.MemberIntegralRecordService;
+import com.ww.app.member.service.member.MemberService;
 import org.springframework.web.bind.annotation.*;
 
 import javax.annotation.Resource;

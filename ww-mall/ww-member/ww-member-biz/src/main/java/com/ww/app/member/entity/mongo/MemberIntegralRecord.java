@@ -12,7 +12,7 @@ import org.springframework.data.mongodb.core.mapping.Document;
  * @description:
  */
 @Data
-@Document(collection = "t_member_integral_record")
+@Document(collection = "member_integral_record")
 public class MemberIntegralRecord {
 
     @Id

@@ -1,0 +1,39 @@
+package com.ww.app.member.controller.app.address.req;
+
+import io.swagger.v3.oas.annotations.media.Schema;
+import lombok.Data;
+
+import javax.validation.constraints.NotNull;
+
+/**
+ * @author ww
+ * @create 2025-09-26 14:09
+ * @description:
+ */
+@Data
+public class MemberAddressBO {
+
+    @Schema(description = "编号")
+    private Long id;
+
+    @Schema(description = "收件人名称", requiredMode = Schema.RequiredMode.REQUIRED)
+    @NotNull(message = "收件人名称不能为空")
+    private String name;
+
+    @Schema(description = "手机号", requiredMode = Schema.RequiredMode.REQUIRED)
+    @NotNull(message = "手机号不能为空")
+    private String mobile;
+
+    @Schema(description = "地区编号", requiredMode = Schema.RequiredMode.REQUIRED)
+    @NotNull(message = "地区编号不能为空")
+    private Long areaId;
+
+    @Schema(description = "收件详细地址", requiredMode = Schema.RequiredMode.REQUIRED)
+    @NotNull(message = "收件详细地址不能为空")
+    private String detailAddress;
+
+    @Schema(description = "是否默认地址", requiredMode = Schema.RequiredMode.REQUIRED)
+    @NotNull(message = "是否默认地址不能为空")
+    private Boolean defaultStatus;
+
+}

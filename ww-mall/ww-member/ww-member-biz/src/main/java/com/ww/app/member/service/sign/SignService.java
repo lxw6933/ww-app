@@ -1,4 +1,4 @@
-package com.ww.app.member.service;
+package com.ww.app.member.service.sign;
 
 import com.ww.app.common.common.ClientUser;
 

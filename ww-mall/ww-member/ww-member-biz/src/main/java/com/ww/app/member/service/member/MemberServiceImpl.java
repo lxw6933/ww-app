@@ -1,11 +1,10 @@
-package com.ww.app.member.service.impl;
+package com.ww.app.member.service.member;
 
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
-import com.ww.app.member.dao.MemberMapper;
+import com.ww.app.member.dao.member.MemberMapper;
 import com.ww.app.member.entity.Member;
 import com.ww.app.member.member.dto.MemberDTO;
-import com.ww.app.member.service.MemberService;
 import com.ww.app.rabbitmq.RabbitMqPublisher;
 import com.ww.app.rabbitmq.exchange.ExchangeConstant;
 import com.ww.app.rabbitmq.routekey.RouteKeyConstant;

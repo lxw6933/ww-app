@@ -1,7 +1,8 @@
-package com.ww.app.member.controller;
+package com.ww.app.member.controller.app.sign;
 
 import com.ww.app.common.context.AuthorizationContext;
-import com.ww.app.member.service.impl.SignServiceImpl;
+import com.ww.app.member.service.sign.SignServiceImpl;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -16,9 +17,10 @@ import java.util.Map;
  * @create 2023-07-21- 09:15
  * @description: 签到
  */
+@Tag(name = "用户 APP - 用户签到信息")
 @Validated
 @RestController
-@RequestMapping("/sign")
+@RequestMapping("/member/sign")
 public class SignController {
 
     @Resource

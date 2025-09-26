@@ -1,4 +1,4 @@
-package com.ww.app.member.service.impl;
+package com.ww.app.member.service.integral;
 
 import cn.hutool.core.date.DatePattern;
 import cn.hutool.core.date.DateUtil;
@@ -12,8 +12,7 @@ import com.ww.app.member.entity.mongo.MemberIntegralRecord;
 import com.ww.app.member.enums.IntegralSource;
 import com.ww.app.member.enums.IntegralType;
 import com.ww.app.member.member.bo.AddMemberIntegralBO;
-import com.ww.app.member.service.MemberIntegralRecordService;
-import com.ww.app.member.service.MemberService;
+import com.ww.app.member.service.member.MemberService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;

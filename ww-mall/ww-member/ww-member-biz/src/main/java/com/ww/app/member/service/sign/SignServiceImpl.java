@@ -1,11 +1,10 @@
-package com.ww.app.member.service.impl;
+package com.ww.app.member.service.sign;
 
 import cn.hutool.core.date.DatePattern;
 import cn.hutool.core.util.StrUtil;
 import com.ww.app.common.common.ClientUser;
 import com.ww.app.common.exception.ApiException;
 import com.ww.app.member.component.key.SignRedisKeyBuilder;
-import com.ww.app.member.service.SignService;
 import com.ww.app.member.strategy.sign.SignStrategy;
 import com.ww.app.member.strategy.sign.SignStrategyFactory;
 import com.ww.app.member.util.SignDateValidator;

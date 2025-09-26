@@ -1,4 +1,4 @@
-package com.ww.app.member.service;
+package com.ww.app.member.service.integral;
 
 import com.ww.app.member.entity.mongo.MemberIntegralRecord;
 import com.ww.app.common.common.AppPage;
