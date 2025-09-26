@@ -1,6 +1,7 @@
 package com.ww.app.common.utils;
 
 import cn.hutool.core.collection.CollUtil;
+import cn.hutool.core.collection.CollectionUtil;
 import cn.hutool.core.util.ArrayUtil;
 
 import java.util.*;
@@ -273,6 +274,46 @@ public class CollectionUtils {
             }
         }
         return asList(createList, updateList, deleteList);
+    }
+
+    /**
+     * 获取集合中的第一个数据
+     *
+     * @param source 集合
+     * @return 第一个数据
+     * @param <T> 数据类型
+     */
+    public static <T> T getFirst(List<T> source) {
+        return !CollectionUtil.isEmpty(source) ? source.get(0) : null;
+    }
+
+    /**
+     * 根据条件过滤集合，匹配符合条件的第一个数据
+     *
+     * @param source 集合
+     * @param predicate 过滤条件
+     * @return 第一个数据
+     * @param <T> 数据类型
+     */
+    public static <T> T findFirst(Collection<T> source, Predicate<T> predicate) {
+        return findFirst(source, predicate, Function.identity());
+    }
+
+    /**
+     * 根据条件过滤集合，匹配符合条件的第一个数据
+     *
+     * @param source 集合
+     * @param predicate 过滤条件
+     * @param func 数据类型转换函数
+     * @return 第一个数据
+     * @param <T> 源数据类型
+     * @param <U> 目标数据类型
+     */
+    public static <T, U> U findFirst(Collection<T> source, Predicate<T> predicate, Function<T, U> func) {
+        if (CollUtil.isEmpty(source)) {
+            return null;
+        }
+        return source.stream().filter(predicate).findFirst().map(func).orElse(null);
     }
 
 }
