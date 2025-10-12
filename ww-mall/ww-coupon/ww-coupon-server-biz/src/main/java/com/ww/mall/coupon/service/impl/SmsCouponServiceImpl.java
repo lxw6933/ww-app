@@ -5,9 +5,7 @@ import cn.hutool.core.collection.CollectionUtil;
 import cn.hutool.core.date.DatePattern;
 import cn.hutool.core.date.DateUtil;
 import cn.hutool.core.lang.Assert;
-import cn.hutool.core.lang.UUID;
 import cn.hutool.core.util.StrUtil;
-import cn.hutool.crypto.digest.MD5;
 import com.alibaba.fastjson.JSON;
 import com.google.common.collect.Lists;
 import com.mongodb.bulk.BulkWriteResult;
@@ -42,6 +40,7 @@ import com.ww.mall.coupon.entity.base.BaseCouponInfo;
 import com.ww.mall.coupon.eunms.*;
 import com.ww.mall.coupon.service.SmsCouponService;
 import com.ww.mall.coupon.utils.CouponCacheUtils;
+import com.ww.mall.coupon.utils.CouponCodeGenerator;
 import com.ww.mall.coupon.utils.CouponUtils;
 import com.ww.mall.coupon.view.bo.*;
 import com.ww.mall.coupon.view.vo.*;
@@ -290,8 +289,7 @@ public class SmsCouponServiceImpl implements SmsCouponService {
         List<SmsCouponCode> smsCouponCodeDocs = new ArrayList<>();
         Set<String> smsCouponCodes = new HashSet<>();
         while (smsCouponCodes.size() < codeNumber) {
-            String uuid = UUID.randomUUID().toString(true);
-            String code = MD5.create().digestHex16(uuid);
+            String code = CouponCodeGenerator.generate();
             smsCouponCodes.add(code);
             smsCouponCodeDocs.add(new SmsCouponCode(smsCouponActivity.getActivityCode(), batchNo, code));
         }
