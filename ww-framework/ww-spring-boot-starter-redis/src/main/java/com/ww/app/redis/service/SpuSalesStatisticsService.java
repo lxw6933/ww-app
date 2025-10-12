@@ -15,7 +15,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.LongAdder;
+import java.util.concurrent.atomic.AtomicLong;
 
 /**
  * @author ww
@@ -27,7 +27,7 @@ import java.util.concurrent.atomic.LongAdder;
 @ConditionalOnBean(RedisTemplate.class)
 public class SpuSalesStatisticsService {
 
-    private final static Map<String, LongAdder> salesMap = new ConcurrentHashMap<>();
+    private final static Map<String, AtomicLong> salesMap = new ConcurrentHashMap<>();
     private final ScheduledExecutorService salesDataSyncScheduler = Executors.newScheduledThreadPool(1);
 
     @Resource
@@ -52,17 +52,18 @@ public class SpuSalesStatisticsService {
      * @param num       数量【新增：正数  减少：负数】
      */
     public void recordSpuSale(Long spuId, Long channelId, int num) {
-        salesMap.computeIfAbsent(spuRedisKeyBuilder.buildSpuMapKey(channelId, spuId), k -> new LongAdder()).add(num);
+        salesMap.computeIfAbsent(spuRedisKeyBuilder.buildSpuMapKey(channelId, spuId), k -> new AtomicLong()).addAndGet(num);
     }
 
     /**
      * 将本地销量数据同步到redis
      */
     private void syncSaleDataToRedis() {
-        salesMap.forEach((key, longAddr) -> {
-            if (longAddr.sum() > 0) {
-                log.info("[{}]销量数据同步到redis, 销量[{}]", key, longAddr.sum());
-                stringRedisTemplate.opsForValue().increment(spuRedisKeyBuilder.buildSpuSaleKey(key), longAddr.sumThenReset());
+        salesMap.forEach((key, atomicLong) -> {
+            long res = atomicLong.getAndSet(0);
+            if (res > 0) {
+                log.info("[{}]销量数据同步到redis, 销量[{}]", key, res);
+                stringRedisTemplate.opsForValue().increment(spuRedisKeyBuilder.buildSpuSaleKey(key), res);
             }
         });
     }
