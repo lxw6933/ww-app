@@ -22,7 +22,7 @@ public class SignRedisKeyBuilder extends RedisKeyBuilder {
 
     public static final String WEEK_FLAG = "W";
 
-    public static final String RESIGN_COUNT_KEY = "resign:count:";
+    public static final String RESIGN_COUNT_KEY = "resign:count";
 
     public String buildMonthlySignPrefixKey(Long userId, LocalDate date) {
         // 构建月签到的key，格式为：前缀:用户ID:年月

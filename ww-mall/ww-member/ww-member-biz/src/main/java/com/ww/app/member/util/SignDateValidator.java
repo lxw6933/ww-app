@@ -3,12 +3,12 @@ package com.ww.app.member.util;
 import cn.hutool.core.date.DatePattern;
 import cn.hutool.core.util.StrUtil;
 import com.ww.app.common.exception.ApiException;
+import com.ww.app.member.enums.SignPeriodEnum;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 
 import java.time.LocalDate;
 import java.time.format.DateTimeParseException;
-import java.time.temporal.ChronoUnit;
 
 /**
  * 签到日期校验工具类
@@ -16,11 +16,6 @@ import java.time.temporal.ChronoUnit;
 @Slf4j
 @Component
 public class SignDateValidator {
-
-    /**
-     * 允许补签的最大天数（过去30天内可补签）
-     */
-    private static final int MAX_RESIGN_DAYS = 30;
 
     /**
      * 校验签到日期是否合法
@@ -46,35 +41,31 @@ public class SignDateValidator {
     }
 
     /**
-     * 校验补签日期是否合法
-     *
-     * @param dateStr 日期字符串，格式：yyyy-MM-dd
-     * @return 是否合法
+     * 周期化补签校验：仅允许在当前周期内的过去日期补签
+     * - MONTH: 必须在本月内，且小于今天
+     * - WEEK:  必须在本周内（周一为一周开始），且小于今天
      */
-    public boolean isValidResignDate(String dateStr) {
+    public boolean isValidResignDate(String dateStr, SignPeriodEnum periodType) {
         if (StrUtil.isBlank(dateStr)) {
-            // 补签必须指定日期
             return false;
         }
-
         try {
-            // 检查日期格式是否正确
             LocalDate date = LocalDate.parse(dateStr, DatePattern.NORM_DATE_FORMATTER);
             LocalDate today = LocalDate.now();
-            
-            // 不允许未来日期补签
-            if (date.isAfter(today)) {
+
+            if (!date.isBefore(today)) {
+                // 不允许今天及未来
                 return false;
             }
-            
-            // 不允许当天补签
-            if (date.isEqual(today)) {
-                return false;
+
+            if (periodType == SignPeriodEnum.MONTHLY) {
+                return date.getYear() == today.getYear() && date.getMonth() == today.getMonth();
             }
-            
-            // 检查是否在允许补签的时间范围内
-            long daysBetween = ChronoUnit.DAYS.between(date, today);
-            return daysBetween <= MAX_RESIGN_DAYS;
+
+            // WEEK: 以周一为一周开始
+            LocalDate weekStart = today.minusDays(today.getDayOfWeek().getValue() - 1);
+            LocalDate weekEnd = weekStart.plusDays(6);
+            return !date.isBefore(weekStart) && !date.isAfter(weekEnd);
         } catch (DateTimeParseException e) {
             log.error("日期格式错误: {}", dateStr, e);
             return false;

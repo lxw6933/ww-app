@@ -68,6 +68,9 @@ public class SignServiceImpl implements SignService {
      * 执行指定日期签到（包括补签）
      */
     private int doSpecificDateSign(String date, ClientUser clientUser) {
+        // 获取签到策略
+        SignStrategy strategy = signStrategyFactory.getDefaultStrategy();
+
         LocalDate today = LocalDate.now();
         LocalDate signDate = LocalDate.parse(date, DatePattern.NORM_DATE_FORMATTER);
         // 如果是今天，直接签到
@@ -78,9 +81,9 @@ public class SignServiceImpl implements SignService {
         if (signDate.isAfter(today)) {
             throw new ApiException("不能签到未来日期");
         }
-        // 校验补签日期
-        if (!signDateValidator.isValidResignDate(date)) {
-            throw new ApiException("补签日期无效，仅支持补签过去30天内的日期");
+        // 获取签到策略并基于周期进行补签校验（仅允许当前周期内的过去日期）
+        if (!signDateValidator.isValidResignDate(date, strategy.getType())) {
+            throw new ApiException("补签日期无效，仅允许补签当前周期内的过去日期");
         }
         // 检查是否已签到
         if (isSignedOn(date, clientUser)) {
@@ -91,8 +94,6 @@ public class SignServiceImpl implements SignService {
         if (remainingCount <= 0) {
             throw new ApiException("本月补签次数已用完");
         }
-        // 获取签到策略
-        SignStrategy strategy = signStrategyFactory.getDefaultStrategy();
         // 构建签到Key
         String signKey = signRedisKeyBuilder.buildMonthlySignPrefixKey(clientUser.getId(), signDate);
         // 获取偏移量
