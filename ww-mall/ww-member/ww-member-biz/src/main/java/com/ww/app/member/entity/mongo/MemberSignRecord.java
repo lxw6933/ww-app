@@ -1,6 +1,6 @@
 package com.ww.app.member.entity.mongo;
 
-import com.ww.app.member.enums.SignType;
+import com.ww.app.member.enums.SignPeriod;
 import com.ww.app.mongodb.common.BaseDoc;
 import lombok.Builder;
 import lombok.Data;
@@ -30,7 +30,7 @@ public class MemberSignRecord extends BaseDoc {
     /**
      * 签到类型
      */
-    private SignType signType;
+    private SignPeriod signPeriod;
 
     /**
      * 周期标识 如202510或2025W42

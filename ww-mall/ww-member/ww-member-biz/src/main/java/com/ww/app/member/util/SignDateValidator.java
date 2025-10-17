@@ -3,7 +3,7 @@ package com.ww.app.member.util;
 import cn.hutool.core.date.DatePattern;
 import cn.hutool.core.util.StrUtil;
 import com.ww.app.common.exception.ApiException;
-import com.ww.app.member.enums.SignPeriodEnum;
+import com.ww.app.member.enums.SignPeriod;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 
@@ -45,7 +45,7 @@ public class SignDateValidator {
      * - MONTH: 必须在本月内，且小于今天
      * - WEEK:  必须在本周内（周一为一周开始），且小于今天
      */
-    public boolean isValidResignDate(String dateStr, SignPeriodEnum periodType) {
+    public boolean isValidResignDate(String dateStr, SignPeriod periodType) {
         if (StrUtil.isBlank(dateStr)) {
             return false;
         }
@@ -58,7 +58,7 @@ public class SignDateValidator {
                 return false;
             }
 
-            if (periodType == SignPeriodEnum.MONTHLY) {
+            if (periodType == SignPeriod.MONTHLY) {
                 return date.getYear() == today.getYear() && date.getMonth() == today.getMonth();
             }
 

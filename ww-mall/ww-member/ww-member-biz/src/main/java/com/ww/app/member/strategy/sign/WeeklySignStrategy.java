@@ -1,14 +1,18 @@
 package com.ww.app.member.strategy.sign;
 
 import cn.hutool.core.date.DatePattern;
-import com.ww.app.member.enums.SignPeriodEnum;
+import com.ww.app.member.enums.SignPeriod;
 import org.springframework.data.redis.core.RedisCallback;
 import org.springframework.stereotype.Component;
 
 import java.time.DayOfWeek;
 import java.time.LocalDate;
 import java.time.temporal.TemporalAdjusters;
+import java.time.temporal.WeekFields;
+import java.util.Locale;
 import java.util.Map;
+
+import static com.ww.app.member.component.key.SignRedisKeyBuilder.WEEK_FLAG;
 
 /**
  * @author ww
@@ -47,6 +51,26 @@ public class WeeklySignStrategy extends AbstractSignStrategy {
     }
 
     @Override
+    public LocalDate getEndDate(String periodKey) {
+        // 解析年份和周数
+        String[] parts = periodKey.split(WEEK_FLAG);
+        if (parts.length != 2) {
+            throw new IllegalArgumentException("周数格式错误，应为: yyyyWww");
+        }
+
+        int year = Integer.parseInt(parts[0]);
+        int week = Integer.parseInt(parts[1]);
+
+        // 获取该周的第一天（周一）
+        LocalDate firstDayOfWeek = LocalDate.of(year, 1, 1)
+                .with(WeekFields.of(Locale.getDefault()).weekOfWeekBasedYear(), week)
+                .with(DayOfWeek.MONDAY);
+
+        // 获取该周的最后一天（周日）
+        return firstDayOfWeek.with(DayOfWeek.SUNDAY);
+    }
+
+    @Override
     protected String buildSignKey(Long userId, LocalDate date) {
         return signRedisKeyBuilder.buildWeeklySignPrefixKey(userId, date);
     }
@@ -69,8 +93,8 @@ public class WeeklySignStrategy extends AbstractSignStrategy {
     }
 
     @Override
-    public SignPeriodEnum getType() {
-        return SignPeriodEnum.WEEKLY;
+    public SignPeriod getType() {
+        return SignPeriod.WEEKLY;
     }
 
     @Override

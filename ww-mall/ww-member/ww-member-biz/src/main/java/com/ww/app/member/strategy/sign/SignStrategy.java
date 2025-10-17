@@ -1,7 +1,7 @@
 package com.ww.app.member.strategy.sign;
 
 import com.ww.app.common.common.ClientUser;
-import com.ww.app.member.enums.SignPeriodEnum;
+import com.ww.app.member.enums.SignPeriod;
 
 import java.util.Map;
 
@@ -53,7 +53,7 @@ public interface SignStrategy {
      *
      * @return 策略类型
      */
-    SignPeriodEnum getType();
+    SignPeriod getType();
 
     /**
      * 获取不同策略可补签次数

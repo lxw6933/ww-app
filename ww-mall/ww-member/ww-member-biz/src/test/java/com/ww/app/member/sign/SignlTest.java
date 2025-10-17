@@ -13,6 +13,7 @@ import org.springframework.test.context.ActiveProfiles;
 
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
+import java.util.List;
 import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -51,13 +52,16 @@ public class SignlTest {
 
     @Test
     void testGetSignFromMongo() {
-//        Map<String, Boolean> signDetailMap = signComponent.getSignDetailFromDB(2L, "202510");
-//        signDetailMap.forEach((key, flag) -> System.out.println(key + ": " + flag));
+        List<Boolean> periodSignDetailFromHistory = signComponent.getPeriodSignDetailFromHistory(2L, "202510");
+        for (int i = 0; i < periodSignDetailFromHistory.size(); i++) {
+            System.out.println(i + ": " + periodSignDetailFromHistory.get(i));
+        }
     }
 
     @Test
     void testMonthSign() {
         System.out.println("签到次数：" + signService.doSign("2025-10-13", testUser));
+        System.out.println("签到次数：" + signService.doSign("2025-10-14", testUser));
         System.out.println("签到次数：" + signService.doSign("2025-10-15", testUser));
         System.out.println("签到次数：" + signService.doSign("2025-10-17", testUser));
     }

@@ -133,4 +133,5 @@ public abstract class AbstractSignStrategy implements SignBitmapStrategy, SignSt
      * 填充签到信息
      */
     protected abstract void fillSignInfo(LocalDate date, long bitValue, Map<String, Boolean> signInfo);
-} 
+
+}

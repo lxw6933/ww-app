@@ -1,12 +1,13 @@
 package com.ww.app.member.strategy.sign;
 
 import cn.hutool.core.date.DatePattern;
-import com.ww.app.member.enums.SignPeriodEnum;
+import com.ww.app.member.enums.SignPeriod;
 import org.springframework.data.redis.core.RedisCallback;
 import org.springframework.stereotype.Component;
 
 import java.time.LocalDate;
 import java.time.YearMonth;
+import java.time.format.DateTimeFormatter;
 import java.util.Map;
 
 /**
@@ -48,6 +49,12 @@ public class MonthlySignStrategy extends AbstractSignStrategy {
     }
 
     @Override
+    public LocalDate getEndDate(String periodKey) {
+        YearMonth yearMonth = YearMonth.parse(periodKey, DateTimeFormatter.ofPattern(DatePattern.SIMPLE_MONTH_PATTERN));
+        return yearMonth.atEndOfMonth();
+    }
+
+    @Override
     protected String buildSignKey(Long userId, LocalDate date) {
         return signRedisKeyBuilder.buildMonthlySignPrefixKey(userId, date);
     }
@@ -70,8 +77,8 @@ public class MonthlySignStrategy extends AbstractSignStrategy {
     }
 
     @Override
-    public SignPeriodEnum getType() {
-        return SignPeriodEnum.MONTHLY;
+    public SignPeriod getType() {
+        return SignPeriod.MONTHLY;
     }
 
     @Override

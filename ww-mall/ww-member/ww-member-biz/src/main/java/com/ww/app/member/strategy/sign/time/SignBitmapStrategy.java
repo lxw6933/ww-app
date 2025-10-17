@@ -19,4 +19,9 @@ public interface SignBitmapStrategy {
      */
     int getBitCount(LocalDate date);
 
+    /**
+     * 根据periodKey获取周期最后一天
+     */
+    LocalDate getEndDate(String periodKey);
+
 }

@@ -1,6 +1,6 @@
 package com.ww.app.member.strategy.sign;
 
-import com.ww.app.member.enums.SignPeriodEnum;
+import com.ww.app.member.enums.SignPeriod;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
@@ -20,7 +20,7 @@ public class SignStrategyFactory {
     @Autowired
     private List<AbstractSignStrategy> signStrategies;
 
-    private final Map<SignPeriodEnum, AbstractSignStrategy> strategyMap = new HashMap<>();
+    private final Map<SignPeriod, AbstractSignStrategy> strategyMap = new HashMap<>();
 
     @PostConstruct
     public void init() {
@@ -35,16 +35,16 @@ public class SignStrategyFactory {
      * @param type 签到类型
      * @return 签到策略
      */
-    public AbstractSignStrategy getStrategy(SignPeriodEnum type) {
+    public AbstractSignStrategy getStrategy(SignPeriod type) {
         AbstractSignStrategy strategy = strategyMap.get(type);
         if (strategy == null) {
             // 默认使用月签到策略
-            return strategyMap.get(SignPeriodEnum.MONTHLY);
+            return strategyMap.get(SignPeriod.MONTHLY);
         }
         return strategy;
     }
 
     public AbstractSignStrategy getDefaultStrategy() {
-        return strategyMap.get(SignPeriodEnum.MONTHLY);
+        return strategyMap.get(SignPeriod.MONTHLY);
     }
 } 

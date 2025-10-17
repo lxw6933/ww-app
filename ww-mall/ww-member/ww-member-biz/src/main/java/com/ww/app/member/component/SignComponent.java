@@ -1,22 +1,26 @@
 package com.ww.app.member.component;
 
+import com.ww.app.member.entity.mongo.MemberSignRecord;
+import com.ww.app.member.strategy.sign.AbstractSignStrategy;
+import com.ww.app.member.strategy.sign.SignStrategyFactory;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.codec.DecoderException;
 import org.apache.commons.codec.binary.Hex;
+import org.springframework.data.mongodb.core.MongoTemplate;
 import org.springframework.data.redis.connection.BitFieldSubCommands;
 import org.springframework.data.redis.core.RedisCallback;
 import org.springframework.data.redis.core.StringRedisTemplate;
-import org.springframework.data.mongodb.core.MongoTemplate;
-import org.springframework.data.mongodb.core.query.Query;
 import org.springframework.stereotype.Component;
 
 import javax.annotation.Resource;
 import java.nio.charset.StandardCharsets;
-import java.time.*;
+import java.time.DayOfWeek;
+import java.time.Duration;
+import java.time.LocalDateTime;
+import java.time.LocalTime;
 import java.time.temporal.TemporalAdjusters;
-import java.util.List;
 import java.util.ArrayList;
-import java.util.Base64;
+import java.util.List;
 import java.util.concurrent.TimeUnit;
 
 /**
@@ -33,6 +37,9 @@ public class SignComponent {
 
     @Resource
     private MongoTemplate mongoTemplate;
+
+    @Resource
+    private SignStrategyFactory signStrategyFactory;
 
     /**
      * 记录补签次数
@@ -164,6 +171,50 @@ public class SignComponent {
                 .atTime(LocalTime.MAX);
 
         return Duration.between(now, endOfWeek).getSeconds();
+    }
+
+    /**
+     * 查询签到历史记录
+     */
+    public List<Boolean> getPeriodSignDetailFromHistory(Long memberId, String periodKey) {
+        MemberSignRecord record = mongoTemplate.findOne(MemberSignRecord.buildQuery(memberId, periodKey), MemberSignRecord.class);
+        if (record == null) {
+            return new ArrayList<>();
+        }
+        AbstractSignStrategy strategy = signStrategyFactory.getStrategy(record.getSignPeriod());
+        return decodeHexBitmapToBooleans(record.getBitmap(), strategy.getBitCount(strategy.getEndDate(periodKey)));
+    }
+
+    /**
+     * 将 Hex 位图转换为布尔列表；按 Redis 位序（每字节高位在前）解释。
+     */
+    public List<Boolean> decodeHexBitmapToBooleans(String hexBitmap, int periodDays) {
+        List<Boolean> result = new ArrayList<>(periodDays);
+        byte[] bytes;
+        try {
+            bytes = Hex.decodeHex(hexBitmap.trim().toCharArray());
+        } catch (DecoderException e) {
+            log.warn("解码签到位图 Hex 失败，periodDays={}，返回空列表", periodDays, e);
+            return buildAllFalse(periodDays);
+        }
+        for (int i = 0; i < periodDays; i++) {
+            int byteIndex = i / 8;
+            int bitInByte = 7 - (i % 8); // 高位在前
+            boolean signed = false;
+            if (byteIndex < bytes.length) {
+                signed = ((bytes[byteIndex] >> bitInByte) & 1) == 1;
+            }
+            result.add(signed);
+        }
+        return result;
+    }
+
+    private List<Boolean> buildAllFalse(int size) {
+        List<Boolean> result = new ArrayList<>(size);
+        for (int i = 0; i < size; i++) {
+            result.add(false);
+        }
+        return result;
     }
 
 }
