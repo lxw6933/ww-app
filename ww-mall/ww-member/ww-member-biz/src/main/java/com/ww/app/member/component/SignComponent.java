@@ -1,16 +1,22 @@
 package com.ww.app.member.component;
 
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.codec.DecoderException;
+import org.apache.commons.codec.binary.Hex;
 import org.springframework.data.redis.connection.BitFieldSubCommands;
 import org.springframework.data.redis.core.RedisCallback;
 import org.springframework.data.redis.core.StringRedisTemplate;
+import org.springframework.data.mongodb.core.MongoTemplate;
+import org.springframework.data.mongodb.core.query.Query;
 import org.springframework.stereotype.Component;
 
 import javax.annotation.Resource;
 import java.nio.charset.StandardCharsets;
-import java.time.LocalDate;
+import java.time.*;
 import java.time.temporal.TemporalAdjusters;
 import java.util.List;
+import java.util.ArrayList;
+import java.util.Base64;
 import java.util.concurrent.TimeUnit;
 
 /**
@@ -25,6 +31,9 @@ public class SignComponent {
     @Resource
     private StringRedisTemplate stringRedisTemplate;
 
+    @Resource
+    private MongoTemplate mongoTemplate;
+
     /**
      * 记录补签次数
      */
@@ -33,10 +42,7 @@ public class SignComponent {
         int currentCount = getResignCount(countKey);
         // 如果是本月第一次补签，设置过期时间（到本月底）
         if (currentCount == 0) {
-            // 计算到月底的过期时间
-            LocalDate now = LocalDate.now();
-            LocalDate endOfMonth = now.with(TemporalAdjusters.lastDayOfMonth());
-            long seconds = now.until(endOfMonth.plusDays(1), java.time.temporal.ChronoUnit.SECONDS);
+            long seconds = getSecondsToEndOfMonth();
             stringRedisTemplate.opsForValue().set(countKey, String.valueOf(1), seconds, TimeUnit.SECONDS);
         } else {
             stringRedisTemplate.opsForValue().increment(countKey, 1);
@@ -107,23 +113,57 @@ public class SignComponent {
             return 0;
         }
 
-        int signCount = 0;
+        if (position < 0 || bits <= 0 || position >= bits) {
+            return 0;
+        }
+
         long v = list.get(0) == null ? 0 : list.get(0);
 
-        for (int i = position + 1; i > 0; i--) {
-            // 右移再左移，如果等于自己说明最低位是 0，表示未签到
-            if (v >> 1 << 1 == v) {
-                // 低位 0 且非当天说明连续签到中断了
-                if (i != position + 1) {
-                    break;
-                }
-            } else {
-                signCount++;
-            }
-            // 右移一位并重新赋值，相当于把最低位丢弃一位
+        // Redis 的 bit 编号以字节的高位为 offset 较小的位。
+        // 通过 BITFIELD u{bits} #0 取回的整数，最先读取的位（offset=0）对应返回整数的最高位。
+        // 因此将“当天所在位置”的位对齐到最低位，需要右移 (bits - 1 - position)。
+        v >>= (bits - 1 - position);
+
+        int signCount = 0;
+        while ((v & 1L) == 1L) { // 当天未签到则直接返回 0
+            signCount++;
             v >>= 1;
         }
         return signCount;
+    }
+
+    /**
+     * 获取当前时间到本月底的剩余秒数
+     *
+     * @return 到本月底的剩余秒数
+     */
+    public static long getSecondsToEndOfMonth() {
+        // 使用 LocalDateTime 获取当前时间
+        LocalDateTime now = LocalDateTime.now();
+
+        // 获取本月的最后一天的最后时刻
+        LocalDateTime endOfMonth = now.toLocalDate()
+                .with(TemporalAdjusters.lastDayOfMonth())
+                .atTime(LocalTime.MAX);
+
+        // 计算时间差（秒）
+        return Duration.between(now, endOfMonth).getSeconds();
+    }
+
+    /**
+     * 获取当前时间到本周底的剩余秒数
+     *
+     * @return 到本周底的剩余秒数
+     */
+    public static long getSecondsToEndOfWeek() {
+        LocalDateTime now = LocalDateTime.now();
+
+        // 获取本周的最后一天（周日）的最后时刻
+        LocalDateTime endOfWeek = now.toLocalDate()
+                .with(TemporalAdjusters.nextOrSame(DayOfWeek.SUNDAY))
+                .atTime(LocalTime.MAX);
+
+        return Duration.between(now, endOfWeek).getSeconds();
     }
 
 }

@@ -29,7 +29,7 @@ public class MonthlySignStrategy extends AbstractSignStrategy {
             // TODO: 实现半月签到奖励逻辑
         }
         // 满月签到奖励
-        int daysInMonth = YearMonth.from(date).lengthOfMonth();
+        int daysInMonth = getBitCount(date);
         if (signCount != null && signCount.intValue() == daysInMonth) {
             // TODO: 实现满月签到奖励逻辑
         }
@@ -55,7 +55,7 @@ public class MonthlySignStrategy extends AbstractSignStrategy {
     @Override
     protected void fillSignInfo(LocalDate date, long bitValue, Map<String, Boolean> signInfo) {
         // 获取月份的总天数
-        int daysInMonth = YearMonth.from(date).lengthOfMonth();
+        int daysInMonth = getBitCount(date);
         // 从低位到高位进行遍历，为 0 表示未签到，为 1 表示已签到
         for (int i = daysInMonth; i > 0; i--) {
             // 构建日期

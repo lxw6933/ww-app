@@ -51,7 +51,8 @@ public class SignlTest {
 
     @Test
     void testGetSignFromMongo() {
-//        signComponent.getStreakSignCount()
+//        Map<String, Boolean> signDetailMap = signComponent.getSignDetailFromDB(2L, "202510");
+//        signDetailMap.forEach((key, flag) -> System.out.println(key + ": " + flag));
     }
 
     @Test
@@ -63,12 +64,12 @@ public class SignlTest {
 
     @Test
     void testGetSignInfo() {
-        int continuousSignCount = signService.getContinuousSignCount("2025-10-16", testUser);
-        System.out.println("连续签到次数：" + continuousSignCount);
-        System.out.println(signService.getSignCount("2025-10-15", testUser));
-        System.out.println("签到总次数：" + continuousSignCount);
+//        int continuousSignCount = signService.getContinuousSignCount("2025-10-16", testUser);
+//        System.out.println("连续签到次数：" + continuousSignCount);
+//        System.out.println(signService.getSignCount("2025-10-15", testUser));
+//        System.out.println("签到总次数：" + continuousSignCount);
         Map<String, Boolean> signInfo = signService.getSignInfo("2025-10-17", testUser);
-        signInfo.forEach((key, flag) -> System.out.println("日期" + key + "签到结果：" + flag));
+        signInfo.forEach((key, flag) -> System.out.println(key + ": " + flag));
     }
 
     @Test
