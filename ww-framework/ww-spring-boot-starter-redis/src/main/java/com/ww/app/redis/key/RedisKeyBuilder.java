@@ -16,6 +16,8 @@ public class RedisKeyBuilder {
 
     public static final String SPLIT_ITEM = ":";
 
+    public static final String START = "*";
+
     public String getPrefix() {
         return applicationName + SPLIT_ITEM;
     }

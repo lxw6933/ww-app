@@ -7,6 +7,8 @@ import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.experimental.Accessors;
 import org.springframework.data.mongodb.core.mapping.Document;
+import org.springframework.data.mongodb.core.query.Criteria;
+import org.springframework.data.mongodb.core.query.Query;
 
 /**
  * @author ww
@@ -54,5 +56,9 @@ public class MemberSignRecord extends BaseDoc {
      * 补签次数
      */
     private int retroSignDays;
+
+    public static Query buildQuery(Long memberId, String periodKey) {
+        return new Query().addCriteria(Criteria.where("memberId").is(memberId).and("periodKey").is(periodKey));
+    }
 
 }

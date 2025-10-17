@@ -24,10 +24,18 @@ public class SignRedisKeyBuilder extends RedisKeyBuilder {
 
     public static final String RESIGN_COUNT_KEY = "resign:count";
 
+    public String buildMonthlySignPatternKey(String yearMonthStr) {
+        return super.getPrefix() + StrUtil.join(SPLIT_ITEM, SIGN_KEY, START, yearMonthStr);
+    }
+
     public String buildMonthlySignPrefixKey(Long userId, LocalDate date) {
         // 构建月签到的key，格式为：前缀:用户ID:年月
         String dateStr = date.format(DateTimeFormatter.ofPattern(DatePattern.SIMPLE_MONTH_PATTERN));
         return super.getPrefix() + StrUtil.join(SPLIT_ITEM, SIGN_KEY, userId, dateStr);
+    }
+
+    public String buildWeeklySignPatternKey(String yearWeekStr) {
+        return super.getPrefix() + StrUtil.join(SPLIT_ITEM, SIGN_KEY, START, yearWeekStr);
     }
 
     public String buildWeeklySignPrefixKey(Long userId, LocalDate date) {

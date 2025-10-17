@@ -8,9 +8,7 @@ import org.springframework.stereotype.Component;
 
 import javax.annotation.Resource;
 import java.nio.charset.StandardCharsets;
-import java.time.Duration;
-import java.time.LocalDateTime;
-import java.time.LocalTime;
+import java.time.LocalDate;
 import java.time.temporal.TemporalAdjusters;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
@@ -35,12 +33,10 @@ public class SignComponent {
         int currentCount = getResignCount(countKey);
         // 如果是本月第一次补签，设置过期时间（到本月底）
         if (currentCount == 0) {
-            LocalDateTime now = LocalDateTime.now();
-            // 获取本月的最后一天的最后时刻
-            LocalDateTime endOfMonth = now.toLocalDate()
-                    .with(TemporalAdjusters.lastDayOfMonth())
-                    .atTime(LocalTime.MAX);
-            long seconds = Duration.between(now, endOfMonth).getSeconds();
+            // 计算到月底的过期时间
+            LocalDate now = LocalDate.now();
+            LocalDate endOfMonth = now.with(TemporalAdjusters.lastDayOfMonth());
+            long seconds = now.until(endOfMonth.plusDays(1), java.time.temporal.ChronoUnit.SECONDS);
             stringRedisTemplate.opsForValue().set(countKey, String.valueOf(1), seconds, TimeUnit.SECONDS);
         } else {
             stringRedisTemplate.opsForValue().increment(countKey, 1);
@@ -106,37 +102,26 @@ public class SignComponent {
      * 获取连续签到次数
      */
     public int getStreakSignCount(String signKey, int bits, int position) {
-        if (position < 0 || position >= bits) {
-            return 0;
-        }
-
         List<Long> list = getSignInfo(signKey, bits);
         if (list == null || list.isEmpty()) {
             return 0;
         }
 
+        int signCount = 0;
         long v = list.get(0) == null ? 0 : list.get(0);
 
-        // 将“当前位置”对齐至最低位（LSB），便于从当天开始向前统计
-        int shift = bits - position - 1;
-        if (shift > 0) {
-            v >>= shift;
-        }
-
-        // 如果当天未签到，直接返回 0
-        if ((v & 1L) == 0L) {
-            return 0;
-        }
-
-        int signCount = 0;
-        // 从当天开始向前统计连续的 1
-        while (v != 0) {
-            if ((v & 1L) == 1L) {
-                signCount++;
-                v >>= 1;
+        for (int i = position + 1; i > 0; i--) {
+            // 右移再左移，如果等于自己说明最低位是 0，表示未签到
+            if (v >> 1 << 1 == v) {
+                // 低位 0 且非当天说明连续签到中断了
+                if (i != position + 1) {
+                    break;
+                }
             } else {
-                break;
+                signCount++;
             }
+            // 右移一位并重新赋值，相当于把最低位丢弃一位
+            v >>= 1;
         }
         return signCount;
     }

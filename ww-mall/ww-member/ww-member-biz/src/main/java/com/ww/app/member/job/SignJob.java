@@ -1,6 +1,7 @@
 package com.ww.app.member.job;
 
 import cn.hutool.core.date.DatePattern;
+import cn.hutool.core.util.StrUtil;
 import com.ww.app.common.interfaces.BulkDataHandler;
 import com.ww.app.common.utils.ThreadUtil;
 import com.ww.app.member.component.SignComponent;
@@ -11,11 +12,11 @@ import com.ww.app.member.enums.SignType;
 import com.ww.app.member.strategy.sign.SignStrategyFactory;
 import com.ww.app.redis.AppRedisTemplate;
 import com.ww.app.redis.listener.KeyScanListener;
-import com.xxl.job.core.handler.annotation.XxlJob;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.codec.binary.Hex;
 import org.springframework.stereotype.Component;
 
+import javax.annotation.PreDestroy;
 import javax.annotation.Resource;
 import java.time.DayOfWeek;
 import java.time.LocalDate;
@@ -28,6 +29,7 @@ import java.util.List;
 import java.util.Locale;
 import java.util.concurrent.ExecutorService;
 
+import static com.ww.app.member.component.key.SignRedisKeyBuilder.WEEK_FLAG;
 import static com.ww.app.redis.key.RedisKeyBuilder.SPLIT_ITEM;
 
 /**
@@ -78,30 +80,36 @@ public class SignJob {
         });
     }
 
-    @XxlJob("archiveMonthSignDataJobHandler")
-    public void archiveMonthSignDataJobHandler() {
-        // 上个月，如 202509
-        String lastPeriodKey = getLastPeriodKey();
+//    @XxlJob("archiveMonthSignDataJobHandler")
+    public void archiveMonthSignDataJobHandler(String dateStr) {
+        if (StrUtil.isBlank(dateStr)) {
+            // 上个月，如 202509
+            dateStr = getLastPeriodKey();
+        }
+        final String lastPeriodKey = dateStr;
         log.info("开始归档签到数据 periodKey={} signType={}", lastPeriodKey, SignType.MONTH);
 
+        String pattern = signRedisKeyBuilder.buildMonthlySignPatternKey(lastPeriodKey);
+
         List<String> signDataKeyList = new ArrayList<>();
-        String pattern = SignRedisKeyBuilder.SIGN_KEY + ":*:" + lastPeriodKey;
         appRedisTemplate.scanKeys(pattern, new KeyScanListener() {
                     @Override
                     public void onKey(String key) {
                         signDataKeyList.add(key);
                         if (signDataKeyList.size() >= BATCH_SIZE) {
-                            signDataBatchHandle(lastPeriodKey, signDataKeyList, SignType.MONTH);
+                            signDataBatchHandle(lastPeriodKey, new ArrayList<>(signDataKeyList), SignType.MONTH);
                             signDataKeyList.clear();
-                        }
-                        if (!signDataKeyList.isEmpty()) {
-                            signDataBatchHandle(lastPeriodKey, signDataKeyList, SignType.MONTH);
                         }
                     }
 
                     @Override
                     public void onFinish() {
                         log.info("pattern:[{}] key 扫描完毕", pattern);
+                        if (!signDataKeyList.isEmpty()) {
+                            log.info("签到数据处理最后一批归档数据数量：[{}]", signDataKeyList.size());
+                            signDataBatchHandle(lastPeriodKey, new ArrayList<>(signDataKeyList), SignType.MONTH);
+                            signDataKeyList.clear();
+                        }
                     }
                 }
         );
@@ -129,7 +137,7 @@ public class SignJob {
                 default:
             }
 
-            Long userId = Long.valueOf(key.split(SPLIT_ITEM)[1]);
+            Long userId = Long.valueOf(key.split(SPLIT_ITEM)[2]);
             byte[] bitmap = signComponent.getSignBytes(key);
             if (bitmap == null) return null;
 
@@ -177,7 +185,7 @@ public class SignJob {
 
     public LocalDate getWeekEndDate(String weekKey) {
         // 解析年份和周数
-        String[] parts = weekKey.split("W");
+        String[] parts = weekKey.split(WEEK_FLAG);
         if (parts.length != 2) {
             throw new IllegalArgumentException("周数格式错误，应为: yyyyWww");
         }
@@ -197,6 +205,11 @@ public class SignJob {
     public LocalDate getMonthEndDate(String monthKey) {
         YearMonth yearMonth = YearMonth.parse(monthKey, DateTimeFormatter.ofPattern(DatePattern.SIMPLE_MONTH_PATTERN));
         return yearMonth.atEndOfMonth();
+    }
+
+    @PreDestroy
+    public void destroy() {
+        ThreadUtil.shutdown("signJobExecutor", () -> {}, executorService);
     }
 
 }

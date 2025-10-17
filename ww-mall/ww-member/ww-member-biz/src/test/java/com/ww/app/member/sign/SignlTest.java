@@ -2,6 +2,8 @@ package com.ww.app.member.sign;
 
 import com.ww.app.common.common.ClientUser;
 import com.ww.app.common.exception.ApiException;
+import com.ww.app.member.component.SignComponent;
+import com.ww.app.member.job.SignJob;
 import com.ww.app.member.service.sign.SignService;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -26,6 +28,9 @@ public class SignlTest {
     @Autowired
     private SignService signService;
 
+    @Autowired
+    private SignJob signJob;
+
     private ClientUser createTestUser(Long userId) {
         ClientUser user = new ClientUser();
         user.setId(userId);
@@ -33,12 +38,26 @@ public class SignlTest {
         return user;
     }
 
-    ClientUser testUser = createTestUser(1L);
+    ClientUser testUser = createTestUser(2L);
+
+    @Test
+    void testSignJob() {
+        // 执行这个
+        signJob.archiveMonthSignDataJobHandler("202510");
+    }
+
+    @Autowired
+    private SignComponent signComponent;
+
+    @Test
+    void testGetSignFromMongo() {
+//        signComponent.getStreakSignCount()
+    }
 
     @Test
     void testMonthSign() {
-        System.out.println("签到次数：" + signService.doSign("2025-10-14", testUser));
-        System.out.println("签到次数：" + signService.doSign("2025-10-16", testUser));
+        System.out.println("签到次数：" + signService.doSign("2025-10-13", testUser));
+        System.out.println("签到次数：" + signService.doSign("2025-10-15", testUser));
         System.out.println("签到次数：" + signService.doSign("2025-10-17", testUser));
     }
 
@@ -48,10 +67,8 @@ public class SignlTest {
         System.out.println("连续签到次数：" + continuousSignCount);
         System.out.println(signService.getSignCount("2025-10-15", testUser));
         System.out.println("签到总次数：" + continuousSignCount);
-//        Map<String, Boolean> signInfo = signService.getSignInfo("2025-10-17", testUser);
-//        signInfo.forEach((key, flag) -> {
-//            System.out.println("日期" + key + "签到结果：" + flag);
-//        });
+        Map<String, Boolean> signInfo = signService.getSignInfo("2025-10-17", testUser);
+        signInfo.forEach((key, flag) -> System.out.println("日期" + key + "签到结果：" + flag));
     }
 
     @Test
