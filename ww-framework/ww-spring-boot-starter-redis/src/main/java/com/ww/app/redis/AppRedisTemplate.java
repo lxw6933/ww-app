@@ -2,6 +2,7 @@ package com.ww.app.redis;
 
 import com.ww.app.common.exception.ApiException;
 import com.ww.app.redis.component.key.GeoRedisKeyBuilder;
+import com.ww.app.redis.listener.KeyScanListener;
 import com.ww.app.redis.vo.RedisHashInitBO;
 import lombok.Data;
 import lombok.NonNull;
@@ -42,7 +43,7 @@ public class AppRedisTemplate {
     /**
      * 默认扫描数量限制
      */
-    private static final int DEFAULT_SCAN_COUNT = 10000;
+    private static final int DEFAULT_SCAN_COUNT = 500;
     
     /**
      * 默认过期时间(秒)
@@ -66,31 +67,41 @@ public class AppRedisTemplate {
      * @return 匹配的key集合
      */
     public Set<String> scanKeys(String pattern) {
-        return scanKeys(pattern, DEFAULT_SCAN_COUNT);
+        Set<String> targetKeyList = new HashSet<>();
+        this.scanKeys(pattern, new KeyScanListener() {
+            @Override
+            public void onKey(String key) {
+                targetKeyList.add(key);
+            }
+
+            @Override
+            public void onFinish() {
+                log.info("pattern:[{}] key 扫描完毕", pattern);
+            }
+        });
+        return targetKeyList;
     }
-    
+
     /**
      * 批量根据正则表达式扫描匹配的key
      *
      * @param pattern key正则表达式
-     * @param limit 扫描数量限制
-     * @return 匹配的key集合
+     * @param listener key监听器
      */
-    public Set<String> scanKeys(String pattern, int limit) {
+    public void scanKeys(String pattern, KeyScanListener listener) {
         if (StringUtils.isBlank(pattern)) {
             throw new ApiException("扫描模式不能为空");
         }
-        
+
         try {
-            return stringRedisTemplate.execute((RedisCallback<Set<String>>) connection -> {
-                Set<String> keySet = new HashSet<>();
-                try (Cursor<byte[]> cursor = connection.scan(
-                        ScanOptions.scanOptions().match(pattern).count(limit).build())) {
-                    while (cursor.hasNext() && keySet.size() < limit) {
-                        keySet.add(new String(cursor.next()));
+            stringRedisTemplate.execute((RedisCallback<Void>) connection -> {
+                try (Cursor<byte[]> cursor = connection.scan(ScanOptions.scanOptions().match(pattern).count(DEFAULT_SCAN_COUNT).build())) {
+                    while (cursor.hasNext()) {
+                        listener.onKey(new String(cursor.next()));
                     }
+                    listener.onFinish();
                 }
-                return keySet;
+                return null;
             });
         } catch (Exception e) {
             log.error("Redis扫描key异常: pattern={}", pattern, e);

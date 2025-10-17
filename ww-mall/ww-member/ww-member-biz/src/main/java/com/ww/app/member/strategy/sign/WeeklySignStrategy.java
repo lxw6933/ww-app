@@ -35,13 +35,13 @@ public class WeeklySignStrategy extends AbstractSignStrategy {
     }
 
     @Override
-    protected int getOffset(LocalDate date) {
+    public int getOffset(LocalDate date) {
         // 获取当天是周几，从0（周一）到6（周日）
         return date.getDayOfWeek().getValue() - 1;
     }
 
     @Override
-    protected int getBitCount(LocalDate date) {
+    public int getBitCount(LocalDate date) {
         // 周签到使用7位，对应周一到周日
         return 7;
     }
@@ -71,5 +71,10 @@ public class WeeklySignStrategy extends AbstractSignStrategy {
     @Override
     public SignPeriodEnum getType() {
         return SignPeriodEnum.WEEKLY;
+    }
+
+    @Override
+    public int getResignConfig() {
+        return 0;
     }
 } 

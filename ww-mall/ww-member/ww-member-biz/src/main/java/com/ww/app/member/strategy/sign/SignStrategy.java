@@ -54,4 +54,11 @@ public interface SignStrategy {
      * @return 策略类型
      */
     SignPeriodEnum getType();
+
+    /**
+     * 获取不同策略可补签次数
+     *
+     * @return 补签次数
+     */
+    int getResignConfig();
 } 

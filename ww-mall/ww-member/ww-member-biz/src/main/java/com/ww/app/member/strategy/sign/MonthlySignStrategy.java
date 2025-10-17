@@ -36,13 +36,13 @@ public class MonthlySignStrategy extends AbstractSignStrategy {
     }
 
     @Override
-    protected int getOffset(LocalDate date) {
+    public int getOffset(LocalDate date) {
         // 获取当天是月份中的第几天，偏移量从0开始
         return date.getDayOfMonth() - 1;
     }
 
     @Override
-    protected int getBitCount(LocalDate date) {
+    public int getBitCount(LocalDate date) {
         // 获取月份的总天数
         return YearMonth.from(date).lengthOfMonth();
     }
@@ -72,5 +72,10 @@ public class MonthlySignStrategy extends AbstractSignStrategy {
     @Override
     public SignPeriodEnum getType() {
         return SignPeriodEnum.MONTHLY;
+    }
+
+    @Override
+    public int getResignConfig() {
+        return 3;
     }
 } 
