@@ -1,4 +1,4 @@
-package com.ww.app.member.transaction;
+package com.ww.app.member.mongo;
 
 import com.ww.app.mongodb.test.MongoTestComponent;
 import org.junit.jupiter.api.Test;

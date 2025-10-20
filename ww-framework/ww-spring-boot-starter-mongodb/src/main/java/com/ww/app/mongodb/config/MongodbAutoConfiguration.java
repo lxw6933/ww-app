@@ -8,6 +8,7 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
 import org.springframework.boot.autoconfigure.mongo.MongoProperties;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Import;
 import org.springframework.data.mongodb.MongoDatabaseFactory;
 import org.springframework.data.mongodb.MongoTransactionManager;
 import org.springframework.data.mongodb.core.MongoTemplate;
@@ -24,6 +25,7 @@ import org.springframework.data.mongodb.core.mapping.MongoMappingContext;
 @Slf4j
 @ConditionalOnClass({MongoTemplate.class})
 @EnableConfigurationProperties(MongoProperties.class)
+@Import(MongoMasterReadConfiguration.class)
 public class MongodbAutoConfiguration {
 
     public static final String DEFAULT_TRANSACTION_MONGODB_MANAGER = "mongoTransactionManager";
