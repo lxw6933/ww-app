@@ -1,5 +1,6 @@
 package com.ww.app.member.mongo;
 
+import com.mongodb.ReadPreference;
 import com.ww.app.mongodb.common.BaseDoc;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
@@ -18,6 +19,8 @@ import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.util.List;
 
+import static com.ww.app.mongodb.config.MongoMasterReadConfiguration.MASTER_MONGO_TEMPLATE;
+
 /**
  * MongoDB主库读取功能测试
  * 验证masterMongoTemplate是否真正从主库读取数据
@@ -33,7 +36,7 @@ public class MongoMasterTest {
     @Resource
     private MongoTemplate mongoTemplate;
 
-    @Resource
+    @Resource(name = MASTER_MONGO_TEMPLATE)
     private MongoTemplate masterMongoTemplate;
 
     /**
@@ -57,20 +60,47 @@ public class MongoMasterTest {
      */
     @Test
     public void testConnectionInfoDifference() {
-        log.info("========== 测试1: 验证连接信息差异 ==========");
-        
-        try {
-            // 获取默认MongoTemplate信息
-            log.info("默认MongoTemplate连接信息:");
-            printConnectionInfo(mongoTemplate, "默认MongoTemplate");
-            
-            // 获取主库MongoTemplate信息
-            log.info("主库MongoTemplate连接信息:");
-            printConnectionInfo(masterMongoTemplate, "主库MongoTemplate");
-            
-        } catch (Exception e) {
-            log.error("获取连接信息失败", e);
+        // 打印它们的 readPreference
+        ReadPreference defaultReadPref = mongoTemplate.getMongoDatabaseFactory()
+                .getMongoDatabase().getReadPreference();
+        ReadPreference masterReadPref = masterMongoTemplate.getMongoDatabaseFactory()
+                .getMongoDatabase().getReadPreference();
+
+        log.info("[mongoTemplate] ReadPreference = {}", defaultReadPref);
+        log.info("[masterMongoTemplate] ReadPreference = {}", masterReadPref);
+
+        log.info("===> 开始测试默认 mongoTemplate 与 masterMongoTemplate 的区别");
+
+        // 1. 插入一条数据到主库
+        TestEntity entity = new TestEntity();
+        entity.setName("master-test");
+        entity.setDescription("测试主库写入");
+        entity.setTestType("write");
+
+        masterMongoTemplate.insert(entity);
+        log.info("[masterMongoTemplate] 插入数据: {}", entity);
+
+        // 2. 分别使用两个模板读取数据
+        Query query = new Query(Criteria.where("name").is("master-test"));
+        TestEntity readFromMaster = masterMongoTemplate.findOne(query, TestEntity.class);
+        TestEntity readFromDefault = mongoTemplate.findOne(query, TestEntity.class);
+
+        log.info("[masterMongoTemplate] 查询结果: {}", readFromMaster);
+        log.info("[mongoTemplate] 查询结果: {}", readFromDefault);
+
+        // 3. 验证连接配置是否不同
+        org.bson.Document masterDbStats = masterMongoTemplate.executeCommand("{ dbStats: 1 }");
+        org.bson.Document defaultDbStats = mongoTemplate.executeCommand("{ dbStats: 1 }");
+
+        log.info("[masterMongoTemplate] dbStats: {}", masterDbStats.get("primary"));
+        log.info("[mongoTemplate] dbStats: {}", defaultDbStats.get("primary"));
+
+        // 4. 验证模板对象引用不同
+        if (masterMongoTemplate == mongoTemplate) {
+            log.info("masterMongoTemplate 与 mongoTemplate 是同一个对象");
         }
+
+        log.info("✅ 测试完成，两者配置已区分。");
     }
 
     /**

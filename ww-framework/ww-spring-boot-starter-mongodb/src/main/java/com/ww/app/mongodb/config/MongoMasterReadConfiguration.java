@@ -1,14 +1,17 @@
 package com.ww.app.mongodb.config;
 
+import com.mongodb.ConnectionString;
+import com.mongodb.MongoClientSettings;
 import com.mongodb.ReadPreference;
 import com.mongodb.client.MongoClient;
+import com.mongodb.client.MongoClients;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.boot.autoconfigure.mongo.MongoProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.data.mongodb.MongoDatabaseFactory;
+import org.springframework.context.annotation.Primary;
 import org.springframework.data.mongodb.core.MongoTemplate;
+import org.springframework.data.mongodb.core.SimpleMongoClientDatabaseFactory;
 import org.springframework.data.mongodb.core.convert.MappingMongoConverter;
 
 /**
@@ -26,33 +29,72 @@ public class MongoMasterReadConfiguration {
     public static final String MASTER_MONGO_TEMPLATE = "masterMongoTemplate";
 
     /**
-     * 主库MongoDatabaseFactory Bean名称
+     * 公用 MongoClient（连接池）
      */
-    public static final String MASTER_MONGO_DATABASE_FACTORY = "masterMongoDatabaseFactory";
-
-    /**
-     * 创建主库MongoDatabaseFactory
-     * 配置读偏好为主库优先
-     */
-    @Bean(MASTER_MONGO_DATABASE_FACTORY)
-    public MongoDatabaseFactory masterMongoDatabaseFactory(MongoClient mongoClient, MongoProperties mongoProperties) {
-        log.info("初始化MongoDB主库DatabaseFactory，配置读偏好为主库优先");
-        // 创建主库优先的MongoDatabaseFactory
-        return new MasterMongoDatabaseFactory(
-            mongoClient, 
-            mongoProperties.getDatabase(),
-            ReadPreference.primary()
-        );
+    @Bean
+    @Primary
+    public MongoClient mongoClient(MongoProperties mongoProperties) {
+        ConnectionString connectionString = new ConnectionString(mongoProperties.getUri());
+        MongoClientSettings settings = MongoClientSettings.builder()
+                .applyConnectionString(connectionString)
+                // 默认客户端设置，不指定 readPreference，这样模板可自行覆盖
+                .readPreference(ReadPreference.primary())
+                .build();
+        return MongoClients.create(settings);
     }
 
     /**
-     * 创建主库MongoTemplate
-     * 复用现有的MappingMongoConverter，避免冲突
+     * 默认 MongoTemplate（从库优先，无从库则自动回退主库）
      */
-    @Bean(MASTER_MONGO_TEMPLATE)
-    public MongoTemplate masterMongoTemplate(@Qualifier(MASTER_MONGO_DATABASE_FACTORY) MongoDatabaseFactory masterDatabaseFactory,
-            MappingMongoConverter mappingMongoConverter) {
-        log.info("初始化MongoDB主库MongoTemplate，复用现有MappingMongoConverter");
-        return new MongoTemplate(masterDatabaseFactory, mappingMongoConverter);
+    @Bean
+    @Primary
+    public MongoTemplate mongoTemplate(MongoProperties mongoProperties,
+                                       MappingMongoConverter mappingMongoConverter) {
+        String database = extractDatabaseName(mongoProperties);
+        ConnectionString connectionString = new ConnectionString(mongoProperties.getUri());
+        MongoClientSettings settings = MongoClientSettings.builder()
+                .applyConnectionString(connectionString)
+                // 从库优先
+                .readPreference(ReadPreference.secondaryPreferred())
+                .build();
+        MongoClient mongoClient = MongoClients.create(settings);
+        SimpleMongoClientDatabaseFactory factory = new SimpleMongoClientDatabaseFactory(mongoClient, database);
+        return new MongoTemplate(factory, mappingMongoConverter);
     }
+
+    /**
+     * 主库 MongoTemplate（强制所有操作走主库）
+     */
+    @Bean(name = MASTER_MONGO_TEMPLATE)
+    public MongoTemplate masterMongoTemplate(MongoProperties mongoProperties,
+                                             MappingMongoConverter mappingMongoConverter) {
+        String database = extractDatabaseName(mongoProperties);
+        ConnectionString connectionString = new ConnectionString(mongoProperties.getUri());
+        MongoClientSettings settings = MongoClientSettings.builder()
+                .applyConnectionString(connectionString)
+                // 主库
+                .readPreference(ReadPreference.primary())
+                .build();
+        MongoClient mongoClient = MongoClients.create(settings);
+        SimpleMongoClientDatabaseFactory factory =
+                new SimpleMongoClientDatabaseFactory(mongoClient, database);
+
+        return new MongoTemplate(factory, mappingMongoConverter);
+    }
+
+    /**
+     * 提取数据库名的安全方法
+     */
+    private String extractDatabaseName(MongoProperties mongoProperties) {
+        ConnectionString connectionString = new ConnectionString(mongoProperties.getUri());
+        String database = connectionString.getDatabase();
+        if (database == null || database.isEmpty()) {
+            database = mongoProperties.getDatabase();
+        }
+        if (database == null || database.isEmpty()) {
+            throw new IllegalArgumentException("MongoDB database name must not be empty! 请在配置中指定 spring.data.mongodb.database 或 URI 中的数据库名");
+        }
+        return database;
+    }
+
 }
