@@ -10,9 +10,9 @@ import com.ww.app.common.common.AppPageResult;
 import com.ww.app.common.exception.ApiException;
 import com.ww.app.common.utils.CommonUtils;
 import com.ww.app.excel.ExcelMinioTemplate;
-import com.ww.app.excel.annotation.ExcelImportTimer;
 import com.ww.app.mybatis.common.AppPlusPageResult;
 import com.ww.app.redis.annotation.RedisPublishMsg;
+import com.ww.app.web.annotation.TimeCost;
 import com.ww.mall.product.cache.ProductSpuCache;
 import com.ww.mall.product.constants.RedisChannelConstant;
 import com.ww.mall.product.controller.admin.sku.req.ProductSkuBO;
@@ -188,7 +188,7 @@ public class ProductSpuServiceImpl extends ServiceImpl<ProductSpuMapper, Product
     }
 
     @Override
-    @ExcelImportTimer
+    @TimeCost
     public String exportSpuList(ProductSpuPageQuery productSpuPageQuery) {
         AppPageResult<ProductSpuPageAdminVO> page = this.page(productSpuPageQuery);
         return excelMinioTemplate.exportDataToMinio("spu-file-export", page.getTotalCount(), 5000, (pageNum, pageSize) -> {

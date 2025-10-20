@@ -15,8 +15,6 @@ import com.ww.app.common.exception.ApiException;
 import com.ww.app.common.utils.IdUtil;
 import com.ww.app.common.utils.IpUtil;
 import com.ww.app.excel.ExcelTemplate;
-import com.ww.app.excel.annotation.ExcelExportTimer;
-import com.ww.app.excel.annotation.ExcelImportTimer;
 import com.ww.app.excel.vo.ExcelResultVO;
 import com.ww.app.ip.Ip2regionSearcher;
 import com.ww.app.ip.common.IpInfo;
@@ -34,18 +32,18 @@ import com.ww.app.redis.component.stock.StockRedisComponent;
 import com.ww.app.seckill.component.CodeGeneratorService;
 import com.ww.app.seckill.component.IssueCodeService;
 import com.ww.app.seckill.component.RedPacketComponent;
+import com.ww.app.seckill.entity.Demo;
 import com.ww.app.seckill.entity.mapstruct.A;
 import com.ww.app.seckill.entity.mapstruct.AConvert;
 import com.ww.app.seckill.entity.mapstruct.B;
-import com.ww.app.seckill.entity.Demo;
 import com.ww.app.seckill.listener.DemoImportListener;
 import com.ww.app.seckill.model.DemoModel;
 import com.ww.app.seckill.service.DemoService;
 import com.ww.app.seckill.view.bo.SensitiveWordBO;
 import com.ww.app.sensitive.annotation.SensitiveWord;
 import com.ww.app.third.sms.rpc.SmsApi;
+import com.ww.app.web.annotation.TimeCost;
 import com.ww.mall.monitor.core.annotation.BizTrace;
-//import io.github.linpeilie.Converter;
 import lombok.extern.slf4j.Slf4j;
 import org.redisson.api.RBloomFilter;
 import org.redisson.api.RedissonClient;
@@ -321,7 +319,7 @@ public class DemoServiceImpl implements DemoService {
     private final ExecutorService executorService = Executors.newFixedThreadPool(20);
 
     @Override
-    @ExcelImportTimer
+    @TimeCost
     public void importData(MultipartFile file) {
         ExcelResultVO excelResult = new ExcelResultVO();
         List<Callable<Integer>> tasks = new ArrayList<>();
@@ -357,7 +355,7 @@ public class DemoServiceImpl implements DemoService {
     }
 
     @Override
-    @ExcelExportTimer
+    @TimeCost
     public void exportDate(HttpServletResponse response) {
         long totalCount = mongoTemplate.count(new Query(), Demo.class);
         int sheetNumber = 20;
@@ -401,7 +399,7 @@ public class DemoServiceImpl implements DemoService {
     }
 
     @Override
-    @ExcelExportTimer
+    @TimeCost
     public String exportCursorDate(HttpServletResponse response) {
         Object cursorValue = null;  // 初始游标值
         int pageSize = 50;       // 每页大小
@@ -460,7 +458,7 @@ public class DemoServiceImpl implements DemoService {
     }
 
     @Override
-    @ExcelExportTimer
+    @TimeCost
     public String multiFileExportToZip() {
         String bucket = "multi-file-export";
         long totalCount = 1000000;

@@ -1,6 +1,5 @@
 package com.ww.app.excel;
 
-import com.ww.app.excel.aspect.ExcelHandlerAspect;
 import com.ww.app.minio.MinioTemplate;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnBean;
@@ -27,11 +26,6 @@ public class EasyExcelAutoConfiguration {
     public ExcelMinioTemplate excelMinioTemplate() {
         log.info("初始化excelMinioTemplate功能成功...");
         return new ExcelMinioTemplate();
-    }
-
-    @Bean
-    public ExcelHandlerAspect excelHandlerAspect() {
-        return new ExcelHandlerAspect();
     }
 
 }

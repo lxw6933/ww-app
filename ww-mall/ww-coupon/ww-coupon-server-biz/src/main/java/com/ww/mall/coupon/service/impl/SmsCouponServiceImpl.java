@@ -21,7 +21,6 @@ import com.ww.app.common.exception.ApiException;
 import com.ww.app.common.utils.CommonUtils;
 import com.ww.app.common.utils.MoneyUtils;
 import com.ww.app.excel.ExcelMinioTemplate;
-import com.ww.app.excel.annotation.ExcelExportTimer;
 import com.ww.app.mongodb.common.BaseDoc;
 import com.ww.app.mongodb.handler.MongoBulkDataHandler;
 import com.ww.app.mongodb.utils.MongoUtils;
@@ -29,6 +28,7 @@ import com.ww.app.redis.AppRedisTemplate;
 import com.ww.app.redis.annotation.DistributedLock;
 import com.ww.app.redis.annotation.Resubmission;
 import com.ww.app.redis.component.stock.StockRedisComponent;
+import com.ww.app.web.annotation.TimeCost;
 import com.ww.mall.coupon.component.CouponComponent;
 import com.ww.mall.coupon.component.SmsCouponStatisticsComponent;
 import com.ww.mall.coupon.component.key.CouponRedisKeyBuilder;
@@ -193,8 +193,8 @@ public class SmsCouponServiceImpl implements SmsCouponService {
     private ExcelMinioTemplate excelMinioTemplate;
 
     @Override
+    @TimeCost
     @Resubmission
-    @ExcelExportTimer
     @LogRecord(type = SYSTEM_COUPON_TYPE, subType = SYSTEM_COUPON_EXPORT_SUB_TYPE, bizNo = "{{#smsCouponCodeListBO.activityCode}}", success = SYSTEM_COUPON_EXPORT_SUCCESS)
     public String exportCouponCode(SmsCouponCodeListBO smsCouponCodeListBO) {
         log.info("导出优惠券券码[{}]", JSON.toJSON(smsCouponCodeListBO));
