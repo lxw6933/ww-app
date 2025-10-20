@@ -2,6 +2,7 @@ package com.ww.app.mongodb.config;
 
 import com.ww.app.mongodb.handler.MongoBulkDataHandler;
 import com.ww.app.mongodb.listener.BaseDocListener;
+import com.ww.app.mongodb.test.MongoTestComponent;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
 import org.springframework.boot.autoconfigure.mongo.MongoProperties;
@@ -25,13 +26,15 @@ import org.springframework.data.mongodb.core.mapping.MongoMappingContext;
 @EnableConfigurationProperties(MongoProperties.class)
 public class MongodbAutoConfiguration {
 
+    public static final String DEFAULT_TRANSACTION_MONGODB_MANAGER = "mongoTransactionManager";
+
     @Bean
     public BaseDocListener baseDocListener() {
         log.info("初始化mongodb baseDoc listener...");
         return new BaseDocListener();
     }
 
-    @Bean("mongoTransactionManager")
+    @Bean(DEFAULT_TRANSACTION_MONGODB_MANAGER)
     public MongoTransactionManager transactionManager(MongoDatabaseFactory factory) {
         // 单机MongoDB无法执行涉及到事务的操作。为了使用事务，你需要设置一个 MongoDB 副本集
         log.info("初始化mongodb事务管理器...");
@@ -50,6 +53,11 @@ public class MongodbAutoConfiguration {
     @Bean
     public <T> MongoBulkDataHandler<T> mongoBulkDataHandler() {
         return new MongoBulkDataHandler<>();
+    }
+
+    @Bean
+    public MongoTestComponent mongoTestComponent() {
+        return new MongoTestComponent();
     }
 
 }

@@ -6,9 +6,12 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.mongodb.core.BulkOperations;
 import org.springframework.data.mongodb.core.MongoTemplate;
 import org.springframework.stereotype.Component;
+import org.springframework.transaction.annotation.Transactional;
 
 import javax.annotation.Resource;
 import java.util.List;
+
+import static com.ww.app.mongodb.config.MongodbAutoConfiguration.DEFAULT_TRANSACTION_MONGODB_MANAGER;
 
 /**
  * @author ww
@@ -23,6 +26,7 @@ public class MongoBulkDataHandler<T> implements BulkDataHandler<T> {
     private MongoTemplate mongoTemplate;
 
     @Override
+    @Transactional(transactionManager = DEFAULT_TRANSACTION_MONGODB_MANAGER)
     public int bulkSave(List<T> dataList) {
         Class<?> targetClass = dataList.get(0).getClass();
         // 初始化 BulkOperations
@@ -37,6 +41,7 @@ public class MongoBulkDataHandler<T> implements BulkDataHandler<T> {
     }
 
     @Override
+    @Transactional(transactionManager = DEFAULT_TRANSACTION_MONGODB_MANAGER)
     public int bulkSave(List<T> dataList, String collectionName) {
         BulkOperations bulkOps = mongoTemplate.bulkOps(BulkOperations.BulkMode.UNORDERED, collectionName);
         // 将所有数据添加到 bulk 操作中
