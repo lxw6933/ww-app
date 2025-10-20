@@ -42,7 +42,7 @@ import com.ww.app.seckill.service.DemoService;
 import com.ww.app.seckill.view.bo.SensitiveWordBO;
 import com.ww.app.sensitive.annotation.SensitiveWord;
 import com.ww.app.third.sms.rpc.SmsApi;
-import com.ww.app.web.annotation.TimeCost;
+import com.ww.app.common.annotation.TimeCost;
 import com.ww.mall.monitor.core.annotation.BizTrace;
 import lombok.extern.slf4j.Slf4j;
 import org.redisson.api.RBloomFilter;

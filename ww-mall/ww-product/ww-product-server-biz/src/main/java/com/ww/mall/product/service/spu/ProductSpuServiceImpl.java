@@ -12,7 +12,7 @@ import com.ww.app.common.utils.CommonUtils;
 import com.ww.app.excel.ExcelMinioTemplate;
 import com.ww.app.mybatis.common.AppPlusPageResult;
 import com.ww.app.redis.annotation.RedisPublishMsg;
-import com.ww.app.web.annotation.TimeCost;
+import com.ww.app.common.annotation.TimeCost;
 import com.ww.mall.product.cache.ProductSpuCache;
 import com.ww.mall.product.constants.RedisChannelConstant;
 import com.ww.mall.product.controller.admin.sku.req.ProductSkuBO;

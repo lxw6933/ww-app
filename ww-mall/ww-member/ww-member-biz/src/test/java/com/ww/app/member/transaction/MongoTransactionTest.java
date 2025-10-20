@@ -29,4 +29,14 @@ public class MongoTransactionTest {
         mongoTestComponent.testBatchTransaction(true);
     }
 
+    @Test
+    void testBatchTransactionTime() {
+        mongoTestComponent.testBatchTransactionTime();
+    }
+
+    @Test
+    void testBatchTime() {
+        mongoTestComponent.testBatchTime();
+    }
+
 }

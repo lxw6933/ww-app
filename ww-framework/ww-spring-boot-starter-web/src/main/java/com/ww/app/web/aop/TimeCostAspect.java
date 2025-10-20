@@ -13,17 +13,14 @@ import java.util.concurrent.TimeUnit;
 /**
  * @author ww
  * @create 2025-10-20 14:03
- * @description:
+ * @description: 性能测试、代码执行时间测量
  */
 @Slf4j
 @Aspect
 @Component
 public class TimeCostAspect {
 
-    /**
-     * 同时支持方法级与类级的 TimeCost 注解
-     */
-    @Around("@annotation(com.ww.app.web.annotation.TimeCost) || @within(com.ww.app.web.annotation.TimeCost)")
+    @Around("@annotation(com.ww.app.common.annotation.TimeCost) || @within(com.ww.app.common.annotation.TimeCost)")
     public Object around(ProceedingJoinPoint joinPoint) throws Throwable {
         long startTimeNs = System.nanoTime();
 

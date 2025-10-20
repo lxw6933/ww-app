@@ -28,7 +28,7 @@ import com.ww.app.redis.AppRedisTemplate;
 import com.ww.app.redis.annotation.DistributedLock;
 import com.ww.app.redis.annotation.Resubmission;
 import com.ww.app.redis.component.stock.StockRedisComponent;
-import com.ww.app.web.annotation.TimeCost;
+import com.ww.app.common.annotation.TimeCost;
 import com.ww.mall.coupon.component.CouponComponent;
 import com.ww.mall.coupon.component.SmsCouponStatisticsComponent;
 import com.ww.mall.coupon.component.key.CouponRedisKeyBuilder;

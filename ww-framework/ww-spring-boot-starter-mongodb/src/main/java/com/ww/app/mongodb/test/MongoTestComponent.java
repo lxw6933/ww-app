@@ -1,11 +1,14 @@
 package com.ww.app.mongodb.test;
 
+import com.mongodb.bulk.BulkWriteResult;
+import com.ww.app.common.annotation.TimeCost;
 import com.ww.app.common.interfaces.BulkDataHandler;
 import com.ww.app.mongodb.common.BaseDoc;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.mongodb.core.BulkOperations;
 import org.springframework.data.mongodb.core.MongoTemplate;
 import org.springframework.data.mongodb.core.mapping.Document;
 import org.springframework.stereotype.Component;
@@ -54,6 +57,32 @@ public class MongoTestComponent {
             aList.add(new A(namePrefix + "9", 10));
         }
         mongoBulkDataHandler.bulkSave(aList);
+    }
+
+    @TimeCost
+    public void testBatchTransactionTime() {
+        String namePrefix = "transTime";
+        List<A> aList = new ArrayList<>();
+        for (int i = 1; i <= 5000; i++) {
+            aList.add(new A(namePrefix + i, i));
+        }
+        int insertCount = mongoBulkDataHandler.bulkSave(aList);
+        log.info("【事务】批量插入数据量：{}", insertCount);
+    }
+
+    @TimeCost
+    public void testBatchTime() {
+        String namePrefix = "nontransTime";
+        List<A> aList = new ArrayList<>();
+        for (int i = 1; i <= 5000; i++) {
+            aList.add(new A(namePrefix + i, i));
+        }
+        BulkOperations bulkOps = mongoTemplate.bulkOps(BulkOperations.BulkMode.UNORDERED, A.class);
+        // 将所有数据添加到 bulk 操作中
+        bulkOps.insert(aList);
+        // 提交批量操作
+        BulkWriteResult bulkWriteResult = bulkOps.execute();
+        log.info("【非事务】批量插入数据量：{}", bulkWriteResult.getInsertedCount());
     }
 
     @EqualsAndHashCode(callSuper = true)
