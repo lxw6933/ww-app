@@ -65,6 +65,9 @@ public class SignJob {
                 try {
                     int success = mongoBulkDataHandler.bulkSave(batchList);
                     log.info("批量落库 {} 条记录, 成功插入 {} 条记录", batchList.size(), success);
+                    if (success == batchList.size()) {
+                        appRedisTemplate.batchRemoveKeys(new ArrayList<>(signDataKeyList), true);
+                    }
                 } catch (Exception e) {
                     log.error("批量落库失败", e);
                 }
