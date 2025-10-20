@@ -1,11 +1,13 @@
 package com.ww.app.member.mongo;
 
 import com.mongodb.ReadPreference;
+import com.mongodb.client.MongoCollection;
 import com.ww.app.mongodb.common.BaseDoc;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.extern.slf4j.Slf4j;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.Assertions;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.data.mongodb.core.MongoTemplate;
 import org.springframework.data.mongodb.core.index.Indexed;
@@ -60,16 +62,26 @@ public class MongoMasterTest {
      */
     @Test
     public void testConnectionInfoDifference() {
-        // 打印它们的 readPreference
-        ReadPreference defaultReadPref = mongoTemplate.getMongoDatabaseFactory()
-                .getMongoDatabase().getReadPreference();
-        ReadPreference masterReadPref = masterMongoTemplate.getMongoDatabaseFactory()
-                .getMongoDatabase().getReadPreference();
+        log.info("===> 对比两个 MongoTemplate 的核心差异（读偏好、工厂、客户端、Bean 实例）");
 
-        log.info("[mongoTemplate] ReadPreference = {}", defaultReadPref);
-        log.info("[masterMongoTemplate] ReadPreference = {}", masterReadPref);
+        // 1) 有效读偏好（以集合级为准，实际执行时生效）
+        ReadPreference defaultReadPref = mongoTemplate.execute(TestEntity.class, MongoCollection::getReadPreference);
+        ReadPreference masterReadPref = masterMongoTemplate.execute(TestEntity.class, MongoCollection::getReadPreference);
+        log.info("[mongoTemplate] Effective ReadPreference = {}", defaultReadPref);
+        log.info("[masterMongoTemplate] Effective ReadPreference = {}", masterReadPref);
 
-        log.info("===> 开始测试默认 mongoTemplate 与 masterMongoTemplate 的区别");
+        // 明确断言：两个模板的读偏好应当不同（默认 secondaryPreferred vs primary）
+        Assertions.assertNotEquals(defaultReadPref.getName(), masterReadPref.getName(),
+                "两个模板的 ReadPreference 应该不同：默认应为 secondaryPreferred，master 应为 primary");
+
+        // 2) 工厂与客户端信息
+        printFactoryAndClientInfo(mongoTemplate, "mongoTemplate");
+        printFactoryAndClientInfo(masterMongoTemplate, "masterMongoTemplate");
+
+        // 3) Bean 实例与引用差异
+        log.info("[mongoTemplate]       identityHashCode=0x{}", Integer.toHexString(System.identityHashCode(mongoTemplate)));
+        log.info("[masterMongoTemplate] identityHashCode=0x{}", Integer.toHexString(System.identityHashCode(masterMongoTemplate)));
+        Assertions.assertNotSame(mongoTemplate, masterMongoTemplate, "两个模板实例应为不同 Bean");
 
         // 1. 插入一条数据到主库
         TestEntity entity = new TestEntity();
@@ -103,63 +115,85 @@ public class MongoMasterTest {
         log.info("✅ 测试完成，两者配置已区分。");
     }
 
+    private void printFactoryAndClientInfo(MongoTemplate template, String templateName) {
+        try {
+            Object mongoDbFactory = template.getMongoDbFactory();
+            log.info("[{}] MongoDbFactory = {}", templateName, mongoDbFactory.getClass().getName());
+
+            if (mongoDbFactory instanceof org.springframework.data.mongodb.core.SimpleMongoClientDatabaseFactory) {
+                org.springframework.data.mongodb.core.SimpleMongoClientDatabaseFactory factory =
+                        (org.springframework.data.mongodb.core.SimpleMongoClientDatabaseFactory) mongoDbFactory;
+                // 反射拿到内部 mongoClient
+                Field clientField = factory.getClass().getDeclaredField("mongoClient");
+                clientField.setAccessible(true);
+                Object client = clientField.get(factory);
+                if (client != null) {
+                    log.info("[{}] MongoClient   = {}", templateName, client.getClass().getName());
+                    try {
+                        Method getSettingsMethod = client.getClass().getMethod("getSettings");
+                        Object settings = getSettingsMethod.invoke(client);
+                        if (settings != null) {
+                            Method getClusterSettingsMethod = settings.getClass().getMethod("getClusterSettings");
+                            Object clusterSettings = getClusterSettingsMethod.invoke(settings);
+                            if (clusterSettings != null) {
+                                Method getHostsMethod = clusterSettings.getClass().getMethod("getHosts");
+                                Object hosts = getHostsMethod.invoke(clusterSettings);
+                                log.info("[{}] Hosts       = {}", templateName, hosts);
+                            }
+                        }
+                    } catch (Exception ignored) {
+                        // 忽略获取 settings 的异常，仅用于增强日志
+                    }
+                }
+            }
+
+            // 打印集合层 effective ReadPreference 名称
+            ReadPreference effective = template.execute(TestEntity.class, c -> c.getReadPreference());
+            log.info("[{}] Effective ReadPreference = {}", templateName,
+                    effective == null ? null : effective.getName());
+        } catch (Exception e) {
+            log.warn("[{}] 打印工厂/客户端信息失败: {}", templateName, e.getMessage());
+        }
+    }
+
     /**
-     * 测试2: 主从库延迟验证测试
+     * 测试2: 立即插入后，从库读取不到，而主库可读（主从延迟的直观对比）
      */
     @Test
-    public void testMasterSlaveDelay() {
-        log.info("========== 测试2: 主从库延迟验证 ==========");
-        
-        try {
-            // 1. 写入测试数据
-            TestEntity testEntity = new TestEntity();
-            testEntity.setName("延迟测试_" + System.currentTimeMillis());
-            testEntity.setDescription("测试主从库数据同步延迟");
-            testEntity.setTestType("DELAY_TEST");
-            
-            mongoTemplate.save(testEntity);
-            log.info("写入测试数据: {}", testEntity.getName());
-            
-            // 2. 立即使用主库读取
-            Query query = new Query(Criteria.where("name").is(testEntity.getName()));
-            
-            long startTime = System.currentTimeMillis();
-            TestEntity masterResult = masterMongoTemplate.findOne(query, TestEntity.class);
-            long masterTime = System.currentTimeMillis() - startTime;
-            
-            if (masterResult != null) {
-                log.info("✅ 主库读取成功 - 耗时: {} ms, 数据: {}", masterTime, masterResult.getName());
-            } else {
-                log.warn("❌ 主库读取失败");
-            }
-            
-            // 3. 使用默认MongoTemplate读取（可能从从库）
-            startTime = System.currentTimeMillis();
-            TestEntity defaultResult = mongoTemplate.findOne(query, TestEntity.class);
-            long defaultTime = System.currentTimeMillis() - startTime;
-            
-            if (defaultResult != null) {
-                log.info("✅ 默认读取成功 - 耗时: {} ms, 数据: {}", defaultTime, defaultResult.getName());
-            } else {
-                log.warn("❌ 默认读取失败 - 可能存在主从延迟");
-            }
-            
-            // 4. 结果分析
-            if (masterResult != null && defaultResult != null) {
-                log.info("✅ 主库和默认读取都成功，数据一致性验证通过");
-            } else if (masterResult != null && defaultResult == null) {
-                log.info("⚠️  主库读取成功，默认读取失败 - 说明存在主从延迟，主库读取功能正常");
-            } else {
-                log.warn("❌ 主库和默认读取都失败，请检查MongoDB连接");
-            }
-            
-            // 5. 清理测试数据
-            mongoTemplate.remove(query, TestEntity.class);
-            log.info("测试数据已清理");
-            
-        } catch (Exception e) {
-            log.error("主从库延迟测试失败", e);
+    public void testImmediateInsertMasterVisibleSecondaryInvisible() {
+        log.info("========== 测试2: 立即插入后主从可见性对比 ==========");
+
+        // 使用 master 模板插入，确保写入落在主库
+        String uniqueName = "lag-test-" + System.currentTimeMillis();
+        TestEntity entity = new TestEntity();
+        entity.setName(uniqueName);
+        entity.setDescription("主从滞后可见性测试");
+        entity.setTestType("LAG_TEST");
+
+        masterMongoTemplate.insert(entity);
+        log.info("[masterMongoTemplate] 已插入: {}", uniqueName);
+
+        // 立刻查询：主库应可读；默认模板（secondaryPreferred）可能由于复制滞后读不到
+        Query query = new Query(Criteria.where("name").is(uniqueName));
+
+        TestEntity readFromDefault = mongoTemplate.findOne(query, TestEntity.class);
+        TestEntity readFromMaster = masterMongoTemplate.findOne(query, TestEntity.class);
+
+
+        log.info("[masterMongoTemplate] 立即查询结果: {}", readFromMaster == null ? null : readFromMaster.getName());
+        log.info("[mongoTemplate]       立即查询结果: {}", readFromDefault == null ? null : readFromDefault.getName());
+
+        // 断言主库可读
+        Assertions.assertNotNull(readFromMaster, "主库读取应立即可见");
+        // 从库可能读不到（如果你的集群确有复制延迟），此处不强制断言为 null，但打印提示
+        if (readFromDefault == null) {
+            log.info("[mongoTemplate] 由于主从复制延迟，立即读取未命中，符合预期");
+        } else {
+            log.info("[mongoTemplate] 立即读取命中，当前复制延迟较低或路由至主库");
         }
+
+        // 清理
+        masterMongoTemplate.remove(query, TestEntity.class);
     }
 
     /**

@@ -29,7 +29,7 @@ public class MongoMasterReadConfiguration {
     public static final String MASTER_MONGO_TEMPLATE = "masterMongoTemplate";
 
     /**
-     * 公用 MongoClient（连接池）
+     * 公共 MongoClient（连接池共享）
      */
     @Bean
     @Primary
@@ -37,55 +37,44 @@ public class MongoMasterReadConfiguration {
         ConnectionString connectionString = new ConnectionString(mongoProperties.getUri());
         MongoClientSettings settings = MongoClientSettings.builder()
                 .applyConnectionString(connectionString)
-                // 默认客户端设置，不指定 readPreference，这样模板可自行覆盖
-                .readPreference(ReadPreference.primary())
                 .build();
         return MongoClients.create(settings);
     }
 
     /**
-     * 默认 MongoTemplate（从库优先，无从库则自动回退主库）
+     * 默认 mongoTemplate（从库优先，无从库回退主库）
      */
     @Bean
     @Primary
-    public MongoTemplate mongoTemplate(MongoProperties mongoProperties,
+    public MongoTemplate mongoTemplate(MongoClient mongoClient,
+                                       MongoProperties mongoProperties,
                                        MappingMongoConverter mappingMongoConverter) {
         String database = extractDatabaseName(mongoProperties);
-        ConnectionString connectionString = new ConnectionString(mongoProperties.getUri());
-        MongoClientSettings settings = MongoClientSettings.builder()
-                .applyConnectionString(connectionString)
-                // 从库优先
-                .readPreference(ReadPreference.secondaryPreferred())
-                .build();
-        MongoClient mongoClient = MongoClients.create(settings);
         SimpleMongoClientDatabaseFactory factory = new SimpleMongoClientDatabaseFactory(mongoClient, database);
-        return new MongoTemplate(factory, mappingMongoConverter);
+        MongoTemplate template = new MongoTemplate(factory, mappingMongoConverter);
+        template.setReadPreference(ReadPreference.secondaryPreferred());
+        return template;
     }
 
     /**
-     * 主库 MongoTemplate（强制所有操作走主库）
+     * 主库 MongoTemplate（强制主库）
      */
     @Bean(name = MASTER_MONGO_TEMPLATE)
-    public MongoTemplate masterMongoTemplate(MongoProperties mongoProperties,
+    public MongoTemplate masterMongoTemplate(MongoClient mongoClient,
+                                             MongoProperties mongoProperties,
                                              MappingMongoConverter mappingMongoConverter) {
         String database = extractDatabaseName(mongoProperties);
-        ConnectionString connectionString = new ConnectionString(mongoProperties.getUri());
-        MongoClientSettings settings = MongoClientSettings.builder()
-                .applyConnectionString(connectionString)
-                // 主库
-                .readPreference(ReadPreference.primary())
-                .build();
-        MongoClient mongoClient = MongoClients.create(settings);
-        SimpleMongoClientDatabaseFactory factory =
-                new SimpleMongoClientDatabaseFactory(mongoClient, database);
-
-        return new MongoTemplate(factory, mappingMongoConverter);
+        SimpleMongoClientDatabaseFactory factory = new SimpleMongoClientDatabaseFactory(mongoClient, database);
+        MongoTemplate template = new MongoTemplate(factory, mappingMongoConverter);
+        template.setReadPreference(ReadPreference.primary());
+        return template;
     }
 
     /**
      * 提取数据库名的安全方法
      */
     private String extractDatabaseName(MongoProperties mongoProperties) {
+        // 优先使用URI中的db，没有则回退使用 spring.data.mongodb.database
         ConnectionString connectionString = new ConnectionString(mongoProperties.getUri());
         String database = connectionString.getDatabase();
         if (database == null || database.isEmpty()) {
