@@ -14,7 +14,6 @@ import org.redisson.api.RedissonClient;
 import org.springframework.stereotype.Service;
 
 import javax.annotation.Resource;
-import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -47,7 +46,7 @@ public class HashCartServiceImpl implements HashCartService {
             cartItem.setSkuId(skuId);
             cartItem.setCount(num);
             cartItem.setChecked(true);
-            cartItem.setPrice(BigDecimal.ONE);
+            cartItem.setPrice(100); // 设置为1元（100分）
         } else {
             cartItem.setCount(cartItem.getCount() + num);
         }
@@ -74,7 +73,7 @@ public class HashCartServiceImpl implements HashCartService {
         RMap<String, CartItem> userCart = getUserCart();
         CartItem userCartItem = userCart.get(skuId.toString());
         Assert.notNull(userCartItem, () -> new ApiException("商品不存在"));
-        userCartItem.setChecked(!userCartItem.getChecked());
+        userCartItem.setChecked(!userCartItem.isChecked());
         userCart.put(skuId.toString(), userCartItem);
         return true;
     }

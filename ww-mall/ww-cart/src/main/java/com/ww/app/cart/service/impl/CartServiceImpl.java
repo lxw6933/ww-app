@@ -14,7 +14,6 @@ import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
 
 import javax.annotation.Resource;
-import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -45,7 +44,7 @@ public class CartServiceImpl implements CartService {
             cartItem.setSkuId(skuId);
             cartItem.setCount(num);
             cartItem.setChecked(true);
-            cartItem.setPrice(BigDecimal.ONE);
+            cartItem.setPrice(100); // 设置为1元（100分）
             userCart.put(skuId.toString(), JSON.toJSONString(cartItem));
             return cartItem;
         } else {
@@ -62,7 +61,6 @@ public class CartServiceImpl implements CartService {
         UserInfoTo userInfoTo = CartInterceptor.cartThreadLocal.get();
         String tempUserCartKey = cartRedisKeyBuilder.buildUserCartKey(userInfoTo.getTempUserKey());
         if (userInfoTo.getUserId() != null) {
-            String userCartKey = cartRedisKeyBuilder.buildUserCartKey(userInfoTo.getUserId());
             List<CartItem> tempUserCartList = getUserCartItemList();
             if (CollectionUtils.isNotEmpty(tempUserCartList)) {
                 // 合并到当前登录用户购物车
@@ -90,7 +88,7 @@ public class CartServiceImpl implements CartService {
     public boolean checkItem(Long skuId) {
         BoundHashOperations<String, Object, Object> userCart = getUserCart();
         CartItem cartItem = getUserCartItem(skuId);
-        cartItem.setChecked(!cartItem.getChecked());
+        cartItem.setChecked(!cartItem.isChecked());
         userCart.put(skuId.toString(), JSON.toJSONString(cartItem));
         return true;
     }

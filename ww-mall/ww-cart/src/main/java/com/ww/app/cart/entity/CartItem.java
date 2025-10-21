@@ -3,7 +3,6 @@ package com.ww.app.cart.entity;
 import lombok.Data;
 
 import java.io.Serializable;
-import java.math.BigDecimal;
 import java.util.List;
 
 /**
@@ -32,7 +31,7 @@ public class CartItem implements Serializable {
     /**
      * 是否选中
      */
-    private Boolean checked;
+    private boolean checked;
 
     /**
      * sku名称
@@ -50,27 +49,27 @@ public class CartItem implements Serializable {
     private List<String> skuAttr;
 
     /**
-     * sku销售价【加入时】
+     * sku销售价【加入时】，以分为单位
      */
-    private BigDecimal price;
+    private int price;
 
     /**
      * 加入购书车数量
      */
-    private Integer count;
+    private int count;
 
     /**
-     * 总价
+     * 总价，以分为单位
      */
-    private BigDecimal totalPrice;
+    private int totalPrice;
 
     /**
      * 是否失效【1：有效 0：已失效】
      */
-    private Boolean invalid;
+    private boolean invalid;
 
-    public BigDecimal getTotalPrice() {
-        return this.price.multiply(BigDecimal.valueOf(this.count));
+    public int getTotalPrice() {
+        return this.price * this.count;
     }
 
 }

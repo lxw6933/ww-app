@@ -1,8 +1,16 @@
 server:
   port: 9600  #服务端口号
 
+spring:
+  redis:
+    host: 172.28.174.84
+    password: 123456
+    port: 6379
+
 # 开启sentinel feign支持【调用方（调用服务方）的熔断保护、被调用方（服务提供方）的降级保护】
 feign:
   sentinel:
     enabled: true
+
+
 

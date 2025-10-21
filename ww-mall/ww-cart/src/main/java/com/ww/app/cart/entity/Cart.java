@@ -3,7 +3,6 @@ package com.ww.app.cart.entity;
 import lombok.Data;
 import lombok.Getter;
 
-import java.math.BigDecimal;
 import java.util.List;
 
 import static com.ww.app.common.utils.CollectionUtils.getSumValue;
@@ -23,34 +22,34 @@ public class Cart {
     /**
      * 购物车商品总数量
      */
-    private Integer countNum;
+    private int countNum;
 
     /**
      * 购物车商品类型数量
      */
-    private Integer countType;
+    private int countType;
 
     /**
-     * 购物车总价格【勾选】
+     * 购物车总价格【勾选】，以分为单位
      */
-    private BigDecimal totalAmount;
+    private int totalAmount;
 
     /**
-     * 购物车扣减总金额
+     * 购物车扣减总金额，以分为单位
      */
     @Getter
-    private BigDecimal reduceAmount = BigDecimal.ZERO;
+    private int reduceAmount = 0;
 
-    public Integer getCountNum() {
+    public int getCountNum() {
         return getSumValue(this.cartItems, CartItem::getCount, Integer::sum, 0);
     }
 
-    public Integer getCountType() {
+    public int getCountType() {
         return this.cartItems.size();
     }
 
-    public BigDecimal getTotalAmount() {
-        return getSumValue(this.cartItems, CartItem::getTotalPrice, BigDecimal::add, BigDecimal.ZERO);
+    public int getTotalAmount() {
+        return getSumValue(this.cartItems, CartItem::getTotalPrice, Integer::sum, 0);
     }
 
 }
