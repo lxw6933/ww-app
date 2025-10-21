@@ -59,7 +59,6 @@ public class MonthlySignStrategy extends AbstractSignStrategy {
         return signRedisKeyBuilder.buildMonthlySignPrefixKey(userId, date);
     }
 
-    @Override
     protected void fillSignInfo(LocalDate date, long bitValue, Map<String, Boolean> signInfo) {
         // 获取月份的总天数
         int daysInMonth = getBitCount(date);

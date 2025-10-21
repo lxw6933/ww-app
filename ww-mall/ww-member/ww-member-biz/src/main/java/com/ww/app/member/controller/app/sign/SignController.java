@@ -10,7 +10,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import javax.annotation.Resource;
-import java.util.Map;
+import java.util.List;
 
 /**
  * @author ww
@@ -72,11 +72,11 @@ public class SignController {
     /**
      * 获取签到详情
      *
-     * @param date 日期
      * @return 签到详情
      */
     @GetMapping("/detail")
-    public Map<String, Boolean> signInfo(@RequestParam("date") String date) {
-        return signService.getSignInfo(date, AuthorizationContext.getClientUser());
+    public List<Boolean> signInfo() {
+        return signService.getSignDetailInfo(AuthorizationContext.getClientUser());
     }
+
 }

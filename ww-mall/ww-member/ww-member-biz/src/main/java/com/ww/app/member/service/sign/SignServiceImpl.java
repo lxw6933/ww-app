@@ -14,6 +14,7 @@ import org.springframework.stereotype.Service;
 
 import javax.annotation.Resource;
 import java.time.LocalDate;
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -127,12 +128,19 @@ public class SignServiceImpl implements SignService {
     }
 
     @Override
+    @Deprecated
     public Map<String, Boolean> getSignInfo(String date, ClientUser clientUser) {
         // 获取有效的签到日期
         String validDate = signDateValidator.getValidSignDate(date);
 
         SignStrategy strategy = signStrategyFactory.getDefaultStrategy();
         return strategy.getSignInfo(validDate, clientUser);
+    }
+
+    @Override
+    public List<Boolean> getSignDetailInfo(ClientUser clientUser) {
+        SignStrategy strategy = signStrategyFactory.getDefaultStrategy();
+        return strategy.getSignDetailInfo(clientUser);
     }
 
     /**

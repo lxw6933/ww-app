@@ -4,11 +4,13 @@ import cn.hutool.core.date.DatePattern;
 import com.ww.app.common.common.ClientUser;
 import com.ww.app.member.component.SignComponent;
 import com.ww.app.member.component.key.SignRedisKeyBuilder;
+import com.ww.app.member.entity.mongo.MemberSignRecord;
 import com.ww.app.member.strategy.sign.time.SignBitmapStrategy;
 import org.springframework.data.redis.core.StringRedisTemplate;
 
 import javax.annotation.Resource;
 import java.time.LocalDate;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
@@ -112,6 +114,22 @@ public abstract class AbstractSignStrategy implements SignBitmapStrategy, SignSt
         return signInfo;
     }
 
+    @Override
+    public List<Boolean> getSignDetailInfo(ClientUser clientUser) {
+        // 获取日期
+        LocalDate date = parseDate(null);
+        // 构建 Key
+        String signKey = buildSignKey(clientUser.getId(), date);
+        // 获取当前签到bitmap
+        byte[] signBytes = signComponent.getSignBytes(signKey);
+        if (signBytes == null) {
+            return Collections.emptyList();
+        }
+        // 获取位数
+        int bits = getBitCount(date);
+        return signComponent.decodeHexBitmapToBooleans(MemberSignRecord.encodeBitmap(signBytes), bits);
+    }
+
     /**
      * 解析日期
      */
@@ -132,6 +150,7 @@ public abstract class AbstractSignStrategy implements SignBitmapStrategy, SignSt
     /**
      * 填充签到信息
      */
-    protected abstract void fillSignInfo(LocalDate date, long bitValue, Map<String, Boolean> signInfo);
+    @Deprecated
+    protected void fillSignInfo(LocalDate date, long bitValue, Map<String, Boolean> signInfo) {}
 
 }

@@ -2,6 +2,7 @@ package com.ww.app.member.service.sign;
 
 import com.ww.app.common.common.ClientUser;
 
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -41,6 +42,15 @@ public interface SignService {
      * @param date 指定月份 yyyy-MM-dd
      * @return map
      */
+    @Deprecated
     Map<String, Boolean> getSignInfo(String date, ClientUser clientUser);
+
+    /**
+     * 获取当前周期签到详情
+     *
+     * @param clientUser 用户
+     * @return List<Boolean>
+     */
+    List<Boolean> getSignDetailInfo(ClientUser clientUser);
 
 }

@@ -75,7 +75,6 @@ public class WeeklySignStrategy extends AbstractSignStrategy {
         return signRedisKeyBuilder.buildWeeklySignPrefixKey(userId, date);
     }
 
-    @Override
     protected void fillSignInfo(LocalDate date, long bitValue, Map<String, Boolean> signInfo) {
         // 获取本周的第一天（周一）
         LocalDate firstDayOfWeek = date.with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY));

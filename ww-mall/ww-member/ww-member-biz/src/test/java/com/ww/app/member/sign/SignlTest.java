@@ -72,8 +72,13 @@ public class SignlTest {
 //        System.out.println("连续签到次数：" + continuousSignCount);
 //        System.out.println(signService.getSignCount("2025-10-15", testUser));
 //        System.out.println("签到总次数：" + continuousSignCount);
-        Map<String, Boolean> signInfo = signService.getSignInfo("2025-10-17", testUser);
-        signInfo.forEach((key, flag) -> System.out.println(key + ": " + flag));
+//        Map<String, Boolean> signInfo = signService.getSignInfo("2025-10-17", testUser);
+//        signInfo.forEach((key, flag) -> System.out.println(key + ": " + flag));
+        testMonthSign();
+        List<Boolean> signDetailInfo = signService.getSignDetailInfo(testUser);
+        for (int i = 0; i < signDetailInfo.size(); i++) {
+            System.out.println(i + 1 + "号: " + signDetailInfo.get(i));
+        }
     }
 
     @Test

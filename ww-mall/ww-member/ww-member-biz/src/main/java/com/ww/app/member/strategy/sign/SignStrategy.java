@@ -3,6 +3,7 @@ package com.ww.app.member.strategy.sign;
 import com.ww.app.common.common.ClientUser;
 import com.ww.app.member.enums.SignPeriod;
 
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -46,7 +47,16 @@ public interface SignStrategy {
      * @param clientUser 用户信息
      * @return 签到详情
      */
+    @Deprecated
     Map<String, Boolean> getSignInfo(String date, ClientUser clientUser);
+
+    /**
+     * 获取当前周期签到详情
+     *
+     * @param clientUser 用户
+     * @return List<Boolean>
+     */
+    List<Boolean> getSignDetailInfo(ClientUser clientUser);
 
     /**
      * 获取策略类型
