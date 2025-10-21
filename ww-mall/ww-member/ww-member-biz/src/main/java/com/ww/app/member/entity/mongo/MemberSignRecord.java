@@ -6,6 +6,8 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.experimental.Accessors;
+import org.apache.commons.codec.DecoderException;
+import org.apache.commons.codec.binary.Hex;
 import org.springframework.data.mongodb.core.mapping.Document;
 import org.springframework.data.mongodb.core.query.Criteria;
 import org.springframework.data.mongodb.core.query.Query;
@@ -59,6 +61,14 @@ public class MemberSignRecord extends BaseDoc {
 
     public static Query buildQuery(Long memberId, String periodKey) {
         return new Query().addCriteria(Criteria.where("memberId").is(memberId).and("periodKey").is(periodKey));
+    }
+
+    public static String encodeBitmap(byte[] bitmap) {
+        return Hex.encodeHexString(bitmap);
+    }
+
+    public static byte[] decodeBitmap(String bitmap) throws DecoderException {
+        return Hex.decodeHex(bitmap.trim().toCharArray());
     }
 
 }

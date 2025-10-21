@@ -44,7 +44,7 @@ public class SignlTest {
     @Test
     void testSignJob() {
         // 执行这个
-        signJob.archiveMonthSignDataJobHandler("202510");
+        signJob.archiveMonthlySignDataJobHandler("202510");
     }
 
     @Autowired

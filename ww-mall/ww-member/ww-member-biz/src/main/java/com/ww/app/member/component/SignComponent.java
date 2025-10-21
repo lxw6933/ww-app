@@ -1,11 +1,11 @@
 package com.ww.app.member.component;
 
 import com.ww.app.member.entity.mongo.MemberSignRecord;
+import com.ww.app.member.enums.SignPeriod;
 import com.ww.app.member.strategy.sign.AbstractSignStrategy;
 import com.ww.app.member.strategy.sign.SignStrategyFactory;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.codec.DecoderException;
-import org.apache.commons.codec.binary.Hex;
 import org.springframework.data.mongodb.core.MongoTemplate;
 import org.springframework.data.redis.connection.BitFieldSubCommands;
 import org.springframework.data.redis.core.RedisCallback;
@@ -40,6 +40,13 @@ public class SignComponent {
 
     @Resource
     private SignStrategyFactory signStrategyFactory;
+
+    /**
+     * 获取对应的签名策略实现类
+     */
+    public AbstractSignStrategy getStrategy(SignPeriod type) {
+        return signStrategyFactory.getStrategy(type);
+    }
 
     /**
      * 记录补签次数
@@ -192,7 +199,7 @@ public class SignComponent {
         List<Boolean> result = new ArrayList<>(periodDays);
         byte[] bytes;
         try {
-            bytes = Hex.decodeHex(hexBitmap.trim().toCharArray());
+            bytes = MemberSignRecord.decodeBitmap(hexBitmap);
         } catch (DecoderException e) {
             log.warn("解码签到位图 Hex 失败，periodDays={}，返回空列表", periodDays, e);
             return buildAllFalse(periodDays);
