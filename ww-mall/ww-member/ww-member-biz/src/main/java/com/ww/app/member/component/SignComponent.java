@@ -1,5 +1,7 @@
 package com.ww.app.member.component;
 
+import com.ww.app.common.exception.ApiException;
+import com.ww.app.member.component.key.SignRedisKeyBuilder;
 import com.ww.app.member.entity.mongo.MemberSignRecord;
 import com.ww.app.member.enums.SignPeriod;
 import com.ww.app.member.strategy.sign.AbstractSignStrategy;
@@ -20,6 +22,7 @@ import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.time.temporal.TemporalAdjusters;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 
@@ -31,6 +34,9 @@ import java.util.concurrent.TimeUnit;
 @Slf4j
 @Component
 public class SignComponent {
+
+    @Resource
+    private SignRedisKeyBuilder signRedisKeyBuilder;
 
     @Resource
     private StringRedisTemplate stringRedisTemplate;
@@ -186,7 +192,7 @@ public class SignComponent {
     public List<Boolean> getPeriodSignDetailFromHistory(Long memberId, String periodKey) {
         MemberSignRecord record = mongoTemplate.findOne(MemberSignRecord.buildQuery(memberId, periodKey), MemberSignRecord.class);
         if (record == null) {
-            return new ArrayList<>();
+            return Collections.emptyList();
         }
         AbstractSignStrategy strategy = signStrategyFactory.getStrategy(record.getSignPeriod());
         return decodeHexBitmapToBooleans(record.getBitmap(), strategy.getBitCount(strategy.getEndDate(periodKey)));
@@ -202,7 +208,7 @@ public class SignComponent {
             bytes = MemberSignRecord.decodeBitmap(hexBitmap);
         } catch (DecoderException e) {
             log.warn("解码签到位图 Hex 失败，periodDays={}，返回空列表", periodDays, e);
-            return buildAllFalse(periodDays);
+            throw new ApiException("解码签到位图失败");
         }
         for (int i = 0; i < periodDays; i++) {
             int byteIndex = i / 8;
@@ -216,12 +222,30 @@ public class SignComponent {
         return result;
     }
 
-    private List<Boolean> buildAllFalse(int size) {
-        List<Boolean> result = new ArrayList<>(size);
-        for (int i = 0; i < size; i++) {
-            result.add(false);
+    /**
+     * 将 byte[] 重新放回 Redis bitmap
+     * 
+     * @param memberSignRecord 签到记录
+     * @return 是否成功
+     */
+    public boolean restoreSignBitmap(MemberSignRecord memberSignRecord) {
+        if (memberSignRecord == null) {
+            return false;
         }
-        return result;
+
+        String signKey = signRedisKeyBuilder.buildSignKey(memberSignRecord.getMemberId(), memberSignRecord.getPeriodKey());
+        try {
+            byte[] bitmapBytes = MemberSignRecord.decodeBitmap(memberSignRecord.getBitmap());
+            // 使用 Redis 的 SET 命令直接设置整个 bitmap
+            stringRedisTemplate.execute((RedisCallback<Boolean>) connection -> {
+                connection.set(signKey.getBytes(StandardCharsets.UTF_8), bitmapBytes);
+                return true;
+            });
+            return true;
+        } catch (Exception e) {
+            log.error("恢复签到 bitmap 失败，signKey={}", signKey, e);
+            return false;
+        }
     }
 
 }

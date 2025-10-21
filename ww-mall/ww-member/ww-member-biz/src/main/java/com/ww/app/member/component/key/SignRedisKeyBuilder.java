@@ -3,6 +3,7 @@ package com.ww.app.member.component.key;
 import cn.hutool.core.date.DatePattern;
 import cn.hutool.core.util.StrUtil;
 import com.ww.app.redis.key.RedisKeyBuilder;
+import org.jetbrains.annotations.NotNull;
 import org.springframework.stereotype.Component;
 
 import java.time.LocalDate;
@@ -25,17 +26,17 @@ public class SignRedisKeyBuilder extends RedisKeyBuilder {
     public static final String RESIGN_COUNT_KEY = "resign:count";
 
     public String buildMonthlySignPatternKey(String yearMonthStr) {
-        return super.getPrefix() + StrUtil.join(SPLIT_ITEM, SIGN_KEY, START, yearMonthStr);
+        return buildSignPatternKey(yearMonthStr);
     }
 
     public String buildMonthlySignPrefixKey(Long userId, LocalDate date) {
         // 构建月签到的key，格式为：前缀:用户ID:年月
         String dateStr = date.format(DateTimeFormatter.ofPattern(DatePattern.SIMPLE_MONTH_PATTERN));
-        return super.getPrefix() + StrUtil.join(SPLIT_ITEM, SIGN_KEY, userId, dateStr);
+        return buildSignKey(userId, dateStr);
     }
 
     public String buildWeeklySignPatternKey(String yearWeekStr) {
-        return super.getPrefix() + StrUtil.join(SPLIT_ITEM, SIGN_KEY, START, yearWeekStr);
+        return buildSignPatternKey(yearWeekStr);
     }
 
     public String buildWeeklySignPrefixKey(Long userId, LocalDate date) {
@@ -43,7 +44,17 @@ public class SignRedisKeyBuilder extends RedisKeyBuilder {
         WeekFields weekFields = WeekFields.of(Locale.getDefault());
         int year = date.get(weekFields.weekBasedYear());
         int weekNumber = date.get(weekFields.weekOfWeekBasedYear());
-        return super.getPrefix() + StrUtil.join(SPLIT_ITEM, SIGN_KEY, userId, year + WEEK_FLAG + weekNumber);
+        return buildSignKey(userId, year + WEEK_FLAG + weekNumber);
+    }
+
+    @NotNull
+    public String buildSignKey(Long userId, String dateStr) {
+        return super.getPrefix() + StrUtil.join(SPLIT_ITEM, SIGN_KEY, userId, dateStr);
+    }
+
+    @NotNull
+    public String buildSignPatternKey(String dateStr) {
+        return super.getPrefix() + StrUtil.join(SPLIT_ITEM, SIGN_KEY, START, dateStr);
     }
 
     public static void main(String[] args) {
