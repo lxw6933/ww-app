@@ -26,7 +26,7 @@ public class DateTimeValidator {
 
     private static final DateTimeFormatter YEAR_MONTH_FORMATTER = DateTimeFormatter
             .ofPattern(DatePattern.SIMPLE_MONTH_PATTERN, Locale.getDefault())
-            .withResolverStyle(ResolverStyle.STRICT);
+            .withResolverStyle(ResolverStyle.SMART);
 
     /**
      * 校验 yyyy'W'ww 格式
