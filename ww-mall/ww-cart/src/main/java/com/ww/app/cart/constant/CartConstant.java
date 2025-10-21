@@ -7,6 +7,6 @@ package com.ww.app.cart.constant;
  */
 public class CartConstant {
 
-    public final static Integer MAX_CART_NUMBER = 500;
+    public final static Integer MAX_CART_NUMBER = 99;
 
 }
