@@ -3,12 +3,14 @@ package com.ww.app.member.sign;
 import com.ww.app.common.common.ClientUser;
 import com.ww.app.common.exception.ApiException;
 import com.ww.app.member.component.SignComponent;
+import com.ww.app.member.entity.mongo.MemberSignRecord;
 import com.ww.app.member.job.SignJob;
 import com.ww.app.member.service.sign.SignService;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.data.mongodb.core.MongoTemplate;
 import org.springframework.test.context.ActiveProfiles;
 
 import java.time.LocalDate;
@@ -24,13 +26,16 @@ import static org.junit.jupiter.api.Assertions.*;
 @SpringBootTest
 @ActiveProfiles("dev")
 @DisplayName("签到服务集成测试")
-public class SignlTest {
+public class SignTest {
 
     @Autowired
     private SignService signService;
 
     @Autowired
     private SignJob signJob;
+
+    @Autowired
+    private MongoTemplate mongoTemplate;
 
     private ClientUser createTestUser(Long userId) {
         ClientUser user = new ClientUser();
@@ -39,12 +44,21 @@ public class SignlTest {
         return user;
     }
 
-    ClientUser testUser = createTestUser(2L);
+    ClientUser testUser = createTestUser(12L);
 
     @Test
     void testSignJob() {
         // 执行这个
         signJob.archiveMonthlySignDataJobHandler("202510");
+    }
+
+    @Test
+    void testRestore() {
+        MemberSignRecord signRecord = mongoTemplate.findOne(MemberSignRecord.buildQuery(12L, "202510"), MemberSignRecord.class);
+        boolean success = signComponent.restoreSignBitmap(signRecord);
+        System.out.println("重放redis数据结果：" + success);
+        List<Boolean> signDetailInfo = signService.getSignDetailInfo(testUser);
+        printSignDetailInfo(signDetailInfo);
     }
 
     @Autowired
@@ -53,9 +67,7 @@ public class SignlTest {
     @Test
     void testGetSignFromMongo() {
         List<Boolean> periodSignDetailFromHistory = signComponent.getPeriodSignDetailFromHistory(2L, "202510");
-        for (int i = 0; i < periodSignDetailFromHistory.size(); i++) {
-            System.out.println(i + ": " + periodSignDetailFromHistory.get(i));
-        }
+        printSignDetailInfo(periodSignDetailFromHistory);
     }
 
     @Test
@@ -63,7 +75,7 @@ public class SignlTest {
         System.out.println("签到次数：" + signService.doSign("2025-10-13", testUser));
         System.out.println("签到次数：" + signService.doSign("2025-10-14", testUser));
         System.out.println("签到次数：" + signService.doSign("2025-10-15", testUser));
-        System.out.println("签到次数：" + signService.doSign("2025-10-17", testUser));
+        System.out.println("签到次数：" + signService.doSign("2025-10-21", testUser));
     }
 
     @Test
@@ -76,6 +88,10 @@ public class SignlTest {
 //        signInfo.forEach((key, flag) -> System.out.println(key + ": " + flag));
         testMonthSign();
         List<Boolean> signDetailInfo = signService.getSignDetailInfo(testUser);
+        printSignDetailInfo(signDetailInfo);
+    }
+
+    private static void printSignDetailInfo(List<Boolean> signDetailInfo) {
         for (int i = 0; i < signDetailInfo.size(); i++) {
             System.out.println(i + 1 + "号: " + signDetailInfo.get(i));
         }
