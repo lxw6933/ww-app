@@ -4,9 +4,9 @@ import cn.hutool.core.lang.Assert;
 import com.ww.app.cart.component.key.CartRedisKeyBuilder;
 import com.ww.app.cart.entity.Cart;
 import com.ww.app.cart.entity.CartItem;
-import com.ww.app.cart.interceptor.CartInterceptor;
 import com.ww.app.cart.service.HashCartService;
-import com.ww.app.cart.to.UserInfoTo;
+import com.ww.app.common.common.ClientUser;
+import com.ww.app.common.context.AuthorizationContext;
 import com.ww.app.common.exception.ApiException;
 import org.apache.commons.collections4.CollectionUtils;
 import org.redisson.api.RMap;
@@ -58,18 +58,6 @@ public class HashCartServiceImpl implements HashCartService {
     @Override
     public Cart userCartList() {
         Cart cart = new Cart();
-        UserInfoTo userInfoTo = CartInterceptor.cartThreadLocal.get();
-        if (userInfoTo.getUserId() != null) {
-            // 获取临时用户购物车数据
-            String tempUserCartKey = cartRedisKeyBuilder.buildUserCartKey(userInfoTo.getTempUserKey());
-            List<CartItem> tempUserCartList = getUserCartItemList(tempUserCartKey);
-            if (CollectionUtils.isNotEmpty(tempUserCartList)) {
-                // 合并到当前登录用户购物车
-                tempUserCartList.forEach(tempCartItem -> this.addToCart(tempCartItem.getSkuId(), tempCartItem.getCount()));
-                // 清空临时用户购物车数据
-                redissonClient.getMap(tempUserCartKey).clear();
-            }
-        }
         cart.setCartItems(getUserCartItemList());
         return cart;
     }
@@ -119,23 +107,14 @@ public class HashCartServiceImpl implements HashCartService {
     }
 
     private RMap<String, CartItem> getUserCart() {
-        UserInfoTo userInfoTo = CartInterceptor.cartThreadLocal.get();
-        String userCartKey = cartRedisKeyBuilder.buildUserCartKey(userInfoTo.getUserId() != null ? userInfoTo.getUserId() : userInfoTo.getTempUserKey());
+        ClientUser clientUser = AuthorizationContext.getClientUser();
+        String userCartKey = cartRedisKeyBuilder.buildUserCartKey(clientUser.getId());
         return redissonClient.getMap(userCartKey);
     }
 
     private List<CartItem> getUserCartItemList() {
         List<CartItem> userCartList = new ArrayList<>();
         RMap<String, CartItem> userCart = getUserCart();
-        if (CollectionUtils.isNotEmpty(userCart.values())) {
-            userCartList = new ArrayList<>(userCart.values());
-        }
-        return userCartList;
-    }
-
-    private List<CartItem> getUserCartItemList(String userCartKey) {
-        List<CartItem> userCartList = new ArrayList<>();
-        RMap<String, CartItem> userCart = redissonClient.getMap(userCartKey);
         if (CollectionUtils.isNotEmpty(userCart.values())) {
             userCartList = new ArrayList<>(userCart.values());
         }

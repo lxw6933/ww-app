@@ -8,7 +8,6 @@ import com.ww.app.common.context.AuthorizationContext;
 import lombok.NonNull;
 import org.apache.commons.lang3.ArrayUtils;
 import org.apache.commons.lang3.StringUtils;
-import org.springframework.stereotype.Component;
 import org.springframework.web.servlet.HandlerInterceptor;
 import org.springframework.web.servlet.ModelAndView;
 
@@ -22,7 +21,7 @@ import java.util.UUID;
  * @author: ww
  * @create: 2023/7/17 20:25
  **/
-@Component
+//@Component
 public class CartInterceptor implements HandlerInterceptor {
 
     public static TransmittableThreadLocal<UserInfoTo> cartThreadLocal = new TransmittableThreadLocal<>();
