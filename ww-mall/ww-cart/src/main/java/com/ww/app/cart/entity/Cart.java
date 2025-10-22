@@ -32,11 +32,6 @@ public class Cart {
      */
     private long totalAmount;
 
-    /**
-     * 购物车扣减总金额，以分为单位
-     */
-    private long reduceAmount = 0;
-
     public void recalcTotals() {
         this.countNum = cartItems.stream().mapToInt(CartItem::getCount).sum();
         this.countType = cartItems.size();

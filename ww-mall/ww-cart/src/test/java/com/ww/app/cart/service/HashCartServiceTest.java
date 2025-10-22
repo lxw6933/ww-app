@@ -95,8 +95,7 @@ public class HashCartServiceTest {
         System.out.println("- 商品种类数量: " + cart.getCountType());
         System.out.println("- 商品总数量: " + cart.getCountNum());
         System.out.println("- 购物车总金额: " + cart.getTotalAmount() + "分 (" + formatPrice(cart.getTotalAmount()) + ")");
-        System.out.println("- 扣减金额: " + cart.getReduceAmount() + "分 (" + formatPrice(cart.getReduceAmount()) + ")");
-        
+
         if (cart.getCartItems() != null && !cart.getCartItems().isEmpty()) {
             System.out.println("购物车商品明细:");
             for (int i = 0; i < cart.getCartItems().size(); i++) {
@@ -201,8 +200,7 @@ public class HashCartServiceTest {
         System.out.println("- 商品种类数量: " + cart.getCountType());
         System.out.println("- 商品总数量: " + cart.getCountNum());
         System.out.println("- 购物车总金额: " + cart.getTotalAmount() + "分 (" + formatPrice(cart.getTotalAmount()) + ")");
-        System.out.println("- 扣减金额: " + cart.getReduceAmount() + "分 (" + formatPrice(cart.getReduceAmount()) + ")");
-        
+
         if (cart.getCartItems() != null && !cart.getCartItems().isEmpty()) {
             System.out.println("最终购物车商品明细:");
             for (int i = 0; i < cart.getCartItems().size(); i++) {

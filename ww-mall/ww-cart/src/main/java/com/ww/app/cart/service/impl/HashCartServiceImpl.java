@@ -94,6 +94,9 @@ public class HashCartServiceImpl implements HashCartService {
         Assert.isTrue(num > 0 && num < MAX_ADD_NUMBER, () -> new ApiException("数量必须大于0且不能超过" + MAX_ADD_NUMBER));
         RMap<String, CartItem> userCart = getUserCart();
         userCart.computeIfPresent(skuId.toString(), (k, cartItem) -> {
+            if (num > MAX_ADD_NUMBER) {
+                throw new ApiException("购物车商品数量不能超过" + MAX_ADD_NUMBER);
+            }
             cartItem.setCount(num);
             return cartItem;
         });
