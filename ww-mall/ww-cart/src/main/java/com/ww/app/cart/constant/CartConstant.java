@@ -9,4 +9,8 @@ public class CartConstant {
 
     public final static Integer MAX_CART_NUMBER = 99;
 
+    public final static Integer MAX_ADD_NUMBER = 100;
+
+    public final static long CART_TTL_DAYS = 60L;
+
 }

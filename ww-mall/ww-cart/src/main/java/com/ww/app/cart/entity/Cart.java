@@ -1,11 +1,9 @@
 package com.ww.app.cart.entity;
 
 import lombok.Data;
-import lombok.Getter;
 
+import java.util.ArrayList;
 import java.util.List;
-
-import static com.ww.app.common.utils.CollectionUtils.getSumValue;
 
 /**
  * @description:
@@ -17,7 +15,7 @@ public class Cart {
     /**
      * 购物车明细
      */
-    private List<CartItem> cartItems;
+    private List<CartItem> cartItems = new ArrayList<>();
 
     /**
      * 购物车商品总数量
@@ -37,19 +35,15 @@ public class Cart {
     /**
      * 购物车扣减总金额，以分为单位
      */
-    @Getter
     private long reduceAmount = 0;
 
-    public int getCountNum() {
-        return getSumValue(this.cartItems, CartItem::getCount, Integer::sum, 0);
-    }
-
-    public int getCountType() {
-        return this.cartItems.size();
-    }
-
-    public long getTotalAmount() {
-        return getSumValue(this.cartItems, CartItem::getTotalPrice, Long::sum, 0L);
+    public void recalcTotals() {
+        this.countNum = cartItems.stream().mapToInt(CartItem::getCount).sum();
+        this.countType = cartItems.size();
+        this.totalAmount = cartItems.stream()
+                .filter(CartItem::isChecked)
+                .mapToLong(CartItem::getTotalPrice)
+                .sum();
     }
 
 }

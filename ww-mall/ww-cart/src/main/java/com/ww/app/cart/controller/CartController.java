@@ -1,7 +1,6 @@
 package com.ww.app.cart.controller;
 
 import com.ww.app.cart.entity.Cart;
-import com.ww.app.cart.entity.CartItem;
 import com.ww.app.cart.service.HashCartService;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -35,8 +34,8 @@ public class CartController {
     }
 
     @GetMapping("/addToCart")
-    public CartItem addCart(@RequestParam("skuId") Long skuId, @RequestParam("num") Integer num) {
-        return cartService.addToCart(skuId, num);
+    public boolean addCart(@RequestParam("skuId") Long skuId) {
+        return cartService.addToCart(skuId, 1);
     }
 
     @GetMapping("/checkItem")

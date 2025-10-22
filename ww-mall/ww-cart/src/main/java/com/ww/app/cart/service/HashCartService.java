@@ -1,7 +1,6 @@
 package com.ww.app.cart.service;
 
 import com.ww.app.cart.entity.Cart;
-import com.ww.app.cart.entity.CartItem;
 
 import java.util.List;
 
@@ -19,7 +18,7 @@ public interface HashCartService {
      * @param num 数量
      * @return cartItem
      */
-    CartItem addToCart(Long skuId, Integer num);
+    boolean addToCart(Long skuId, Integer num);
 
     /**
      * 获取用户购物车列表

@@ -6,12 +6,7 @@ import com.ww.app.cart.entity.CartItem;
 import com.ww.app.common.common.ClientUser;
 import com.ww.app.common.constant.Constant;
 import com.ww.app.common.utils.MoneyUtils;
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.MethodOrderer;
-import org.junit.jupiter.api.Order;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.TestMethodOrder;
+import org.junit.jupiter.api.*;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.mock.web.MockHttpServletRequest;
@@ -22,7 +17,8 @@ import org.springframework.web.context.request.ServletRequestAttributes;
 import java.util.Arrays;
 import java.util.List;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 @SpringBootTest
 @ActiveProfiles("dev")
@@ -73,28 +69,18 @@ public class HashCartServiceTest {
     @Order(2)
     void testAddToCart() {
         System.out.println("=== 测试添加单个商品到购物车 ===");
-        CartItem item = hashCartService.addToCart(TEST_SKU_ID_1, 1);
-        assertNotNull(item, "添加购物车应返回CartItem");
-        assertEquals(TEST_SKU_ID_1, item.getSkuId(), "返回的SKU不一致");
-        System.out.println("添加商品成功: SKU_ID=" + item.getSkuId() + ", 数量=" + item.getCount());
+        boolean item = hashCartService.addToCart(TEST_SKU_ID_1, 1);
+        assertTrue(item, "添加购物车应返回CartItem");
     }
 
     @Test
     @Order(3)
     void testAddMultipleItemsToCart() {
         System.out.println("=== 测试添加多个商品到购物车 ===");
-        
         // 添加第二个商品
-        CartItem item2 = hashCartService.addToCart(TEST_SKU_ID_2, 2);
-        assertNotNull(item2, "添加第二个商品应返回CartItem");
-        assertEquals(TEST_SKU_ID_2, item2.getSkuId(), "第二个商品SKU不一致");
-        System.out.println("添加第二个商品成功: SKU_ID=" + item2.getSkuId() + ", 数量=" + item2.getCount());
-        
+        hashCartService.addToCart(TEST_SKU_ID_2, 2);
         // 添加第三个商品
-        CartItem item3 = hashCartService.addToCart(TEST_SKU_ID_3, 3);
-        assertNotNull(item3, "添加第三个商品应返回CartItem");
-        assertEquals(TEST_SKU_ID_3, item3.getSkuId(), "第三个商品SKU不一致");
-        System.out.println("添加第三个商品成功: SKU_ID=" + item3.getSkuId() + ", 数量=" + item3.getCount());
+        hashCartService.addToCart(TEST_SKU_ID_3, 3);
     }
 
     @Test

@@ -59,17 +59,12 @@ public class CartItem implements Serializable {
     private int count;
 
     /**
-     * 总价，以分为单位
-     */
-    private long totalPrice;
-
-    /**
      * 是否失效【1：有效 0：已失效】
      */
     private boolean invalid;
 
     public long getTotalPrice() {
-        return this.price * this.count;
+        return price * count;
     }
 
 }
