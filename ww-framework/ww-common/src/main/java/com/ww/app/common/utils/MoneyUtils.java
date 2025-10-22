@@ -1,6 +1,5 @@
 package com.ww.app.common.utils;
 
-import cn.hutool.core.math.Money;
 import cn.hutool.core.util.NumberUtil;
 import cn.hutool.core.util.RandomUtil;
 import lombok.AllArgsConstructor;
@@ -117,8 +116,8 @@ public class MoneyUtils {
      * @param fen 分
      * @return 元
      */
-    public static BigDecimal fenToYuan(int fen) {
-        return new Money(0, fen).getAmount();
+    public static BigDecimal fenToYuan(long fen) {
+        return BigDecimal.valueOf(fen).divide(PERCENT_100, PRICE_SCALE, DEFAULT_ROUNDING_MODE);
     }
 
     /**
@@ -127,8 +126,8 @@ public class MoneyUtils {
      * @param fen 分
      * @return 元
      */
-    public static String fenToYuanStr(int fen) {
-        return new Money(0, fen).toString();
+    public static String fenToYuanStr(long fen) {
+        return fenToYuan(fen).toString();
     }
 
     /**

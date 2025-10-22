@@ -51,7 +51,7 @@ public class CartItem implements Serializable {
     /**
      * sku销售价【加入时】，以分为单位
      */
-    private int price;
+    private long price;
 
     /**
      * 加入购书车数量
@@ -61,14 +61,14 @@ public class CartItem implements Serializable {
     /**
      * 总价，以分为单位
      */
-    private int totalPrice;
+    private long totalPrice;
 
     /**
      * 是否失效【1：有效 0：已失效】
      */
     private boolean invalid;
 
-    public int getTotalPrice() {
+    public long getTotalPrice() {
         return this.price * this.count;
     }
 

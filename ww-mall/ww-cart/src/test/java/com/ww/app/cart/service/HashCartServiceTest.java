@@ -59,7 +59,7 @@ public class HashCartServiceTest {
     /**
      * 格式化价格显示，将分转换为元
      */
-    private String formatPrice(int priceInCents) {
+    private String formatPrice(long priceInCents) {
         return MoneyUtils.fenToYuanStr(priceInCents);
     }
 

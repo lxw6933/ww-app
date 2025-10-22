@@ -32,13 +32,13 @@ public class Cart {
     /**
      * 购物车总价格【勾选】，以分为单位
      */
-    private int totalAmount;
+    private long totalAmount;
 
     /**
      * 购物车扣减总金额，以分为单位
      */
     @Getter
-    private int reduceAmount = 0;
+    private long reduceAmount = 0;
 
     public int getCountNum() {
         return getSumValue(this.cartItems, CartItem::getCount, Integer::sum, 0);
@@ -48,8 +48,8 @@ public class Cart {
         return this.cartItems.size();
     }
 
-    public int getTotalAmount() {
-        return getSumValue(this.cartItems, CartItem::getTotalPrice, Integer::sum, 0);
+    public long getTotalAmount() {
+        return getSumValue(this.cartItems, CartItem::getTotalPrice, Long::sum, 0L);
     }
 
 }

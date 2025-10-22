@@ -46,7 +46,7 @@ public class HashCartServiceImpl implements HashCartService {
             cartItem.setSkuId(skuId);
             cartItem.setCount(num);
             cartItem.setChecked(true);
-            cartItem.setPrice(100); // 设置为1元（100分）
+            cartItem.setPrice(100L); // 设置为1元（100分）
         } else {
             cartItem.setCount(cartItem.getCount() + num);
         }
