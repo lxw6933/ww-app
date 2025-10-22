@@ -68,10 +68,10 @@ public class AppProductSpuDetailVO {
         private List<ProductSku.Property> properties;
 
         @Schema(description = "销售价格，单位：分", requiredMode = Schema.RequiredMode.REQUIRED)
-        private Integer price;
+        private Long price;
 
         @Schema(description = "市场价，单位使用：分", requiredMode = Schema.RequiredMode.REQUIRED)
-        private Integer marketPrice;
+        private Long marketPrice;
 
         @Schema(description = "图片地址", requiredMode = Schema.RequiredMode.REQUIRED)
         private String img;

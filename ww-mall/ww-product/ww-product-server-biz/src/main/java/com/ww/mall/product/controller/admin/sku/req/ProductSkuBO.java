@@ -22,13 +22,13 @@ public class ProductSkuBO {
 
     @Schema(description = "销售价格，单位：分", requiredMode = Schema.RequiredMode.REQUIRED)
     @NotNull(message = "销售价格，单位：分不能为空")
-    private Integer price;
+    private Long price;
 
     @Schema(description = "市场价")
-    private Integer marketPrice;
+    private Long marketPrice;
 
     @Schema(description = "成本价")
-    private Integer costPrice;
+    private Long costPrice;
 
     @Schema(description = "条形码")
     private String barCode;

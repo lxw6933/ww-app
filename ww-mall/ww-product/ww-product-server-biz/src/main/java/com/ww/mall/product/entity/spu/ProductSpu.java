@@ -106,6 +106,6 @@ public class ProductSpu extends BaseEntity {
     /**
      * 最低sku价格
      */
-    private Integer minPrice;
+    private Long minPrice;
 
 }

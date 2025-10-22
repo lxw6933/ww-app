@@ -41,17 +41,17 @@ public class ProductSku extends BaseEntity {
     /**
      * 商品价格，单位：分
      */
-    private Integer price;
+    private Long price;
 
     /**
      * 市场价，单位：分
      */
-    private Integer marketPrice;
+    private Long marketPrice;
 
     /**
      * 成本价，单位：分
      */
-    private Integer costPrice;
+    private Long costPrice;
 
     /**
      * 图片地址
