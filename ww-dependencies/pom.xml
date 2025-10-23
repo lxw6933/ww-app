@@ -69,6 +69,8 @@
         <commons.pool.version>2.11.1</commons.pool.version>
         <!-- captcha -->
         <anji-plus-captcha.version>1.4.0</anji-plus-captcha.version>
+        <!-- disruptor -->
+        <disruptor.version>3.4.4</disruptor.version>
     </properties>
 
     <dependencyManagement>
@@ -425,6 +427,12 @@
                 <groupId>com.anji-plus</groupId>
                 <artifactId>captcha-spring-boot-starter</artifactId>
                 <version>${anji-plus-captcha.version}</version>
+            </dependency>
+            <!-- disruptor -->
+            <dependency>
+                <groupId>com.lmax</groupId>
+                <artifactId>disruptor</artifactId>
+                <version>${disruptor.version}</version>
             </dependency>
         </dependencies>
     </dependencyManagement>
