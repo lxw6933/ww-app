@@ -110,6 +110,7 @@ class DisruptorTemplateTest {
     @DisplayName("测试多个事件发布")
     void testPublishMultipleEvents() throws InterruptedException {
         EventProcessor<String> processor = event -> {
+            log.info("处理事件[{}]", event);
             processedCount.incrementAndGet();
             latch.countDown();
             return ProcessResult.success("处理成功");
@@ -373,7 +374,7 @@ class DisruptorTemplateTest {
         // 验证文件创建
         Path dirPath = Paths.get(testDir);
         assertTrue(Files.exists(dirPath), "持久化目录应该存在");
-        
+
         long fileCount = Files.list(dirPath).filter(p -> p.toString().endsWith(".json")).count();
         assertEquals(5, fileCount, "应该创建5个JSON文件");
 

@@ -1,6 +1,7 @@
 package com.ww.app.disruptor.core;
 
 import com.lmax.disruptor.*;
+import com.lmax.disruptor.TimeoutException;
 import com.lmax.disruptor.dsl.Disruptor;
 import com.lmax.disruptor.dsl.ProducerType;
 import com.ww.app.common.thread.DefaultThreadFactoryBuilder;
@@ -18,10 +19,7 @@ import lombok.extern.slf4j.Slf4j;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.concurrent.CopyOnWriteArrayList;
-import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.ThreadFactory;
-import java.util.concurrent.TimeUnit;
+import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 
@@ -62,6 +60,16 @@ public class DisruptorEngine<T> {
     private MetricsCollector metricsCollector;
 
     /**
+     * WorkerPool用于多消费者并发处理
+     */
+    private WorkerPool<EventWrapper<T>> workerPool;
+
+    /**
+     * 消费者线程池
+     */
+    private ExecutorService consumerExecutor;
+
+    /**
      * 引擎配置
      */
     private final DisruptorConfig config;
@@ -83,9 +91,9 @@ public class DisruptorEngine<T> {
     private final AtomicLong failedCount = new AtomicLong(0);
 
     /**
-     * 批量事件缓冲区
+     * 批量事件缓冲区 - 使用线程安全的队列
      */
-    private final List<Event<T>> batchBuffer = new CopyOnWriteArrayList<>();
+    private final ConcurrentLinkedQueue<Event<T>> batchBuffer = new ConcurrentLinkedQueue<>();
 
     /**
      * 批量处理定时器
@@ -118,14 +126,14 @@ public class DisruptorEngine<T> {
                         createWaitStrategy()
                 );
 
-                // 设置事件处理器
-                this.disruptor.handleEventsWith(this::handleEvent);
-
                 // 设置异常处理器
                 this.disruptor.setDefaultExceptionHandler(new DisruptorExceptionHandler());
 
-                // 启动Disruptor
+                // 启动Disruptor获取RingBuffer
                 this.ringBuffer = disruptor.start();
+
+                // 使用WorkerPool实现多消费者并发处理
+                setupWorkerPool();
 
                 // 启动持久化管理器
                 if (persistenceManager != null) {
@@ -148,7 +156,8 @@ public class DisruptorEngine<T> {
                     startBatchScheduler();
                 }
 
-                log.info("Disruptor引擎启动成功，RingBuffer大小: {}", config.getRingBufferSize());
+                log.info("Disruptor引擎启动成功，RingBuffer大小: {}, 消费者线程数: {}", 
+                        config.getRingBufferSize(), config.getConsumerThreads());
             } catch (Exception e) {
                 started.set(false);
                 log.error("Disruptor引擎启动失败", e);
@@ -176,22 +185,38 @@ public class DisruptorEngine<T> {
                     flushBatch();
                 }
 
-                // 关闭Disruptor
-                if (disruptor != null) {
+                // 停止WorkerPool
+                if (workerPool != null) {
                     try {
                         long pendingCount = getPendingCount();
                         if (pendingCount > 0) {
                             log.info("等待处理 {} 个剩余事件...", pendingCount);
                         }
 
+                        // 停止WorkerPool
+                        workerPool.drainAndHalt();
+                        log.info("WorkerPool已停止");
+                    } catch (Exception e) {
+                        log.error("停止WorkerPool异常", e);
+                    }
+                }
+
+                // 关闭Disruptor
+                if (disruptor != null) {
+                    try {
                         // 带超时的shutdown，避免无限等待
                         disruptor.shutdown(30, TimeUnit.SECONDS);
                         log.info("Disruptor已优雅关闭");
 
                     } catch (TimeoutException e) {
-                        log.warn("Disruptor关闭超时，仍有 {} 个事件未处理，强制关闭", getPendingCount());
-                        disruptor.halt();  // 强制关闭
+                        log.warn("Disruptor关闭超时，强制关闭");
+                        disruptor.halt();
                     }
+                }
+
+                // 关闭消费者线程池
+                if (consumerExecutor != null) {
+                    ThreadUtil.shutdown("消费者线程池", () -> log.info("消费者线程池清理完成"), consumerExecutor);
                 }
 
                 // 停止持久化管理器
@@ -215,9 +240,13 @@ public class DisruptorEngine<T> {
      * 发布事件
      */
     public boolean publishEvent(Event<T> event) {
-        log.info("发布事件[{}]", event);
         if (!started.get()) {
             log.warn("引擎未启动，无法发布事件");
+            return false;
+        }
+
+        if (event == null) {
+            log.warn("事件为null，无法发布");
             return false;
         }
 
@@ -255,6 +284,17 @@ public class DisruptorEngine<T> {
      */
     public boolean tryPublishEvent(Event<T> event, long timeout, TimeUnit unit) {
         if (!started.get()) {
+            log.warn("引擎未启动，无法发布事件");
+            return false;
+        }
+
+        if (event == null) {
+            log.warn("事件为null，无法发布");
+            return false;
+        }
+
+        if (timeout <= 0) {
+            log.warn("超时时间必须大于0");
             return false;
         }
 
@@ -299,8 +339,96 @@ public class DisruptorEngine<T> {
     }
 
     /**
-     * 处理事件
+     * 设置WorkerPool实现多消费者并发
      */
+    private void setupWorkerPool() {
+        // 创建多个WorkHandler实例
+        @SuppressWarnings("unchecked")
+        WorkHandler<EventWrapper<T>>[] handlers = new WorkHandler[config.getConsumerThreads()];
+        for (int i = 0; i < config.getConsumerThreads(); i++) {
+            handlers[i] = this::handleEvent;
+        }
+
+        // 创建WorkerPool
+        this.workerPool = new WorkerPool<>(
+                ringBuffer,
+                ringBuffer.newBarrier(),
+                new DisruptorExceptionHandler(),
+                handlers
+        );
+
+        // 添加Gating Sequences
+        ringBuffer.addGatingSequences(workerPool.getWorkerSequences());
+
+        // 创建消费者线程池
+        this.consumerExecutor = ThreadUtil.initFixedThreadPoolExecutor(
+                "disruptor-worker",
+                config.getConsumerThreads()
+        );
+
+        // 启动WorkerPool
+        workerPool.start(consumerExecutor);
+
+        log.info("WorkerPool已启动，消费者线程数: {}", config.getConsumerThreads());
+    }
+
+    /**
+     * 处理事件 - WorkHandler接口方法
+     */
+    private void handleEvent(EventWrapper<T> wrapper) {
+        Event<T> event = wrapper.getEvent();
+        if (event == null) {
+            return;
+        }
+
+        long startTime = System.currentTimeMillis();
+
+        try {
+            // 使用批量处理器
+            if (batchEventProcessor != null && config.isBatchEnabled()) {
+                batchBuffer.offer(event);
+
+                // 达到批量大小时刷新
+                if (batchBuffer.size() >= config.getBatchSize()) {
+                    flushBatch();
+                }
+            }
+            // 使用单个事件处理器
+            else if (eventProcessor != null) {
+                event.markProcessing();
+                eventProcessor.process(event);
+                event.markCompleted();
+                processCount.incrementAndGet();
+
+                // 处理成功后删除持久化数据
+                if (persistenceManager != null) {
+                    persistenceManager.remove(event.getEventId());
+                }
+
+                // 记录处理耗时
+                long duration = System.currentTimeMillis() - startTime;
+                if (metricsCollector != null) {
+                    metricsCollector.recordProcessing(duration);
+                }
+            }
+        } catch (Exception e) {
+            log.error("处理事件失败: {}, 线程: {}", event.getEventId(), Thread.currentThread().getName(), e);
+            event.markFailed();
+            failedCount.incrementAndGet();
+
+            if (metricsCollector != null) {
+                metricsCollector.recordFailure();
+            }
+        } finally {
+            wrapper.clear();
+        }
+    }
+
+    /**
+     * 处理事件 - EventHandler接口方法（已废弃，保留用于兼容）
+     * @deprecated 使用WorkerPool的handleEvent(EventWrapper)代替
+     */
+    @Deprecated
     private void handleEvent(EventWrapper<T> wrapper, long sequence, boolean endOfBatch) {
         Event<T> event = wrapper.getEvent();
         if (event == null) {
@@ -314,8 +442,8 @@ public class DisruptorEngine<T> {
             if (batchEventProcessor != null && config.isBatchEnabled()) {
                 batchBuffer.add(event);
 
-                // 达到批量大小或批次结束时刷新
-                if (batchBuffer.size() >= config.getBatchSize() || endOfBatch) {
+                // 达到批量大小时刷新
+                if (batchBuffer.size() >= config.getBatchSize()) {
                     flushBatch();
                 }
             }
@@ -351,9 +479,9 @@ public class DisruptorEngine<T> {
     }
 
     /**
-     * 刷新批量缓冲区
+     * 刷新批量缓冲区 - 线程安全
      */
-    private void flushBatch() {
+    private synchronized void flushBatch() {
         if (batchBuffer.isEmpty()) {
             return;
         }
@@ -361,8 +489,16 @@ public class DisruptorEngine<T> {
         long startTime = System.currentTimeMillis();
 
         try {
-            List<Event<T>> eventsToProcess = new ArrayList<>(batchBuffer);
-            batchBuffer.clear();
+            // 从队列中取出所有事件
+            List<Event<T>> eventsToProcess = new ArrayList<>();
+            Event<T> event;
+            while ((event = batchBuffer.poll()) != null) {
+                eventsToProcess.add(event);
+            }
+
+            if (eventsToProcess.isEmpty()) {
+                return;
+            }
 
             EventBatch<T> batch = new EventBatch<>();
             batch.addEvents(eventsToProcess);
@@ -375,8 +511,8 @@ public class DisruptorEngine<T> {
 
             // 批量删除持久化数据
             if (persistenceManager != null) {
-                for (Event<T> event : eventsToProcess) {
-                    persistenceManager.remove(event.getEventId());
+                for (Event<T> e : eventsToProcess) {
+                    persistenceManager.remove(e.getEventId());
                 }
             }
 
@@ -429,7 +565,8 @@ public class DisruptorEngine<T> {
         if (ringBuffer == null) {
             return 0;
         }
-        return ringBuffer.getBufferSize() - ringBuffer.remainingCapacity();
+        long pending = ringBuffer.getBufferSize() - ringBuffer.remainingCapacity();
+        return Math.max(0, pending);
     }
 
     /**
