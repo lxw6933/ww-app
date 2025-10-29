@@ -3,12 +3,15 @@ package com.ww.app.disruptor.core;
 import com.lmax.disruptor.*;
 import com.lmax.disruptor.dsl.Disruptor;
 import com.lmax.disruptor.dsl.ProducerType;
+import com.ww.app.common.thread.DefaultThreadFactoryBuilder;
+import com.ww.app.common.utils.ThreadUtil;
 import com.ww.app.disruptor.model.Event;
 import com.ww.app.disruptor.model.EventBatch;
+import com.ww.app.disruptor.monitor.MetricsCollector;
+import com.ww.app.disruptor.persistence.PersistenceManager;
 import com.ww.app.disruptor.processor.BatchEventProcessor;
 import com.ww.app.disruptor.processor.EventProcessor;
-import lombok.Getter;
-import lombok.NonNull;
+import lombok.Data;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 
@@ -47,10 +50,13 @@ public class DisruptorEngine<T> {
      */
     @Setter
     private BatchEventProcessor<T> batchEventProcessor;
-
-    /**
-     * 线程池
-     */
+    
+    @Setter
+    private PersistenceManager<T> persistenceManager;
+    
+    @Setter
+    private MetricsCollector metricsCollector;
+    
     private ExecutorService executor;
 
     /**
@@ -72,6 +78,7 @@ public class DisruptorEngine<T> {
      * 处理计数器
      */
     private final AtomicLong processCount = new AtomicLong(0);
+    private final AtomicLong failedCount = new AtomicLong(0);
 
     /**
      * 批量事件缓冲区
@@ -93,16 +100,24 @@ public class DisruptorEngine<T> {
     public void start() {
         if (started.compareAndSet(false, true)) {
             try {
-                log.info("正在启动Disruptor引擎...");
+                log.info("正在启动Disruptor引擎，配置: {}", config);
 
-                // 创建线程池
-                this.executor = createExecutor();
+                // 使用ThreadUtil创建线程池（用于后台任务）
+                this.executor = ThreadUtil.initFixedThreadPoolExecutor(
+                    "disruptor-worker", 
+                    config.getConsumerThreads()
+                );
+
+                // 创建ThreadFactory
+                ThreadFactory threadFactory = new DefaultThreadFactoryBuilder()
+                        .setNamePrefix("disruptor-consumer")
+                        .build();
 
                 // 创建Disruptor
                 this.disruptor = new Disruptor<>(
                         EventWrapper::new,
                         config.getRingBufferSize(),
-                        executor,
+                        threadFactory,
                         ProducerType.MULTI,
                         createWaitStrategy()
                 );
@@ -116,8 +131,24 @@ public class DisruptorEngine<T> {
                 // 启动Disruptor
                 this.ringBuffer = disruptor.start();
 
+                // 启动持久化管理器
+                if (persistenceManager != null) {
+                    persistenceManager.start();
+                    // 恢复未处理的事件
+                    List<Event<T>> recovered = persistenceManager.recover();
+                    for (Event<T> event : recovered) {
+                        publishEvent(event);
+                    }
+                    log.info("恢复了 {} 个未处理的事件", recovered.size());
+                }
+
+                // 启动监控
+                if (metricsCollector != null) {
+                    metricsCollector.start();
+                }
+
                 // 启动批量处理定时器
-                if (batchEventProcessor != null) {
+                if (batchEventProcessor != null && config.isBatchEnabled()) {
                     startBatchScheduler();
                 }
 
@@ -140,7 +171,7 @@ public class DisruptorEngine<T> {
 
                 // 停止批量处理定时器
                 if (batchScheduler != null) {
-                    batchScheduler.shutdown();
+                    ThreadUtil.shutdown("批量调度器", this::flushBatch, batchScheduler);
                 }
 
                 // 处理剩余的批量事件
@@ -153,13 +184,23 @@ public class DisruptorEngine<T> {
                     disruptor.shutdown();
                 }
 
-                // 关闭线程池
-                if (executor != null) {
-                    executor.shutdown();
-                    executor.awaitTermination(5, TimeUnit.SECONDS);
+                // 停止持久化管理器
+                if (persistenceManager != null) {
+                    persistenceManager.stop();
                 }
 
-                log.info("Disruptor引擎已停止，总发布: {}, 总处理: {}", publishCount.get(), processCount.get());
+                // 停止监控
+                if (metricsCollector != null) {
+                    metricsCollector.stop();
+                }
+
+                // 使用ThreadUtil关闭线程池
+                if (executor != null) {
+                    ThreadUtil.shutdown("Disruptor引擎", () -> log.info("执行引擎最后清理工作"), executor);
+                }
+
+                log.info("Disruptor引擎已停止，总发布: {}, 总处理: {}, 总失败: {}",
+                        publishCount.get(), processCount.get(), failedCount.get());
             } catch (Exception e) {
                 log.error("Disruptor引擎停止异常", e);
             }
@@ -176,17 +217,30 @@ public class DisruptorEngine<T> {
         }
 
         try {
-            long sequence = ringBuffer.next();
-            try {
-                EventWrapper<T> wrapper = ringBuffer.get(sequence);
-                wrapper.setEvent(event);
-            } finally {
-                ringBuffer.publish(sequence);
+            // 先持久化（防止数据丢失）
+            if (persistenceManager != null) {
+                persistenceManager.persist(event);
             }
+
+            // 使用最新API发布事件
+            ringBuffer.publishEvent((wrapper, sequence) -> wrapper.setEvent(event));
+
             publishCount.incrementAndGet();
+
+            // 记录监控指标
+            if (metricsCollector != null) {
+                metricsCollector.recordPublish();
+            }
+
             return true;
         } catch (Exception e) {
             log.error("发布事件失败: {}", event.getEventId(), e);
+            failedCount.incrementAndGet();
+
+            if (metricsCollector != null) {
+                metricsCollector.recordFailure();
+            }
+
             return false;
         }
     }
@@ -200,17 +254,27 @@ public class DisruptorEngine<T> {
         }
 
         try {
-            long sequence = ringBuffer.tryNext();
-            try {
-                EventWrapper<T> wrapper = ringBuffer.get(sequence);
-                wrapper.setEvent(event);
-            } finally {
-                ringBuffer.publish(sequence);
+            // 先持久化
+            if (persistenceManager != null) {
+                persistenceManager.persist(event);
             }
-            publishCount.incrementAndGet();
-            return true;
-        } catch (InsufficientCapacityException e) {
-            log.warn("RingBuffer容量不足，发布事件失败");
+
+            // 使用tryPublishEvent
+            boolean success = ringBuffer.tryPublishEvent((wrapper, sequence) ->
+                    wrapper.setEvent(event)
+            );
+
+            if (success) {
+                publishCount.incrementAndGet();
+                if (metricsCollector != null) {
+                    metricsCollector.recordPublish();
+                }
+            }
+
+            return success;
+        } catch (Exception e) {
+            log.error("尝试发布事件失败: {}", event.getEventId(), e);
+            failedCount.incrementAndGet();
             return false;
         }
     }
@@ -224,9 +288,11 @@ public class DisruptorEngine<T> {
             return;
         }
 
+        long startTime = System.currentTimeMillis();
+
         try {
             // 使用批量处理器
-            if (batchEventProcessor != null) {
+            if (batchEventProcessor != null && config.isBatchEnabled()) {
                 batchBuffer.add(event);
 
                 // 达到批量大小或批次结束时刷新
@@ -240,10 +306,26 @@ public class DisruptorEngine<T> {
                 eventProcessor.process(event);
                 event.markCompleted();
                 processCount.incrementAndGet();
+
+                // 处理成功后删除持久化数据
+                if (persistenceManager != null) {
+                    persistenceManager.remove(event.getEventId());
+                }
+
+                // 记录处理耗时
+                long duration = System.currentTimeMillis() - startTime;
+                if (metricsCollector != null) {
+                    metricsCollector.recordProcessing(duration);
+                }
             }
         } catch (Exception e) {
             log.error("处理事件失败: {}", event.getEventId(), e);
             event.markFailed();
+            failedCount.incrementAndGet();
+
+            if (metricsCollector != null) {
+                metricsCollector.recordFailure();
+            }
         } finally {
             wrapper.clear();
         }
@@ -257,6 +339,8 @@ public class DisruptorEngine<T> {
             return;
         }
 
+        long startTime = System.currentTimeMillis();
+
         try {
             List<Event<T>> eventsToProcess = new ArrayList<>(batchBuffer);
             batchBuffer.clear();
@@ -269,8 +353,27 @@ public class DisruptorEngine<T> {
             batch.markCompleted();
 
             processCount.addAndGet(eventsToProcess.size());
+
+            // 批量删除持久化数据
+            if (persistenceManager != null) {
+                for (Event<T> event : eventsToProcess) {
+                    persistenceManager.remove(event.getEventId());
+                }
+            }
+
+            // 记录批处理耗时
+            long duration = System.currentTimeMillis() - startTime;
+            if (metricsCollector != null) {
+                metricsCollector.recordBatchProcessing(eventsToProcess.size(), duration);
+            }
+
         } catch (Exception e) {
             log.error("批量处理失败", e);
+            failedCount.incrementAndGet();
+
+            if (metricsCollector != null) {
+                metricsCollector.recordFailure();
+            }
         }
     }
 
@@ -278,41 +381,16 @@ public class DisruptorEngine<T> {
      * 启动批量处理定时器
      */
     private void startBatchScheduler() {
-        this.batchScheduler = Executors.newSingleThreadScheduledExecutor(r -> {
-            Thread thread = new Thread(r, "disruptor-batch-scheduler");
-            thread.setDaemon(true);
-            return thread;
-        });
+        this.batchScheduler = ThreadUtil.initScheduledExecutorService(
+                "disruptor-batch-scheduler",
+                1
+        );
 
         batchScheduler.scheduleAtFixedRate(
                 this::flushBatch,
                 config.getBatchTimeout(),
                 config.getBatchTimeout(),
                 TimeUnit.MILLISECONDS
-        );
-    }
-
-    /**
-     * 创建线程池
-     */
-    private ExecutorService createExecutor() {
-        return new ThreadPoolExecutor(
-                config.getConsumerThreads(),
-                config.getConsumerThreads(),
-                0L,
-                TimeUnit.MILLISECONDS,
-                new LinkedBlockingQueue<>(1024),
-                new ThreadFactory() {
-                    private final AtomicLong counter = new AtomicLong(0);
-
-                    @Override
-                    public Thread newThread(@NonNull Runnable r) {
-                        Thread thread = new Thread(r, "disruptor-consumer-" + counter.incrementAndGet());
-                        thread.setDaemon(false);
-                        return thread;
-                    }
-                },
-                new ThreadPoolExecutor.CallerRunsPolicy()
         );
     }
 
@@ -366,13 +444,15 @@ public class DisruptorEngine<T> {
         return processCount.get();
     }
 
+    public long getFailedCount() {
+        return failedCount.get();
+    }
+
     /**
      * 事件包装器
      */
-    @Setter
-    @Getter
+    @Data
     public static class EventWrapper<T> {
-
         private Event<T> event;
 
         public void clear() {
@@ -387,6 +467,10 @@ public class DisruptorEngine<T> {
         @Override
         public void handleEventException(Throwable ex, long sequence, EventWrapper<T> event) {
             log.error("处理事件异常, sequence: {}, event: {}", sequence, event.getEvent(), ex);
+            failedCount.incrementAndGet();
+            if (metricsCollector != null) {
+                metricsCollector.recordFailure();
+            }
         }
 
         @Override
