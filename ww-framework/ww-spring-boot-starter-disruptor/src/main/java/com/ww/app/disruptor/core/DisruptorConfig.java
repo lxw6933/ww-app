@@ -42,6 +42,11 @@ public class DisruptorConfig {
     private boolean batchEnabled = true;
 
     /**
+     * 业务名称标识 - 用于区分不同业务的Disruptor实例的线程名
+     */
+    private String businessName = "default";
+
+    /**
      * 验证配置
      */
     public void validate() {

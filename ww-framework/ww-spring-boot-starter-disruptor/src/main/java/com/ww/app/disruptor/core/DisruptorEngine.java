@@ -114,7 +114,7 @@ public class DisruptorEngine<T> {
 
                 // 创建ThreadFactory
                 ThreadFactory threadFactory = new DefaultThreadFactoryBuilder()
-                        .setNamePrefix("disruptor-consumer")
+                        .setNamePrefix(config.getBusinessName() + "-disruptor-consumer")
                         .build();
 
                 // 创建Disruptor
@@ -362,7 +362,7 @@ public class DisruptorEngine<T> {
 
         // 创建消费者线程池
         this.consumerExecutor = ThreadUtil.initFixedThreadPoolExecutor(
-                "disruptor-worker",
+                config.getBusinessName() + "-disruptor-worker",
                 config.getConsumerThreads()
         );
 
@@ -413,60 +413,6 @@ public class DisruptorEngine<T> {
             }
         } catch (Exception e) {
             log.error("处理事件失败: {}, 线程: {}", event.getEventId(), Thread.currentThread().getName(), e);
-            event.markFailed();
-            failedCount.incrementAndGet();
-
-            if (metricsCollector != null) {
-                metricsCollector.recordFailure();
-            }
-        } finally {
-            wrapper.clear();
-        }
-    }
-
-    /**
-     * 处理事件 - EventHandler接口方法（已废弃，保留用于兼容）
-     * @deprecated 使用WorkerPool的handleEvent(EventWrapper)代替
-     */
-    @Deprecated
-    private void handleEvent(EventWrapper<T> wrapper, long sequence, boolean endOfBatch) {
-        Event<T> event = wrapper.getEvent();
-        if (event == null) {
-            return;
-        }
-
-        long startTime = System.currentTimeMillis();
-
-        try {
-            // 使用批量处理器
-            if (batchEventProcessor != null && config.isBatchEnabled()) {
-                batchBuffer.add(event);
-
-                // 达到批量大小时刷新
-                if (batchBuffer.size() >= config.getBatchSize()) {
-                    flushBatch();
-                }
-            }
-            // 使用单个事件处理器
-            else if (eventProcessor != null) {
-                event.markProcessing();
-                eventProcessor.process(event);
-                event.markCompleted();
-                processCount.incrementAndGet();
-
-                // 处理成功后删除持久化数据
-                if (persistenceManager != null) {
-                    persistenceManager.remove(event.getEventId());
-                }
-
-                // 记录处理耗时
-                long duration = System.currentTimeMillis() - startTime;
-                if (metricsCollector != null) {
-                    metricsCollector.recordProcessing(duration);
-                }
-            }
-        } catch (Exception e) {
-            log.error("处理事件失败: {}", event.getEventId(), e);
             event.markFailed();
             failedCount.incrementAndGet();
 
@@ -536,7 +482,7 @@ public class DisruptorEngine<T> {
      * 启动批量处理定时器
      */
     private void startBatchScheduler() {
-        this.batchScheduler = ThreadUtil.initScheduledExecutorService("disruptor-batch-scheduler", 1);
+        this.batchScheduler = ThreadUtil.initScheduledExecutorService(config.getBusinessName() + "-disruptor-batch-scheduler", 1);
         batchScheduler.scheduleAtFixedRate(this::flushBatch, config.getBatchTimeout(), config.getBatchTimeout(), TimeUnit.MILLISECONDS);
     }
 

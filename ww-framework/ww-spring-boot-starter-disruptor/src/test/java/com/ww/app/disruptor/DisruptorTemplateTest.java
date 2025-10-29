@@ -360,7 +360,7 @@ class DisruptorTemplateTest {
     void testFilePersistence_NormalFlow() throws IOException {
         String testDir = TEST_DATA_DIR + "/file-persistence-normal";
         FilePersistenceManager<String> filePM = new FilePersistenceManager<>(testDir, 24, String.class);
-        
+
         filePM.start();
 
         // 持久化5个事件
@@ -380,7 +380,7 @@ class DisruptorTemplateTest {
 
         // 模拟重启：停止后重新启动
         filePM.stop();
-        
+
         FilePersistenceManager<String> newFilePM = new FilePersistenceManager<>(testDir, 24, String.class);
         newFilePM.start();
 
@@ -392,7 +392,7 @@ class DisruptorTemplateTest {
         for (int i = 0; i < originalEvents.size(); i++) {
             int finalI = i;
             boolean found = recoveredEvents.stream()
-                .anyMatch(e -> e.getEventId().equals(originalEvents.get(finalI).getEventId()));
+                    .anyMatch(e -> e.getEventId().equals(originalEvents.get(finalI).getEventId()));
             assertTrue(found, "应该恢复事件: " + originalEvents.get(i).getEventId());
         }
 
@@ -406,7 +406,7 @@ class DisruptorTemplateTest {
     void testFilePersistence_Remove() throws IOException {
         String testDir = TEST_DATA_DIR + "/file-persistence-remove";
         FilePersistenceManager<String> filePM = new FilePersistenceManager<>(testDir, 24, String.class);
-        
+
         filePM.start();
 
         // 持久化3个事件
@@ -442,7 +442,7 @@ class DisruptorTemplateTest {
         String testDir = TEST_DATA_DIR + "/file-persistence-cleanup";
         // 设置保留时间为0小时，使文件立即过期
         FilePersistenceManager<String> filePM = new FilePersistenceManager<>(testDir, 0, String.class);
-        
+
         filePM.start();
 
         // 持久化3个事件
@@ -463,7 +463,7 @@ class DisruptorTemplateTest {
 
         long afterCount = Files.list(dirPath).count();
         log.info("清理前: {} 个文件, 清理后: {} 个文件", beforeCount, afterCount);
-        
+
         // 由于保留时间为0，所有文件都应该被清理
         assertTrue(afterCount < beforeCount, "应该清理部分或全部文件");
 
@@ -476,11 +476,11 @@ class DisruptorTemplateTest {
     @DisplayName("测试FilePersistenceManager-目录不存在自动创建")
     void testFilePersistence_AutoCreateDirectory() {
         String testDir = TEST_DATA_DIR + "/auto-create-" + System.currentTimeMillis();
-        
+
         assertFalse(Files.exists(Paths.get(testDir)), "目录应该不存在");
 
         FilePersistenceManager<String> filePM = new FilePersistenceManager<>(testDir, 24, String.class);
-        
+
         // 启动应该自动创建目录
         assertDoesNotThrow(filePM::start, "启动时应该自动创建目录");
 
@@ -497,7 +497,7 @@ class DisruptorTemplateTest {
         // 使用无效的路径（包含非法字符）
         String invalidDir = "\0invalid\0path";
         FilePersistenceManager<String> filePM = new FilePersistenceManager<>(invalidDir, 24, String.class);
-        
+
         // 启动应该抛出异常
         assertThrows(RuntimeException.class, filePM::start, "无效路径应该抛出异常");
 
@@ -510,12 +510,12 @@ class DisruptorTemplateTest {
     void testFilePersistence_PersistNullEvent() {
         String testDir = TEST_DATA_DIR + "/file-persistence-null";
         FilePersistenceManager<String> filePM = new FilePersistenceManager<>(testDir, 24, String.class);
-        
+
         filePM.start();
 
         // 尝试持久化null事件，应该不会崩溃
-        assertDoesNotThrow(() -> filePM.persist(null), 
-            "持久化null事件应该被优雅处理");
+        assertDoesNotThrow(() -> filePM.persist(null),
+                "持久化null事件应该被优雅处理");
 
         filePM.stop();
         log.info("FilePersistence持久化null测试完成");
@@ -527,7 +527,7 @@ class DisruptorTemplateTest {
     void testFilePersistence_ConcurrentPersist() throws InterruptedException, IOException {
         String testDir = TEST_DATA_DIR + "/file-persistence-concurrent";
         FilePersistenceManager<String> filePM = new FilePersistenceManager<>(testDir, 24, String.class);
-        
+
         filePM.start();
 
         int threadCount = 5;
@@ -542,8 +542,8 @@ class DisruptorTemplateTest {
                 try {
                     for (int j = 0; j < eventsPerThread; j++) {
                         Event<String> event = new Event<>(
-                            "concurrent-" + threadId + "-" + j,
-                            "ConcurrentData-" + threadId + "-" + j
+                                "concurrent-" + threadId + "-" + j,
+                                "ConcurrentData-" + threadId + "-" + j
                         );
                         filePM.persist(event);
                     }
@@ -559,8 +559,8 @@ class DisruptorTemplateTest {
         // 验证文件数量
         Path dirPath = Paths.get(testDir);
         long fileCount = Files.list(dirPath).count();
-        assertEquals(threadCount * eventsPerThread, fileCount, 
-            "应该创建" + (threadCount * eventsPerThread) + "个文件");
+        assertEquals(threadCount * eventsPerThread, fileCount,
+                "应该创建" + (threadCount * eventsPerThread) + "个文件");
 
         filePM.stop();
         executor.shutdown();
@@ -581,17 +581,17 @@ class DisruptorTemplateTest {
         // 创建一个正常的事件
         FilePersistenceManager<String> filePM = new FilePersistenceManager<>(testDir, 24, String.class);
         filePM.start();
-        
+
         Event<String> validEvent = new Event<>("valid-event", "ValidData");
         filePM.persist(validEvent);
 
         // 尝试恢复，应该跳过损坏的文件
         List<Event<String>> recovered = filePM.recover();
-        
+
         // 应该至少恢复1个正常事件，损坏的文件应该被跳过
         assertFalse(recovered.isEmpty(), "应该恢复至少1个正常事件");
         assertTrue(recovered.stream().anyMatch(e -> e.getEventId().equals("valid-event")),
-            "应该包含正常的事件");
+                "应该包含正常的事件");
 
         filePM.stop();
         log.info("FilePersistence恢复损坏文件测试完成，恢复了{}个事件", recovered.size());
@@ -603,12 +603,12 @@ class DisruptorTemplateTest {
     void testFilePersistence_RemoveNonExistentEvent() {
         String testDir = TEST_DATA_DIR + "/file-persistence-remove-nonexistent";
         FilePersistenceManager<String> filePM = new FilePersistenceManager<>(testDir, 24, String.class);
-        
+
         filePM.start();
 
         // 删除不存在的事件，应该不会抛异常
-        assertDoesNotThrow(() -> filePM.remove("non-existent-event"), 
-            "删除不存在的事件应该被优雅处理");
+        assertDoesNotThrow(() -> filePM.remove("non-existent-event"),
+                "删除不存在的事件应该被优雅处理");
 
         filePM.stop();
         log.info("FilePersistence删除不存在事件测试完成");
@@ -620,7 +620,7 @@ class DisruptorTemplateTest {
     void testFilePersistence_SaveCacheOnStop() throws IOException {
         String testDir = TEST_DATA_DIR + "/file-persistence-cache-save";
         FilePersistenceManager<String> filePM = new FilePersistenceManager<>(testDir, 24, String.class);
-        
+
         filePM.start();
 
         // 持久化事件
@@ -643,7 +643,7 @@ class DisruptorTemplateTest {
     void testFilePersistence_RecoverFromEmptyDirectory() {
         String testDir = TEST_DATA_DIR + "/file-persistence-empty";
         FilePersistenceManager<String> filePM = new FilePersistenceManager<>(testDir, 24, String.class);
-        
+
         filePM.start();
 
         // 从空目录恢复
@@ -661,7 +661,7 @@ class DisruptorTemplateTest {
     void testFilePersistence_LargeScale() throws IOException {
         String testDir = TEST_DATA_DIR + "/file-persistence-large";
         FilePersistenceManager<String> filePM = new FilePersistenceManager<>(testDir, 24, String.class);
-        
+
         filePM.start();
 
         int eventCount = 100;
@@ -681,7 +681,7 @@ class DisruptorTemplateTest {
         assertEquals(eventCount, fileCount, "应该创建" + eventCount + "个文件");
 
         log.info("FilePersistence大量事件测试 - 持久化{}个事件，耗时{}ms，速率{}/s",
-            eventCount, duration, (eventCount * 1000.0 / duration));
+                eventCount, duration, (eventCount * 1000.0 / duration));
 
         // 测试恢复性能
         long recoverStart = System.currentTimeMillis();
@@ -690,7 +690,7 @@ class DisruptorTemplateTest {
 
         assertEquals(eventCount, recovered.size(), "应该恢复所有事件");
         log.info("FilePersistence大量事件恢复 - 恢复{}个事件，耗时{}ms",
-            recovered.size(), recoverDuration);
+                recovered.size(), recoverDuration);
 
         filePM.stop();
     }
@@ -1266,7 +1266,7 @@ class DisruptorTemplateTest {
         Thread.sleep(2000);
 
         MetricsCollector.MetricsSnapshot snapshot = metricsCollector.getSnapshot();
-        log.info("生产消费平衡测试 - 生产者线程数: {}, 消费者线程数: {}, 发布: {}, 处理: {}, 待处理: {}", 
+        log.info("生产消费平衡测试 - 生产者线程数: {}, 消费者线程数: {}, 发布: {}, 处理: {}, 待处理: {}",
                 3, 4, snapshot.getTotalPublished(), snapshot.getTotalProcessed(), snapshot.getPendingCount());
 
         // 验证生产和消费基本平衡

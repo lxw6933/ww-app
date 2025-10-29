@@ -158,6 +158,11 @@ public class DisruptorTemplate<T> {
             return this;
         }
 
+        public Builder<T> businessName(String name) {
+            config.setBusinessName(name);
+            return this;
+        }
+
         public DisruptorTemplate<T> build() {
             // 验证配置
             config.validate();
