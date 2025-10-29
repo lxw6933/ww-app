@@ -5,6 +5,7 @@ import com.ww.app.disruptor.constans.DisruptorWaitStrategy;
 import com.ww.app.disruptor.model.Event;
 import com.ww.app.disruptor.model.ProcessResult;
 import com.ww.app.disruptor.monitor.MetricsCollector;
+import com.ww.app.disruptor.persistence.FilePersistenceManager;
 import com.ww.app.disruptor.persistence.PersistenceManager;
 import com.ww.app.disruptor.processor.BatchEventProcessor;
 import com.ww.app.disruptor.processor.EventProcessor;
@@ -14,6 +15,7 @@ import org.junit.jupiter.api.*;
 
 import java.io.File;
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -21,6 +23,7 @@ import java.util.*;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.stream.Stream;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -75,7 +78,7 @@ class DisruptorTemplateTest {
         EventProcessor<String> processor = event -> {
             processedCount.incrementAndGet();
             latch.countDown();
-            System.out.println("处理事件: " + event.getEventId() + ", 数据: " + event.getPayload());
+            log.info("处理事件: {}, 数据: {}, 线程: {}", event.getEventId(), event.getPayload(), Thread.currentThread().getName());
             return ProcessResult.success("处理成功");
         };
 
@@ -200,7 +203,7 @@ class DisruptorTemplateTest {
             batchCount.incrementAndGet();
             int size = batch.getEvents().size();
             processedCount.addAndGet(size);
-            System.out.println("批处理: " + batch.getBatchId() + ", 大小: " + size);
+            log.info("批处理: {}, 大小: {}, 线程: {}", batch.getBatchId(), size, Thread.currentThread().getName());
             batchLatch.countDown();
             return ProcessResult.success("批处理成功，处理了" + size + "个事件");
         };
@@ -238,24 +241,26 @@ class DisruptorTemplateTest {
 
         BatchEventProcessor<String> batchProcessor = batch -> {
             batchCount.incrementAndGet();
-            processedCount.addAndGet(batch.getEvents().size());
+            int size = batch.getEvents().size();
+            processedCount.addAndGet(size);
+            log.info("批处理: {}, 大小: {}, 线程: {}", batch.getBatchId(), size, Thread.currentThread().getName());
             batchLatch.countDown();
-            return ProcessResult.success("批处理成功");
+            return ProcessResult.success("批处理成功，处理了" + size + "个事件");
         };
 
         template = DisruptorTemplate.<String>builder()
                 .ringBufferSize(1024)
                 .consumerThreads(2)
                 .batchSize(10)  // 批大小10
-                .batchTimeout(500)  // 超时500ms
+                .batchTimeout(5000)  // 超时500ms
                 .batchEnabled(true)
                 .batchEventProcessor(batchProcessor)
                 .build();
 
         template.start();
 
-        // 只发布3个事件，不够批大小，应该由超时触发
-        for (int i = 0; i < 3; i++) {
+        // 只发布6个事件，不够批大小，应该由超时触发
+        for (int i = 0; i < 6; i++) {
             template.publish("batch-test", "TimeoutEvent-" + i);
         }
 
@@ -263,7 +268,7 @@ class DisruptorTemplateTest {
         boolean completed = batchLatch.await(2, TimeUnit.SECONDS);
 
         assertTrue(completed, "超时应该触发批处理");
-        assertEquals(3, processedCount.get(), "应该处理3个事件");
+        assertEquals(6, processedCount.get(), "应该处理3个事件");
     }
 
     @Test
@@ -274,11 +279,13 @@ class DisruptorTemplateTest {
         AtomicBoolean exceptionOccurred = new AtomicBoolean(false);
 
         BatchEventProcessor<String> batchProcessor = batch -> {
+            int size = batch.getEvents().size();
+            log.info("批处理: {}, 大小: {}, 线程: {}", batch.getBatchId(), size, Thread.currentThread().getName());
             try {
-                if (batch.getEvents().size() >= 3) {
+                if (size >= 3) {
                     throw new RuntimeException("模拟批处理异常");
                 }
-                processedCount.addAndGet(batch.getEvents().size());
+                processedCount.addAndGet(size);
                 return ProcessResult.success("批处理成功");
             } catch (Exception e) {
                 exceptionOccurred.set(true);
@@ -347,6 +354,347 @@ class DisruptorTemplateTest {
     }
 
     @Test
+    @Order(24)
+    @DisplayName("测试FilePersistenceManager-正常持久化和恢复")
+    void testFilePersistence_NormalFlow() throws IOException {
+        String testDir = TEST_DATA_DIR + "/file-persistence-normal";
+        FilePersistenceManager<String> filePM = new FilePersistenceManager<>(testDir, 24, String.class);
+        
+        filePM.start();
+
+        // 持久化5个事件
+        List<Event<String>> originalEvents = new ArrayList<>();
+        for (int i = 0; i < 5; i++) {
+            Event<String> event = new Event<>("file-test-" + i, "FileData-" + i);
+            originalEvents.add(event);
+            filePM.persist(event);
+        }
+
+        // 验证文件创建
+        Path dirPath = Paths.get(testDir);
+        assertTrue(Files.exists(dirPath), "持久化目录应该存在");
+        
+        long fileCount = Files.list(dirPath).filter(p -> p.toString().endsWith(".json")).count();
+        assertEquals(5, fileCount, "应该创建5个JSON文件");
+
+        // 模拟重启：停止后重新启动
+        filePM.stop();
+        
+        FilePersistenceManager<String> newFilePM = new FilePersistenceManager<>(testDir, 24, String.class);
+        newFilePM.start();
+
+        // 恢复事件
+        List<Event<String>> recoveredEvents = newFilePM.recover();
+        assertEquals(5, recoveredEvents.size(), "应该恢复5个事件");
+
+        // 验证恢复的事件内容
+        for (int i = 0; i < originalEvents.size(); i++) {
+            int finalI = i;
+            boolean found = recoveredEvents.stream()
+                .anyMatch(e -> e.getEventId().equals(originalEvents.get(finalI).getEventId()));
+            assertTrue(found, "应该恢复事件: " + originalEvents.get(i).getEventId());
+        }
+
+        newFilePM.stop();
+        log.info("FilePersistence正常流程测试完成");
+    }
+
+    @Test
+    @Order(25)
+    @DisplayName("测试FilePersistenceManager-删除持久化事件")
+    void testFilePersistence_Remove() throws IOException {
+        String testDir = TEST_DATA_DIR + "/file-persistence-remove";
+        FilePersistenceManager<String> filePM = new FilePersistenceManager<>(testDir, 24, String.class);
+        
+        filePM.start();
+
+        // 持久化3个事件
+        for (int i = 0; i < 3; i++) {
+            Event<String> event = new Event<>("remove-test-" + i, "RemoveData-" + i);
+            filePM.persist(event);
+        }
+
+        Path dirPath = Paths.get(testDir);
+        try (Stream<Path> fileList = Files.list(dirPath)) {
+            long beforeCount = fileList.count();
+            assertEquals(3, beforeCount, "应该有3个文件");
+
+            // 删除1个事件
+            filePM.remove("remove-test-0");
+
+            long afterCount = fileList.count();
+            assertEquals(2, afterCount, "删除后应该剩2个文件");
+        }
+
+        // 验证文件确实被删除
+        Path removedFile = Paths.get(testDir, "remove-test-0.json");
+        assertFalse(Files.exists(removedFile), "文件应该被删除");
+
+        filePM.stop();
+        log.info("FilePersistence删除测试完成");
+    }
+
+    @Test
+    @Order(26)
+    @DisplayName("测试FilePersistenceManager-清理过期文件")
+    void testFilePersistence_Cleanup() throws IOException, InterruptedException {
+        String testDir = TEST_DATA_DIR + "/file-persistence-cleanup";
+        // 设置保留时间为0小时，使文件立即过期
+        FilePersistenceManager<String> filePM = new FilePersistenceManager<>(testDir, 0, String.class);
+        
+        filePM.start();
+
+        // 持久化3个事件
+        for (int i = 0; i < 3; i++) {
+            Event<String> event = new Event<>("cleanup-test-" + i, "CleanupData-" + i);
+            filePM.persist(event);
+        }
+
+        Path dirPath = Paths.get(testDir);
+        long beforeCount = Files.list(dirPath).count();
+        assertEquals(3, beforeCount, "清理前应该有3个文件");
+
+        // 等待一小段时间确保文件时间戳生效
+        Thread.sleep(100);
+
+        // 执行清理
+        filePM.cleanup();
+
+        long afterCount = Files.list(dirPath).count();
+        log.info("清理前: {} 个文件, 清理后: {} 个文件", beforeCount, afterCount);
+        
+        // 由于保留时间为0，所有文件都应该被清理
+        assertTrue(afterCount < beforeCount, "应该清理部分或全部文件");
+
+        filePM.stop();
+        log.info("FilePersistence清理测试完成");
+    }
+
+    @Test
+    @Order(27)
+    @DisplayName("测试FilePersistenceManager-目录不存在自动创建")
+    void testFilePersistence_AutoCreateDirectory() {
+        String testDir = TEST_DATA_DIR + "/auto-create-" + System.currentTimeMillis();
+        
+        assertFalse(Files.exists(Paths.get(testDir)), "目录应该不存在");
+
+        FilePersistenceManager<String> filePM = new FilePersistenceManager<>(testDir, 24, String.class);
+        
+        // 启动应该自动创建目录
+        assertDoesNotThrow(filePM::start, "启动时应该自动创建目录");
+
+        assertTrue(Files.exists(Paths.get(testDir)), "目录应该被创建");
+
+        filePM.stop();
+        log.info("FilePersistence自动创建目录测试完成");
+    }
+
+    @Test
+    @Order(28)
+    @DisplayName("测试FilePersistenceManager-无效路径异常")
+    void testFilePersistence_InvalidPath() {
+        // 使用无效的路径（包含非法字符）
+        String invalidDir = "\0invalid\0path";
+        FilePersistenceManager<String> filePM = new FilePersistenceManager<>(invalidDir, 24, String.class);
+        
+        // 启动应该抛出异常
+        assertThrows(RuntimeException.class, filePM::start, "无效路径应该抛出异常");
+
+        log.info("FilePersistence无效路径测试完成");
+    }
+
+    @Test
+    @Order(29)
+    @DisplayName("测试FilePersistenceManager-持久化null事件")
+    void testFilePersistence_PersistNullEvent() {
+        String testDir = TEST_DATA_DIR + "/file-persistence-null";
+        FilePersistenceManager<String> filePM = new FilePersistenceManager<>(testDir, 24, String.class);
+        
+        filePM.start();
+
+        // 尝试持久化null事件，应该不会崩溃
+        assertDoesNotThrow(() -> filePM.persist(null), 
+            "持久化null事件应该被优雅处理");
+
+        filePM.stop();
+        log.info("FilePersistence持久化null测试完成");
+    }
+
+    @Test
+    @Order(30)
+    @DisplayName("测试FilePersistenceManager-并发持久化")
+    void testFilePersistence_ConcurrentPersist() throws InterruptedException, IOException {
+        String testDir = TEST_DATA_DIR + "/file-persistence-concurrent";
+        FilePersistenceManager<String> filePM = new FilePersistenceManager<>(testDir, 24, String.class);
+        
+        filePM.start();
+
+        int threadCount = 5;
+        int eventsPerThread = 10;
+        CountDownLatch latch = new CountDownLatch(threadCount);
+        ExecutorService executor = Executors.newFixedThreadPool(threadCount);
+
+        // 多线程并发持久化
+        for (int i = 0; i < threadCount; i++) {
+            final int threadId = i;
+            executor.submit(() -> {
+                try {
+                    for (int j = 0; j < eventsPerThread; j++) {
+                        Event<String> event = new Event<>(
+                            "concurrent-" + threadId + "-" + j,
+                            "ConcurrentData-" + threadId + "-" + j
+                        );
+                        filePM.persist(event);
+                    }
+                } finally {
+                    latch.countDown();
+                }
+            });
+        }
+
+        boolean completed = latch.await(10, TimeUnit.SECONDS);
+        assertTrue(completed, "并发持久化应该完成");
+
+        // 验证文件数量
+        Path dirPath = Paths.get(testDir);
+        long fileCount = Files.list(dirPath).count();
+        assertEquals(threadCount * eventsPerThread, fileCount, 
+            "应该创建" + (threadCount * eventsPerThread) + "个文件");
+
+        filePM.stop();
+        executor.shutdown();
+        log.info("FilePersistence并发持久化测试完成，创建了{}个文件", fileCount);
+    }
+
+    @Test
+    @Order(31)
+    @DisplayName("测试FilePersistenceManager-恢复损坏的JSON文件")
+    void testFilePersistence_RecoverCorruptedFile() throws IOException {
+        String testDir = TEST_DATA_DIR + "/file-persistence-corrupted";
+        Files.createDirectories(Paths.get(testDir));
+
+        // 创建一个损坏的JSON文件
+        Path corruptedFile = Paths.get(testDir, "corrupted-event.json");
+        Files.write(corruptedFile, "{ invalid json content }".getBytes(StandardCharsets.UTF_8));
+
+        // 创建一个正常的事件
+        FilePersistenceManager<String> filePM = new FilePersistenceManager<>(testDir, 24, String.class);
+        filePM.start();
+        
+        Event<String> validEvent = new Event<>("valid-event", "ValidData");
+        filePM.persist(validEvent);
+
+        // 尝试恢复，应该跳过损坏的文件
+        List<Event<String>> recovered = filePM.recover();
+        
+        // 应该至少恢复1个正常事件，损坏的文件应该被跳过
+        assertFalse(recovered.isEmpty(), "应该恢复至少1个正常事件");
+        assertTrue(recovered.stream().anyMatch(e -> e.getEventId().equals("valid-event")),
+            "应该包含正常的事件");
+
+        filePM.stop();
+        log.info("FilePersistence恢复损坏文件测试完成，恢复了{}个事件", recovered.size());
+    }
+
+    @Test
+    @Order(32)
+    @DisplayName("测试FilePersistenceManager-删除不存在的事件")
+    void testFilePersistence_RemoveNonExistentEvent() {
+        String testDir = TEST_DATA_DIR + "/file-persistence-remove-nonexistent";
+        FilePersistenceManager<String> filePM = new FilePersistenceManager<>(testDir, 24, String.class);
+        
+        filePM.start();
+
+        // 删除不存在的事件，应该不会抛异常
+        assertDoesNotThrow(() -> filePM.remove("non-existent-event"), 
+            "删除不存在的事件应该被优雅处理");
+
+        filePM.stop();
+        log.info("FilePersistence删除不存在事件测试完成");
+    }
+
+    @Test
+    @Order(33)
+    @DisplayName("测试FilePersistenceManager-stop时保存缓存事件")
+    void testFilePersistence_SaveCacheOnStop() throws IOException {
+        String testDir = TEST_DATA_DIR + "/file-persistence-cache-save";
+        FilePersistenceManager<String> filePM = new FilePersistenceManager<>(testDir, 24, String.class);
+        
+        filePM.start();
+
+        // 持久化事件
+        Event<String> event = new Event<>("cache-save-test", "CacheSaveData");
+        filePM.persist(event);
+
+        // 停止应该确保缓存被保存
+        filePM.stop();
+
+        // 验证文件存在
+        Path eventFile = Paths.get(testDir, "cache-save-test.json");
+        assertTrue(Files.exists(eventFile), "停止时应该保存缓存事件到文件");
+
+        log.info("FilePersistence停止保存缓存测试完成");
+    }
+
+    @Test
+    @Order(34)
+    @DisplayName("测试FilePersistenceManager-空目录恢复")
+    void testFilePersistence_RecoverFromEmptyDirectory() {
+        String testDir = TEST_DATA_DIR + "/file-persistence-empty";
+        FilePersistenceManager<String> filePM = new FilePersistenceManager<>(testDir, 24, String.class);
+        
+        filePM.start();
+
+        // 从空目录恢复
+        List<Event<String>> recovered = filePM.recover();
+        assertNotNull(recovered, "恢复结果不应该为null");
+        assertTrue(recovered.isEmpty(), "空目录应该返回空列表");
+
+        filePM.stop();
+        log.info("FilePersistence空目录恢复测试完成");
+    }
+
+    @Test
+    @Order(35)
+    @DisplayName("测试FilePersistenceManager-大量事件持久化")
+    void testFilePersistence_LargeScale() throws IOException {
+        String testDir = TEST_DATA_DIR + "/file-persistence-large";
+        FilePersistenceManager<String> filePM = new FilePersistenceManager<>(testDir, 24, String.class);
+        
+        filePM.start();
+
+        int eventCount = 100;
+        long startTime = System.currentTimeMillis();
+
+        // 持久化大量事件
+        for (int i = 0; i < eventCount; i++) {
+            Event<String> event = new Event<>("large-test-" + i, "LargeData-" + i);
+            filePM.persist(event);
+        }
+
+        long duration = System.currentTimeMillis() - startTime;
+
+        // 验证文件数量
+        Path dirPath = Paths.get(testDir);
+        long fileCount = Files.list(dirPath).count();
+        assertEquals(eventCount, fileCount, "应该创建" + eventCount + "个文件");
+
+        log.info("FilePersistence大量事件测试 - 持久化{}个事件，耗时{}ms，速率{}/s",
+            eventCount, duration, (eventCount * 1000.0 / duration));
+
+        // 测试恢复性能
+        long recoverStart = System.currentTimeMillis();
+        List<Event<String>> recovered = filePM.recover();
+        long recoverDuration = System.currentTimeMillis() - recoverStart;
+
+        assertEquals(eventCount, recovered.size(), "应该恢复所有事件");
+        log.info("FilePersistence大量事件恢复 - 恢复{}个事件，耗时{}ms",
+            recovered.size(), recoverDuration);
+
+        filePM.stop();
+    }
+
+    @Test
     @Order(21)
     @DisplayName("测试持久化-事件恢复")
     void testPersistenceEventRecover() throws InterruptedException {
@@ -391,7 +739,7 @@ class DisruptorTemplateTest {
     @Test
     @Order(22)
     @DisplayName("测试持久化-清理过期数据")
-    void testPersistenceCleanup() throws InterruptedException {
+    void testPersistenceCleanup() {
         TestPersistenceManager<String> persistenceManager = new TestPersistenceManager<>();
         persistenceManager.start();
 
@@ -689,7 +1037,7 @@ class DisruptorTemplateTest {
             }
         }
 
-        System.out.println("成功发布: " + publishCount + "/20 个事件");
+        log.info("RingBuffer满载测试 - 成功发布: {}/20 个事件, 线程: {}", publishCount, Thread.currentThread().getName());
 
         // 应该有一些事件因为buffer满而发布失败
         assertTrue(publishCount < 20, "应该有部分事件因buffer满而发布失败");
@@ -717,7 +1065,7 @@ class DisruptorTemplateTest {
         boolean success = template.tryPublish(event, 1, TimeUnit.NANOSECONDS);
 
         // 超短时间内可能成功也可能失败，都是正常的
-        System.out.println("极短超时发布结果: " + success);
+        log.info("极短超时发布测试 - 结果: {}, 线程: {}", success, Thread.currentThread().getName());
     }
 
     // ==================== 并发测试 ====================
@@ -779,7 +1127,8 @@ class DisruptorTemplateTest {
         long duration = endTime - startTime;
 
         int expectedTotal = threadCount * eventsPerThread;
-        System.out.println("并发测试结果: 预期=" + expectedTotal + ", 实际=" + processedCount.get() + ", 耗时=" + duration + "ms");
+        log.info("并发发布测试结果 - 生产者线程数: {}, 消费者线程数: {}, 实际: {}, 耗时: {}ms, 吞吐量: {} events/s",
+                threadCount, expectedTotal, processedCount.get(), duration, (expectedTotal * 1000.0) / duration);
 
         assertEquals(expectedTotal, processedCount.get(), "应该处理所有并发发布的事件");
 
@@ -832,7 +1181,7 @@ class DisruptorTemplateTest {
             while (readerRunning.get()) {
                 long pending = template.getPendingCount();
                 double utilization = template.getQueueUtilization();
-                System.out.println("实时状态 - 待处理: " + pending + ", 利用率: " + utilization + "%");
+                log.debug("读写竞争测试 - 实时状态 - 待处理: {}, 利用率: {}%, 线程: {}", pending, String.format("%.2f", utilization), Thread.currentThread().getName());
                 try {
                     Thread.sleep(100);
                 } catch (InterruptedException e) {
@@ -916,9 +1265,8 @@ class DisruptorTemplateTest {
         Thread.sleep(2000);
 
         MetricsCollector.MetricsSnapshot snapshot = metricsCollector.getSnapshot();
-        System.out.println("生产消费平衡测试 - 发布: " + snapshot.getTotalPublished() +
-                ", 处理: " + snapshot.getTotalProcessed() +
-                ", 待处理: " + snapshot.getPendingCount());
+        log.info("生产消费平衡测试 - 生产者线程数: {}, 消费者线程数: {}, 发布: {}, 处理: {}, 待处理: {}", 
+                3, 4, snapshot.getTotalPublished(), snapshot.getTotalProcessed(), snapshot.getPendingCount());
 
         // 验证生产和消费基本平衡
         assertTrue(snapshot.getPendingCount() < 100, "待处理事件应该较少，说明消费跟得上生产");
@@ -967,10 +1315,8 @@ class DisruptorTemplateTest {
         long duration = endTime - startTime;
         double throughput = (totalEvents * 1000.0) / duration;
 
-        System.out.println("压力测试结果: 总事件=" + totalEvents +
-                ", 处理=" + processedCount.get() +
-                ", 耗时=" + duration + "ms" +
-                ", 吞吐量=" + String.format("%.2f", throughput) + " events/s");
+        log.info("高吞吐量压力测试 - 消费者线程数: {}, 总事件: {}, 处理: {}, 耗时: {}ms, 吞吐量: {} events/s",
+                8, totalEvents, processedCount.get(), duration, throughput);
 
         assertEquals(totalEvents, processedCount.get(), "应该处理所有事件");
         assertTrue(throughput > 100, "吞吐量应该大于100 events/s");
@@ -1018,10 +1364,8 @@ class DisruptorTemplateTest {
         long duration = endTime - startTime;
         double throughput = (totalEvents * 1000.0) / duration;
 
-        System.out.println("批量压力测试: 总事件=" + totalEvents +
-                ", 处理=" + processedCount.get() +
-                ", 耗时=" + duration + "ms" +
-                ", 吞吐量=" + String.format("%.2f", throughput) + " events/s");
+        log.info("批量高吞吐压力测试 - 消费者线程数: {}, 批大小: {}, 总事件: {}, 处理: {}, 耗时: {}ms, 吞吐量: {} events/s",
+                8, 50, totalEvents, processedCount.get(), duration, throughput);
 
         assertEquals(totalEvents, processedCount.get(), "应该处理所有事件");
     }
@@ -1038,14 +1382,14 @@ class DisruptorTemplateTest {
         @Override
         public void start() {
             started = true;
-            System.out.println("TestPersistenceManager启动");
+            log.info("TestPersistenceManager启动");
         }
 
         @Override
         public void stop() {
             started = false;
             storage.clear();
-            System.out.println("TestPersistenceManager停止");
+            log.info("TestPersistenceManager停止");
         }
 
         @Override
@@ -1088,12 +1432,12 @@ class DisruptorTemplateTest {
     private static class FailingPersistenceManager<T> implements PersistenceManager<T> {
         @Override
         public void start() {
-            System.out.println("FailingPersistenceManager启动");
+            log.info("FailingPersistenceManager启动");
         }
 
         @Override
         public void stop() {
-            System.out.println("FailingPersistenceManager停止");
+            log.info("FailingPersistenceManager停止");
         }
 
         @Override
@@ -1130,7 +1474,7 @@ class DisruptorTemplateTest {
                         .forEach(File::delete);
             }
         } catch (IOException e) {
-            System.err.println("清理测试数据目录失败: " + e.getMessage());
+            log.warn("清理测试数据目录失败: {}", e.getMessage());
         }
     }
 }

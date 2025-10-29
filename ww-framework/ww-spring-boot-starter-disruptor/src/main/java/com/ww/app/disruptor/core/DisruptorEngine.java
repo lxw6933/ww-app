@@ -18,7 +18,10 @@ import lombok.extern.slf4j.Slf4j;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.concurrent.*;
+import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.ThreadFactory;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 
@@ -51,14 +54,12 @@ public class DisruptorEngine<T> {
      */
     @Setter
     private BatchEventProcessor<T> batchEventProcessor;
-    
+
     @Setter
     private PersistenceManager<T> persistenceManager;
-    
+
     @Setter
     private MetricsCollector metricsCollector;
-    
-    private ExecutorService executor;
 
     /**
      * 引擎配置
@@ -102,12 +103,6 @@ public class DisruptorEngine<T> {
         if (started.compareAndSet(false, true)) {
             try {
                 log.info("正在启动Disruptor引擎，配置: {}", config);
-
-                // 使用ThreadUtil创建线程池（用于后台任务）
-                this.executor = ThreadUtil.initFixedThreadPoolExecutor(
-                    "disruptor-worker", 
-                    config.getConsumerThreads()
-                );
 
                 // 创建ThreadFactory
                 ThreadFactory threadFactory = new DefaultThreadFactoryBuilder()
@@ -177,12 +172,26 @@ public class DisruptorEngine<T> {
 
                 // 处理剩余的批量事件
                 if (!batchBuffer.isEmpty()) {
+                    log.info("刷新批量缓冲区，剩余 {} 个事件", batchBuffer.size());
                     flushBatch();
                 }
 
                 // 关闭Disruptor
                 if (disruptor != null) {
-                    disruptor.shutdown();
+                    try {
+                        long pendingCount = getPendingCount();
+                        if (pendingCount > 0) {
+                            log.info("等待处理 {} 个剩余事件...", pendingCount);
+                        }
+
+                        // 带超时的shutdown，避免无限等待
+                        disruptor.shutdown(30, TimeUnit.SECONDS);
+                        log.info("Disruptor已优雅关闭");
+
+                    } catch (TimeoutException e) {
+                        log.warn("Disruptor关闭超时，仍有 {} 个事件未处理，强制关闭", getPendingCount());
+                        disruptor.halt();  // 强制关闭
+                    }
                 }
 
                 // 停止持久化管理器
@@ -195,13 +204,7 @@ public class DisruptorEngine<T> {
                     metricsCollector.stop();
                 }
 
-                // 使用ThreadUtil关闭线程池
-                if (executor != null) {
-                    ThreadUtil.shutdown("Disruptor引擎", () -> log.info("执行引擎最后清理工作"), executor);
-                }
-
-                log.info("Disruptor引擎已停止，总发布: {}, 总处理: {}, 总失败: {}",
-                        publishCount.get(), processCount.get(), failedCount.get());
+                log.info("Disruptor引擎已停止，总发布: {}, 总处理: {}, 总失败: {}", publishCount.get(), processCount.get(), failedCount.get());
             } catch (Exception e) {
                 log.error("Disruptor引擎停止异常", e);
             }
@@ -212,6 +215,7 @@ public class DisruptorEngine<T> {
      * 发布事件
      */
     public boolean publishEvent(Event<T> event) {
+        log.info("发布事件[{}]", event);
         if (!started.get()) {
             log.warn("引擎未启动，无法发布事件");
             return false;
@@ -283,10 +287,10 @@ public class DisruptorEngine<T> {
                     // RingBuffer满，继续重试
                 }
             }
-            
+
             log.warn("发布事件超时: {} (timeout={}{})", event.getEventId(), timeout, unit);
             return false;
-            
+
         } catch (Exception e) {
             log.error("尝试发布事件失败: {}", event.getEventId(), e);
             failedCount.incrementAndGet();
@@ -396,17 +400,8 @@ public class DisruptorEngine<T> {
      * 启动批量处理定时器
      */
     private void startBatchScheduler() {
-        this.batchScheduler = ThreadUtil.initScheduledExecutorService(
-                "disruptor-batch-scheduler",
-                1
-        );
-
-        batchScheduler.scheduleAtFixedRate(
-                this::flushBatch,
-                config.getBatchTimeout(),
-                config.getBatchTimeout(),
-                TimeUnit.MILLISECONDS
-        );
+        this.batchScheduler = ThreadUtil.initScheduledExecutorService("disruptor-batch-scheduler", 1);
+        batchScheduler.scheduleAtFixedRate(this::flushBatch, config.getBatchTimeout(), config.getBatchTimeout(), TimeUnit.MILLISECONDS);
     }
 
     /**
