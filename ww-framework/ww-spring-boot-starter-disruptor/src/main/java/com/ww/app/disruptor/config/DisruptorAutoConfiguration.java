@@ -42,7 +42,6 @@ public class DisruptorAutoConfiguration {
         DisruptorConfig config = new DisruptorConfig();
         config.setRingBufferSize(properties.getRingBufferSize());
         config.setConsumerThreads(properties.getConsumerThreads());
-        config.setProducerThreads(properties.getProducerThreads());
         config.setBatchSize(properties.getBatchSize());
         config.setBatchTimeout(properties.getBatchTimeout());
         config.setWaitStrategy(properties.getWaitStrategy());

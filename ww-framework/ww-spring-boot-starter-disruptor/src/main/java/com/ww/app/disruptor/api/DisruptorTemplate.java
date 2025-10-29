@@ -128,11 +128,6 @@ public class DisruptorTemplate<T> {
             return this;
         }
 
-        public Builder<T> producerThreads(int threads) {
-            config.setProducerThreads(threads);
-            return this;
-        }
-
         public Builder<T> batchSize(int size) {
             config.setBatchSize(size);
             return this;

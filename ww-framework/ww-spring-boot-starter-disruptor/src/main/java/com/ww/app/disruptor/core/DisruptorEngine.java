@@ -5,6 +5,7 @@ import com.lmax.disruptor.dsl.Disruptor;
 import com.lmax.disruptor.dsl.ProducerType;
 import com.ww.app.common.thread.DefaultThreadFactoryBuilder;
 import com.ww.app.common.utils.ThreadUtil;
+import com.ww.app.disruptor.constans.DisruptorWaitStrategy;
 import com.ww.app.disruptor.model.Event;
 import com.ww.app.disruptor.model.EventBatch;
 import com.ww.app.disruptor.monitor.MetricsCollector;
@@ -246,12 +247,14 @@ public class DisruptorEngine<T> {
     }
 
     /**
-     * 尝试发布事件（非阻塞）
+     * 尝试发布事件（非阻塞，带超时）
      */
     public boolean tryPublishEvent(Event<T> event, long timeout, TimeUnit unit) {
         if (!started.get()) {
             return false;
         }
+
+        long deadlineNanos = System.nanoTime() + unit.toNanos(timeout);
 
         try {
             // 先持久化
@@ -259,19 +262,31 @@ public class DisruptorEngine<T> {
                 persistenceManager.persist(event);
             }
 
-            // 使用tryPublishEvent
-            boolean success = ringBuffer.tryPublishEvent((wrapper, sequence) ->
-                    wrapper.setEvent(event)
-            );
+            // 带超时重试的tryPublishEvent
+            while (System.nanoTime() < deadlineNanos) {
+                try {
+                    boolean success = ringBuffer.tryPublishEvent((wrapper, sequence) ->
+                            wrapper.setEvent(event)
+                    );
 
-            if (success) {
-                publishCount.incrementAndGet();
-                if (metricsCollector != null) {
-                    metricsCollector.recordPublish();
+                    if (success) {
+                        publishCount.incrementAndGet();
+                        if (metricsCollector != null) {
+                            metricsCollector.recordPublish();
+                        }
+                        return true;
+                    }
+
+                    // 短暂休眠后重试
+                    TimeUnit.MILLISECONDS.sleep(1);
+                } catch (Exception e) {
+                    // RingBuffer满，继续重试
                 }
             }
-
-            return success;
+            
+            log.warn("发布事件超时: {} (timeout={}{})", event.getEventId(), timeout, unit);
+            return false;
+            
         } catch (Exception e) {
             log.error("尝试发布事件失败: {}", event.getEventId(), e);
             failedCount.incrementAndGet();
@@ -399,13 +414,13 @@ public class DisruptorEngine<T> {
      */
     private WaitStrategy createWaitStrategy() {
         switch (config.getWaitStrategy()) {
-            case "BLOCKING":
+            case DisruptorWaitStrategy.BLOCKING:
                 return new BlockingWaitStrategy();
-            case "YIELDING":
+            case DisruptorWaitStrategy.YIELDING:
                 return new YieldingWaitStrategy();
-            case "SLEEPING":
+            case DisruptorWaitStrategy.SLEEPING:
                 return new SleepingWaitStrategy();
-            case "BUSY_SPIN":
+            case DisruptorWaitStrategy.BUSY_SPIN:
                 return new BusySpinWaitStrategy();
             default:
                 return new BlockingWaitStrategy();

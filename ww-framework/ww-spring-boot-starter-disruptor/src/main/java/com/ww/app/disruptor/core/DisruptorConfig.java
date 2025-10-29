@@ -1,5 +1,6 @@
 package com.ww.app.disruptor.core;
 
+import com.ww.app.disruptor.constans.DisruptorWaitStrategy;
 import lombok.Data;
 
 /**
@@ -31,9 +32,9 @@ public class DisruptorConfig {
     private long batchTimeout = 1000L;
 
     /**
-     * 等待策略: BLOCKING, YIELDING, SLEEPING, BUSY_SPIN
+     * 等待策略: {@link DisruptorWaitStrategy}
      */
-    private String waitStrategy = "BLOCKING";
+    private String waitStrategy = DisruptorWaitStrategy.BLOCKING;
 
     /**
      * 是否启用批量处理
