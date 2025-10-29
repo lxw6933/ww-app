@@ -1,0 +1,46 @@
+# WW Disruptor 示例配置文件
+
+ww:
+  disruptor:
+    # 基础配置
+    enabled: true
+    ring-buffer-size: 1024        # RingBuffer大小（必须是2的幂）
+    consumer-threads: 4            # 消费者线程数
+    producer-threads: 2            # 生产者线程数
+    batch-size: 100               # 批处理大小
+    batch-timeout: 1000           # 批处理超时时间（毫秒）
+    wait-strategy: BLOCKING       # 等待策略: BLOCKING, YIELDING, SLEEPING, BUSY_SPIN
+    batch-enabled: true           # 是否启用批量处理
+    
+    # 持久化配置（可选）
+    persistence:
+      enabled: false              # 是否启用持久化
+      type: file                  # 持久化类型: file, redis, kafka, database
+      data-dir: ./data/disruptor  # 数据目录
+      segment-size: 67108864      # 段文件大小（字节，默认64MB）
+      retention-hours: 24         # 段保留时间（小时）
+      flush-interval: 1000        # 刷盘间隔（毫秒）
+      sync-flush: false           # 是否同步刷盘
+    
+    # 监控配置
+    metrics:
+      enabled: true               # 是否启用监控
+      prefix: ww.disruptor        # 指标前缀
+      detailed: false             # 是否启用详细指标
+      tracing: false              # 是否启用链路追踪
+
+# Spring Actuator配置
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics,prometheus
+  metrics:
+    export:
+      prometheus:
+        enabled: true
+
+# 日志配置
+logging:
+  level:
+    com.ww.framework.disruptor: INFO

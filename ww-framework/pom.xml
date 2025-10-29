@@ -27,6 +27,7 @@
         <module>ww-spring-boot-starter-job</module>
         <module>ww-spring-boot-starter-captcha</module>
         <module>ww-spring-boot-starter-operatelog</module>
+        <module>ww-spring-boot-starter-disruptor</module>
     </modules>
 
     <artifactId>ww-framework</artifactId>
