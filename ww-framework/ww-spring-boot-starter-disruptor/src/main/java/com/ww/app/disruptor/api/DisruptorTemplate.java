@@ -164,8 +164,15 @@ public class DisruptorTemplate<T> {
         }
 
         public DisruptorTemplate<T> build() {
+            return build(config.getBusinessName());
+        }
+
+        public DisruptorTemplate<T> build(String businessName) {
             // 验证配置
             config.validate();
+
+            // 设置业务名
+            config.setBusinessName(businessName);
 
             // 创建引擎
             DisruptorEngine<T> engine = new DisruptorEngine<>(config);
