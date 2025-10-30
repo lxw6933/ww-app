@@ -180,6 +180,7 @@ public class OrderController {
 import api.com.ww.app.disruptor.DisruptorTemplate;
 
 DisruptorTemplate<OrderData> template = DisruptorTemplate.<OrderData>builder()
+        .businessName("order-processor")  // 指定业务名称，用于区分线程
         .ringBufferSize(2048)
         .consumerThreads(8)
         .batchSize(200)

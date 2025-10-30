@@ -9,6 +9,7 @@ import com.ww.app.common.utils.ThreadUtil;
 import com.ww.app.disruptor.constans.DisruptorWaitStrategy;
 import com.ww.app.disruptor.model.Event;
 import com.ww.app.disruptor.model.EventBatch;
+import com.ww.app.disruptor.model.ProcessResult;
 import com.ww.app.disruptor.monitor.MetricsCollector;
 import com.ww.app.disruptor.persistence.PersistenceManager;
 import com.ww.app.disruptor.processor.BatchEventProcessor;
@@ -110,6 +111,18 @@ public class DisruptorEngine<T> {
     public void start() {
         if (started.compareAndSet(false, true)) {
             try {
+                // 配置验证
+                config.validate();
+                
+                // 处理器验证
+                if (eventProcessor == null && batchEventProcessor == null) {
+                    throw new IllegalStateException("至少需要设置 eventProcessor 或 batchEventProcessor 之一");
+                }
+                
+                if (config.isBatchEnabled() && batchEventProcessor == null) {
+                    throw new IllegalStateException("批量处理已启用但未设置 batchEventProcessor");
+                }
+                
                 log.info("正在启动Disruptor引擎，配置: {}", config);
 
                 // 创建ThreadFactory
@@ -160,7 +173,11 @@ public class DisruptorEngine<T> {
                         config.getRingBufferSize(), config.getConsumerThreads());
             } catch (Exception e) {
                 started.set(false);
-                log.error("Disruptor引擎启动失败", e);
+                log.error("Disruptor引擎启动失败，开始清理资源", e);
+                
+                // 清理已创建的资源
+                cleanupResources();
+                
                 throw new RuntimeException("Disruptor引擎启动失败", e);
             }
         }
@@ -181,8 +198,26 @@ public class DisruptorEngine<T> {
 
                 // 处理剩余的批量事件
                 if (!batchBuffer.isEmpty()) {
-                    log.info("刷新批量缓冲区，剩余 {} 个事件", batchBuffer.size());
-                    flushBatch();
+                    int remainingCount = batchBuffer.size();
+                    log.info("刷新批量缓冲区，剩余 {} 个事件", remainingCount);
+                    
+                    try {
+                        flushBatch();
+                    } catch (Exception e) {
+                        log.error("停止时刷新批量缓冲区失败，尝试持久化剩余事件", e);
+                        
+                        // 失败时，至少持久化事件
+                        if (persistenceManager != null) {
+                            Event<T> event;
+                            while ((event = batchBuffer.poll()) != null) {
+                                try {
+                                    persistenceManager.persist(event);
+                                } catch (Exception pe) {
+                                    log.error("持久化事件失败: {}", event.getEventId(), pe);
+                                }
+                            }
+                        }
+                    }
                 }
 
                 // 停止WorkerPool
@@ -388,37 +423,53 @@ public class DisruptorEngine<T> {
             if (batchEventProcessor != null && config.isBatchEnabled()) {
                 batchBuffer.offer(event);
 
-                // 达到批量大小时刷新
+                // 达到批量大小时刷新（双重检查防止竞态）
                 if (batchBuffer.size() >= config.getBatchSize()) {
-                    flushBatch();
+                    synchronized (this) {
+                        if (batchBuffer.size() >= config.getBatchSize()) {
+                            flushBatch();
+                        }
+                    }
                 }
             }
             // 使用单个事件处理器
             else if (eventProcessor != null) {
                 event.markProcessing();
-                eventProcessor.process(event);
-                event.markCompleted();
-                processCount.incrementAndGet();
+                ProcessResult result = eventProcessor.process(event);
+                
+                // 根据处理结果决定后续操作
+                if (result.isSuccess()) {
+                    event.markCompleted();
+                    processCount.incrementAndGet();
 
-                // 处理成功后删除持久化数据
-                if (persistenceManager != null) {
-                    persistenceManager.remove(event.getEventId());
-                }
+                    // 处理成功后删除持久化数据
+                    if (persistenceManager != null) {
+                        persistenceManager.remove(event.getEventId());
+                    }
 
-                // 记录处理耗时
-                long duration = System.currentTimeMillis() - startTime;
-                if (metricsCollector != null) {
-                    metricsCollector.recordProcessing(duration);
+                    // 记录处理耗时
+                    long duration = System.currentTimeMillis() - startTime;
+                    if (metricsCollector != null) {
+                        metricsCollector.recordProcessing(duration);
+                    }
+                } else {
+                    // 处理失败
+                    event.markFailed();
+                    failedCount.incrementAndGet();
+                    log.error("事件处理失败: {}, 原因: {}", event.getEventId(), result.getMessage());
+                    
+                    if (metricsCollector != null) {
+                        metricsCollector.recordFailure();
+                    }
                 }
             }
         } catch (Exception e) {
-            log.error("处理事件失败: {}, 线程: {}", event.getEventId(), Thread.currentThread().getName(), e);
+            log.error("处理事件异常: {}, 线程: {}", event.getEventId(), Thread.currentThread().getName(), e);
             event.markFailed();
-            failedCount.incrementAndGet();
-
-            if (metricsCollector != null) {
-                metricsCollector.recordFailure();
-            }
+            // 注意：failedCount 和 metrics 统一由 ExceptionHandler 处理，避免重复计数
+            
+            // 重新抛出让ExceptionHandler处理
+            throw new RuntimeException(e);
         } finally {
             wrapper.clear();
         }
@@ -428,50 +479,85 @@ public class DisruptorEngine<T> {
      * 刷新批量缓冲区 - 线程安全
      */
     private synchronized void flushBatch() {
-        if (batchBuffer.isEmpty()) {
+        // 直接尝试取出所有事件
+        List<Event<T>> eventsToProcess = new ArrayList<>();
+        Event<T> event;
+        while ((event = batchBuffer.poll()) != null) {
+            eventsToProcess.add(event);
+        }
+
+        if (eventsToProcess.isEmpty()) {
             return;
         }
 
         long startTime = System.currentTimeMillis();
+        EventBatch<T> batch = new EventBatch<>();
+        batch.addEvents(eventsToProcess);
+        batch.markProcessing();
 
         try {
-            // 从队列中取出所有事件
-            List<Event<T>> eventsToProcess = new ArrayList<>();
-            Event<T> event;
-            while ((event = batchBuffer.poll()) != null) {
-                eventsToProcess.add(event);
-            }
+            // 执行批处理并获取结果
+            ProcessResult result = batchEventProcessor.processBatch(batch);
+            
+            // 根据结果分别处理
+            if (result.isSuccess()) {
+                batch.markCompleted();
+                processCount.addAndGet(eventsToProcess.size());
 
-            if (eventsToProcess.isEmpty()) {
-                return;
-            }
+                // 成功后删除持久化数据
+                if (persistenceManager != null) {
+                    for (Event<T> e : eventsToProcess) {
+                        persistenceManager.remove(e.getEventId());
+                    }
+                }
 
-            EventBatch<T> batch = new EventBatch<>();
-            batch.addEvents(eventsToProcess);
-            batch.markProcessing();
-
-            batchEventProcessor.processBatch(batch);
-            batch.markCompleted();
-
-            processCount.addAndGet(eventsToProcess.size());
-
-            // 批量删除持久化数据
-            if (persistenceManager != null) {
+                // 记录成功指标
+                long duration = System.currentTimeMillis() - startTime;
+                if (metricsCollector != null) {
+                    metricsCollector.recordBatchProcessing(eventsToProcess.size(), duration);
+                }
+            } else {
+                // 处理失败 - 标记批次和所有事件为失败
+                batch.markFailed();
                 for (Event<T> e : eventsToProcess) {
-                    persistenceManager.remove(e.getEventId());
+                    e.markFailed();
+                }
+                failedCount.addAndGet(eventsToProcess.size());
+                log.error("批量处理失败: {}, 影响事件数: {}", result.getMessage(), eventsToProcess.size());
+                
+                // 失败时持久化事件，以便后续重试
+                if (persistenceManager != null) {
+                    for (Event<T> e : eventsToProcess) {
+                        try {
+                            persistenceManager.persist(e);
+                        } catch (Exception pe) {
+                            log.error("持久化失败事件异常: {}", e.getEventId(), pe);
+                        }
+                    }
+                }
+                
+                if (metricsCollector != null) {
+                    metricsCollector.recordFailure();
                 }
             }
-
-            // 记录批处理耗时
-            long duration = System.currentTimeMillis() - startTime;
-            if (metricsCollector != null) {
-                metricsCollector.recordBatchProcessing(eventsToProcess.size(), duration);
-            }
-
         } catch (Exception e) {
-            log.error("批量处理失败", e);
-            failedCount.incrementAndGet();
-
+            log.error("批量处理异常", e);
+            batch.markFailed();
+            
+            // 标记所有事件为失败并持久化
+            for (Event<T> evt : eventsToProcess) {
+                evt.markFailed();
+                if (persistenceManager != null) {
+                    try {
+                        persistenceManager.persist(evt);
+                    } catch (Exception pe) {
+                        log.error("持久化失败事件异常: {}", evt.getEventId(), pe);
+                    }
+                }
+            }
+            
+            failedCount.addAndGet(eventsToProcess.size());
+            
             if (metricsCollector != null) {
                 metricsCollector.recordFailure();
             }
@@ -483,7 +569,81 @@ public class DisruptorEngine<T> {
      */
     private void startBatchScheduler() {
         this.batchScheduler = ThreadUtil.initScheduledExecutorService(config.getBusinessName() + "-disruptor-batch-scheduler", 1);
-        batchScheduler.scheduleAtFixedRate(this::flushBatch, config.getBatchTimeout(), config.getBatchTimeout(), TimeUnit.MILLISECONDS);
+        // 立即执行第一次，然后按周期执行
+        batchScheduler.scheduleAtFixedRate(this::flushBatch, 0, config.getBatchTimeout(), TimeUnit.MILLISECONDS);
+    }
+
+    /**
+     * 清理资源 - 用于启动失败时的资源清理
+     */
+    private void cleanupResources() {
+        try {
+            // 停止批量处理定时器
+            if (batchScheduler != null) {
+                try {
+                    batchScheduler.shutdownNow();
+                    batchScheduler = null;
+                } catch (Exception e) {
+                    log.error("清理批量调度器失败", e);
+                }
+            }
+            
+            // 停止WorkerPool
+            if (workerPool != null) {
+                try {
+                    workerPool.halt();
+                    workerPool = null;
+                } catch (Exception e) {
+                    log.error("清理WorkerPool失败", e);
+                }
+            }
+            
+            // 关闭Disruptor
+            if (disruptor != null) {
+                try {
+                    disruptor.halt();
+                    disruptor = null;
+                } catch (Exception e) {
+                    log.error("清理Disruptor失败", e);
+                }
+            }
+            
+            // 关闭消费者线程池
+            if (consumerExecutor != null) {
+                try {
+                    consumerExecutor.shutdownNow();
+                    consumerExecutor = null;
+                } catch (Exception e) {
+                    log.error("清理消费者线程池失败", e);
+                }
+            }
+            
+            // 停止持久化管理器
+            if (persistenceManager != null) {
+                try {
+                    persistenceManager.stop();
+                } catch (Exception e) {
+                    log.error("清理持久化管理器失败", e);
+                }
+            }
+            
+            // 停止监控
+            if (metricsCollector != null) {
+                try {
+                    metricsCollector.stop();
+                } catch (Exception e) {
+                    log.error("清理监控收集器失败", e);
+                }
+            }
+            
+            // 清空缓冲区
+            batchBuffer.clear();
+            ringBuffer = null;
+            
+            log.info("资源清理完成");
+        } catch (Exception e) {
+            log.error("资源清理过程发生异常", e);
+        }
     }
 
     /**
@@ -508,10 +668,25 @@ public class DisruptorEngine<T> {
      * 获取待处理事件数量
      */
     public long getPendingCount() {
-        if (ringBuffer == null) {
+        if (ringBuffer == null || workerPool == null) {
             return 0;
         }
-        long pending = ringBuffer.getBufferSize() - ringBuffer.remainingCapacity();
+        
+        // 获取生产者游标（已发布的最大序号）
+        long cursor = ringBuffer.getCursor();
+        
+        // 获取消费者最慢的序号
+        Sequence[] sequences = workerPool.getWorkerSequences();
+        long minSequence = cursor;
+        for (Sequence sequence : sequences) {
+            long value = sequence.get();
+            if (value < minSequence) {
+                minSequence = value;
+            }
+        }
+        
+        // 待处理 = 生产者游标 - 最慢消费者
+        long pending = cursor - minSequence;
         return Math.max(0, pending);
     }
 
