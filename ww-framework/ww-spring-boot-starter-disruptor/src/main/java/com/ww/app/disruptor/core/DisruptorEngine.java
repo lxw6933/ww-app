@@ -113,16 +113,16 @@ public class DisruptorEngine<T> {
             try {
                 // 配置验证
                 config.validate();
-                
+
                 // 处理器验证
                 if (eventProcessor == null && batchEventProcessor == null) {
                     throw new IllegalStateException("至少需要设置 eventProcessor 或 batchEventProcessor 之一");
                 }
-                
+
                 if (config.isBatchEnabled() && batchEventProcessor == null) {
                     throw new IllegalStateException("批量处理已启用但未设置 batchEventProcessor");
                 }
-                
+
                 log.info("正在启动Disruptor引擎，配置: {}", config);
 
                 // 创建ThreadFactory
@@ -169,15 +169,15 @@ public class DisruptorEngine<T> {
                     startBatchScheduler();
                 }
 
-                log.info("Disruptor引擎启动成功，RingBuffer大小: {}, 消费者线程数: {}", 
+                log.info("Disruptor引擎启动成功，RingBuffer大小: {}, 消费者线程数: {}",
                         config.getRingBufferSize(), config.getConsumerThreads());
             } catch (Exception e) {
                 started.set(false);
                 log.error("Disruptor引擎启动失败，开始清理资源", e);
-                
+
                 // 清理已创建的资源
                 cleanupResources();
-                
+
                 throw new RuntimeException("Disruptor引擎启动失败", e);
             }
         }
@@ -197,28 +197,7 @@ public class DisruptorEngine<T> {
                 }
 
                 // 处理剩余的批量事件
-                if (!batchBuffer.isEmpty()) {
-                    int remainingCount = batchBuffer.size();
-                    log.info("刷新批量缓冲区，剩余 {} 个事件", remainingCount);
-                    
-                    try {
-                        flushBatch();
-                    } catch (Exception e) {
-                        log.error("停止时刷新批量缓冲区失败，尝试持久化剩余事件", e);
-                        
-                        // 失败时，至少持久化事件
-                        if (persistenceManager != null) {
-                            Event<T> event;
-                            while ((event = batchBuffer.poll()) != null) {
-                                try {
-                                    persistenceManager.persist(event);
-                                } catch (Exception pe) {
-                                    log.error("持久化事件失败: {}", event.getEventId(), pe);
-                                }
-                            }
-                        }
-                    }
-                }
+                flushRemainingBatchEvents();
 
                 // 停止WorkerPool
                 if (workerPool != null) {
@@ -275,49 +254,59 @@ public class DisruptorEngine<T> {
      * 发布事件
      */
     public boolean publishEvent(Event<T> event) {
-        if (!started.get()) {
-            log.warn("引擎未启动，无法发布事件");
-            return false;
-        }
-
-        if (event == null) {
-            log.warn("事件为null，无法发布");
-            return false;
-        }
-
-        try {
-            // 先持久化（防止数据丢失）
-            if (persistenceManager != null) {
-                persistenceManager.persist(event);
-            }
-
-            // 使用最新API发布事件
-            ringBuffer.publishEvent((wrapper, sequence) -> wrapper.setEvent(event));
-
-            publishCount.incrementAndGet();
-
-            // 记录监控指标
-            if (metricsCollector != null) {
-                metricsCollector.recordPublish();
-            }
-
-            return true;
-        } catch (Exception e) {
-            log.error("发布事件失败: {}", event.getEventId(), e);
-            failedCount.incrementAndGet();
-
-            if (metricsCollector != null) {
-                metricsCollector.recordFailure();
-            }
-
-            return false;
-        }
+        return doPublishEvent(event, false, 0, null);
     }
 
     /**
      * 尝试发布事件（非阻塞，带超时）
      */
     public boolean tryPublishEvent(Event<T> event, long timeout, TimeUnit unit) {
+        if (timeout <= 0) {
+            log.warn("超时时间必须大于0");
+            return false;
+        }
+        return doPublishEvent(event, true, timeout, unit);
+    }
+
+    /**
+     * 统一的事件发布逻辑
+     */
+    private boolean doPublishEvent(Event<T> event, boolean withTimeout, long timeout, TimeUnit unit) {
+        // 统一的前置校验
+        if (!validatePublishPreconditions(event)) {
+            return false;
+        }
+
+        try {
+            // 先持久化（防止数据丢失）
+            persistEventIfNeeded(event);
+
+            // 发布到RingBuffer
+            boolean published = withTimeout
+                    ? tryPublishToRingBuffer(event, timeout, unit)
+                    : publishToRingBuffer(event);
+
+            if (published) {
+                recordPublishSuccess();
+                return true;
+            }
+
+            if (withTimeout) {
+                log.warn("发布事件超时: {} (timeout={}{})", event.getEventId(), timeout, unit);
+            }
+            return false;
+
+        } catch (Exception e) {
+            log.error("发布事件失败: {}", event.getEventId(), e);
+            recordPublishFailure();
+            return false;
+        }
+    }
+
+    /**
+     * 校验发布前置条件
+     */
+    private boolean validatePublishPreconditions(Event<T> event) {
         if (!started.get()) {
             log.warn("引擎未启动，无法发布事件");
             return false;
@@ -328,48 +317,69 @@ public class DisruptorEngine<T> {
             return false;
         }
 
-        if (timeout <= 0) {
-            log.warn("超时时间必须大于0");
-            return false;
-        }
+        return true;
+    }
 
+    /**
+     * 持久化事件（如果需要）
+     */
+    private void persistEventIfNeeded(Event<T> event) {
+        if (persistenceManager != null) {
+            persistenceManager.persist(event);
+        }
+    }
+
+    /**
+     * 发布到RingBuffer（阻塞）
+     */
+    private boolean publishToRingBuffer(Event<T> event) {
+        ringBuffer.publishEvent((wrapper, sequence) -> wrapper.setEvent(event));
+        return true;
+    }
+
+    /**
+     * 尝试发布到RingBuffer（带超时重试）
+     */
+    private boolean tryPublishToRingBuffer(Event<T> event, long timeout, TimeUnit unit) throws InterruptedException {
         long deadlineNanos = System.nanoTime() + unit.toNanos(timeout);
 
-        try {
-            // 先持久化
-            if (persistenceManager != null) {
-                persistenceManager.persist(event);
-            }
+        while (System.nanoTime() < deadlineNanos) {
+            try {
+                boolean success = ringBuffer.tryPublishEvent((wrapper, sequence) ->
+                        wrapper.setEvent(event)
+                );
 
-            // 带超时重试的tryPublishEvent
-            while (System.nanoTime() < deadlineNanos) {
-                try {
-                    boolean success = ringBuffer.tryPublishEvent((wrapper, sequence) ->
-                            wrapper.setEvent(event)
-                    );
-
-                    if (success) {
-                        publishCount.incrementAndGet();
-                        if (metricsCollector != null) {
-                            metricsCollector.recordPublish();
-                        }
-                        return true;
-                    }
-
-                    // 短暂休眠后重试
-                    TimeUnit.MILLISECONDS.sleep(1);
-                } catch (Exception e) {
-                    // RingBuffer满，继续重试
+                if (success) {
+                    return true;
                 }
+
+                // 短暂休眠后重试
+                TimeUnit.MILLISECONDS.sleep(1);
+            } catch (Exception e) {
+                // RingBuffer满，继续重试
             }
+        }
 
-            log.warn("发布事件超时: {} (timeout={}{})", event.getEventId(), timeout, unit);
-            return false;
+        return false;
+    }
 
-        } catch (Exception e) {
-            log.error("尝试发布事件失败: {}", event.getEventId(), e);
-            failedCount.incrementAndGet();
-            return false;
+    /**
+     * 记录发布成功
+     */
+    private void recordPublishSuccess() {
+        publishCount.incrementAndGet();
+        if (metricsCollector != null) {
+            metricsCollector.recordPublish();
+        }
+    }
+
+    /**
+     * 记录发布失败
+     */
+    private void recordPublishFailure() {
+        failedCount.incrementAndGet();
+        if (metricsCollector != null) {
+            metricsCollector.recordFailure();
         }
     }
 
@@ -416,58 +426,20 @@ public class DisruptorEngine<T> {
             return;
         }
 
-        long startTime = System.currentTimeMillis();
-
         try {
             // 使用批量处理器
             if (batchEventProcessor != null && config.isBatchEnabled()) {
-                batchBuffer.offer(event);
-
-                // 达到批量大小时刷新（双重检查防止竞态）
-                if (batchBuffer.size() >= config.getBatchSize()) {
-                    synchronized (this) {
-                        if (batchBuffer.size() >= config.getBatchSize()) {
-                            flushBatch();
-                        }
-                    }
-                }
+                handleBatchEvent(event);
             }
             // 使用单个事件处理器
             else if (eventProcessor != null) {
-                event.markProcessing();
-                ProcessResult result = eventProcessor.process(event);
-                
-                // 根据处理结果决定后续操作
-                if (result.isSuccess()) {
-                    event.markCompleted();
-                    processCount.incrementAndGet();
-
-                    // 处理成功后删除持久化数据
-                    if (persistenceManager != null) {
-                        persistenceManager.remove(event.getEventId());
-                    }
-
-                    // 记录处理耗时
-                    long duration = System.currentTimeMillis() - startTime;
-                    if (metricsCollector != null) {
-                        metricsCollector.recordProcessing(duration);
-                    }
-                } else {
-                    // 处理失败
-                    event.markFailed();
-                    failedCount.incrementAndGet();
-                    log.error("事件处理失败: {}, 原因: {}", event.getEventId(), result.getMessage());
-                    
-                    if (metricsCollector != null) {
-                        metricsCollector.recordFailure();
-                    }
-                }
+                handleSingleEvent(event);
             }
         } catch (Exception e) {
             log.error("处理事件异常: {}, 线程: {}", event.getEventId(), Thread.currentThread().getName(), e);
             event.markFailed();
             // 注意：failedCount 和 metrics 统一由 ExceptionHandler 处理，避免重复计数
-            
+
             // 重新抛出让ExceptionHandler处理
             throw new RuntimeException(e);
         } finally {
@@ -476,91 +448,250 @@ public class DisruptorEngine<T> {
     }
 
     /**
+     * 处理批量事件 - 添加到缓冲区并检查是否需要刷新
+     */
+    private void handleBatchEvent(Event<T> event) {
+        batchBuffer.offer(event);
+
+        // 达到批量大小时刷新（双重检查防止竞态）
+        if (batchBuffer.size() >= config.getBatchSize()) {
+            synchronized (this) {
+                if (batchBuffer.size() >= config.getBatchSize()) {
+                    flushBatch();
+                }
+            }
+        }
+    }
+
+    /**
+     * 处理单个事件
+     */
+    private void handleSingleEvent(Event<T> event) {
+        long startTime = System.currentTimeMillis();
+
+        event.markProcessing();
+        ProcessResult result = eventProcessor.process(event);
+
+        // 根据处理结果决定后续操作
+        if (result.isSuccess()) {
+            handleEventSuccess(event, startTime);
+        } else {
+            handleEventFailure(event, result.getMessage());
+        }
+    }
+
+    /**
+     * 处理事件成功
+     */
+    private void handleEventSuccess(Event<T> event, long startTime) {
+        event.markCompleted();
+        processCount.incrementAndGet();
+
+        // 处理成功后删除持久化数据
+        removePersistenceIfNeeded(event.getEventId());
+
+        // 记录处理耗时
+        long duration = System.currentTimeMillis() - startTime;
+        recordProcessingSuccess(duration);
+    }
+
+    /**
+     * 处理事件失败
+     */
+    private void handleEventFailure(Event<T> event, String errorMessage) {
+        event.markFailed();
+        failedCount.incrementAndGet();
+        log.error("事件处理失败: {}, 原因: {}", event.getEventId(), errorMessage);
+
+        recordProcessingFailure();
+    }
+
+    /**
+     * 删除持久化数据（如果需要）
+     */
+    private void removePersistenceIfNeeded(String eventId) {
+        if (persistenceManager != null) {
+            persistenceManager.remove(eventId);
+        }
+    }
+
+    /**
+     * 记录处理成功指标
+     */
+    private void recordProcessingSuccess(long duration) {
+        if (metricsCollector != null) {
+            metricsCollector.recordProcessing(duration);
+        }
+    }
+
+    /**
+     * 记录处理失败指标
+     */
+    private void recordProcessingFailure() {
+        if (metricsCollector != null) {
+            metricsCollector.recordFailure();
+        }
+    }
+
+    /**
      * 刷新批量缓冲区 - 线程安全
      */
     private synchronized void flushBatch() {
         // 直接尝试取出所有事件
-        List<Event<T>> eventsToProcess = new ArrayList<>();
-        Event<T> event;
-        while ((event = batchBuffer.poll()) != null) {
-            eventsToProcess.add(event);
-        }
+        List<Event<T>> eventsToProcess = drainBatchBuffer();
 
         if (eventsToProcess.isEmpty()) {
             return;
         }
 
         long startTime = System.currentTimeMillis();
-        EventBatch<T> batch = new EventBatch<>();
-        batch.addEvents(eventsToProcess);
-        batch.markProcessing();
+        EventBatch<T> batch = createBatch(eventsToProcess);
 
         try {
             // 执行批处理并获取结果
             ProcessResult result = batchEventProcessor.processBatch(batch);
-            
+
             // 根据结果分别处理
             if (result.isSuccess()) {
-                batch.markCompleted();
-                processCount.addAndGet(eventsToProcess.size());
-
-                // 成功后删除持久化数据
-                if (persistenceManager != null) {
-                    for (Event<T> e : eventsToProcess) {
-                        persistenceManager.remove(e.getEventId());
-                    }
-                }
-
-                // 记录成功指标
-                long duration = System.currentTimeMillis() - startTime;
-                if (metricsCollector != null) {
-                    metricsCollector.recordBatchProcessing(eventsToProcess.size(), duration);
-                }
+                handleBatchSuccess(batch, eventsToProcess, startTime);
             } else {
-                // 处理失败 - 标记批次和所有事件为失败
-                batch.markFailed();
-                for (Event<T> e : eventsToProcess) {
-                    e.markFailed();
-                }
-                failedCount.addAndGet(eventsToProcess.size());
-                log.error("批量处理失败: {}, 影响事件数: {}", result.getMessage(), eventsToProcess.size());
-                
-                // 失败时持久化事件，以便后续重试
-                if (persistenceManager != null) {
-                    for (Event<T> e : eventsToProcess) {
-                        try {
-                            persistenceManager.persist(e);
-                        } catch (Exception pe) {
-                            log.error("持久化失败事件异常: {}", e.getEventId(), pe);
-                        }
-                    }
-                }
-                
-                if (metricsCollector != null) {
-                    metricsCollector.recordFailure();
-                }
+                handleBatchFailure(batch, eventsToProcess, result.getMessage());
             }
         } catch (Exception e) {
             log.error("批量处理异常", e);
-            batch.markFailed();
-            
-            // 标记所有事件为失败并持久化
-            for (Event<T> evt : eventsToProcess) {
-                evt.markFailed();
-                if (persistenceManager != null) {
-                    try {
-                        persistenceManager.persist(evt);
-                    } catch (Exception pe) {
-                        log.error("持久化失败事件异常: {}", evt.getEventId(), pe);
-                    }
+            handleBatchException(batch, eventsToProcess);
+        }
+    }
+
+    /**
+     * 从缓冲区中取出所有事件
+     */
+    private List<Event<T>> drainBatchBuffer() {
+        List<Event<T>> events = new ArrayList<>();
+        Event<T> event;
+        while ((event = batchBuffer.poll()) != null) {
+            events.add(event);
+        }
+        return events;
+    }
+
+    /**
+     * 创建批次对象
+     */
+    private EventBatch<T> createBatch(List<Event<T>> events) {
+        EventBatch<T> batch = new EventBatch<>();
+        batch.addEvents(events);
+        batch.markProcessing();
+        return batch;
+    }
+
+    /**
+     * 处理批量成功
+     */
+    private void handleBatchSuccess(EventBatch<T> batch, List<Event<T>> events, long startTime) {
+        batch.markCompleted();
+        processCount.addAndGet(events.size());
+
+        // 成功后删除持久化数据
+        removeBatchPersistence(events);
+
+        // 记录成功指标
+        long duration = System.currentTimeMillis() - startTime;
+        if (metricsCollector != null) {
+            metricsCollector.recordBatchProcessing(events.size(), duration);
+        }
+    }
+
+    /**
+     * 处理批量失败
+     */
+    private void handleBatchFailure(EventBatch<T> batch, List<Event<T>> events, String errorMessage) {
+        // 标记批次和所有事件为失败
+        batch.markFailed();
+        markEventsAsFailed(events);
+
+        failedCount.addAndGet(events.size());
+        log.error("批量处理失败: {}, 影响事件数: {}", errorMessage, events.size());
+
+        // 失败时持久化事件，以便后续重试
+        persistFailedEvents(events);
+
+        recordProcessingFailure();
+    }
+
+    /**
+     * 处理批量异常
+     */
+    private void handleBatchException(EventBatch<T> batch, List<Event<T>> events) {
+        batch.markFailed();
+
+        // 标记所有事件为失败并持久化
+        markEventsAsFailed(events);
+        persistFailedEvents(events);
+
+        failedCount.addAndGet(events.size());
+
+        recordProcessingFailure();
+    }
+
+    /**
+     * 标记所有事件为失败
+     */
+    private void markEventsAsFailed(List<Event<T>> events) {
+        for (Event<T> event : events) {
+            event.markFailed();
+        }
+    }
+
+    /**
+     * 删除批量事件的持久化数据
+     */
+    private void removeBatchPersistence(List<Event<T>> events) {
+        if (persistenceManager != null) {
+            for (Event<T> event : events) {
+                try {
+                    persistenceManager.remove(event.getEventId());
+                } catch (Exception e) {
+                    log.error("删除持久化数据异常: {}", event.getEventId(), e);
                 }
             }
-            
-            failedCount.addAndGet(eventsToProcess.size());
-            
-            if (metricsCollector != null) {
-                metricsCollector.recordFailure();
+        }
+    }
+
+    /**
+     * 持久化失败的事件
+     */
+    private void persistFailedEvents(List<Event<T>> events) {
+        if (persistenceManager != null) {
+            for (Event<T> event : events) {
+                try {
+                    persistenceManager.persist(event);
+                } catch (Exception e) {
+                    log.error("持久化失败事件异常: {}", event.getEventId(), e);
+                }
             }
+        }
+    }
+
+    /**
+     * 刷新剩余的批量事件（用于停止时）
+     */
+    private void flushRemainingBatchEvents() {
+        if (batchBuffer.isEmpty()) {
+            return;
+        }
+
+        int remainingCount = batchBuffer.size();
+        log.info("刷新批量缓冲区，剩余 {} 个事件", remainingCount);
+
+        try {
+            flushBatch();
+        } catch (Exception e) {
+            log.error("停止时刷新批量缓冲区失败，尝试持久化剩余事件", e);
+
+            // 失败时，至少持久化事件
+            List<Event<T>> remainingEvents = drainBatchBuffer();
+            persistFailedEvents(remainingEvents);
         }
     }
 
@@ -587,7 +718,7 @@ public class DisruptorEngine<T> {
                     log.error("清理批量调度器失败", e);
                 }
             }
-            
+
             // 停止WorkerPool
             if (workerPool != null) {
                 try {
@@ -597,7 +728,7 @@ public class DisruptorEngine<T> {
                     log.error("清理WorkerPool失败", e);
                 }
             }
-            
+
             // 关闭Disruptor
             if (disruptor != null) {
                 try {
@@ -607,7 +738,7 @@ public class DisruptorEngine<T> {
                     log.error("清理Disruptor失败", e);
                 }
             }
-            
+
             // 关闭消费者线程池
             if (consumerExecutor != null) {
                 try {
@@ -617,7 +748,7 @@ public class DisruptorEngine<T> {
                     log.error("清理消费者线程池失败", e);
                 }
             }
-            
+
             // 停止持久化管理器
             if (persistenceManager != null) {
                 try {
@@ -626,7 +757,7 @@ public class DisruptorEngine<T> {
                     log.error("清理持久化管理器失败", e);
                 }
             }
-            
+
             // 停止监控
             if (metricsCollector != null) {
                 try {
@@ -635,11 +766,11 @@ public class DisruptorEngine<T> {
                     log.error("清理监控收集器失败", e);
                 }
             }
-            
+
             // 清空缓冲区
             batchBuffer.clear();
             ringBuffer = null;
-            
+
             log.info("资源清理完成");
         } catch (Exception e) {
             log.error("资源清理过程发生异常", e);
@@ -671,10 +802,10 @@ public class DisruptorEngine<T> {
         if (ringBuffer == null || workerPool == null) {
             return 0;
         }
-        
+
         // 获取生产者游标（已发布的最大序号）
         long cursor = ringBuffer.getCursor();
-        
+
         // 获取消费者最慢的序号
         Sequence[] sequences = workerPool.getWorkerSequences();
         long minSequence = cursor;
@@ -684,7 +815,7 @@ public class DisruptorEngine<T> {
                 minSequence = value;
             }
         }
-        
+
         // 待处理 = 生产者游标 - 最慢消费者
         long pending = cursor - minSequence;
         return Math.max(0, pending);

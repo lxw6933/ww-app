@@ -84,6 +84,7 @@ class DisruptorTemplateTest {
 
         // 构建Template
         template = DisruptorTemplate.<String>builder()
+                .businessName("single-event-test")
                 .ringBufferSize(1024)
                 .consumerThreads(2)
                 .batchSize(10)
@@ -237,7 +238,6 @@ class DisruptorTemplateTest {
     @Order(11)
     @DisplayName("测试批量处理器-超时触发")
     void testBatchProcessorTimeout() throws InterruptedException {
-        CountDownLatch batchLatch = new CountDownLatch(1);
         AtomicInteger batchCount = new AtomicInteger(0);
 
         BatchEventProcessor<String> batchProcessor = batch -> {
@@ -245,7 +245,6 @@ class DisruptorTemplateTest {
             int size = batch.getEvents().size();
             processedCount.addAndGet(size);
             log.info("批处理: {}, 大小: {}, 线程: {}", batch.getBatchId(), size, Thread.currentThread().getName());
-            batchLatch.countDown();
             return ProcessResult.success("批处理成功，处理了" + size + "个事件");
         };
 
@@ -253,7 +252,7 @@ class DisruptorTemplateTest {
                 .ringBufferSize(1024)
                 .consumerThreads(2)
                 .batchSize(10)  // 批大小10
-                .batchTimeout(5000)  // 超时500ms
+                .batchTimeout(500)  // 超时500ms
                 .batchEnabled(true)
                 .batchEventProcessor(batchProcessor)
                 .build();
@@ -266,17 +265,15 @@ class DisruptorTemplateTest {
         }
 
         // 等待超时触发批处理
-        boolean completed = batchLatch.await(2, TimeUnit.SECONDS);
+        Thread.sleep(1000);
 
-        assertTrue(completed, "超时应该触发批处理");
-        assertEquals(6, processedCount.get(), "应该处理3个事件");
+        assertEquals(6, processedCount.get(), "应该处理6个事件");
     }
 
     @Test
     @Order(12)
     @DisplayName("测试批量处理器-异常处理")
     void testBatchProcessorException() throws InterruptedException {
-        CountDownLatch batchLatch = new CountDownLatch(1);
         AtomicBoolean exceptionOccurred = new AtomicBoolean(false);
 
         BatchEventProcessor<String> batchProcessor = batch -> {
@@ -291,8 +288,6 @@ class DisruptorTemplateTest {
             } catch (Exception e) {
                 exceptionOccurred.set(true);
                 return ProcessResult.failure("批处理失败: " + e.getMessage());
-            } finally {
-                batchLatch.countDown();
             }
         };
 
@@ -311,9 +306,8 @@ class DisruptorTemplateTest {
             template.publish("batch-test", "ExceptionEvent-" + i);
         }
 
-        boolean completed = batchLatch.await(2, TimeUnit.SECONDS);
+        Thread.sleep(1000);
 
-        assertTrue(completed, "批处理应该完成（即使有异常）");
         assertTrue(exceptionOccurred.get(), "应该发生异常");
     }
 
