@@ -4,6 +4,7 @@ import com.lmax.disruptor.*;
 import com.lmax.disruptor.TimeoutException;
 import com.lmax.disruptor.dsl.Disruptor;
 import com.lmax.disruptor.dsl.ProducerType;
+import com.lmax.disruptor.util.Util;
 import com.ww.app.common.thread.DefaultThreadFactoryBuilder;
 import com.ww.app.common.utils.ThreadUtil;
 import com.ww.app.disruptor.constans.DisruptorWaitStrategy;
@@ -148,15 +149,17 @@ public class DisruptorEngine<T> {
                 // 使用WorkerPool实现多消费者并发处理
                 setupWorkerPool();
 
-                // 启动持久化管理器
+                // 启动持久化管理器并恢复上次关闭时未处理的事件
                 if (persistenceManager != null) {
                     persistenceManager.start();
-                    // 恢复未处理的事件
                     List<Event<T>> recovered = persistenceManager.recover();
-                    for (Event<T> event : recovered) {
-                        publishEvent(event);
+                    if (!recovered.isEmpty()) {
+                        log.info("检测到上次关闭时有 {} 个未处理的事件，正在恢复...", recovered.size());
+                        for (Event<T> event : recovered) {
+                            publishEvent(event);
+                        }
+                        log.info("事件恢复完成");
                     }
-                    log.info("恢复了 {} 个未处理的事件", recovered.size());
                 }
 
                 // 启动监控
@@ -198,6 +201,9 @@ public class DisruptorEngine<T> {
 
                 // 处理剩余的批量事件
                 flushRemainingBatchEvents();
+
+                // ✅ 持久化RingBuffer中所有未处理的事件（关键改动）
+                persistPendingEvents();
 
                 // 停止WorkerPool
                 if (workerPool != null) {
@@ -269,7 +275,7 @@ public class DisruptorEngine<T> {
     }
 
     /**
-     * 统一的事件发布逻辑
+     * 统一的事件发布逻辑 - 仅发布，不持久化（持久化改为关闭时执行）
      */
     private boolean doPublishEvent(Event<T> event, boolean withTimeout, long timeout, TimeUnit unit) {
         // 统一的前置校验
@@ -278,10 +284,7 @@ public class DisruptorEngine<T> {
         }
 
         try {
-            // 先持久化（防止数据丢失）
-            persistEventIfNeeded(event);
-
-            // 发布到RingBuffer
+            // 直接发布到RingBuffer，不进行持久化操作
             boolean published = withTimeout
                     ? tryPublishToRingBuffer(event, timeout, unit)
                     : publishToRingBuffer(event);
@@ -294,6 +297,7 @@ public class DisruptorEngine<T> {
             if (withTimeout) {
                 log.warn("发布事件超时: {} (timeout={}{})", event.getEventId(), timeout, unit);
             }
+            recordPublishFailure();
             return false;
 
         } catch (Exception e) {
@@ -321,15 +325,6 @@ public class DisruptorEngine<T> {
     }
 
     /**
-     * 持久化事件（如果需要）
-     */
-    private void persistEventIfNeeded(Event<T> event) {
-        if (persistenceManager != null) {
-            persistenceManager.persist(event);
-        }
-    }
-
-    /**
      * 发布到RingBuffer（阻塞）
      */
     private boolean publishToRingBuffer(Event<T> event) {
@@ -340,7 +335,7 @@ public class DisruptorEngine<T> {
     /**
      * 尝试发布到RingBuffer（带超时重试）
      */
-    private boolean tryPublishToRingBuffer(Event<T> event, long timeout, TimeUnit unit) throws InterruptedException {
+    private boolean tryPublishToRingBuffer(Event<T> event, long timeout, TimeUnit unit) {
         long deadlineNanos = System.nanoTime() + unit.toNanos(timeout);
 
         while (System.nanoTime() < deadlineNanos) {
@@ -693,6 +688,76 @@ public class DisruptorEngine<T> {
             List<Event<T>> remainingEvents = drainBatchBuffer();
             persistFailedEvents(remainingEvents);
         }
+    }
+
+    /**
+     * 持久化所有未处理的事件（服务关闭时调用）
+     * 这是持久化的唯一时机，避免发布时的持久化带来的一致性和性能问题
+     */
+    private void persistPendingEvents() {
+        if (persistenceManager == null || ringBuffer == null || workerPool == null) {
+            return;
+        }
+
+        try {
+            // 获取所有未处理的事件
+            List<Event<T>> pendingEvents = collectPendingEvents();
+            
+            if (pendingEvents.isEmpty()) {
+                log.info("没有未处理的事件需要持久化");
+                return;
+            }
+
+            log.info("正在持久化 {} 个未处理的事件...", pendingEvents.size());
+            
+            // 批量持久化
+            persistenceManager.persistBatch(pendingEvents);
+            
+            log.info("未处理事件持久化完成，事件数: {}", pendingEvents.size());
+            
+        } catch (Exception e) {
+            log.error("持久化未处理事件失败，可能导致部分事件丢失", e);
+            // 这里可以接入告警系统
+            if (config.isPersistenceFailureAlert()) {
+                log.error("[告警] 关闭时持久化失败，可能导致事件丢失");
+            }
+        }
+    }
+
+    /**
+     * 收集RingBuffer中所有未处理的事件
+     */
+    private List<Event<T>> collectPendingEvents() {
+        List<Event<T>> pendingEvents = new ArrayList<>();
+        
+        try {
+            // 获取生产者游标（最新发布位置）
+            long cursor = ringBuffer.getCursor();
+            
+            // 获取最慢消费者位置
+            long minSequence = Util.getMinimumSequence(workerPool.getWorkerSequences(), cursor);
+            
+            // 收集未处理的事件：从最慢消费者位置+1 到 生产者游标
+            for (long seq = minSequence + 1; seq <= cursor; seq++) {
+                try {
+                    EventWrapper<T> wrapper = ringBuffer.get(seq);
+                    if (wrapper != null && wrapper.getEvent() != null) {
+                        Event<T> event = wrapper.getEvent();
+                        pendingEvents.add(event);
+                        log.debug("收集未处理事件: eventId={}, seq={}", event.getEventId(), seq);
+                    }
+                } catch (Exception e) {
+                    log.error("收集序号{}的事件失败", seq, e);
+                }
+            }
+            
+            log.info("共收集到 {} 个未处理事件，范围: {} -> {}", pendingEvents.size(), minSequence + 1, cursor);
+            
+        } catch (Exception e) {
+            log.error("收集未处理事件失败", e);
+        }
+        
+        return pendingEvents;
     }
 
     /**

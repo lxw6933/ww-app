@@ -47,6 +47,11 @@ public class DisruptorConfig {
     private String businessName = "default";
 
     /**
+     * 持久化失败时是否发送告警
+     */
+    private boolean persistenceFailureAlert = true;
+
+    /**
      * 验证配置
      */
     public void validate() {
