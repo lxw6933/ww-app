@@ -39,7 +39,7 @@ public class DisruptorConfig {
     /**
      * 是否启用批量处理
      */
-    private boolean batchEnabled = true;
+    private boolean batchEnabled = false;
 
     /**
      * 业务名称标识 - 用于区分不同业务的Disruptor实例的线程名

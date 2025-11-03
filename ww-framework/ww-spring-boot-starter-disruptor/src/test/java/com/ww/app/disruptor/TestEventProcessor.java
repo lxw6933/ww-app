@@ -34,28 +34,28 @@ public class TestEventProcessor implements EventProcessor<String> {
     @Override
     public ProcessResult process(Event<String> event) {
         try {
-            // 模拟异常
-            if (throwException && processedCount.get() % 3 == 0) {
-                throw new RuntimeException("测试异常：模拟处理失败");
+            // 先获取当前计数（在增加前）
+            int currentCount = processedCount.getAndIncrement();
+            
+            // 模拟异常 - 使用获取到的计数判断
+            if (throwException && currentCount % 3 == 0) {
+                throw new RuntimeException("测试异常：模拟处理失败 (event #" + currentCount + ")");
             }
 
-            // 模拟处理耗时
-            Thread.sleep(1);
-
-            // 记录处理
+            // 记录处理（移除 Thread.sleep 以提高测试速度）
             processedEvents.add(event.getPayload());
-            processedCount.incrementAndGet();
 
-            log.debug("处理事件: eventId={}, payload={}", event.getEventId(), event.getPayload());
+            log.debug("处理事件: eventId={}, payload={}, count={}", event.getEventId(), event.getPayload(), currentCount);
 
             return ProcessResult.success();
 
-        } catch (InterruptedException e) {
-            Thread.currentThread().interrupt();
-            return ProcessResult.failure("处理中断: " + e.getMessage());
-        } catch (Exception e) {
-            log.error("处理事件失败", e);
+        } catch (RuntimeException e) {
+            // 业务异常，返回失败但不重置中断标志
+            log.error("处理事件失败: {}", e.getMessage());
             return ProcessResult.failure("处理失败: " + e.getMessage());
+        } catch (Exception e) {
+            log.error("处理事件异常", e);
+            return ProcessResult.failure("处理异常: " + e.getMessage());
         }
     }
 }

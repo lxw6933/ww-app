@@ -34,29 +34,29 @@ public class TestBatchEventProcessor implements BatchEventProcessor<String> {
         try {
             int size = batch.getEvents().size();
             
-            // 模拟异常
-            if (throwException && batchCount.get() % 2 == 0) {
-                throw new RuntimeException("测试异常：批量处理失败");
+            // 先增加批次计数
+            int currentBatchCount = batchCount.getAndIncrement();
+            
+            // 模拟异常 - 根据批次大小判断（大于等于6个的批次失败）
+            if (throwException && size >= 6) {
+                throw new RuntimeException("测试异常：批量处理失败 (batch #" + currentBatchCount + ", size=" + size + ")");
             }
 
-            // 模拟批量处理耗时
-            Thread.sleep(10);
-
-            // 记录处理
+            // 记录处理（移除 Thread.sleep 以提高测试速度）
             processedCount.addAndGet(size);
-            batchCount.incrementAndGet();
 
-            log.debug("批量处理: batchId={}, size={}, total={}", 
-                    batch.getBatchId(), size, processedCount.get());
+            log.debug("批量处理: batchId={}, batchCount={}, size={}, total={}", 
+                    batch.getBatchId(), currentBatchCount, size, processedCount.get());
 
             return ProcessResult.success();
 
-        } catch (InterruptedException e) {
-            Thread.currentThread().interrupt();
-            return ProcessResult.failure("批处理中断: " + e.getMessage());
-        } catch (Exception e) {
-            log.error("批量处理失败", e);
+        } catch (RuntimeException e) {
+            // 业务异常，返回失败
+            log.error("批量处理失败: {}", e.getMessage());
             return ProcessResult.failure("批处理失败: " + e.getMessage());
+        } catch (Exception e) {
+            log.error("批量处理异常", e);
+            return ProcessResult.failure("批处理异常: " + e.getMessage());
         }
     }
 }

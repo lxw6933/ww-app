@@ -200,18 +200,15 @@ public class DisruptorEngine<T> {
             try {
                 log.info("正在停止Disruptor引擎...");
 
-                // 停止批量处理定时器
+                // 1. 停止批量处理定时器
                 if (batchScheduler != null) {
                     ThreadUtil.shutdown("批量调度器", this::flushBatch, batchScheduler);
                 }
 
-                // 处理剩余的批量事件
+                // 2. 处理剩余的批量事件
                 flushRemainingBatchEvents();
 
-                // ✅ 持久化RingBuffer中所有未处理的事件（关键改动）
-                persistPendingEvents();
-
-                // 停止WorkerPool
+                // 3. 停止WorkerPool并等待所有事件处理完成（修复：移到persistPendingEvents之前）
                 if (workerPool != null) {
                     try {
                         long pendingCount = getPendingCount();
@@ -219,13 +216,17 @@ public class DisruptorEngine<T> {
                             log.info("等待处理 {} 个剩余事件...", pendingCount);
                         }
 
-                        // 停止WorkerPool
+                        // 停止WorkerPool，等待所有消费者处理完队列中的事件
                         workerPool.drainAndHalt();
-                        log.info("WorkerPool已停止");
+                        log.info("WorkerPool已停止，所有事件已处理完成");
                     } catch (Exception e) {
                         log.error("停止WorkerPool异常", e);
                     }
                 }
+
+                // 4. 持久化RingBuffer中真正未处理的事件（修复：移到drainAndHalt之后）
+                // 此时所有消费者已停止，可以安全地收集未处理事件
+                persistPendingEvents();
 
                 // 关闭Disruptor
                 if (disruptor != null) {
