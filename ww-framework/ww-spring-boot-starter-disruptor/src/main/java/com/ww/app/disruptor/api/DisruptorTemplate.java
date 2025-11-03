@@ -90,6 +90,13 @@ public class DisruptorTemplate<T> {
     }
 
     /**
+     * 获取失败计数
+     */
+    public long getFailedCount() {
+        return engine.getFailedCount();
+    }
+
+    /**
      * 获取队列利用率
      */
     public double getQueueUtilization() {

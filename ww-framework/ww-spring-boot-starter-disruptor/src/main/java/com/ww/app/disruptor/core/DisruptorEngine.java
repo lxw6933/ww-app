@@ -23,6 +23,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 
 /**
@@ -96,6 +97,11 @@ public class DisruptorEngine<T> {
      * 批量事件缓冲区 - 使用线程安全的队列
      */
     private final ConcurrentLinkedQueue<Event<T>> batchBuffer = new ConcurrentLinkedQueue<>();
+
+    /**
+     * 批量缓冲区计数器 - 避免频繁调用size()
+     */
+    private final AtomicInteger batchBufferSize = new AtomicInteger(0);
 
     /**
      * 批量处理定时器
@@ -414,6 +420,7 @@ public class DisruptorEngine<T> {
 
     /**
      * 处理事件 - WorkHandler接口方法
+     * 修复：删除异常重新抛出，避免与ExceptionHandler重复计数
      */
     private void handleEvent(EventWrapper<T> wrapper) {
         Event<T> event = wrapper.getEvent();
@@ -431,12 +438,16 @@ public class DisruptorEngine<T> {
                 handleSingleEvent(event);
             }
         } catch (Exception e) {
+            // 只记录日志和标记失败状态，不重新抛出异常
+            // failedCount 和 metrics 由 ExceptionHandler 统一处理
             log.error("处理事件异常: {}, 线程: {}", event.getEventId(), Thread.currentThread().getName(), e);
             event.markFailed();
-            // 注意：failedCount 和 metrics 统一由 ExceptionHandler 处理，避免重复计数
-
-            // 重新抛出让ExceptionHandler处理
-            throw new RuntimeException(e);
+            
+            // 单个事件处理失败也需要计数（批量处理在其他地方已计数）
+            if (eventProcessor != null) {
+                failedCount.incrementAndGet();
+                recordProcessingFailure();
+            }
         } finally {
             wrapper.clear();
         }
@@ -444,14 +455,17 @@ public class DisruptorEngine<T> {
 
     /**
      * 处理批量事件 - 添加到缓冲区并检查是否需要刷新
+     * 修复：使用AtomicInteger计数器避免频繁调用size()并解决竞态条件
      */
     private void handleBatchEvent(Event<T> event) {
         batchBuffer.offer(event);
+        int currentSize = batchBufferSize.incrementAndGet();
 
-        // 达到批量大小时刷新（双重检查防止竞态）
-        if (batchBuffer.size() >= config.getBatchSize()) {
+        // 达到批量大小时刷新
+        if (currentSize >= config.getBatchSize()) {
             synchronized (this) {
-                if (batchBuffer.size() >= config.getBatchSize()) {
+                // 再次检查，避免重复刷新
+                if (batchBufferSize.get() >= config.getBatchSize()) {
                     flushBatch();
                 }
             }
@@ -560,12 +574,14 @@ public class DisruptorEngine<T> {
 
     /**
      * 从缓冲区中取出所有事件
+     * 修复：重置计数器以保持准确性
      */
     private List<Event<T>> drainBatchBuffer() {
         List<Event<T>> events = new ArrayList<>();
         Event<T> event;
         while ((event = batchBuffer.poll()) != null) {
             events.add(event);
+            batchBufferSize.decrementAndGet();
         }
         return events;
     }
@@ -862,6 +878,7 @@ public class DisruptorEngine<T> {
 
     /**
      * 获取待处理事件数量
+     * 修复：使用 Util.getMinimumSequence() 优化性能
      */
     public long getPendingCount() {
         if (ringBuffer == null || workerPool == null) {
@@ -871,15 +888,8 @@ public class DisruptorEngine<T> {
         // 获取生产者游标（已发布的最大序号）
         long cursor = ringBuffer.getCursor();
 
-        // 获取消费者最慢的序号
-        Sequence[] sequences = workerPool.getWorkerSequences();
-        long minSequence = cursor;
-        for (Sequence sequence : sequences) {
-            long value = sequence.get();
-            if (value < minSequence) {
-                minSequence = value;
-            }
-        }
+        // 使用 Disruptor 工具类获取最慢消费者序号（性能更优）
+        long minSequence = Util.getMinimumSequence(workerPool.getWorkerSequences(), cursor);
 
         // 待处理 = 生产者游标 - 最慢消费者
         long pending = cursor - minSequence;
