@@ -1,8 +1,9 @@
 package com.ww.app.im.handler.server;
 
-import com.ww.app.common.exception.ApiException;
+import com.ww.app.disruptor.api.DisruptorTemplate;
+import com.ww.app.disruptor.model.Event;
 import com.ww.app.im.common.ImMsg;
-import com.ww.app.im.component.ImHandlerComponent;
+import com.ww.app.im.event.ImMsgEvent;
 import com.ww.app.im.handler.msg.LogoutMsgHandlerAdapter;
 import com.ww.app.im.utils.ImContextUtils;
 import io.netty.channel.ChannelHandler;
@@ -12,6 +13,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 
 import javax.annotation.Resource;
+import java.util.concurrent.TimeUnit;
 
 /**
  * @author ww
@@ -24,20 +26,45 @@ import javax.annotation.Resource;
 public class ImMsgServerHandler extends SimpleChannelInboundHandler<Object> {
 
     @Resource
-    protected ImHandlerComponent imHandlerComponent;
+    private DisruptorTemplate<ImMsgEvent> imMsgDisruptorTemplate;
 
     @Resource
     private LogoutMsgHandlerAdapter logoutMsgHandlerAdapter;
 
     @Override
-    public void channelRead0(ChannelHandlerContext channelHandlerContext, Object imMsg) {
-        if (imMsg instanceof ImMsg) {
-            imHandlerComponent.handle(channelHandlerContext, (ImMsg) imMsg);
+    public void channelRead0(ChannelHandlerContext ctx, Object msg) {
+        if (msg instanceof ImMsg) {
+            ImMsg imMsg = (ImMsg) msg;
+            
+            // 创建事件并发布到 Disruptor
+            ImMsgEvent eventData = new ImMsgEvent();
+            eventData.setCtx(ctx);
+            eventData.setImMsg(imMsg);
+            eventData.setReceiveTime(System.currentTimeMillis());
+            
+            Event<ImMsgEvent> event = new Event<>(generateEventId(imMsg), "im-msg", eventData);
+            
+            // 尝试发布，超时1秒
+            boolean success = imMsgDisruptorTemplate.tryPublish(event, 1, TimeUnit.SECONDS);
+            
+            if (!success) {
+                log.warn("Disruptor队列已满，消息被拒绝: msgType={}, channel={}", 
+                        imMsg.getMsgType(), ctx.channel());
+                // TODO: 可以返回错误响应给客户端
+            }
         } else {
-            throw new ApiException("消息异常");
+            log.error("未知消息类型: {}, channel={}", msg.getClass(), ctx.channel());
+            ctx.close();
         }
     }
-
+    
+    /**
+     * 生成事件ID
+     */
+    private String generateEventId(ImMsg imMsg) {
+        return imMsg.getMsgType() + "-" + System.nanoTime();
+    }
+    
     /**
      * 正常、异常断线都会触发
      */
@@ -52,7 +79,7 @@ public class ImMsgServerHandler extends SimpleChannelInboundHandler<Object> {
     }
 
     @Override
-    public void channelActive(ChannelHandlerContext ctx) throws Exception {
+    public void channelActive(ChannelHandlerContext ctx) {
         log.info("客户端建立连接: {}", ctx.channel());
     }
 }

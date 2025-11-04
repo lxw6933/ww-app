@@ -134,8 +134,6 @@ public class Event<T> implements Serializable {
         this.status = EventStatus.FAILED;
     }
 
-    // Getters and Setters
-
     @Override
     public String toString() {
         return "Event{" +

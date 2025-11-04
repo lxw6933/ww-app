@@ -1,5 +1,7 @@
 package com.ww.app.im.consumer;
 
+import com.google.common.collect.Lists;
+import com.mongodb.bulk.BulkWriteResult;
 import com.ww.app.im.api.common.ImBizMqConstant;
 import com.ww.app.im.core.api.common.ImMsgBody;
 import com.ww.app.im.entity.SingleChatMessage;
@@ -34,6 +36,8 @@ public class ImBizConsumer {
     @Resource
     private MongoTemplate mongoTemplate;
 
+    private static final int BATCH_SIZE = 500;
+
     @RabbitListener(queues = {ImBizMqConstant.IM_BIZ_MSG_QUEUE}, containerFactory = "appDirectContainerFactory")
     public void imBizMsg(Message message, ImMsgBody imMsgBody) {
         msgService.handleImMsg(imMsgBody);
@@ -41,14 +45,30 @@ public class ImBizConsumer {
 
     @RabbitListener(queues = {ImBizMqConstant.IM_BIZ_MSG_HANDLE_QUEUE}, containerFactory = "appBatchContainerFactory")
     public void imBizMsgHandle(List<SingleChatMessage> msgList) {
-        log.info("消息持久化{}", msgList);
-        Map<String, List<SingleChatMessage>> msgMap = msgList.stream().collect(Collectors.groupingBy(msgKey -> DocShardUtils.getSingleChatDocName(msgKey.getSenderId(), msgKey.getSendTime())));
-        msgMap.forEach((key, targetMsgList) -> {
-            BulkOperations bulkOps = mongoTemplate.bulkOps(BulkOperations.BulkMode.UNORDERED, SingleChatMessage.class, key);
-            for (SingleChatMessage entity : targetMsgList) {
-                bulkOps.insert(entity);
-            }
-            bulkOps.execute();
+        log.info("消息持久化批次大小: {}", msgList.size());
+        Map<String, List<SingleChatMessage>> msgMap = msgList.stream()
+                .collect(Collectors.groupingBy(msgKey ->
+                        DocShardUtils.getSingleChatDocName(msgKey.getSenderId(), msgKey.getSendTime())));
+
+        msgMap.forEach((collectionName, targetMsgList) -> {
+            // 分批写入，避免单次批量过大
+            Lists.partition(targetMsgList, BATCH_SIZE).forEach(batch -> {
+                BulkOperations bulkOps = mongoTemplate.bulkOps(
+                        BulkOperations.BulkMode.UNORDERED,
+                        SingleChatMessage.class,
+                        collectionName
+                );
+
+                batch.forEach(bulkOps::insert);
+
+                try {
+                    BulkWriteResult result = bulkOps.execute();
+                    log.debug("MongoDB批量写入成功: {}", result.getInsertedCount());
+                } catch (Exception e) {
+                    log.error("MongoDB批量写入失败, collection: {}", collectionName, e);
+                    // 失败重试或记录死信队列
+                }
+            });
         });
     }
 

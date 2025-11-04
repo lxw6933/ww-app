@@ -1,7 +1,8 @@
 package com.ww.app.im.handler;
 
 import com.alibaba.fastjson.JSON;
-import com.ww.app.im.api.common.ImBizMqConstant;
+import com.ww.app.disruptor.api.DisruptorTemplate;
+import com.ww.app.disruptor.model.Event;
 import com.ww.app.im.api.dto.MessageDTO;
 import com.ww.app.im.api.enums.ImMsgBizCodeEnum;
 import com.ww.app.im.core.api.common.ImMsgBody;
@@ -28,18 +29,28 @@ public class ChatMsgHandler implements MsgHandler {
 
     @Resource
     private RabbitMqPublisher rabbitMqPublisher;
+    
+    @Resource
+    private DisruptorTemplate<SingleChatMessage> persistenceDisruptorTemplate;
 
     @Override
     public void handle(ImMsgBody imMsgBody) {
         MessageDTO messageDTO = JSON.parseObject(imMsgBody.getBizMsg(), MessageDTO.class);
         SingleChatMessage msg = SingleChatMessage.build(imMsgBody.getUserId(), messageDTO);
+        
         log.info("接收到[{}]发来的消息:{}", imMsgBody.getUserId(), msg);
-        // 消息持久化
-        rabbitMqPublisher.sendMsg(ImBizMqConstant.IM_BIZ_EXCHANGE, ImBizMqConstant.IM_BIZ_MSG_HANDLE_KEY, msg);
-        // 消息处理、发送消息队列转发消费
-        rabbitMqPublisher.sendMsg(ImRouterMqConstant.IM_ROUTER_EXCHANGE, ImRouterMqConstant.IM_ROUTER_MSG_KEY, imMsgBody);
-        // 临时使用远程调用来转发
-//        imRouterApi.routeMsg(imMsgBody);
+        
+        // 优化：使用 Disruptor 异步持久化，提升性能
+        Event<SingleChatMessage> persistenceEvent = new Event<>(msg.getId(), "chat-msg", msg);
+        
+        boolean persistSuccess = persistenceDisruptorTemplate.publish(persistenceEvent);
+        if (!persistSuccess) {
+            log.warn("消息持久化队列已满，消息ID: {}", msg.getId());
+        }
+        
+        // 消息路由转发
+        rabbitMqPublisher.sendMsg(ImRouterMqConstant.IM_ROUTER_EXCHANGE, 
+                ImRouterMqConstant.IM_ROUTER_MSG_KEY, imMsgBody);
     }
 
     @Override
