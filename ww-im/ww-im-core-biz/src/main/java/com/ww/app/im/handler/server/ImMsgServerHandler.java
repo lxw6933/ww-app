@@ -48,9 +48,11 @@ public class ImMsgServerHandler extends SimpleChannelInboundHandler<Object> {
             boolean success = imMsgDisruptorTemplate.tryPublish(event, 1, TimeUnit.SECONDS);
             
             if (!success) {
-                log.warn("Disruptor队列已满，消息被拒绝: msgType={}, channel={}", 
-                        imMsg.getMsgType(), ctx.channel());
-                // TODO: 可以返回错误响应给客户端
+                log.error("Disruptor队列已满，消息被拒绝: msgType={}, userId={}, channel={}", 
+                        imMsg.getMsgType(), ImContextUtils.getUserId(ctx), ctx.channel());
+                // 可以考虑：1) 返回错误响应 2) 降级到同步处理 3) 直接关闭连接
+                // 这里选择关闭连接，防止客户端继续发送消息
+                ctx.close();
             }
         } else {
             log.error("未知消息类型: {}, channel={}", msg.getClass(), ctx.channel());

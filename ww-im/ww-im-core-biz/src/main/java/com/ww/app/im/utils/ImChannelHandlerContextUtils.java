@@ -52,16 +52,29 @@ public class ImChannelHandlerContextUtils {
             return;
         }
         
-        channelHandlerContextMap.put(userId, ctx);
-        int count = connectionCount.incrementAndGet();
+        // 修复并发问题：判断是新连接还是替换连接
+        ChannelHandlerContext oldCtx = channelHandlerContextMap.put(userId, ctx);
         
-        // 监控告警
-        if (count % 10000 == 0) {
-            log.info("当前连接数: {}", count);
-        }
-        
-        if (count > 80000) {
-            log.warn("⚠️ 连接数过高: {}, 接近上限", count);
+        if (oldCtx == null) {
+            // 新连接
+            int count = connectionCount.incrementAndGet();
+            
+            // 监控告警
+            if (count % 10000 == 0) {
+                log.info("当前连接数: {}", count);
+            }
+            
+            if (count > 80000) {
+                log.warn("⚠️ 连接数过高: {}, 接近上限", count);
+            }
+        } else {
+            // 已存在的连接被替换（可能是重复登录）
+            log.warn("用户{}的连接被替换: oldChannel={}, newChannel={}", 
+                    userId, oldCtx.channel().id().asShortText(), ctx.channel().id().asShortText());
+            // 关闭旧连接
+            if (oldCtx.channel().isActive()) {
+                oldCtx.close();
+            }
         }
     }
 

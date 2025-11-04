@@ -45,7 +45,12 @@ public class ChatMsgHandler implements MsgHandler {
         
         boolean persistSuccess = persistenceDisruptorTemplate.publish(persistenceEvent);
         if (!persistSuccess) {
-            log.warn("消息持久化队列已满，消息ID: {}", msg.getId());
+            log.error("消息持久化队列已满，消息ID: {}, 用户ID: {}", msg.getId(), imMsgBody.getUserId());
+            // TODO: 考虑降级策略
+            // 1. 重试机制
+            // 2. 存储到Redis备份队列
+            // 3. 直接同步存储到MongoDB
+            // 当前策略：继续路由转发，但记录告警
         }
         
         // 消息路由转发
