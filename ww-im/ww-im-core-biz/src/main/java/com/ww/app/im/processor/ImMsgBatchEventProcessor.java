@@ -6,6 +6,7 @@ import com.ww.app.disruptor.model.ProcessResult;
 import com.ww.app.disruptor.processor.BatchEventProcessor;
 import com.ww.app.im.component.ImHandlerComponent;
 import com.ww.app.im.event.ImMsgEvent;
+import com.ww.app.im.pool.ImMsgEventPool;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 
@@ -14,6 +15,7 @@ import java.util.List;
 
 /**
  * IM消息批量事件处理器
+ * 优化：处理完消息后回收ImMsgEvent对象到对象池
  * @author ww
  */
 @Slf4j
@@ -22,6 +24,9 @@ public class ImMsgBatchEventProcessor implements BatchEventProcessor<ImMsgEvent>
 
     @Resource
     private ImHandlerComponent imHandlerComponent;
+    
+    @Resource
+    private ImMsgEventPool imMsgEventPool;
 
     @Override
     public ProcessResult processBatch(EventBatch<ImMsgEvent> batch) {
@@ -39,8 +44,9 @@ public class ImMsgBatchEventProcessor implements BatchEventProcessor<ImMsgEvent>
         long totalDelay = 0;
         
         for (Event<ImMsgEvent> event : events) {
+            ImMsgEvent data = null;
             try {
-                ImMsgEvent data = event.getPayload();
+                data = event.getPayload();
                 
                 // 记录处理延迟
                 long delay = data.getProcessDelay();
@@ -58,6 +64,11 @@ public class ImMsgBatchEventProcessor implements BatchEventProcessor<ImMsgEvent>
                 log.error("处理消息失败: eventId={}", event.getEventId(), e);
                 failCount++;
                 // 不中断批处理，继续处理下一条
+            } finally {
+                // 回收对象到池中，减少GC压力
+                if (data != null) {
+                    imMsgEventPool.recycle(data);
+                }
             }
         }
         
