@@ -1,5 +1,6 @@
 package com.ww.app.im.handler;
 
+import cn.hutool.core.util.StrUtil;
 import com.alibaba.fastjson.JSON;
 import com.ww.app.disruptor.api.DisruptorTemplate;
 import com.ww.app.disruptor.model.Event;
@@ -8,7 +9,6 @@ import com.ww.app.im.api.enums.ImMsgBizCodeEnum;
 import com.ww.app.im.core.api.common.ImMsgBody;
 import com.ww.app.im.entity.SingleChatMessage;
 import com.ww.app.im.router.api.common.ImRouterMqConstant;
-import com.ww.app.im.router.api.rpc.ImRouterApi;
 import com.ww.app.rabbitmq.RabbitMqPublisher;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
@@ -25,9 +25,6 @@ import javax.annotation.Resource;
 public class ChatMsgHandler implements MsgHandler {
 
     @Resource
-    private ImRouterApi imRouterApi;
-
-    @Resource
     private RabbitMqPublisher rabbitMqPublisher;
     
     @Resource
@@ -41,7 +38,8 @@ public class ChatMsgHandler implements MsgHandler {
         log.info("接收到[{}]发来的消息:{}", imMsgBody.getUserId(), msg);
         
         // 优化：使用 Disruptor 异步持久化，提升性能
-        Event<SingleChatMessage> persistenceEvent = new Event<>(msg.getId(), "chat-msg", msg);
+        String eventId = System.currentTimeMillis() + StrUtil.DASHED + msg.getSenderId() + StrUtil.DASHED + msg.getReceiverId();
+        Event<SingleChatMessage> persistenceEvent = new Event<>(eventId, "chat-msg", msg);
         
         boolean persistSuccess = persistenceDisruptorTemplate.publish(persistenceEvent);
         if (!persistSuccess) {

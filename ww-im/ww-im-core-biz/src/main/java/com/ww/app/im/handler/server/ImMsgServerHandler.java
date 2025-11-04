@@ -1,5 +1,6 @@
 package com.ww.app.im.handler.server;
 
+import cn.hutool.core.util.StrUtil;
 import com.ww.app.disruptor.api.DisruptorTemplate;
 import com.ww.app.disruptor.model.Event;
 import com.ww.app.im.common.ImMsg;
@@ -64,7 +65,7 @@ public class ImMsgServerHandler extends SimpleChannelInboundHandler<Object> {
      * 生成事件ID
      */
     private String generateEventId(ImMsg imMsg) {
-        return imMsg.getMsgType() + "-" + System.nanoTime();
+        return imMsg.getMsgType() + StrUtil.DASHED + System.nanoTime();
     }
     
     /**
