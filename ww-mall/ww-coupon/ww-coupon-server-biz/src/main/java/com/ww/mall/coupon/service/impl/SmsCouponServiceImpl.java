@@ -27,6 +27,7 @@ import com.ww.app.mongodb.utils.MongoUtils;
 import com.ww.app.redis.AppRedisTemplate;
 import com.ww.app.redis.annotation.DistributedLock;
 import com.ww.app.redis.annotation.Resubmission;
+import com.ww.app.redis.component.RedissonComponent;
 import com.ww.app.redis.component.stock.StockRedisComponent;
 import com.ww.mall.coupon.component.CouponComponent;
 import com.ww.mall.coupon.component.SmsCouponStatisticsComponent;
@@ -49,7 +50,6 @@ import org.jetbrains.annotations.NotNull;
 import org.redisson.api.RScript;
 import org.redisson.api.RSet;
 import org.redisson.api.RedissonClient;
-import org.redisson.client.codec.StringCodec;
 import org.springframework.data.mongodb.core.MongoTemplate;
 import org.springframework.data.mongodb.core.query.Query;
 import org.springframework.stereotype.Service;
@@ -104,6 +104,9 @@ public class SmsCouponServiceImpl implements SmsCouponService {
     private RedissonClient redissonClient;
 
     @Resource
+    private RedissonComponent redissonComponent;
+
+    @Resource
     private StockRedisComponent stockRedisComponent;
 
     @Resource
@@ -113,12 +116,7 @@ public class SmsCouponServiceImpl implements SmsCouponService {
 
     @PostConstruct
     public void init() {
-        loadLuaScript();
-    }
-
-    private void loadLuaScript() {
-        RScript rScript = redissonClient.getScript(StringCodec.INSTANCE);
-        convertCouponCodeSha1 = rScript.scriptLoad(CouponLuaConstant.CONVERT_COUPON_CODE_LUA);
+        convertCouponCodeSha1 = redissonComponent.loadLuaScript(CouponLuaConstant.CONVERT_COUPON_CODE_LUA);
     }
 
     @Override
@@ -134,10 +132,12 @@ public class SmsCouponServiceImpl implements SmsCouponService {
                 case API_ISSUE:
                 case EXPORT_ISSUE:
                     Set<String> couponCodeKeys = getCouponCodeKeys(smsCouponActivity.getActivityCode());
-                    for (String key : couponCodeKeys) {
-                        RSet<String> codeRSet = redissonClient.getSet(key);
-                        if (!codeRSet.contains(CouponConstant.DEFAULT_CODE)) {
-                            availableNumber += codeRSet.size();
+                    // 批量获取
+                    Map<String, Set<Object>> batchCodeMap = redissonComponent.batchGetSetValues(couponCodeKeys);
+                    for (Map.Entry<String, Set<Object>> entry : batchCodeMap.entrySet()) {
+                        Set<Object> codeSet = entry.getValue();
+                        if (!codeSet.contains(CouponConstant.DEFAULT_CODE)) {
+                            availableNumber += codeSet.size();
                         }
                     }
                     break;
@@ -900,10 +900,7 @@ public class SmsCouponServiceImpl implements SmsCouponService {
      * @return boolean
      */
     private boolean doConvertCouponCode(String couponCodeKey, String couponCode) {
-        RScript rScript = redissonClient.getScript(StringCodec.INSTANCE);
-        // 执行脚本
-        Long res = rScript.evalSha(
-                RScript.Mode.READ_WRITE, // 脚本模式
+        Long res = redissonComponent.evalLuaBySha(
                 convertCouponCodeSha1,   // 脚本的 SHA1 校验和
                 RScript.ReturnType.INTEGER, // 返回值类型
                 Collections.singletonList(couponCodeKey), // KEYS

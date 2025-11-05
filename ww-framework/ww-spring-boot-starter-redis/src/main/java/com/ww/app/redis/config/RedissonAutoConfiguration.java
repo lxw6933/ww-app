@@ -2,6 +2,7 @@ package com.ww.app.redis.config;
 
 import com.ww.app.redis.aspect.DistributedLockAspect;
 import com.ww.app.redis.codec.RedissonCodec;
+import com.ww.app.redis.component.RedissonComponent;
 import lombok.extern.slf4j.Slf4j;
 import org.redisson.Redisson;
 import org.redisson.api.RedissonClient;
@@ -78,6 +79,11 @@ public class RedissonAutoConfiguration {
 //            log.error("RedissonClient init redis url:[{}], Exception:", nodes, e);
             return null;
         }
+    }
+
+    @Bean
+    public RedissonComponent redissonComponent(RedissonClient redissonClient) {
+        return new RedissonComponent(redissonClient);
     }
 
     @Bean
