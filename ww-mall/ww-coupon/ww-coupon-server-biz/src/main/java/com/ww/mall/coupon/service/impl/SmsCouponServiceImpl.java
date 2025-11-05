@@ -38,7 +38,7 @@ import com.ww.mall.coupon.entity.*;
 import com.ww.mall.coupon.entity.base.BaseCouponInfo;
 import com.ww.mall.coupon.eunms.*;
 import com.ww.mall.coupon.service.SmsCouponService;
-import com.ww.mall.coupon.utils.CouponCacheUtils;
+import com.ww.mall.coupon.utils.CouponCacheComponent;
 import com.ww.mall.coupon.utils.CouponCodeGenerator;
 import com.ww.mall.coupon.utils.CouponUtils;
 import com.ww.mall.coupon.view.bo.*;
@@ -78,6 +78,9 @@ import static com.ww.mall.coupon.constant.LogRecordConstants.*;
 public class SmsCouponServiceImpl implements SmsCouponService {
 
     private static final int BATCH_NUMBER = 1000;
+
+    @Resource
+    private CouponCacheComponent couponCacheComponent;
 
     @Resource
     private SmsCouponService smsCouponService;
@@ -250,7 +253,7 @@ public class SmsCouponServiceImpl implements SmsCouponService {
             // 已开始
             updateResult = mongoTemplate.updateFirst(BaseCouponInfo.buildActivityCodeQuery(smsCouponActivityEditBO.getActivityCode(), smsCouponActivityEditBO.getChannelId()), smsCouponActivityEditBO.buildInfoUpdate(), SmsCouponActivity.class);
         }
-        CouponCacheUtils.updateSmsCouponActivityCache(smsCouponActivityEditBO.getActivityCode());
+        couponCacheComponent.updateSmsCouponActivityCache(smsCouponActivityEditBO.getActivityCode());
         // 记录操作日志上下文
         LogRecordContext.putVariable(DiffParseFunction.OLD_OBJECT, BeanUtil.toBean(smsCouponActivity, SmsCouponActivityEditBO.class));
         LogRecordContext.putVariable("smsCouponActivityName", smsCouponActivity.getName());
@@ -269,7 +272,7 @@ public class SmsCouponServiceImpl implements SmsCouponService {
     @LogRecord(type = SYSTEM_COUPON_TYPE, subType = SYSTEM_COUPON_STATUS_SUB_TYPE, bizNo = "{{#smsCouponActivityStatusBO.activityCode}}", success = SYSTEM_COUPON_STATUS_SUCCESS)
     public boolean status(SmsCouponActivityStatusBO smsCouponActivityStatusBO) {
         UpdateResult updateResult = mongoTemplate.updateFirst(BaseCouponInfo.buildActivityCodeQuery(smsCouponActivityStatusBO.getActivityCode(), smsCouponActivityStatusBO.getChannelId()), BaseCouponInfo.buildActivityStatusUpdate(smsCouponActivityStatusBO.getStatus()), SmsCouponActivity.class);
-        CouponCacheUtils.updateSmsCouponActivityCache(smsCouponActivityStatusBO.getActivityCode());
+        couponCacheComponent.updateSmsCouponActivityCache(smsCouponActivityStatusBO.getActivityCode());
         // 记录操作日志上下文
         LogRecordContext.putVariable("newStatus", smsCouponActivityStatusBO.getStatus());
         LogRecordContext.putVariable("activityCode", smsCouponActivityStatusBO.getActivityCode());
@@ -577,7 +580,7 @@ public class SmsCouponServiceImpl implements SmsCouponService {
         } catch (Exception e) {
             log.error("优惠券活动[{}]更新活动数量[{}]失败", smsCouponActivity.getActivityCode(), generateCodeNumber, e);
         }
-        CouponCacheUtils.updateSmsCouponActivityCache(addCouponCodeBO.getActivityCode());
+        couponCacheComponent.updateSmsCouponActivityCache(addCouponCodeBO.getActivityCode());
         // 记录操作日志上下文
         LogRecordContext.putVariable("num", addCouponCodeBO.getNumber());
         LogRecordContext.putVariable("activityCode", smsCouponActivity.getActivityCode());
@@ -844,9 +847,7 @@ public class SmsCouponServiceImpl implements SmsCouponService {
      */
     private SmsCouponActivity getSmsCouponActivity(String activityCode) {
         // 查询优惠券活动
-        SmsCouponActivity smsCouponActivity = CouponCacheUtils.getSmsCouponActivityCache(activityCode);
-        Assert.notNull(smsCouponActivity, () -> new ApiException(ErrorCodeConstants.UN_FOUND_ACTIVITY));
-        return smsCouponActivity;
+        return couponCacheComponent.getSmsCouponActivityCache(activityCode);
     }
 
     private SmsCouponActivity getSmsCouponActivity(String activityCode, Long channelId) {
