@@ -8,11 +8,11 @@ import cn.hutool.core.lang.Assert;
 import cn.hutool.core.util.StrUtil;
 import com.alibaba.fastjson.JSON;
 import com.google.common.collect.Lists;
-import com.mongodb.bulk.BulkWriteResult;
 import com.mongodb.client.result.UpdateResult;
 import com.mzt.logapi.context.LogRecordContext;
 import com.mzt.logapi.service.impl.DiffParseFunction;
 import com.mzt.logapi.starter.annotation.LogRecord;
+import com.ww.app.common.annotation.TimeCost;
 import com.ww.app.common.common.AppPageResult;
 import com.ww.app.common.common.ClientUser;
 import com.ww.app.common.context.AuthorizationContext;
@@ -28,7 +28,6 @@ import com.ww.app.redis.AppRedisTemplate;
 import com.ww.app.redis.annotation.DistributedLock;
 import com.ww.app.redis.annotation.Resubmission;
 import com.ww.app.redis.component.stock.StockRedisComponent;
-import com.ww.app.common.annotation.TimeCost;
 import com.ww.mall.coupon.component.CouponComponent;
 import com.ww.mall.coupon.component.SmsCouponStatisticsComponent;
 import com.ww.mall.coupon.component.key.CouponRedisKeyBuilder;
@@ -51,7 +50,6 @@ import org.redisson.api.RScript;
 import org.redisson.api.RSet;
 import org.redisson.api.RedissonClient;
 import org.redisson.client.codec.StringCodec;
-import org.springframework.data.mongodb.core.BulkOperations;
 import org.springframework.data.mongodb.core.MongoTemplate;
 import org.springframework.data.mongodb.core.query.Query;
 import org.springframework.stereotype.Service;
@@ -278,6 +276,9 @@ public class SmsCouponServiceImpl implements SmsCouponService {
         return updateResult.getModifiedCount() == 1;
     }
 
+    @Resource
+    private MongoBulkDataHandler<SmsCouponCode> smsCouponCodeMongoBulkDataHandler;
+
     /**
      * 生成平台优惠券券码
      *
@@ -298,11 +299,9 @@ public class SmsCouponServiceImpl implements SmsCouponService {
             boolean success = codeRSet.addAll(smsCouponCodes);
             Assert.isTrue(success, () -> new ApiException(ErrorCodeConstants.COUPON_ERROR));
             // 是否插入mongodb 根据channelId 分code表
-            BulkOperations bulkOps = mongoTemplate.bulkOps(BulkOperations.BulkMode.UNORDERED, SmsCouponCode.class, SmsCouponCode.buildCollectionName(smsCouponActivity.getChannelId()));
-            bulkOps.insert(smsCouponCodeDocs);
-            BulkWriteResult bulkWriteResult = bulkOps.execute();
-            log.info("优惠券活动[{}]生成优惠券券码数量[{}]", smsCouponActivity.getActivityCode(), bulkWriteResult.getInsertedCount());
-            return bulkWriteResult.getInsertedCount();
+            int insertCount = smsCouponCodeMongoBulkDataHandler.bulkSave(smsCouponCodeDocs, SmsCouponCode.buildCollectionName(smsCouponActivity.getChannelId()));
+            log.info("优惠券活动[{}]生成优惠券券码数量[{}]", smsCouponActivity.getActivityCode(), insertCount);
+            return insertCount;
         } catch (Exception e) {
             log.error("生成优惠券券码异常", e);
             throw new ApiException(ErrorCodeConstants.COUPON_ERROR);
