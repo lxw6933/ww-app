@@ -21,6 +21,8 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
+import java.util.Objects;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
  * 购物车服务实现（优化版）
@@ -43,21 +45,27 @@ public class HashCartServiceImpl implements HashCartService {
 
     @Override
     public boolean addToCart(Long skuId, Integer num) {
-        log.info("添加购物车: skuId={}, num={}", skuId, num);
-        
+        Long userId = getCurrentUserId();
+        log.info("添加购物车: userId={}, skuId={}, num={}", userId, skuId, num);
+
         RMap<String, CartItem> userCart = getUserCart();
-        
-        // 检查购物车是否已满
-        if (userCart.size() >= cartProperties.getMaxCartNumber()) {
-            log.warn("购物车已满: userId={}, size={}", getCurrentUserId(), userCart.size());
-            throw new ApiException("超出购物车最大容量");
-        }
-        
+
+        // 使用原子标识判断是否为新增商品
+        AtomicBoolean isNewItem = new AtomicBoolean(false);
+
         // 使用 compute 方法确保原子性操作
         userCart.compute(skuId.toString(), (key, oldItem) -> {
             if (oldItem == null) {
+                // 检查购物车是否已满（只在新增时检查）
+                if (userCart.size() >= cartProperties.getMaxCartNumber()) {
+                    log.warn("购物车已满: userId={}, size={}, maxSize={}", 
+                            userId, userCart.size(), cartProperties.getMaxCartNumber());
+                    throw new ApiException("超出购物车最大容量");
+                }
+
                 // 新商品：创建购物车项
-                log.debug("新增商品到购物车: skuId={}", skuId);
+                isNewItem.set(true);
+                log.info("新增商品到购物车: userId={}, skuId={}, num={}", userId, skuId, num);
                 return CartItem.builder()
                         .skuId(skuId)
                         .count(num)
@@ -73,34 +81,37 @@ public class HashCartServiceImpl implements HashCartService {
                 // 已存在：累加数量
                 int newCount = oldItem.getCount() + num;
                 if (newCount > cartProperties.getMaxAddNumber()) {
-                    log.warn("商品数量超限: skuId={}, oldCount={}, addNum={}", 
-                            skuId, oldItem.getCount(), num);
+                    log.warn("商品数量超限: userId={}, skuId={}, oldCount={}, addNum={}, maxNum={}",
+                            userId, skuId, oldItem.getCount(), num, cartProperties.getMaxAddNumber());
                     throw new ApiException("商品数量不能超过" + cartProperties.getMaxAddNumber());
                 }
-                log.debug("累加商品数量: skuId={}, oldCount={}, newCount={}", 
-                        skuId, oldItem.getCount(), newCount);
+                log.info("累加商品数量: userId={}, skuId={}, oldCount={}, newCount={}", 
+                        userId, skuId, oldItem.getCount(), newCount);
                 oldItem.setCount(newCount);
                 oldItem.setUpdateTime(LocalDateTime.now());
                 return oldItem;
             }
         });
 
-        // 按需重置过期时间（性能优化）
-        resetExpireIfNeeded(userCart);
+        // 设置或重置过期时间
+        resetExpireTime(userCart, isNewItem.get());
 
-        log.info("添加购物车成功: skuId={}, num={}", skuId, num);
+        log.info("添加购物车成功: userId={}, skuId={}, num={}, isNew={}", 
+                userId, skuId, num, isNewItem.get());
         return true;
     }
 
     @Override
     public Cart userCartList() {
-        log.debug("查询购物车: userId={}", getCurrentUserId());
-        
+        Long userId = getCurrentUserId();
+        log.info("查询购物车: userId={}", userId);
+
         Cart cart = new Cart();
         cart.setCartItems(getUserCartItemList());
         cart.recalcTotals();
-        
-        log.debug("购物车查询成功: userId={}, itemCount={}", getCurrentUserId(), cart.getCountType());
+
+        log.info("购物车查询成功: userId={}, itemCount={}, totalAmount={}", 
+                userId, cart.getCountType(), cart.getTotalAmount());
         return cart;
     }
 
@@ -108,85 +119,95 @@ public class HashCartServiceImpl implements HashCartService {
     public boolean clearUserCart() {
         Long userId = getCurrentUserId();
         log.info("清空购物车: userId={}", userId);
-        
+
         String userCartKey = cartRedisKeyBuilder.buildUserCartKey(userId);
-        redissonClient.getKeys().delete(userCartKey);
-        
-        log.info("清空购物车成功: userId={}", userId);
+        boolean deleted = redissonClient.getKeys().delete(userCartKey) > 0;
+
+        if (deleted) {
+            log.info("清空购物车成功: userId={}", userId);
+        } else {
+            log.warn("清空购物车失败或购物车本身为空: userId={}", userId);
+        }
+
         return true;
     }
 
     @Override
     public boolean checkItem(Long skuId) {
-        log.info("勾选商品: skuId={}", skuId);
-        
+        Long userId = getCurrentUserId();
+        log.info("勾选商品: userId={}, skuId={}", userId, skuId);
+
         RMap<String, CartItem> userCart = getUserCart();
-        
+
         // 使用 compute 方法确保原子性操作（修复并发安全问题）
-        userCart.compute(skuId.toString(), (key, item) -> {
+        CartItem updatedItem = userCart.compute(skuId.toString(), (key, item) -> {
             if (item == null) {
-                log.warn("商品不存在: skuId={}", skuId);
+                log.warn("商品不存在: userId={}, skuId={}", userId, skuId);
                 throw new ApiException("商品不存在");
             }
             boolean newChecked = !item.isChecked();
-            log.debug("切换商品选中状态: skuId={}, oldChecked={}, newChecked={}", 
-                    skuId, item.isChecked(), newChecked);
+            log.info("切换商品选中状态: userId={}, skuId={}, oldChecked={}, newChecked={}",
+                    userId, skuId, item.isChecked(), newChecked);
             item.setChecked(newChecked);
             item.setUpdateTime(LocalDateTime.now());
             return item;
         });
-        
-        resetExpireIfNeeded(userCart);
-        
-        log.info("勾选商品成功: skuId={}", skuId);
+
+        resetExpireTime(userCart, false);
+
+        log.info("勾选商品成功: userId={}, skuId={}, checked={}", 
+                userId, skuId, updatedItem.isChecked());
         return true;
     }
 
     @Override
     public boolean modifyItemCount(Long skuId, Integer num) {
-        log.info("修改商品数量: skuId={}, num={}", skuId, num);
-        
-        // 参数校验
-        if (num <= 0 || num > cartProperties.getMaxAddNumber()) {
-            log.warn("商品数量不合法: skuId={}, num={}", skuId, num);
-            throw new ApiException("数量必须大于0且不能超过" + cartProperties.getMaxAddNumber());
-        }
-        
+        Long userId = getCurrentUserId();
+        log.info("修改商品数量: userId={}, skuId={}, num={}", userId, skuId, num);
+
         RMap<String, CartItem> userCart = getUserCart();
-        
+
         // 使用 computeIfPresent 确保原子性
         CartItem updatedItem = userCart.computeIfPresent(skuId.toString(), (k, item) -> {
-            log.debug("修改数量: skuId={}, oldCount={}, newCount={}", skuId, item.getCount(), num);
+            log.info("修改数量: userId={}, skuId={}, oldCount={}, newCount={}", 
+                    userId, skuId, item.getCount(), num);
             item.setCount(num);
             item.setUpdateTime(LocalDateTime.now());
             return item;
         });
-        
+
         if (updatedItem == null) {
-            log.warn("商品不存在: skuId={}", skuId);
+            log.warn("商品不存在: userId={}, skuId={}", userId, skuId);
             throw new ApiException("商品不存在");
         }
-        
-        resetExpireIfNeeded(userCart);
-        
-        log.info("修改商品数量成功: skuId={}, num={}", skuId, num);
+
+        resetExpireTime(userCart, false);
+
+        log.info("修改商品数量成功: userId={}, skuId={}, num={}", userId, skuId, num);
         return true;
     }
 
     @Override
     public boolean deleteItem(Long skuId) {
-        log.info("删除商品: skuId={}", skuId);
-        
+        // 参数校验
+        if (skuId == null || skuId <= 0) {
+            log.warn("删除商品参数非法: skuId={}", skuId);
+            throw new ApiException("商品ID不能为空");
+        }
+
+        Long userId = getCurrentUserId();
+        log.info("删除商品: userId={}, skuId={}", userId, skuId);
+
         RMap<String, CartItem> userCart = getUserCart();
         CartItem removed = userCart.remove(skuId.toString());
-        
+
         if (removed == null) {
-            log.warn("删除失败，商品不存在: skuId={}", skuId);
+            log.warn("删除失败，商品不存在: userId={}, skuId={}", userId, skuId);
         } else {
-            log.info("删除商品成功: skuId={}", skuId);
+            log.info("删除商品成功: userId={}, skuId={}", userId, skuId);
         }
-        
-        resetExpireIfNeeded(userCart);
+
+        resetExpireTime(userCart, false);
         return true;
     }
 
@@ -196,21 +217,25 @@ public class HashCartServiceImpl implements HashCartService {
             log.warn("批量删除参数为空");
             return false;
         }
-        
-        log.info("批量删除商品: skuIds={}, count={}", skuIdList, skuIdList.size());
-        
+
+        Long userId = getCurrentUserId();
+        log.info("批量删除商品: userId={}, skuIds={}, count={}", 
+                userId, skuIdList, skuIdList.size());
+
         RMap<String, CartItem> userCart = getUserCart();
-        
+
         // 优化：直接传入 String 数组，避免重复转换
         String[] keys = skuIdList.stream()
+                .filter(Objects::nonNull)
                 .map(String::valueOf)
                 .toArray(String[]::new);
-        
+
         long removeCount = userCart.fastRemove(keys);
-        
-        resetExpireIfNeeded(userCart);
-        
-        log.info("批量删除商品成功: 删除数量={}", removeCount);
+
+        resetExpireTime(userCart, false);
+
+        log.info("批量删除商品成功: userId={}, requestCount={}, actualRemoved={}", 
+                userId, skuIdList.size(), removeCount);
         return true;
     }
 
@@ -228,36 +253,52 @@ public class HashCartServiceImpl implements HashCartService {
      */
     private List<CartItem> getUserCartItemList() {
         RMap<String, CartItem> userCart = getUserCart();
-        Collection<CartItem> values = userCart.readAllValues();
         
+        // 性能优化：使用 readAllValues() 批量读取
+        Collection<CartItem> values = userCart.readAllValues();
+
         if (CollUtil.isEmpty(values)) {
             return Collections.emptyList();
         }
-        
+
         return new ArrayList<>(values);
     }
 
     /**
-     * 按需重置购物车过期时间（性能优化）
+     * 设置或重置购物车过期时间（性能优化版）
+     * 
+     * @param userCart 用户购物车
+     * @param isNewCart 是否为新购物车
      */
-    private void resetExpireIfNeeded(RMap<String, CartItem> userCart) {
+    private void resetExpireTime(RMap<String, CartItem> userCart, boolean isNewCart) {
         try {
+            // 如果是新购物车，直接设置过期时间
+            if (isNewCart) {
+                userCart.expire(Duration.ofDays(cartProperties.getTtlDays()));
+                log.debug("首次设置购物车过期时间: {}天", cartProperties.getTtlDays());
+                return;
+            }
+
+            // 性能优化：检查剩余过期时间
             long remainTimeMs = userCart.remainTimeToLive();
-            
+
             // remainTimeToLive 返回 -1 表示没有设置过期时间，-2 表示 key 不存在
             if (remainTimeMs == -1) {
                 // 首次设置过期时间
                 userCart.expire(Duration.ofDays(cartProperties.getTtlDays()));
-                log.debug("首次设置购物车过期时间: {}天", cartProperties.getTtlDays());
+                log.info("补充设置购物车过期时间: {}天", cartProperties.getTtlDays());
             } else if (remainTimeMs > 0 && remainTimeMs < cartProperties.getExpireRefreshThreshold() * 1000) {
                 // 剩余时间小于阈值时才重置（性能优化）
                 userCart.expire(Duration.ofDays(cartProperties.getTtlDays()));
-                log.debug("重置购物车过期时间: remainTimeMs={}, threshold={}ms", 
+                log.info("重置购物车过期时间: remainTimeMs={}, threshold={}ms",
                         remainTimeMs, cartProperties.getExpireRefreshThreshold() * 1000);
+            } else {
+                log.debug("购物车过期时间充足，无需重置: remainTimeMs={}", remainTimeMs);
             }
         } catch (Exception e) {
             // 重置过期时间失败不应影响主流程
-            log.error("重置购物车过期时间失败", e);
+            log.error("重置购物车过期时间失败: userId={}, error={}", 
+                    getCurrentUserId(), e.getMessage(), e);
         }
     }
 
