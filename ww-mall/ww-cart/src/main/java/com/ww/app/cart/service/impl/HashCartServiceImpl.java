@@ -45,6 +45,10 @@ public class HashCartServiceImpl implements HashCartService {
 
     @Override
     public boolean addToCart(Long skuId, Integer num) {
+        // 参数校验
+        validateSkuId(skuId);
+        validateQuantity(num);
+
         Long userId = getCurrentUserId();
         log.info("添加购物车: userId={}, skuId={}, num={}", userId, skuId, num);
 
@@ -134,6 +138,9 @@ public class HashCartServiceImpl implements HashCartService {
 
     @Override
     public boolean checkItem(Long skuId) {
+        // 参数校验
+        validateSkuId(skuId);
+
         Long userId = getCurrentUserId();
         log.info("勾选商品: userId={}, skuId={}", userId, skuId);
 
@@ -162,6 +169,10 @@ public class HashCartServiceImpl implements HashCartService {
 
     @Override
     public boolean modifyItemCount(Long skuId, Integer num) {
+        // 参数校验
+        validateSkuId(skuId);
+        validateQuantity(num);
+
         Long userId = getCurrentUserId();
         log.info("修改商品数量: userId={}, skuId={}, num={}", userId, skuId, num);
 
@@ -190,10 +201,7 @@ public class HashCartServiceImpl implements HashCartService {
     @Override
     public boolean deleteItem(Long skuId) {
         // 参数校验
-        if (skuId == null || skuId <= 0) {
-            log.warn("删除商品参数非法: skuId={}", skuId);
-            throw new ApiException("商品ID不能为空");
-        }
+        validateSkuId(skuId);
 
         Long userId = getCurrentUserId();
         log.info("删除商品: userId={}, skuId={}", userId, skuId);
@@ -213,10 +221,8 @@ public class HashCartServiceImpl implements HashCartService {
 
     @Override
     public boolean batchDeleteItem(List<Long> skuIdList) {
-        if (CollUtil.isEmpty(skuIdList)) {
-            log.warn("批量删除参数为空");
-            return false;
-        }
+        // 参数校验
+        validateSkuIdList(skuIdList);
 
         Long userId = getCurrentUserId();
         log.info("批量删除商品: userId={}, skuIds={}, count={}", 
@@ -237,6 +243,54 @@ public class HashCartServiceImpl implements HashCartService {
         log.info("批量删除商品成功: userId={}, requestCount={}, actualRemoved={}", 
                 userId, skuIdList.size(), removeCount);
         return true;
+    }
+
+    /**
+     * 校验商品 ID
+     *
+     * @param skuId 商品 ID
+     */
+    private void validateSkuId(Long skuId) {
+        if (skuId == null || skuId <= 0) {
+            log.warn("商品ID参数非法: skuId={}", skuId);
+            throw new ApiException("商品ID不能为空");
+        }
+    }
+
+    /**
+     * 校验商品数量
+     *
+     * @param num 商品数量
+     */
+    private void validateQuantity(Integer num) {
+        if (num == null || num <= 0) {
+            log.warn("商品数量参数非法: num={}", num);
+            throw new ApiException("商品数量必须大于0");
+        }
+        if (num > cartProperties.getMaxAddNumber()) {
+            log.warn("商品数量超限: num={}, maxNum={}", num, cartProperties.getMaxAddNumber());
+            throw new ApiException("商品数量不能超过" + cartProperties.getMaxAddNumber());
+        }
+    }
+
+    /**
+     * 校验商品 ID 列表
+     *
+     * @param skuIdList 商品 ID 列表
+     */
+    private void validateSkuIdList(List<Long> skuIdList) {
+        if (CollUtil.isEmpty(skuIdList)) {
+            log.warn("商品ID列表为空");
+            throw new ApiException("商品ID列表不能为空");
+        }
+        
+        // 验证列表中的每个 skuId
+        for (Long skuId : skuIdList) {
+            if (skuId == null || skuId <= 0) {
+                log.warn("商品ID列表包含无效ID: skuId={}", skuId);
+                throw new ApiException("商品ID不能为空或小于等于0");
+            }
+        }
     }
 
     /**
