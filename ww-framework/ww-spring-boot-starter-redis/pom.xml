@@ -32,6 +32,11 @@
             <groupId>org.redisson</groupId>
             <artifactId>redisson</artifactId>
         </dependency>
+        <!-- msgpack序列化 -->
+        <dependency>
+            <groupId>org.msgpack</groupId>
+            <artifactId>jackson-dataformat-msgpack</artifactId>
+        </dependency>
         <!-- pool -->
         <dependency>
             <groupId>org.apache.commons</groupId>

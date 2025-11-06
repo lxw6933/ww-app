@@ -27,6 +27,7 @@
         <slf4j.version>1.7.36</slf4j.version>
 
         <hutool.version>5.8.37</hutool.version>
+        <msgpack.version>0.9.8</msgpack.version>
         <jackson.version>2.14.2</jackson.version>
         <fastjson.version>1.2.83</fastjson.version>
         <easyexcel.version>3.3.4</easyexcel.version>
@@ -270,6 +271,12 @@
                 <groupId>io.minio</groupId>
                 <artifactId>minio</artifactId>
                 <version>${minio.version}</version>
+            </dependency>
+            <!-- msgpack序列化 -->
+            <dependency>
+                <groupId>org.msgpack</groupId>
+                <artifactId>jackson-dataformat-msgpack</artifactId>
+                <version>${msgpack.version}</version>
             </dependency>
             <!-- jackson -->
             <dependency>
