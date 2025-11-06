@@ -37,8 +37,38 @@ public class RedissonAutoConfiguration {
      */
     private static final String REDISSON_SSL_PREFIX = "rediss://";
 
+    /**
+     * 默认超时时间（毫秒）
+     */
+    private static final int DEFAULT_TIMEOUT = 3000;
+
+    /**
+     * 默认连接超时时间（毫秒）
+     */
+    private static final int DEFAULT_CONNECT_TIMEOUT = 3000;
+
+    /**
+     * 默认连接池大小
+     */
+    private static final int DEFAULT_CONNECTION_POOL_SIZE = 64;
+
+    /**
+     * 默认最小空闲连接数
+     */
+    private static final int DEFAULT_CONNECTION_MINIMUM_IDLE_SIZE = 24;
+
     @Resource
     private RedisProperties redisProperties;
+
+    /**
+     * 连接池大小（缓存值，避免重复计算）
+     */
+    private Integer connectionPoolSize;
+
+    /**
+     * 最小空闲连接数（缓存值，避免重复计算）
+     */
+    private Integer connectionMinimumIdleSize;
 
     /**
      * 创建 RedissonClient Bean
@@ -92,7 +122,6 @@ public class RedissonAutoConfiguration {
     private void configureSingle(Config config) {
         String host = redisProperties.getHost();
         int port = redisProperties.getPort();
-        String password = redisProperties.getPassword();
         int database = redisProperties.getDatabase();
 
         String address = REDISSON_PREFIX + host + ":" + port;
@@ -100,13 +129,15 @@ public class RedissonAutoConfiguration {
         config.useSingleServer()
                 .setAddress(address)
                 .setDatabase(database)
-                .setPassword(StringUtils.hasText(password) ? password : null)
+                .setPassword(getPassword())
                 .setConnectionPoolSize(getConnectionPoolSize())
                 .setConnectionMinimumIdleSize(getConnectionMinimumIdleSize())
-                .setTimeout((int) redisProperties.getTimeout().toMillis())
-                .setConnectTimeout((int) redisProperties.getConnectTimeout().toMillis());
+                .setTimeout(getTimeout())
+                .setConnectTimeout(getConnectTimeout());
 
-        log.info("单机模式配置: address={}, database={}", address, database);
+        log.info("单机模式配置: address={}, database={}, poolSize={}, minIdle={}, timeout={}ms, connectTimeout={}ms",
+                address, database, getConnectionPoolSize(), getConnectionMinimumIdleSize(),
+                getTimeout(), getConnectTimeout());
     }
 
     /**
@@ -118,7 +149,6 @@ public class RedissonAutoConfiguration {
         RedisProperties.Sentinel sentinel = redisProperties.getSentinel();
         String masterName = sentinel.getMaster();
         List<String> nodes = sentinel.getNodes();
-        String password = redisProperties.getPassword();
         int database = redisProperties.getDatabase();
 
         // 转换节点地址格式
@@ -130,19 +160,20 @@ public class RedissonAutoConfiguration {
                 .setMasterName(masterName)
                 .addSentinelAddress(sentinelAddresses)
                 .setDatabase(database)
-                .setPassword(StringUtils.hasText(password) ? password : null)
+                .setPassword(getPassword())
                 .setMasterConnectionPoolSize(getConnectionPoolSize())
                 .setSlaveConnectionPoolSize(getConnectionPoolSize())
                 .setMasterConnectionMinimumIdleSize(getConnectionMinimumIdleSize())
                 .setSlaveConnectionMinimumIdleSize(getConnectionMinimumIdleSize())
-                .setTimeout((int) redisProperties.getTimeout().toMillis())
-                .setConnectTimeout((int) redisProperties.getConnectTimeout().toMillis())
+                .setTimeout(getTimeout())
+                .setConnectTimeout(getConnectTimeout())
                 // 读写分离模式：读操作在从节点执行，写操作在主节点执行
                 .setReadMode(org.redisson.config.ReadMode.SLAVE)
                 .setSubscriptionMode(org.redisson.config.SubscriptionMode.MASTER);
 
-        log.info("哨兵模式配置: masterName={}, sentinels={}, database={}",
-                masterName, nodes, database);
+        log.info("哨兵模式配置: masterName={}, sentinels={}, database={}, poolSize={}, minIdle={}, timeout={}ms, connectTimeout={}ms",
+                masterName, nodes, database, getConnectionPoolSize(), getConnectionMinimumIdleSize(),
+                getTimeout(), getConnectTimeout());
     }
 
     /**
@@ -153,7 +184,6 @@ public class RedissonAutoConfiguration {
     private void configureCluster(Config config) {
         RedisProperties.Cluster cluster = redisProperties.getCluster();
         List<String> nodes = cluster.getNodes();
-        String password = redisProperties.getPassword();
 
         // 转换节点地址格式
         String[] clusterAddresses = nodes.stream()
@@ -168,77 +198,139 @@ public class RedissonAutoConfiguration {
 
         config.useClusterServers()
                 .addNodeAddress(clusterAddresses)
-                .setPassword(StringUtils.hasText(password) ? password : null)
+                .setPassword(getPassword())
                 .setMasterConnectionPoolSize(getConnectionPoolSize())
                 .setSlaveConnectionPoolSize(getConnectionPoolSize())
                 .setMasterConnectionMinimumIdleSize(getConnectionMinimumIdleSize())
                 .setSlaveConnectionMinimumIdleSize(getConnectionMinimumIdleSize())
-                .setTimeout((int) redisProperties.getTimeout().toMillis())
-                .setConnectTimeout((int) redisProperties.getConnectTimeout().toMillis())
+                .setTimeout(getTimeout())
+                .setConnectTimeout(getConnectTimeout())
                 // 读写分离模式
                 .setReadMode(org.redisson.config.ReadMode.SLAVE)
                 .setSubscriptionMode(org.redisson.config.SubscriptionMode.MASTER)
                 // 集群扫描间隔时间
                 .setScanInterval(2000);
 
-        log.info("集群模式配置: nodes={}", nodes);
+        log.info("集群模式配置: nodes={}, poolSize={}, minIdle={}, timeout={}ms, connectTimeout={}ms",
+                nodes, getConnectionPoolSize(), getConnectionMinimumIdleSize(),
+                getTimeout(), getConnectTimeout());
+    }
+
+    /**
+     * 获取密码配置
+     * 如果密码为空，返回 null
+     *
+     * @return 密码或 null
+     */
+    private String getPassword() {
+        String password = redisProperties.getPassword();
+        return StringUtils.hasText(password) ? password : null;
+    }
+
+    /**
+     * 获取超时时间（毫秒）
+     * 如果未配置，使用默认值
+     *
+     * @return 超时时间
+     */
+    private int getTimeout() {
+        if (redisProperties.getTimeout() != null) {
+            return (int) redisProperties.getTimeout().toMillis();
+        }
+        log.warn("Redis timeout 未配置，使用默认值: {}ms", DEFAULT_TIMEOUT);
+        return DEFAULT_TIMEOUT;
+    }
+
+    /**
+     * 获取连接超时时间（毫秒）
+     * 如果未配置，使用默认值
+     *
+     * @return 连接超时时间
+     */
+    private int getConnectTimeout() {
+        if (redisProperties.getConnectTimeout() != null) {
+            return (int) redisProperties.getConnectTimeout().toMillis();
+        }
+        log.warn("Redis connectTimeout 未配置，使用默认值: {}ms", DEFAULT_CONNECT_TIMEOUT);
+        return DEFAULT_CONNECT_TIMEOUT;
     }
 
     /**
      * 获取连接池大小
      * 从 lettuce 或 jedis 配置中获取，如果没有配置则使用默认值
+     * 确保连接池大小 >= 最小空闲连接数
      *
      * @return 连接池大小
      */
     private int getConnectionPoolSize() {
+        if (connectionPoolSize != null) {
+            return connectionPoolSize;
+        }
+
+        int poolSize = DEFAULT_CONNECTION_POOL_SIZE;
+
         // 尝试从 lettuce 配置获取
         if (redisProperties.getLettuce() != null
                 && redisProperties.getLettuce().getPool() != null) {
             int maxActive = redisProperties.getLettuce().getPool().getMaxActive();
             if (maxActive > 0) {
-                return maxActive;
+                poolSize = maxActive;
             }
         }
-
         // 尝试从 jedis 配置获取
-        if (redisProperties.getJedis() != null
+        else if (redisProperties.getJedis() != null
                 && redisProperties.getJedis().getPool() != null) {
             int maxActive = redisProperties.getJedis().getPool().getMaxActive();
             if (maxActive > 0) {
-                return maxActive;
+                poolSize = maxActive;
             }
         }
 
-        // 默认值：64
-        return 64;
+        // 验证并调整连接池大小
+        int minIdle = getConnectionMinimumIdleSize();
+        if (poolSize < minIdle) {
+            log.warn("连接池大小 ({}) 小于最小空闲连接数 ({})，自动调整连接池大小为: {}",
+                    poolSize, minIdle, minIdle);
+            poolSize = minIdle;
+        }
+
+        connectionPoolSize = poolSize;
+        return connectionPoolSize;
     }
 
     /**
      * 获取最小空闲连接数
+     * 从 lettuce 或 jedis 配置中获取，如果没有配置则使用默认值
+     * 确保最小空闲连接数 <= 连接池大小
      *
      * @return 最小空闲连接数
      */
     private int getConnectionMinimumIdleSize() {
+        if (connectionMinimumIdleSize != null) {
+            return connectionMinimumIdleSize;
+        }
+
+        int minIdle = DEFAULT_CONNECTION_MINIMUM_IDLE_SIZE;
+
         // 尝试从 lettuce 配置获取
         if (redisProperties.getLettuce() != null
                 && redisProperties.getLettuce().getPool() != null) {
-            int minIdle = redisProperties.getLettuce().getPool().getMinIdle();
-            if (minIdle > 0) {
-                return minIdle;
+            int configMinIdle = redisProperties.getLettuce().getPool().getMinIdle();
+            if (configMinIdle > 0) {
+                minIdle = configMinIdle;
             }
         }
-
         // 尝试从 jedis 配置获取
-        if (redisProperties.getJedis() != null
+        else if (redisProperties.getJedis() != null
                 && redisProperties.getJedis().getPool() != null) {
-            int minIdle = redisProperties.getJedis().getPool().getMinIdle();
-            if (minIdle > 0) {
-                return minIdle;
+            int configMinIdle = redisProperties.getJedis().getPool().getMinIdle();
+            if (configMinIdle > 0) {
+                minIdle = configMinIdle;
             }
         }
 
-        // 默认值：24
-        return 24;
+        connectionMinimumIdleSize = minIdle;
+        return connectionMinimumIdleSize;
     }
 
     /**
