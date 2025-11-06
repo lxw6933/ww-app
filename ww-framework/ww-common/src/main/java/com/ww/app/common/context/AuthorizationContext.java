@@ -30,6 +30,18 @@ public class AuthorizationContext {
     private static final TransmittableThreadLocal<AdminUser> ADMIN_USER_THREAD_LOCAL = new TransmittableThreadLocal<>();
     private static final TransmittableThreadLocal<List<String>> ADMIN_USER_SENSITIVE_PERMS_THREAD_LOCAL = TransmittableThreadLocal.withInitial(ArrayList::new);
 
+    public static void setClientUser(ClientUser clientUser) {
+        CLIENT_USER_THREAD_LOCAL.set(clientUser);
+    }
+
+    public static void setAdminUser(AdminUser adminUser) {
+        ADMIN_USER_THREAD_LOCAL.set(adminUser);
+    }
+
+    public static void setAdminUserSensitivePermissions(List<String> permissions) {
+        ADMIN_USER_SENSITIVE_PERMS_THREAD_LOCAL.set(permissions);
+    }
+
     public static ClientUser getClientUser() {
         return getClientUser(true);
     }
