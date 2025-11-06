@@ -1,5 +1,6 @@
 package com.ww.app.redis.codec;
 
+import com.ww.app.common.utils.json.JacksonUtils;
 import org.redisson.client.codec.BaseCodec;
 import org.redisson.client.codec.StringCodec;
 import org.redisson.client.protocol.Decoder;
@@ -14,7 +15,7 @@ import org.redisson.codec.JsonJacksonCodec;
 public class RedissonCodec extends BaseCodec {
 
     private final StringCodec keyCodec = new StringCodec();
-    private final JsonJacksonCodec valueCodec = new JsonJacksonCodec();
+    private final JsonJacksonCodec valueCodec = new JsonJacksonCodec(JacksonUtils.getObjectMapper());
 
     @Override
     public Decoder<Object> getMapKeyDecoder() {
