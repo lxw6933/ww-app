@@ -61,7 +61,6 @@ public class HashCartServiceTest {
         MockHttpServletRequest request = new MockHttpServletRequest();
         request.addHeader(Constant.USER_TOKEN_INFO, tokenInfo);
         RequestContextHolder.setRequestAttributes(new ServletRequestAttributes(request));
-        AuthorizationContext.setClientUser(clientUser);
     }
 
     @AfterEach
