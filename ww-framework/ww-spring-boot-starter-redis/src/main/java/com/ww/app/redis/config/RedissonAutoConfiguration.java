@@ -1,7 +1,7 @@
 package com.ww.app.redis.config;
 
 import com.ww.app.redis.aspect.DistributedLockAspect;
-import com.ww.app.redis.codec.RedissonCodec;
+import com.ww.app.redis.codec.RedissonJsonCodec;
 import com.ww.app.redis.component.RedissonComponent;
 import lombok.extern.slf4j.Slf4j;
 import org.redisson.Redisson;
@@ -104,7 +104,7 @@ public class RedissonAutoConfiguration {
             }
 
             // 设置序列化编解码器
-            config.setCodec(new RedissonCodec());
+            config.setCodec(new RedissonJsonCodec());
 
             log.info("Redisson 初始化成功");
             return Redisson.create(config);

@@ -47,7 +47,7 @@ public class JacksonUtils {
     private static final ObjectMapper objectMapper = new ObjectMapper();
 
     static {
-        configureObjectMapper();
+        configureObjectMapper(objectMapper);
     }
 
     private JacksonUtils() {
@@ -57,7 +57,7 @@ public class JacksonUtils {
     /**
      * 配置ObjectMapper
      */
-    private static void configureObjectMapper() {
+    public static void configureObjectMapper(ObjectMapper objectMapper) {
         // 对象为空，也不会抛出异常，而是返回一个空的 JSON 对象 {}
         objectMapper.configure(SerializationFeature.FAIL_ON_EMPTY_BEANS, false);
         // 忽略 JSON 中多余的属性，不会抛出异常
