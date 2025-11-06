@@ -5,8 +5,10 @@ import com.ww.app.cart.entity.Cart;
 import com.ww.app.cart.entity.CartItem;
 import com.ww.app.common.common.ClientUser;
 import com.ww.app.common.constant.Constant;
+import com.ww.app.common.context.AuthorizationContext;
 import com.ww.app.common.exception.ApiException;
 import com.ww.app.common.utils.MoneyUtils;
+import com.ww.app.common.utils.ThreadUtil;
 import org.junit.jupiter.api.*;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -19,7 +21,6 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -60,11 +61,13 @@ public class HashCartServiceTest {
         MockHttpServletRequest request = new MockHttpServletRequest();
         request.addHeader(Constant.USER_TOKEN_INFO, tokenInfo);
         RequestContextHolder.setRequestAttributes(new ServletRequestAttributes(request));
+        AuthorizationContext.setClientUser(clientUser);
     }
 
     @AfterEach
     void clearUserContext() {
         RequestContextHolder.resetRequestAttributes();
+        AuthorizationContext.clear();
     }
 
     /**
@@ -419,7 +422,7 @@ public class HashCartServiceTest {
         
         int threadCount = 10;
         int addCountPerThread = 5;
-        ExecutorService executorService = Executors.newFixedThreadPool(threadCount);
+        ExecutorService executorService = ThreadUtil.initFixedThreadPoolExecutor("test", threadCount);
         CountDownLatch latch = new CountDownLatch(threadCount);
         AtomicInteger successCount = new AtomicInteger(0);
         AtomicInteger failCount = new AtomicInteger(0);
@@ -472,7 +475,7 @@ public class HashCartServiceTest {
         hashCartService.addToCart(TEST_SKU_ID_2, 20);
 
         int threadCount = 20;
-        ExecutorService executorService = Executors.newFixedThreadPool(threadCount);
+        ExecutorService executorService = ThreadUtil.initFixedThreadPoolExecutor("test", threadCount);
         CountDownLatch latch = new CountDownLatch(threadCount);
         AtomicInteger queryCount = new AtomicInteger(0);
         AtomicInteger modifyCount = new AtomicInteger(0);
