@@ -47,12 +47,22 @@ public class AuthorizationContext {
     }
 
     public static ClientUser getClientUser(boolean ex) {
-        ClientUser mallClientUser = CLIENT_USER_THREAD_LOCAL.get();
+        ClientUser clientUser = CLIENT_USER_THREAD_LOCAL.get();
         // 获取当前线程是否有用户信息
-        if (mallClientUser != null) {
-            return mallClientUser;
+        if (clientUser != null) {
+            return clientUser;
         }
-        return getUserTokenInfo(ex, ClientUser.class);
+        
+        // 从 Header 解析用户信息
+        clientUser = getUserTokenInfo(ex, ClientUser.class);
+        
+        // 解析成功后缓存到 ThreadLocal
+        if (clientUser != null) {
+            CLIENT_USER_THREAD_LOCAL.set(clientUser);
+            log.debug("ClientUser 已缓存到 ThreadLocal: userId={}", clientUser.getId());
+        }
+        
+        return clientUser;
     }
 
     public static AdminUser getAdminUser() {
@@ -65,7 +75,17 @@ public class AuthorizationContext {
         if (adminUser != null) {
             return adminUser;
         }
-        return getUserTokenInfo(ex, AdminUser.class);
+        
+        // 从 Header 解析用户信息
+        adminUser = getUserTokenInfo(ex, AdminUser.class);
+        
+        // 解析成功后缓存到 ThreadLocal
+        if (adminUser != null) {
+            ADMIN_USER_THREAD_LOCAL.set(adminUser);
+            log.debug("AdminUser 已缓存到 ThreadLocal: userId={}", adminUser.getId());
+        }
+        
+        return adminUser;
     }
 
     private static <T> T getUserTokenInfo(boolean ex, Class<T> tClass) {
@@ -88,7 +108,19 @@ public class AuthorizationContext {
                 return null;
             }
         }
-        return JSON.parseObject(tokenInfo, tClass);
+        
+        try {
+            T user = JSON.parseObject(tokenInfo, tClass);
+            log.debug("从 Header 解析用户信息成功: type={}", tClass.getSimpleName());
+            return user;
+        } catch (Exception e) {
+            log.error("解析用户信息失败: tokenInfo={}, type={}, error={}", 
+                    tokenInfo, tClass.getSimpleName(), e.getMessage());
+            if (ex) {
+                throw new ApiException(GlobalResCodeConstants.UNAUTHORIZED);
+            }
+            return null;
+        }
     }
 
     public static List<String> getAdminUserSensitivePerms() {
