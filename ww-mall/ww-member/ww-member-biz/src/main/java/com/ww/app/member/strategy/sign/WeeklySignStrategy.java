@@ -1,6 +1,5 @@
 package com.ww.app.member.strategy.sign;
 
-import cn.hutool.core.date.DatePattern;
 import com.ww.app.member.enums.SignPeriod;
 import org.springframework.data.redis.core.RedisCallback;
 import org.springframework.stereotype.Component;
@@ -75,7 +74,7 @@ public class WeeklySignStrategy extends AbstractSignStrategy {
         return signRedisKeyBuilder.buildWeeklySignPrefixKey(userId, date);
     }
 
-    protected void fillSignInfo(LocalDate date, long bitValue, Map<String, Boolean> signInfo) {
+    protected void fillSignInfo(LocalDate date, long bitValue, Map<LocalDate, Boolean> signInfo) {
         // 获取本周的第一天（周一）
         LocalDate firstDayOfWeek = date.with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY));
         // 从低位到高位进行遍历，为 0 表示未签到，为 1 表示已签到
@@ -85,7 +84,7 @@ public class WeeklySignStrategy extends AbstractSignStrategy {
             // 先右移再左移，如果不等于自己说明签到，否则未签到
             boolean flag = bitValue >> 1 << 1 != bitValue;
             // 存放当周每天的签到情况
-            signInfo.put(currentDate.format(DatePattern.NORM_DATE_FORMATTER), flag);
+            signInfo.put(currentDate, flag);
 
             bitValue >>= 1;
         }

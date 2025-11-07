@@ -49,7 +49,7 @@ public interface SignStrategy {
      * @return 签到详情
      */
     @Deprecated
-    Map<String, Boolean> getSignInfo(LocalDate date, ClientUser clientUser);
+    Map<LocalDate, Boolean> getSignInfo(LocalDate date, ClientUser clientUser);
 
     /**
      * 获取当前周期签到详情

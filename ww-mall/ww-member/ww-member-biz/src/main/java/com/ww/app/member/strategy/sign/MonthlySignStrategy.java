@@ -59,7 +59,7 @@ public class MonthlySignStrategy extends AbstractSignStrategy {
         return signRedisKeyBuilder.buildMonthlySignPrefixKey(userId, date);
     }
 
-    protected void fillSignInfo(LocalDate date, long bitValue, Map<String, Boolean> signInfo) {
+    protected void fillSignInfo(LocalDate date, long bitValue, Map<LocalDate, Boolean> signInfo) {
         // 获取月份的总天数
         int daysInMonth = getBitCount(date);
         // 从低位到高位进行遍历，为 0 表示未签到，为 1 表示已签到
@@ -69,7 +69,7 @@ public class MonthlySignStrategy extends AbstractSignStrategy {
             // 先右移再左移，如果不等于自己说明签到，否则未签到
             boolean flag = bitValue >> 1 << 1 != bitValue;
             // 存放当月每天的签到情况
-            signInfo.put(currentDate.format(DatePattern.NORM_DATE_FORMATTER), flag);
+            signInfo.put(currentDate, flag);
             
             bitValue >>= 1;
         }

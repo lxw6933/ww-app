@@ -77,12 +77,12 @@ public abstract class AbstractSignStrategy implements SignBitmapStrategy, SignSt
     }
 
     @Override
-    public Map<String, Boolean> getSignInfo(LocalDate date, ClientUser clientUser) {
+    public Map<LocalDate, Boolean> getSignInfo(LocalDate date, ClientUser clientUser) {
         // 构建 Key
         String signKey = buildSignKey(clientUser.getId(), date);
 
         // 构建一个自动排序的 Map
-        Map<String, Boolean> signInfo = new TreeMap<>();
+        Map<LocalDate, Boolean> signInfo = new TreeMap<>();
 
         // 获取位数
         int bits = getBitCount(date);
@@ -131,6 +131,6 @@ public abstract class AbstractSignStrategy implements SignBitmapStrategy, SignSt
      * 填充签到信息
      */
     @Deprecated
-    protected void fillSignInfo(LocalDate date, long bitValue, Map<String, Boolean> signInfo) {}
+    protected void fillSignInfo(LocalDate date, long bitValue, Map<LocalDate, Boolean> signInfo) {}
 
 }
