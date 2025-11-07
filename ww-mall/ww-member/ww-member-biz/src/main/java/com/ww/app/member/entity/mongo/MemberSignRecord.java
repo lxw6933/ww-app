@@ -8,6 +8,8 @@ import lombok.EqualsAndHashCode;
 import lombok.experimental.Accessors;
 import org.apache.commons.codec.DecoderException;
 import org.apache.commons.codec.binary.Hex;
+import org.springframework.data.mongodb.core.index.CompoundIndex;
+import org.springframework.data.mongodb.core.index.CompoundIndexes;
 import org.springframework.data.mongodb.core.mapping.Document;
 import org.springframework.data.mongodb.core.query.Criteria;
 import org.springframework.data.mongodb.core.query.Query;
@@ -22,6 +24,9 @@ import org.springframework.data.mongodb.core.query.Query;
 @Builder
 @Accessors(chain = true)
 @Document(collection = "member_sign_record")
+@CompoundIndexes({
+        @CompoundIndex(name = "member_period_idx", def = "{'memberId': 1, 'periodKey': 1}", background = true),
+})
 public class MemberSignRecord extends BaseDoc {
 
     /**
