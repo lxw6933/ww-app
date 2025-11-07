@@ -12,4 +12,6 @@ public class RedisChannelConstant {
     public static final String SPU_CHANNEL = "mall:spu:channel";
     public static final String SKU_CHANNEL = "mall:sku:channel";
     public static final String SMS_CHANNEL = "mall:sms:channel";
+
+    public static final String USER_CART_CHANNEL = "mall:user:cart:channel";
 }

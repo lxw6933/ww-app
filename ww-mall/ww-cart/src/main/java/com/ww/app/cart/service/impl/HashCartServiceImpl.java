@@ -1,14 +1,17 @@
 package com.ww.app.cart.service.impl;
 
 import cn.hutool.core.collection.CollUtil;
+import com.ww.app.cart.component.CartCacheComponent;
 import com.ww.app.cart.component.key.CartRedisKeyBuilder;
 import com.ww.app.cart.config.CartProperties;
 import com.ww.app.cart.entity.Cart;
 import com.ww.app.cart.entity.CartItem;
 import com.ww.app.cart.service.HashCartService;
 import com.ww.app.common.common.ClientUser;
+import com.ww.app.common.constant.RedisChannelConstant;
 import com.ww.app.common.context.AuthorizationContext;
 import com.ww.app.common.exception.ApiException;
+import com.ww.app.redis.annotation.RedisPublishMsg;
 import lombok.extern.slf4j.Slf4j;
 import org.redisson.api.RMap;
 import org.redisson.api.RedissonClient;
@@ -17,9 +20,6 @@ import org.springframework.stereotype.Service;
 import javax.annotation.Resource;
 import java.time.Duration;
 import java.time.LocalDateTime;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -43,7 +43,11 @@ public class HashCartServiceImpl implements HashCartService {
     @Resource
     private CartProperties cartProperties;
 
+    @Resource
+    private CartCacheComponent cartCacheComponent;
+
     @Override
+    @RedisPublishMsg(value = RedisChannelConstant.USER_CART_CHANNEL, userMsgFlag = true)
     public boolean addToCart(Long skuId, Integer num) {
         // 参数校验
         validateSkuId(skuId);
@@ -52,7 +56,7 @@ public class HashCartServiceImpl implements HashCartService {
         Long userId = getCurrentUserId();
         log.info("添加购物车: userId={}, skuId={}, num={}", userId, skuId, num);
 
-        RMap<String, CartItem> userCart = getUserCart();
+        RMap<String, CartItem> userCart = cartCacheComponent.getUserCart();
 
         // 使用原子标识判断是否为新增商品
         AtomicBoolean isNewItem = new AtomicBoolean(false);
@@ -110,16 +114,16 @@ public class HashCartServiceImpl implements HashCartService {
         Long userId = getCurrentUserId();
         log.info("查询购物车: userId={}", userId);
 
-        Cart cart = new Cart();
-        cart.setCartItems(getUserCartItemList());
-        cart.recalcTotals();
+        // 优化: 优先从本地缓存获取
+        Cart cart = cartCacheComponent.getUserCartCache(userId);
 
-        log.info("购物车查询成功: userId={}, itemCount={}, totalAmount={}", 
+        log.info("购物车查询成功(含缓存): userId={}, itemCount={}, totalAmount={}", 
                 userId, cart.getCountType(), cart.getTotalAmount());
         return cart;
     }
 
     @Override
+    @RedisPublishMsg(value = RedisChannelConstant.USER_CART_CHANNEL, userMsgFlag = true)
     public boolean clearUserCart() {
         Long userId = getCurrentUserId();
         log.info("清空购物车: userId={}", userId);
@@ -137,6 +141,7 @@ public class HashCartServiceImpl implements HashCartService {
     }
 
     @Override
+    @RedisPublishMsg(value = RedisChannelConstant.USER_CART_CHANNEL, userMsgFlag = true)
     public boolean checkItem(Long skuId) {
         // 参数校验
         validateSkuId(skuId);
@@ -144,7 +149,7 @@ public class HashCartServiceImpl implements HashCartService {
         Long userId = getCurrentUserId();
         log.info("勾选商品: userId={}, skuId={}", userId, skuId);
 
-        RMap<String, CartItem> userCart = getUserCart();
+        RMap<String, CartItem> userCart = cartCacheComponent.getUserCart();
 
         // 使用 compute 方法确保原子性操作（修复并发安全问题）
         CartItem updatedItem = userCart.compute(skuId.toString(), (key, item) -> {
@@ -168,6 +173,7 @@ public class HashCartServiceImpl implements HashCartService {
     }
 
     @Override
+    @RedisPublishMsg(value = RedisChannelConstant.USER_CART_CHANNEL, userMsgFlag = true)
     public boolean modifyItemCount(Long skuId, Integer num) {
         // 参数校验
         validateSkuId(skuId);
@@ -176,7 +182,7 @@ public class HashCartServiceImpl implements HashCartService {
         Long userId = getCurrentUserId();
         log.info("修改商品数量: userId={}, skuId={}, num={}", userId, skuId, num);
 
-        RMap<String, CartItem> userCart = getUserCart();
+        RMap<String, CartItem> userCart = cartCacheComponent.getUserCart();
 
         // 使用 computeIfPresent 确保原子性
         CartItem updatedItem = userCart.computeIfPresent(skuId.toString(), (k, item) -> {
@@ -199,6 +205,7 @@ public class HashCartServiceImpl implements HashCartService {
     }
 
     @Override
+    @RedisPublishMsg(value = RedisChannelConstant.USER_CART_CHANNEL, userMsgFlag = true)
     public boolean deleteItem(Long skuId) {
         // 参数校验
         validateSkuId(skuId);
@@ -206,7 +213,7 @@ public class HashCartServiceImpl implements HashCartService {
         Long userId = getCurrentUserId();
         log.info("删除商品: userId={}, skuId={}", userId, skuId);
 
-        RMap<String, CartItem> userCart = getUserCart();
+        RMap<String, CartItem> userCart = cartCacheComponent.getUserCart();
         CartItem removed = userCart.remove(skuId.toString());
 
         if (removed == null) {
@@ -220,6 +227,7 @@ public class HashCartServiceImpl implements HashCartService {
     }
 
     @Override
+    @RedisPublishMsg(value = RedisChannelConstant.USER_CART_CHANNEL, userMsgFlag = true)
     public boolean batchDeleteItem(List<Long> skuIdList) {
         // 参数校验
         validateSkuIdList(skuIdList);
@@ -228,7 +236,7 @@ public class HashCartServiceImpl implements HashCartService {
         log.info("批量删除商品: userId={}, skuIds={}, count={}", 
                 userId, skuIdList, skuIdList.size());
 
-        RMap<String, CartItem> userCart = getUserCart();
+        RMap<String, CartItem> userCart = cartCacheComponent.getUserCart();
 
         // 优化：直接传入 String 数组，避免重复转换
         String[] keys = skuIdList.stream()
@@ -243,6 +251,11 @@ public class HashCartServiceImpl implements HashCartService {
         log.info("批量删除商品成功: userId={}, requestCount={}, actualRemoved={}", 
                 userId, skuIdList.size(), removeCount);
         return true;
+    }
+
+    @Override
+    public String getCacheStats() {
+        return cartCacheComponent.getCacheStats();
     }
 
     /**
@@ -294,31 +307,6 @@ public class HashCartServiceImpl implements HashCartService {
     }
 
     /**
-     * 获取用户购物车 Map
-     */
-    private RMap<String, CartItem> getUserCart() {
-        Long userId = getCurrentUserId();
-        String userCartKey = cartRedisKeyBuilder.buildUserCartKey(userId);
-        return redissonClient.getMap(userCartKey);
-    }
-
-    /**
-     * 获取用户购物车列表
-     */
-    private List<CartItem> getUserCartItemList() {
-        RMap<String, CartItem> userCart = getUserCart();
-        
-        // 性能优化：使用 readAllValues() 批量读取
-        Collection<CartItem> values = userCart.readAllValues();
-
-        if (CollUtil.isEmpty(values)) {
-            return Collections.emptyList();
-        }
-
-        return new ArrayList<>(values);
-    }
-
-    /**
      * 设置或重置购物车过期时间（性能优化版）
      * 
      * @param userCart 用户购物车
@@ -363,4 +351,5 @@ public class HashCartServiceImpl implements HashCartService {
         ClientUser clientUser = AuthorizationContext.getClientUser();
         return clientUser.getId();
     }
+
 }

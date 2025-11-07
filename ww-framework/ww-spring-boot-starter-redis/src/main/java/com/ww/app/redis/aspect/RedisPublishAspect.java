@@ -1,6 +1,8 @@
 package com.ww.app.redis.aspect;
 
 import com.alibaba.fastjson.JSON;
+import com.ww.app.common.common.ClientUser;
+import com.ww.app.common.context.AuthorizationContext;
 import com.ww.app.common.utils.SpringExpressionUtils;
 import com.ww.app.redis.AppRedisTemplate;
 import com.ww.app.redis.annotation.RedisPublishMsg;
@@ -19,7 +21,6 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
-import java.util.concurrent.ThreadPoolExecutor;
 
 /**
  * @author ww
@@ -51,7 +52,13 @@ public class RedisPublishAspect {
                 Object message = "all";
                 if (StringUtils.isNotEmpty(redisPublishMsg.message())) {
                     message = SpringExpressionUtils.parseExpression(joinPoint, redisPublishMsg.message());
+                } else {
+                    if (redisPublishMsg.userMsgFlag()) {
+                        ClientUser clientUser = AuthorizationContext.getClientUser();
+                        message = String.valueOf(clientUser.getId());
+                    }
                 }
+
                 String messageJson;
                 if (message instanceof Collection) {
                     messageJson = JSON.toJSONString(message);

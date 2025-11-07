@@ -78,4 +78,10 @@ public class CartController {
     public Boolean clearCart() {
         return cartService.clearUserCart();
     }
+
+    @Operation(summary = "获取缓存统计", description = "获取购物车缓存命中率等统计信息")
+    @GetMapping("/cache/stats")
+    public String getCacheStats() {
+        return cartService.getCacheStats();
+    }
 }

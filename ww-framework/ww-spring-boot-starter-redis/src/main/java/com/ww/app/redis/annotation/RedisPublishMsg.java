@@ -25,4 +25,9 @@ public @interface RedisPublishMsg {
      */
     String message() default "";
 
+    /**
+     * 用户消息【直接获取当前c端用户id作为消息】
+     */
+    boolean userMsgFlag() default false;
+
 }

@@ -66,4 +66,11 @@ public interface HashCartService {
      * @return boolean
      */
     boolean batchDeleteItem(List<Long> skuIdList);
+
+    /**
+     * 获取缓存统计信息
+     *
+     * @return 统计信息
+     */
+    String getCacheStats();
 }

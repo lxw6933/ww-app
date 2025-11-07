@@ -5,6 +5,8 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import javax.validation.constraints.Max;
+import javax.validation.constraints.Min;
 import java.io.Serializable;
 
 /**
@@ -17,10 +19,13 @@ import java.io.Serializable;
 @NoArgsConstructor
 public class AppPage implements Serializable {
 
-    @Schema(description = "当前页数")
+    @Schema(description = "页码（从1开始）", example = "1")
+    @Min(value = 1, message = "页码必须大于等于1")
     private Integer pageNum = 1;
 
-    @Schema(description = "每页数量")
+    @Schema(description = "每页数量", example = "10")
+    @Min(value = 1, message = "每页数量必须大于等于1")
+    @Max(value = 100, message = "每页数量不能超过100")
     private Integer pageSize = 10;
 
     public Integer getPageNum() {
