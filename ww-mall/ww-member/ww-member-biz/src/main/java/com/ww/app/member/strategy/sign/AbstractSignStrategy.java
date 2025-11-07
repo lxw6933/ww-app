@@ -1,6 +1,5 @@
 package com.ww.app.member.strategy.sign;
 
-import cn.hutool.core.date.DatePattern;
 import com.ww.app.common.common.ClientUser;
 import com.ww.app.member.component.SignComponent;
 import com.ww.app.member.component.key.SignRedisKeyBuilder;
@@ -32,10 +31,7 @@ public abstract class AbstractSignStrategy implements SignBitmapStrategy, SignSt
     protected SignComponent signComponent;
 
     @Override
-    public int doSign(String dateStr, ClientUser clientUser) {
-        // 获取当前日期
-        LocalDate date = parseDate(dateStr);
-
+    public int doSign(LocalDate date, ClientUser clientUser) {
         // 获取偏移量
         int offset = getOffset(date);
 
@@ -45,7 +41,7 @@ public abstract class AbstractSignStrategy implements SignBitmapStrategy, SignSt
         // 查看是否已签到
         boolean isSigned = signComponent.isSigned(signKey, offset);
         if (isSigned) {
-            return getContinuousSignCount(dateStr, clientUser);
+            return getContinuousSignCount(date, clientUser);
         }
 
         // 签到
@@ -55,14 +51,11 @@ public abstract class AbstractSignStrategy implements SignBitmapStrategy, SignSt
         processSignReward(clientUser.getId(), date);
 
         // 统计连续签到的次数
-        return getContinuousSignCount(dateStr, clientUser);
+        return getContinuousSignCount(date, clientUser);
     }
 
     @Override
-    public int getContinuousSignCount(String dateStr, ClientUser clientUser) {
-        // 获取日期
-        LocalDate date = parseDate(dateStr);
-
+    public int getContinuousSignCount(LocalDate date, ClientUser clientUser) {
         // 获取位数[当前周期内有多少位]
         int bits = getBitCount(date);
 
@@ -76,10 +69,7 @@ public abstract class AbstractSignStrategy implements SignBitmapStrategy, SignSt
     }
 
     @Override
-    public int getSignCount(String dateStr, ClientUser clientUser) {
-        // 获取日期
-        LocalDate date = parseDate(dateStr);
-
+    public int getSignCount(LocalDate date, ClientUser clientUser) {
         // 构建 Key
         String signKey = buildSignKey(clientUser.getId(), date);
 
@@ -87,10 +77,7 @@ public abstract class AbstractSignStrategy implements SignBitmapStrategy, SignSt
     }
 
     @Override
-    public Map<String, Boolean> getSignInfo(String dateStr, ClientUser clientUser) {
-        // 获取日期
-        LocalDate date = parseDate(dateStr);
-
+    public Map<String, Boolean> getSignInfo(LocalDate date, ClientUser clientUser) {
         // 构建 Key
         String signKey = buildSignKey(clientUser.getId(), date);
 
@@ -117,7 +104,7 @@ public abstract class AbstractSignStrategy implements SignBitmapStrategy, SignSt
     @Override
     public List<Boolean> getSignDetailInfo(ClientUser clientUser) {
         // 获取日期
-        LocalDate date = parseDate(null);
+        LocalDate date = LocalDate.now();
         // 构建 Key
         String signKey = buildSignKey(clientUser.getId(), date);
         // 获取当前签到bitmap
@@ -128,13 +115,6 @@ public abstract class AbstractSignStrategy implements SignBitmapStrategy, SignSt
         // 获取位数
         int bits = getBitCount(date);
         return signComponent.decodeHexBitmapToBooleans(MemberSignRecord.encodeBitmap(signBytes), bits);
-    }
-
-    /**
-     * 解析日期
-     */
-    protected LocalDate parseDate(String dateStr) {
-        return dateStr == null ? LocalDate.now() : LocalDate.parse(dateStr, DatePattern.NORM_DATE_FORMATTER);
     }
 
     /**

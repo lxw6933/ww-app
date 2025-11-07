@@ -45,31 +45,25 @@ public class SignDateValidator {
      * - MONTH: 必须在本月内，且小于今天
      * - WEEK:  必须在本周内（周一为一周开始），且小于今天
      */
-    public boolean isValidResignDate(String dateStr, SignPeriod periodType) {
-        if (StrUtil.isBlank(dateStr)) {
+    public boolean isValidResignDate(LocalDate date, SignPeriod periodType) {
+        if (date == null) {
             return false;
         }
-        try {
-            LocalDate date = LocalDate.parse(dateStr, DatePattern.NORM_DATE_FORMATTER);
-            LocalDate today = LocalDate.now();
+        LocalDate today = LocalDate.now();
 
-            if (!date.isBefore(today)) {
-                // 不允许今天及未来
-                return false;
-            }
-
-            if (periodType == SignPeriod.MONTHLY) {
-                return date.getYear() == today.getYear() && date.getMonth() == today.getMonth();
-            }
-
-            // WEEK: 以周一为一周开始
-            LocalDate weekStart = today.minusDays(today.getDayOfWeek().getValue() - 1);
-            LocalDate weekEnd = weekStart.plusDays(6);
-            return !date.isBefore(weekStart) && !date.isAfter(weekEnd);
-        } catch (DateTimeParseException e) {
-            log.error("日期格式错误: {}", dateStr, e);
+        if (!date.isBefore(today)) {
+            // 不允许今天及未来
             return false;
         }
+
+        if (periodType == SignPeriod.MONTHLY) {
+            return date.getYear() == today.getYear() && date.getMonth() == today.getMonth();
+        }
+
+        // WEEK: 以周一为一周开始
+        LocalDate weekStart = today.minusDays(today.getDayOfWeek().getValue() - 1);
+        LocalDate weekEnd = weekStart.plusDays(6);
+        return !date.isBefore(weekStart) && !date.isAfter(weekEnd);
     }
 
     /**

@@ -14,7 +14,6 @@ import org.springframework.data.mongodb.core.MongoTemplate;
 import org.springframework.test.context.ActiveProfiles;
 
 import java.time.LocalDate;
-import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.Map;
 
@@ -72,10 +71,12 @@ public class SignTest {
 
     @Test
     void testMonthSign() {
-        System.out.println("签到次数：" + signService.doSign("2025-10-13", testUser));
-        System.out.println("签到次数：" + signService.doSign("2025-10-14", testUser));
-        System.out.println("签到次数：" + signService.doSign("2025-10-15", testUser));
-        System.out.println("签到次数：" + signService.doSign("2025-10-21", testUser));
+        int year = 2025;
+        int month = 11;
+        System.out.println("签到次数：" + signService.doSign(LocalDate.of(year, month, 13), testUser));
+        System.out.println("签到次数：" + signService.doSign(LocalDate.of(year, month, 14), testUser));
+        System.out.println("签到次数：" + signService.doSign(LocalDate.of(year, month, 15), testUser));
+        System.out.println("签到次数：" + signService.doSign(LocalDate.of(year, month, 16), testUser));
     }
 
     @Test
@@ -103,7 +104,7 @@ public class SignTest {
         // 使用唯一的用户ID避免测试冲突
         Long testUserId = System.currentTimeMillis() % 1000000L;
         ClientUser testUser = createTestUser(testUserId);
-        String today = LocalDate.now().format(DateTimeFormatter.ISO_DATE);
+        LocalDate today = LocalDate.now();
 
         // 1. 测试首次签到
         int firstSignResult = signService.doSign(null, testUser);
@@ -136,7 +137,7 @@ public class SignTest {
     void testMultiUserSignIsolation() {
         ClientUser user1 = createTestUser(10001L);
         ClientUser user2 = createTestUser(10002L);
-        String today = LocalDate.now().format(DateTimeFormatter.ISO_DATE);
+        LocalDate today = LocalDate.now();
 
         // 用户1签到
         int user1Result = signService.doSign(null, user1);
@@ -164,7 +165,7 @@ public class SignTest {
         signService.doSign(null, testUser);
 
         // 尝试补签昨天
-        String yesterday = LocalDate.now().minusDays(1).format(DateTimeFormatter.ISO_DATE);
+        LocalDate yesterday = LocalDate.now().minusDays(1);
 
         try {
             int backSignResult = signService.doSign(yesterday, testUser);
@@ -182,7 +183,7 @@ public class SignTest {
     @DisplayName("集成测试 - 未来日期签到限制")
     void testFutureDateSignRestriction() {
         ClientUser testUser = createTestUser(30001L);
-        String tomorrow = LocalDate.now().plusDays(1).format(DateTimeFormatter.ISO_DATE);
+        LocalDate tomorrow = LocalDate.now().plusDays(1);
 
         // 尝试签到来来日期应该失败
         ApiException exception = assertThrows(ApiException.class,
@@ -200,7 +201,7 @@ public class SignTest {
         ClientUser testUser = createTestUser(40001L);
 
         // 测试上个月的数据查询（应该不会报错）
-        String lastMonth = LocalDate.now().minusMonths(1).format(DateTimeFormatter.ISO_DATE);
+        LocalDate lastMonth = LocalDate.now().minusMonths(1);
 
         try {
             int lastMonthCount = signService.getSignCount(lastMonth, testUser);
@@ -221,7 +222,7 @@ public class SignTest {
     @DisplayName("集成测试 - 边界值测试")
     void testBoundaryConditions() {
         ClientUser testUser = createTestUser(50001L);
-        String today = LocalDate.now().format(DateTimeFormatter.ISO_DATE);
+        LocalDate today = LocalDate.now();
 
         // 测试空日期处理
         try {
@@ -246,7 +247,7 @@ public class SignTest {
     @DisplayName("集成测试 - 性能测试")
     void testPerformance() {
         ClientUser testUser = createTestUser(60001L);
-        String today = LocalDate.now().format(DateTimeFormatter.ISO_DATE);
+        LocalDate today = LocalDate.now();
 
         long startTime = System.currentTimeMillis();
 

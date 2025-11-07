@@ -3,6 +3,7 @@ package com.ww.app.member.strategy.sign;
 import com.ww.app.common.common.ClientUser;
 import com.ww.app.member.enums.SignPeriod;
 
+import java.time.LocalDate;
 import java.util.List;
 import java.util.Map;
 
@@ -20,7 +21,7 @@ public interface SignStrategy {
      * @param clientUser 用户信息
      * @return 签到结果
      */
-    int doSign(String date, ClientUser clientUser);
+    int doSign(LocalDate date, ClientUser clientUser);
 
     /**
      * 获取连续签到次数
@@ -29,7 +30,7 @@ public interface SignStrategy {
      * @param clientUser 用户信息
      * @return 连续签到次数
      */
-    int getContinuousSignCount(String date, ClientUser clientUser);
+    int getContinuousSignCount(LocalDate date, ClientUser clientUser);
 
     /**
      * 获取签到总次数
@@ -38,7 +39,7 @@ public interface SignStrategy {
      * @param clientUser 用户信息
      * @return 签到总次数
      */
-    int getSignCount(String date, ClientUser clientUser);
+    int getSignCount(LocalDate date, ClientUser clientUser);
 
     /**
      * 获取签到详情
@@ -48,7 +49,7 @@ public interface SignStrategy {
      * @return 签到详情
      */
     @Deprecated
-    Map<String, Boolean> getSignInfo(String date, ClientUser clientUser);
+    Map<String, Boolean> getSignInfo(LocalDate date, ClientUser clientUser);
 
     /**
      * 获取当前周期签到详情

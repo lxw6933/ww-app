@@ -1,7 +1,5 @@
 package com.ww.app.member.controller.app.sign;
 
-import cn.hutool.core.date.DateUtil;
-import cn.hutool.core.util.StrUtil;
 import com.ww.app.common.context.AuthorizationContext;
 import com.ww.app.member.service.sign.SignService;
 import io.swagger.v3.oas.annotations.Operation;
@@ -13,9 +11,8 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import javax.annotation.Resource;
-import javax.validation.constraints.NotBlank;
-import javax.validation.constraints.Pattern;
-import java.util.Date;
+import javax.validation.constraints.NotNull;
+import java.time.LocalDate;
 import java.util.List;
 
 /**
@@ -40,31 +37,24 @@ public class SignController {
 
     @Operation(summary = "补签", description = "补签指定日期")
     @GetMapping("/back")
-    public int doBackSign(@RequestParam("date")
-                          @NotBlank(message = "补签日期不能为空")
-                          @Pattern(regexp = "\\d{4}-\\d{2}-\\d{2}", message = "日期格式必须为 yyyy-MM-dd")
-                          String date) {
+    public int doBackSign(@RequestParam("date") @NotNull(message = "补签日期不能为空") LocalDate date) {
         return signService.doSign(date, AuthorizationContext.getClientUser());
     }
 
     @Operation(summary = "获取签到次数", description = "获取指定月份的签到总次数")
     @GetMapping("/count")
-    public int signCount(@RequestParam(name = "date", required = false)
-                         @Pattern(regexp = "\\d{4}-\\d{2}-\\d{2}", message = "日期格式必须为 yyyy-MM-dd")
-                         String date) {
-        if (StrUtil.isBlank(date)) {
-            date = DateUtil.formatDate(new Date());
+    public int signCount(@RequestParam(name = "date", required = false) LocalDate date) {
+        if (date == null) {
+            date = LocalDate.now();
         }
         return signService.getSignCount(date, AuthorizationContext.getClientUser());
     }
 
     @Operation(summary = "获取连续签到次数", description = "获取当前连续签到的天数")
     @GetMapping("/continuousSignCount")
-    public int continuousSignCount(@RequestParam(name = "date", required = false)
-                                   @Pattern(regexp = "\\d{4}-\\d{2}-\\d{2}", message = "日期格式必须为 yyyy-MM-dd")
-                                   String date) {
-        if (StrUtil.isBlank(date)) {
-            date = DateUtil.formatDate(new Date());
+    public int continuousSignCount(@RequestParam(name = "date", required = false) LocalDate date) {
+        if (date == null) {
+            date = LocalDate.now();
         }
         return signService.getContinuousSignCount(date, AuthorizationContext.getClientUser());
     }
