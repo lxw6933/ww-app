@@ -4,8 +4,7 @@ import com.ww.app.member.enums.SignPeriod;
 import org.springframework.data.redis.core.RedisCallback;
 import org.springframework.stereotype.Component;
 
-import java.time.DayOfWeek;
-import java.time.LocalDate;
+import java.time.*;
 import java.time.temporal.TemporalAdjusters;
 import java.time.temporal.WeekFields;
 import java.util.Locale;
@@ -98,5 +97,22 @@ public class WeeklySignStrategy extends AbstractSignStrategy {
     @Override
     public int getResignConfig() {
         return 0;
+    }
+
+    @Override
+    public long getResignKeyExpireTime() {
+        LocalDateTime now = LocalDateTime.now();
+
+        // 获取本周的最后一天（周日）的最后时刻
+        LocalDateTime endOfWeek = now.toLocalDate()
+                .with(TemporalAdjusters.nextOrSame(DayOfWeek.SUNDAY))
+                .atTime(LocalTime.MAX);
+
+        return Duration.between(now, endOfWeek).getSeconds();
+    }
+
+    @Override
+    public String buildResignCountKey(Long userId, LocalDate date) {
+        return signRedisKeyBuilder.buildWeekResignCountPrefixKey(userId, date);
     }
 } 

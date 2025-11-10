@@ -124,7 +124,7 @@ public class SignTest {
         assertEquals(1, totalCount, "今天应该只有1次签到");
 
         // 5. 测试获取签到详情
-        Map<String, Boolean> signInfo = signService.getSignInfo(today, testUser);
+        Map<LocalDate, Boolean> signInfo = signService.getSignInfo(today, testUser);
         assertNotNull(signInfo, "签到详情不应该为null");
         assertTrue(signInfo.containsKey(today), "签到详情应该包含今天");
         assertTrue(signInfo.get(today), "今天应该显示为已签到");
@@ -205,7 +205,7 @@ public class SignTest {
 
         try {
             int lastMonthCount = signService.getSignCount(lastMonth, testUser);
-            Map<String, Boolean> lastMonthInfo = signService.getSignInfo(lastMonth, testUser);
+            Map<LocalDate, Boolean> lastMonthInfo = signService.getSignInfo(lastMonth, testUser);
 
             assertTrue(lastMonthCount >= 0, "上个月签到次数应该>=0");
             assertNotNull(lastMonthInfo, "上个月签到详情不应该为null");

@@ -5,7 +5,6 @@ import cn.hutool.core.util.StrUtil;
 import com.ww.app.common.exception.ApiException;
 import com.ww.app.member.enums.SignPeriod;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.stereotype.Component;
 
 import java.time.LocalDate;
 import java.time.format.DateTimeParseException;
@@ -14,7 +13,6 @@ import java.time.format.DateTimeParseException;
  * 签到日期校验工具类
  */
 @Slf4j
-@Component
 public class SignDateValidator {
 
     /**
@@ -23,7 +21,7 @@ public class SignDateValidator {
      * @param dateStr 日期字符串，格式：yyyy-MM-dd
      * @return 是否合法
      */
-    public boolean isValidSignDate(String dateStr) {
+    public static boolean isValidSignDate(String dateStr) {
         if (StrUtil.isBlank(dateStr)) {
             // 日期为空时默认为当天，合法
             return true;
@@ -45,7 +43,7 @@ public class SignDateValidator {
      * - MONTH: 必须在本月内，且小于今天
      * - WEEK:  必须在本周内（周一为一周开始），且小于今天
      */
-    public boolean isValidResignDate(LocalDate date, SignPeriod periodType) {
+    public static boolean isValidResignDate(LocalDate date, SignPeriod periodType) {
         if (date == null) {
             return false;
         }
@@ -72,7 +70,7 @@ public class SignDateValidator {
      * @param dateStr 日期字符串
      * @return 有效的日期字符串
      */
-    public String getValidSignDate(String dateStr) {
+    public static String getValidSignDate(String dateStr) {
         if (isValidSignDate(dateStr)) {
             return StrUtil.isBlank(dateStr) ? 
                     LocalDate.now().format(DatePattern.NORM_DATE_FORMATTER) : dateStr;

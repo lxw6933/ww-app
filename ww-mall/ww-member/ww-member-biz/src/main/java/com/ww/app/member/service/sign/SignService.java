@@ -44,7 +44,7 @@ public interface SignService {
      * @return map
      */
     @Deprecated
-    Map<String, Boolean> getSignInfo(LocalDate date, ClientUser clientUser);
+    Map<LocalDate, Boolean> getSignInfo(LocalDate date, ClientUser clientUser);
 
     /**
      * 获取当前周期签到详情

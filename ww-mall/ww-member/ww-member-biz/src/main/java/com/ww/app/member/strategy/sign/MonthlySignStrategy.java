@@ -5,9 +5,9 @@ import com.ww.app.member.enums.SignPeriod;
 import org.springframework.data.redis.core.RedisCallback;
 import org.springframework.stereotype.Component;
 
-import java.time.LocalDate;
-import java.time.YearMonth;
+import java.time.*;
 import java.time.format.DateTimeFormatter;
+import java.time.temporal.TemporalAdjusters;
 import java.util.Map;
 
 /**
@@ -83,5 +83,24 @@ public class MonthlySignStrategy extends AbstractSignStrategy {
     @Override
     public int getResignConfig() {
         return 3;
+    }
+
+    @Override
+    public long getResignKeyExpireTime() {
+        // 使用 LocalDateTime 获取当前时间
+        LocalDateTime now = LocalDateTime.now();
+
+        // 获取本月的最后一天的最后时刻
+        LocalDateTime endOfMonth = now.toLocalDate()
+                .with(TemporalAdjusters.lastDayOfMonth())
+                .atTime(LocalTime.MAX);
+
+        // 计算时间差（秒）
+        return Duration.between(now, endOfMonth).getSeconds();
+    }
+
+    @Override
+    public String buildResignCountKey(Long userId, LocalDate date) {
+        return signRedisKeyBuilder.buildMonthResignCountPrefixKey(userId, date);
     }
 } 

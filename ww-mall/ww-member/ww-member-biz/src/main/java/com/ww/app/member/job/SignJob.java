@@ -10,6 +10,7 @@ import com.ww.app.member.component.SignComponent;
 import com.ww.app.member.component.key.SignRedisKeyBuilder;
 import com.ww.app.member.entity.mongo.MemberSignRecord;
 import com.ww.app.member.enums.SignPeriod;
+import com.ww.app.member.strategy.sign.AbstractSignStrategy;
 import com.ww.app.redis.AppRedisTemplate;
 import com.ww.app.redis.listener.KeyScanListener;
 import com.xxl.job.core.handler.annotation.XxlJob;
@@ -151,30 +152,30 @@ public class SignJob {
 
     private MemberSignRecord buildRecordFromRedis(String key, String periodKey, SignPeriod signPeriod) {
         try {
+            AbstractSignStrategy strategy = signComponent.getStrategy(signPeriod);
             // 获取周期内最后一天
-            LocalDate periodDate = signComponent.getStrategy(signPeriod).getEndDate(periodKey);
+            LocalDate periodDate = strategy.getEndDate(periodKey);
 
             // 解析redis key 获取用户id
             Long userId = Long.valueOf(key.split(SPLIT_ITEM)[2]);
-            byte[] bitmap = signComponent.getSignBytes(key);
+            byte[] bitmap = strategy.getSignBytes(key);
             if (bitmap == null) return null;
 
             // 获取签到数据Hex
             String bitmapHex = MemberSignRecord.encodeBitmap(bitmap);
 
             // 获取当月签到总次数
-            int totalSignDays = signComponent.getSignCount(key);
+            int totalSignDays = strategy.getBitmapSignCount(key);
 
             // 获取连续签到次数
             // 获取位数
-            int bits = signComponent.getStrategy(signPeriod).getBitCount(periodDate);
+            int bits = strategy.getBitCount(periodDate);
             // 获取当前位置
-            int position = signComponent.getStrategy(signPeriod).getOffset(periodDate);
-            int currentStreak = signComponent.getStreakSignCount(key, bits, position);
+            int position = strategy.getOffset(periodDate);
+            int currentStreak = strategy.getBitmapStreakSignCount(key, bits, position);
 
             // 获取补签次数
-            String countKey = signRedisKeyBuilder.buildResignCountPrefixKey(userId, periodDate);
-            int retroSignCount = signComponent.getResignCount(countKey);
+            int retroSignCount = strategy.getResignCount(userId, periodDate);
 
             return MemberSignRecord.builder().build()
                     .setMemberId(userId)

@@ -11,6 +11,8 @@ import java.time.format.DateTimeFormatter;
 import java.time.temporal.WeekFields;
 import java.util.Locale;
 
+import static com.ww.app.common.utils.date.DateTimeValidator.WEEKLY_PATTERN;
+
 /**
  * @author ww
  * @create 2025-06-20- 11:09
@@ -62,9 +64,15 @@ public class SignRedisKeyBuilder extends RedisKeyBuilder {
         System.out.println(signRedisKeyBuilder.buildWeeklySignPrefixKey(1L, LocalDate.now()));
     }
 
-    public String buildResignCountPrefixKey(Long userId, LocalDate date) {
+    public String buildMonthResignCountPrefixKey(Long userId, LocalDate date) {
         // 构建补签的key，格式为：前缀:用户ID:年月
         String dateStr = date.format(DateTimeFormatter.ofPattern(DatePattern.SIMPLE_MONTH_PATTERN));
+        return super.getPrefix() + StrUtil.join(SPLIT_ITEM, RESIGN_COUNT_KEY, userId, dateStr);
+    }
+
+    public String buildWeekResignCountPrefixKey(Long userId, LocalDate date) {
+        // 构建补签的key，格式为：前缀:用户ID:年W{count}
+        String dateStr = date.format(DateTimeFormatter.ofPattern(WEEKLY_PATTERN));
         return super.getPrefix() + StrUtil.join(SPLIT_ITEM, RESIGN_COUNT_KEY, userId, dateStr);
     }
 
