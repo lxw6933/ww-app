@@ -24,6 +24,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
 
+import static com.ww.app.member.member.enums.ErrorCodeConstants.SIGN_IN_RECORD_TODAY_EXISTS;
+import static com.ww.app.member.member.enums.ErrorCodeConstants.USE_UP_OF_RESIGN_COUNT;
+
 /**
  * @author ww
  * @create 2023-07-21- 09:16
@@ -85,10 +88,10 @@ public abstract class AbstractSignStrategy implements SignBitmapStrategy, SignSt
         );
         
         if (result == null || result == -1) {
-            throw new ApiException("该日期已签到，请勿重新签到");
+            throw new ApiException(SIGN_IN_RECORD_TODAY_EXISTS);
         }
         if (result == -2) {
-            throw new ApiException("本月补签次数已用完");
+            throw new ApiException(USE_UP_OF_RESIGN_COUNT);
         }
         
         if (isResign) {

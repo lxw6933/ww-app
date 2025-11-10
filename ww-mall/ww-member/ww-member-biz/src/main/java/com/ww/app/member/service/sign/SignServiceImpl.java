@@ -14,6 +14,9 @@ import java.time.LocalDate;
 import java.util.List;
 import java.util.Map;
 
+import static com.ww.app.member.member.enums.ErrorCodeConstants.NOT_RESIGN_FUTURE_DATE;
+import static com.ww.app.member.member.enums.ErrorCodeConstants.RESIGN_DATE_NOT_PERIOD;
+
 /**
  * @author ww
  * @create 2023-07-21- 09:17
@@ -44,11 +47,11 @@ public class SignServiceImpl implements SignService {
         } else {
             // 如果是未来日期，抛出异常
             if (date.isAfter(today)) {
-                throw new ApiException("不能签到未来日期");
+                throw new ApiException(NOT_RESIGN_FUTURE_DATE);
             }
             // 获取签到策略并基于周期进行补签校验（仅允许当前周期内的过去日期）
             if (!SignDateValidator.isValidResignDate(date, defaultStrategy.getType())) {
-                throw new ApiException("补签日期无效，仅允许补签当前周期内的过去日期");
+                throw new ApiException(RESIGN_DATE_NOT_PERIOD);
             }
             // 返回连续签到天数
             return defaultStrategy.doSign(date, clientUser);
