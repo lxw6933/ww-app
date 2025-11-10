@@ -72,7 +72,7 @@ public abstract class AbstractSignStrategy implements SignBitmapStrategy, SignSt
 
             List<Object> result = redisScriptComponent.executeLuaScript(
                     SIGN_SCRIPT_NAME,
-                    ReturnType.VALUE,
+                    ReturnType.MULTI,
                     2,
                     signKey.getBytes(StandardCharsets.UTF_8),
                     countKey.getBytes(StandardCharsets.UTF_8),
@@ -83,9 +83,9 @@ public abstract class AbstractSignStrategy implements SignBitmapStrategy, SignSt
 
             if (result != null && !result.isEmpty()) {
                 int code = ((Number) result.get(0)).intValue();
-                String message = new String((byte[]) result.get(1), StandardCharsets.UTF_8);
-                
+
                 if (code < 0) {
+                    String message = new String((byte[]) result.get(1), StandardCharsets.UTF_8);
                     throw new ApiException(message);
                 }
                 log.info("用户{}成功补签日期{}", clientUser.getId(), date);

@@ -73,10 +73,10 @@ public class SignTest {
     void testMonthSign() {
         int year = 2025;
         int month = 11;
-        System.out.println("签到次数：" + signService.doSign(LocalDate.of(year, month, 13), testUser));
-        System.out.println("签到次数：" + signService.doSign(LocalDate.of(year, month, 14), testUser));
-        System.out.println("签到次数：" + signService.doSign(LocalDate.of(year, month, 15), testUser));
-        System.out.println("签到次数：" + signService.doSign(LocalDate.of(year, month, 16), testUser));
+        System.out.println("签到次数：" + signService.doSign(LocalDate.of(year, month, 1), testUser));
+        System.out.println("签到次数：" + signService.doSign(LocalDate.of(year, month, 2), testUser));
+        System.out.println("签到次数：" + signService.doSign(LocalDate.of(year, month, 3), testUser));
+        System.out.println("签到次数：" + signService.doSign(LocalDate.of(year, month, 10), testUser));
     }
 
     @Test
