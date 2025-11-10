@@ -17,10 +17,10 @@ import org.springframework.scripting.support.ResourceScriptSource;
 public class LuaScriptConfiguration {
 
     @Bean
-    public DefaultRedisScript<Object> signScript() {
-        DefaultRedisScript<Object> redisScript = new DefaultRedisScript<>();
+    public DefaultRedisScript<Long> signScript() {
+        DefaultRedisScript<Long> redisScript = new DefaultRedisScript<>();
         redisScript.setScriptSource(new ResourceScriptSource(new ClassPathResource("/lua/sign.lua")));
-        redisScript.setResultType(Object.class);
+        redisScript.setResultType(Long.class);
         log.info("加载签到lua脚本");
         return redisScript;
     }

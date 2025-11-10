@@ -1,5 +1,6 @@
 package com.ww.app.member.strategy.sign;
 
+import cn.hutool.core.util.StrUtil;
 import com.ww.app.common.common.ClientUser;
 import com.ww.app.common.exception.ApiException;
 import com.ww.app.member.component.SignComponent;
@@ -46,7 +47,7 @@ public abstract class AbstractSignStrategy implements SignBitmapStrategy, SignSt
     protected RedisScriptComponent redisScriptComponent;
 
     @Resource
-    private DefaultRedisScript<Object> signScript;
+    private DefaultRedisScript<Long> signScript;
 
     @PostConstruct
     public void init() {
@@ -57,52 +58,44 @@ public abstract class AbstractSignStrategy implements SignBitmapStrategy, SignSt
     @Override
     public int doSign(LocalDate date, ClientUser clientUser) {
         // 是否为补签标识
-        boolean resignFlag = !date.equals(LocalDate.now());
+        boolean isResign = !date.equals(LocalDate.now());
 
         // 获取偏移量
         int offset = getOffset(date);
 
         // 构建 Key
         String signKey = buildSignKey(clientUser.getId(), date);
-
-        if (resignFlag) {
-            String countKey = buildResignCountKey(clientUser.getId(), date);
-            long expireSeconds = getResignKeyExpireTime();
-            int resignCountConfig = getResignConfig();
-
-            List<Object> result = redisScriptComponent.executeLuaScript(
-                    SIGN_SCRIPT_NAME,
-                    ReturnType.MULTI,
-                    2,
-                    signKey.getBytes(StandardCharsets.UTF_8),
-                    countKey.getBytes(StandardCharsets.UTF_8),
-                    String.valueOf(offset).getBytes(StandardCharsets.UTF_8),
-                    String.valueOf(resignCountConfig).getBytes(StandardCharsets.UTF_8),
-                    String.valueOf(expireSeconds).getBytes(StandardCharsets.UTF_8)
-            );
-
-            if (result != null && !result.isEmpty()) {
-                int code = ((Number) result.get(0)).intValue();
-
-                if (code < 0) {
-                    String message = new String((byte[]) result.get(1), StandardCharsets.UTF_8);
-                    throw new ApiException(message);
-                }
-                log.info("用户{}成功补签日期{}", clientUser.getId(), date);
-            }
-        } else {
-            // 正常签到
-            boolean isSigned = isSigned(signKey, offset);
-            if (isSigned) {
-                throw new ApiException("该日期已签到，请勿重新签到");
-            }
-            sign(signKey, offset);
+        // 补签次数key
+        String resignCountKey = isResign ? buildResignCountKey(clientUser.getId(), date) : StrUtil.EMPTY;
+        // 最大补签次数
+        int resignMaxCount = isResign ? getResignConfig() : 0;
+        // 补签次数key过期时间
+        long resignKeyExpireTime = isResign ? getResignKeyExpireTime() : 0L;
+        
+        Long result = redisScriptComponent.executeLuaScript(
+                SIGN_SCRIPT_NAME,
+                ReturnType.INTEGER,
+                2,
+                signKey.getBytes(StandardCharsets.UTF_8),
+                resignCountKey.getBytes(StandardCharsets.UTF_8),
+                String.valueOf(offset).getBytes(StandardCharsets.UTF_8),
+                String.valueOf(isResign ? 1 : 0).getBytes(StandardCharsets.UTF_8),
+                String.valueOf(resignMaxCount).getBytes(StandardCharsets.UTF_8),
+                String.valueOf(resignKeyExpireTime).getBytes(StandardCharsets.UTF_8)
+        );
+        
+        if (result == null || result == -1) {
+            throw new ApiException("该日期已签到，请勿重新签到");
         }
-
-        // 处理签到奖励
+        if (result == -2) {
+            throw new ApiException("本月补签次数已用完");
+        }
+        
+        if (isResign) {
+            log.info("用户{}成功补签日期{}", clientUser.getId(), date);
+        }
+        
         processSignReward(clientUser.getId(), date);
-
-        // 统计连续签到的次数
         return getContinuousSignCount(date, clientUser);
     }
 
