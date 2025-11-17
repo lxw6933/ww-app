@@ -24,6 +24,7 @@ import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.annotation.Rollback;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.util.StopWatch;
 
 import javax.annotation.Resource;
 import java.util.ArrayList;
@@ -72,21 +73,9 @@ class ProductSpuServiceTest {
         log.info("========== 开始测试单SKU商品新增 - 智能手机 ==========");
 
         // 1. 从数据库获取真实的分类数据 - 智能手机分类（三级分类）
-        ProductCategory category = productCategoryService.getOne(
-                new LambdaQueryWrapper<ProductCategory>()
-                        .eq(ProductCategory::getName, "智能手机")
-                        .last("LIMIT 1")
-        );
-        assertNotNull(category, "未找到智能手机分类");
+        ProductCategory category = getCategory("智能手机");
+        ProductBrand brand = getBrand("苹果");
         log.info("获取到分类: {}", category.getName());
-
-        // 2. 从数据库获取真实的品牌数据 - 苹果
-        ProductBrand brand = productBrandService.getOne(
-                new LambdaQueryWrapper<ProductBrand>()
-                        .eq(ProductBrand::getName, "苹果")
-                        .last("LIMIT 1")
-        );
-        assertNotNull(brand, "未找到苹果品牌");
         log.info("获取到品牌: {}", brand.getName());
 
         // 3. 构建单SKU商品
@@ -113,17 +102,7 @@ class ProductSpuServiceTest {
 
         spuBO.setSkus(Collections.singletonList(skuBO));
 
-        // 5. 执行新增
-        boolean result = productSpuService.add(spuBO);
-        assertTrue(result, "商品新增失败");
-
-        // 6. 验证数据
-        ProductSpu savedSpu = productSpuService.getOne(
-                new LambdaQueryWrapper<ProductSpu>()
-                        .eq(ProductSpu::getName, spuBO.getName())
-                        .last("LIMIT 1")
-        );
-        assertNotNull(savedSpu, "商品保存失败");
+        ProductSpu savedSpu = saveSpu(spuBO);
         assertEquals(spuBO.getName(), savedSpu.getName());
         assertEquals(Boolean.FALSE, savedSpu.getSpecType(), "应该是单规格");
         assertEquals(999900L, savedSpu.getMinPrice(), "最低价格应该是999900分");
@@ -147,52 +126,21 @@ class ProductSpuServiceTest {
     void testAddMultiSkuProduct_Phone() {
         log.info("========== 开始测试多SKU商品新增 - 手机（颜色+存储） ==========");
 
-        // 1. 从数据库获取真实的分类数据 - 智能手机
-        ProductCategory category = productCategoryService.getOne(
-                new LambdaQueryWrapper<ProductCategory>()
-                        .eq(ProductCategory::getName, "智能手机")
-                        .last("LIMIT 1")
-        );
-        assertNotNull(category, "未找到智能手机分类");
-
-        // 2. 从数据库获取真实的品牌数据 - 华为
-        ProductBrand brand = productBrandService.getOne(
-                new LambdaQueryWrapper<ProductBrand>()
-                        .eq(ProductBrand::getName, "华为")
-                        .last("LIMIT 1")
-        );
-        assertNotNull(brand, "未找到华为品牌");
+        ProductCategory category = getCategory("智能手机");
+        ProductBrand brand = getBrand("华为");
 
         // 3. 从数据库获取真实的属性数据 - 颜色和存储
-        ProductProperty colorProperty = productPropertyService.getOne(
-                new LambdaQueryWrapper<ProductProperty>()
-                        .eq(ProductProperty::getName, "颜色")
-                        .last("LIMIT 1")
-        );
-        assertNotNull(colorProperty, "未找到颜色属性");
-
-        ProductProperty storageProperty = productPropertyService.getOne(
-                new LambdaQueryWrapper<ProductProperty>()
-                        .eq(ProductProperty::getName, "存储")
-                        .last("LIMIT 1")
-        );
-        assertNotNull(storageProperty, "未找到存储属性");
+        ProductProperty colorProperty = getProperty("颜色");
+        ProductProperty storageProperty = getProperty("存储");
 
         // 4. 从数据库获取真实的属性值数据
         // 颜色：黑色、白色、银色
-        List<ProductPropertyValue> colorValues = productPropertyValueService.list(
-                new LambdaQueryWrapper<ProductPropertyValue>()
-                        .eq(ProductPropertyValue::getPropertyId, colorProperty.getId())
-                        .in(ProductPropertyValue::getName, Arrays.asList("黑色", "白色", "银色"))
-        );
+        List<ProductPropertyValue> colorValues = getPropertyValues(colorProperty.getId(),
+                Arrays.asList("黑色", "白色", "银色"));
         assertEquals(3, colorValues.size(), "应该找到3个颜色属性值");
 
-        // 存储：128GB、256GB、512GB
-        List<ProductPropertyValue> storageValues = productPropertyValueService.list(
-                new LambdaQueryWrapper<ProductPropertyValue>()
-                        .eq(ProductPropertyValue::getPropertyId, storageProperty.getId())
-                        .in(ProductPropertyValue::getName, Arrays.asList("128GB", "256GB", "512GB"))
-        );
+        List<ProductPropertyValue> storageValues = getPropertyValues(storageProperty.getId(),
+                Arrays.asList("128GB", "256GB", "512GB"));
         assertEquals(3, storageValues.size(), "应该找到3个存储属性值");
 
         // 5. 构建多SKU商品
@@ -246,17 +194,7 @@ class ProductSpuServiceTest {
 
         spuBO.setSkus(skuList);
 
-        // 7. 执行新增
-        boolean result = productSpuService.add(spuBO);
-        assertTrue(result, "商品新增失败");
-
-        // 8. 验证数据
-        ProductSpu savedSpu = productSpuService.getOne(
-                new LambdaQueryWrapper<ProductSpu>()
-                        .eq(ProductSpu::getName, spuBO.getName())
-                        .last("LIMIT 1")
-        );
-        assertNotNull(savedSpu, "商品保存失败");
+        ProductSpu savedSpu = saveSpu(spuBO);
         assertEquals(Boolean.TRUE, savedSpu.getSpecType(), "应该是多规格");
         assertEquals(basePrice, savedSpu.getMinPrice(), "最低价格应该是基础价");
 
@@ -275,52 +213,20 @@ class ProductSpuServiceTest {
     void testAddMultiSkuProduct_Clothing() {
         log.info("========== 开始测试多SKU商品新增 - 服装（颜色+尺码） ==========");
 
-        // 1. 从数据库获取真实的分类数据 - T恤（三级分类）
-        ProductCategory category = productCategoryService.getOne(
-                new LambdaQueryWrapper<ProductCategory>()
-                        .eq(ProductCategory::getName, "T恤")
-                        .last("LIMIT 1")
-        );
-        assertNotNull(category, "未找到T恤分类");
+        ProductCategory category = getCategory("T恤");
+        ProductBrand brand = getBrand("耐克");
 
-        // 2. 从数据库获取真实的品牌数据 - 耐克
-        ProductBrand brand = productBrandService.getOne(
-                new LambdaQueryWrapper<ProductBrand>()
-                        .eq(ProductBrand::getName, "耐克")
-                        .last("LIMIT 1")
-        );
-        assertNotNull(brand, "未找到耐克品牌");
-
-        // 3. 从数据库获取真实的属性数据 - 颜色和尺码
-        ProductProperty colorProperty = productPropertyService.getOne(
-                new LambdaQueryWrapper<ProductProperty>()
-                        .eq(ProductProperty::getName, "颜色")
-                        .last("LIMIT 1")
-        );
-        assertNotNull(colorProperty, "未找到颜色属性");
-
-        ProductProperty sizeProperty = productPropertyService.getOne(
-                new LambdaQueryWrapper<ProductProperty>()
-                        .eq(ProductProperty::getName, "尺寸")
-                        .last("LIMIT 1")
-        );
-        assertNotNull(sizeProperty, "未找到尺寸属性");
+        ProductProperty colorProperty = getProperty("颜色");
+        ProductProperty sizeProperty = getProperty("尺寸");
 
         // 4. 从数据库获取真实的属性值数据
         // 颜色：黑色、白色、红色
-        List<ProductPropertyValue> colorValues = productPropertyValueService.list(
-                new LambdaQueryWrapper<ProductPropertyValue>()
-                        .eq(ProductPropertyValue::getPropertyId, colorProperty.getId())
-                        .in(ProductPropertyValue::getName, Arrays.asList("黑色", "白色", "红色"))
-        );
+        List<ProductPropertyValue> colorValues = getPropertyValues(colorProperty.getId(),
+                Arrays.asList("黑色", "白色", "红色"));
         assertEquals(3, colorValues.size(), "应该找到3个颜色属性值");
 
-        // 尺码：S、M、L、XL
-        List<ProductPropertyValue> sizeValues = productPropertyValueService.list(
-                new LambdaQueryWrapper<ProductPropertyValue>()
-                        .eq(ProductPropertyValue::getPropertyId, sizeProperty.getId())
-                        .in(ProductPropertyValue::getName, Arrays.asList("S", "M", "L", "XL"))
-        );
+        List<ProductPropertyValue> sizeValues = getPropertyValues(sizeProperty.getId(),
+                Arrays.asList("S", "M", "L", "XL"));
         assertEquals(4, sizeValues.size(), "应该找到4个尺码属性值");
 
         // 5. 构建多SKU商品
@@ -365,17 +271,7 @@ class ProductSpuServiceTest {
 
         spuBO.setSkus(skuList);
 
-        // 7. 执行新增
-        boolean result = productSpuService.add(spuBO);
-        assertTrue(result, "商品新增失败");
-
-        // 8. 验证数据
-        ProductSpu savedSpu = productSpuService.getOne(
-                new LambdaQueryWrapper<ProductSpu>()
-                        .eq(ProductSpu::getName, spuBO.getName())
-                        .last("LIMIT 1")
-        );
-        assertNotNull(savedSpu, "商品保存失败");
+        ProductSpu savedSpu = saveSpu(spuBO);
         assertEquals(Boolean.TRUE, savedSpu.getSpecType(), "应该是多规格");
 
         // 验证SKU数量
@@ -394,16 +290,8 @@ class ProductSpuServiceTest {
         log.info("========== 开始测试商品查询 ==========");
 
         // 先创建一个商品
-        ProductCategory category = productCategoryService.getOne(
-                new LambdaQueryWrapper<ProductCategory>()
-                        .eq(ProductCategory::getName, "智能手机")
-                        .last("LIMIT 1")
-        );
-        ProductBrand brand = productBrandService.getOne(
-                new LambdaQueryWrapper<ProductBrand>()
-                        .eq(ProductBrand::getName, "小米")
-                        .last("LIMIT 1")
-        );
+        ProductCategory category = getCategory("智能手机");
+        ProductBrand brand = getBrand("小米");
 
         ProductSpuBO spuBO = buildSingleSkuSpuBO(category.getId(), brand.getId(),
                 "小米14", "Xiaomi14", "小米最新旗舰手机",
@@ -416,15 +304,7 @@ class ProductSpuServiceTest {
         skuBO.setImg("https://example.com/images/xiaomi14_sku.jpg");
         spuBO.setSkus(Collections.singletonList(skuBO));
 
-        productSpuService.add(spuBO);
-
-        // 查询商品
-        ProductSpu savedSpu = productSpuService.getOne(
-                new LambdaQueryWrapper<ProductSpu>()
-                        .eq(ProductSpu::getName, "小米14")
-                        .last("LIMIT 1")
-        );
-        assertNotNull(savedSpu, "商品查询失败");
+        ProductSpu savedSpu = saveSpu(spuBO);
 
         ProductSpu queriedSpu = productSpuService.get(savedSpu.getId());
         assertNotNull(queriedSpu, "通过ID查询商品失败");
@@ -445,6 +325,25 @@ class ProductSpuServiceTest {
         printSpuDetail(spu);
     }
 
+    @Test
+    @DisplayName("C端商品详情性能测试")
+    void testAppProductDetailPerformance() {
+        int invokeTimes = 30;
+        StopWatch stopWatch = new StopWatch("spu-detail");
+        stopWatch.start();
+        for (int i = 0; i < invokeTimes; i++) {
+            AppProductSpuDetailVO detail = productSpuService.detail(3L);
+            assertNotNull(detail, "详情结果不能为空");
+            assertFalse(detail.getSkus().isEmpty(), "SKU 列表不能为空");
+        }
+        stopWatch.stop();
+
+        long totalMillis = stopWatch.getTotalTimeMillis();
+        log.info("C端商品详情接口调用 {} 次，总耗时 {} ms，平均耗时 {} ms",
+                invokeTimes, totalMillis, totalMillis / (double) invokeTimes);
+        assertTrue(totalMillis < 30_000, "详情性能退化，耗时超过 30 秒");
+    }
+
     /**
      * 测试商品状态更新
      */
@@ -454,16 +353,8 @@ class ProductSpuServiceTest {
         log.info("========== 开始测试商品状态更新 ==========");
 
         // 先创建一个商品
-        ProductCategory category = productCategoryService.getOne(
-                new LambdaQueryWrapper<ProductCategory>()
-                        .eq(ProductCategory::getName, "智能手机")
-                        .last("LIMIT 1")
-        );
-        ProductBrand brand = productBrandService.getOne(
-                new LambdaQueryWrapper<ProductBrand>()
-                        .eq(ProductBrand::getName, "OPPO")
-                        .last("LIMIT 1")
-        );
+        ProductCategory category = getCategory("智能手机");
+        ProductBrand brand = getBrand("OPPO");
 
         ProductSpuBO spuBO = buildSingleSkuSpuBO(category.getId(), brand.getId(),
                 "OPPO Find X7", "OPPOFindX7", "OPPO旗舰手机",
@@ -476,13 +367,7 @@ class ProductSpuServiceTest {
         skuBO.setImg("https://example.com/images/oppo_findx7_sku.jpg");
         spuBO.setSkus(Collections.singletonList(skuBO));
 
-        productSpuService.add(spuBO);
-
-        ProductSpu savedSpu = productSpuService.getOne(
-                new LambdaQueryWrapper<ProductSpu>()
-                        .eq(ProductSpu::getName, "OPPO Find X7")
-                        .last("LIMIT 1")
-        );
+        ProductSpu savedSpu = saveSpu(spuBO);
 
         // 更新状态为上架
         ProductSpuStatusBO statusBO = new ProductSpuStatusBO();
@@ -513,16 +398,8 @@ class ProductSpuServiceTest {
         log.info("========== 开始测试商品更新 ==========");
 
         // 先创建一个商品
-        ProductCategory category = productCategoryService.getOne(
-                new LambdaQueryWrapper<ProductCategory>()
-                        .eq(ProductCategory::getName, "智能手机")
-                        .last("LIMIT 1")
-        );
-        ProductBrand brand = productBrandService.getOne(
-                new LambdaQueryWrapper<ProductBrand>()
-                        .eq(ProductBrand::getName, "vivo")
-                        .last("LIMIT 1")
-        );
+        ProductCategory category = getCategory("智能手机");
+        ProductBrand brand = getBrand("vivo");
 
         ProductSpuBO spuBO = buildSingleSkuSpuBO(category.getId(), brand.getId(),
                 "vivo X100", "VivoX100", "vivo旗舰手机",
@@ -535,13 +412,7 @@ class ProductSpuServiceTest {
         skuBO.setImg("https://example.com/images/vivo_x100_sku.jpg");
         spuBO.setSkus(Collections.singletonList(skuBO));
 
-        productSpuService.add(spuBO);
-
-        ProductSpu savedSpu = productSpuService.getOne(
-                new LambdaQueryWrapper<ProductSpu>()
-                        .eq(ProductSpu::getName, "vivo X100")
-                        .last("LIMIT 1")
-        );
+        ProductSpu savedSpu = saveSpu(spuBO);
 
         // 更新商品信息
         ProductSpuBO updateBO = buildSingleSkuSpuBO(category.getId(), brand.getId(),
@@ -581,20 +452,8 @@ class ProductSpuServiceTest {
         log.info("========== 开始测试通过分类查询商品数量 ==========");
 
         // 获取分类
-        ProductCategory category = productCategoryService.getOne(
-                new LambdaQueryWrapper<ProductCategory>()
-                        .eq(ProductCategory::getName, "智能手机")
-                        .last("LIMIT 1")
-        );
-        assertNotNull(category, "未找到智能手机分类");
-
-        // 获取品牌
-        ProductBrand brand = productBrandService.getOne(
-                new LambdaQueryWrapper<ProductBrand>()
-                        .eq(ProductBrand::getName, "三星")
-                        .last("LIMIT 1")
-        );
-        assertNotNull(brand, "未找到三星品牌");
+        ProductCategory category = getCategory("智能手机");
+        ProductBrand brand = getBrand("三星");
 
         // 创建3个商品
         for (int i = 1; i <= 3; i++) {
@@ -610,7 +469,7 @@ class ProductSpuServiceTest {
             skuBO.setImg("https://example.com/images/samsung_s" + (20 + i) + "_sku.jpg");
             spuBO.setSkus(Collections.singletonList(skuBO));
 
-            productSpuService.add(spuBO);
+            saveSpu(spuBO);
         }
 
         // 查询该分类下的商品数量
@@ -629,20 +488,8 @@ class ProductSpuServiceTest {
         log.info("========== 开始测试通过品牌查询商品数量 ==========");
 
         // 获取分类
-        ProductCategory category = productCategoryService.getOne(
-                new LambdaQueryWrapper<ProductCategory>()
-                        .eq(ProductCategory::getName, "智能手机")
-                        .last("LIMIT 1")
-        );
-        assertNotNull(category, "未找到智能手机分类");
-
-        // 获取品牌
-        ProductBrand brand = productBrandService.getOne(
-                new LambdaQueryWrapper<ProductBrand>()
-                        .eq(ProductBrand::getName, "索尼")
-                        .last("LIMIT 1")
-        );
-        assertNotNull(brand, "未找到索尼品牌");
+        ProductCategory category = getCategory("智能手机");
+        ProductBrand brand = getBrand("索尼");
 
         // 创建2个商品
         for (int i = 1; i <= 2; i++) {
@@ -658,7 +505,7 @@ class ProductSpuServiceTest {
             skuBO.setImg("https://example.com/images/sony_xperia" + i + "_sku.jpg");
             spuBO.setSkus(Collections.singletonList(skuBO));
 
-            productSpuService.add(spuBO);
+            saveSpu(spuBO);
         }
 
         // 查询该品牌下的商品数量
@@ -677,66 +524,25 @@ class ProductSpuServiceTest {
         log.info("========== 开始测试多SKU商品新增 - 笔记本电脑（内存+存储+处理器） ==========");
 
         // 1. 从数据库获取真实的分类数据 - 笔记本电脑
-        ProductCategory category = productCategoryService.getOne(
-                new LambdaQueryWrapper<ProductCategory>()
-                        .eq(ProductCategory::getName, "笔记本电脑")
-                        .last("LIMIT 1")
-        );
-        assertNotNull(category, "未找到笔记本电脑分类");
+        ProductCategory category = getCategory("笔记本电脑");
+        ProductBrand brand = getBrand("联想");
 
-        // 2. 从数据库获取真实的品牌数据 - 联想
-        ProductBrand brand = productBrandService.getOne(
-                new LambdaQueryWrapper<ProductBrand>()
-                        .eq(ProductBrand::getName, "联想")
-                        .last("LIMIT 1")
-        );
-        assertNotNull(brand, "未找到联想品牌");
-
-        // 3. 从数据库获取真实的属性数据
-        ProductProperty memoryProperty = productPropertyService.getOne(
-                new LambdaQueryWrapper<ProductProperty>()
-                        .eq(ProductProperty::getName, "内存")
-                        .last("LIMIT 1")
-        );
-        assertNotNull(memoryProperty, "未找到内存属性");
-
-        ProductProperty storageProperty = productPropertyService.getOne(
-                new LambdaQueryWrapper<ProductProperty>()
-                        .eq(ProductProperty::getName, "存储")
-                        .last("LIMIT 1")
-        );
-        assertNotNull(storageProperty, "未找到存储属性");
-
-        ProductProperty processorProperty = productPropertyService.getOne(
-                new LambdaQueryWrapper<ProductProperty>()
-                        .eq(ProductProperty::getName, "处理器")
-                        .last("LIMIT 1")
-        );
-        assertNotNull(processorProperty, "未找到处理器属性");
+        ProductProperty memoryProperty = getProperty("内存");
+        ProductProperty storageProperty = getProperty("存储");
+        ProductProperty processorProperty = getProperty("处理器");
 
         // 4. 从数据库获取真实的属性值数据
         // 内存：8GB、16GB
-        List<ProductPropertyValue> memoryValues = productPropertyValueService.list(
-                new LambdaQueryWrapper<ProductPropertyValue>()
-                        .eq(ProductPropertyValue::getPropertyId, memoryProperty.getId())
-                        .in(ProductPropertyValue::getName, Arrays.asList("8GB", "16GB"))
-        );
+        List<ProductPropertyValue> memoryValues = getPropertyValues(memoryProperty.getId(),
+                Arrays.asList("8GB", "16GB"));
         assertEquals(2, memoryValues.size(), "应该找到2个内存属性值");
 
-        // 存储：256GB、512GB
-        List<ProductPropertyValue> storageValues = productPropertyValueService.list(
-                new LambdaQueryWrapper<ProductPropertyValue>()
-                        .eq(ProductPropertyValue::getPropertyId, storageProperty.getId())
-                        .in(ProductPropertyValue::getName, Arrays.asList("256GB", "512GB"))
-        );
+        List<ProductPropertyValue> storageValues = getPropertyValues(storageProperty.getId(),
+                Arrays.asList("256GB", "512GB"));
         assertEquals(2, storageValues.size(), "应该找到2个存储属性值");
 
-        // 处理器：Intel i5、Intel i7
-        List<ProductPropertyValue> processorValues = productPropertyValueService.list(
-                new LambdaQueryWrapper<ProductPropertyValue>()
-                        .eq(ProductPropertyValue::getPropertyId, processorProperty.getId())
-                        .in(ProductPropertyValue::getName, Arrays.asList("Intel i5", "Intel i7"))
-        );
+        List<ProductPropertyValue> processorValues = getPropertyValues(processorProperty.getId(),
+                Arrays.asList("Intel i5", "Intel i7"));
         assertFalse(processorValues.isEmpty(), "应该至少找到1个处理器属性值");
 
         // 5. 构建多SKU商品
@@ -800,17 +606,7 @@ class ProductSpuServiceTest {
 
         spuBO.setSkus(skuList);
 
-        // 7. 执行新增
-        boolean result = productSpuService.add(spuBO);
-        assertTrue(result, "商品新增失败");
-
-        // 8. 验证数据
-        ProductSpu savedSpu = productSpuService.getOne(
-                new LambdaQueryWrapper<ProductSpu>()
-                        .eq(ProductSpu::getName, spuBO.getName())
-                        .last("LIMIT 1")
-        );
-        assertNotNull(savedSpu, "商品保存失败");
+        ProductSpu savedSpu = saveSpu(spuBO);
         assertEquals(Boolean.TRUE, savedSpu.getSpecType(), "应该是多规格");
 
         // 验证SKU数量
@@ -865,6 +661,52 @@ class ProductSpuServiceTest {
         spuBO.setSpecType(Boolean.TRUE); // 多规格
         spuBO.setDeliveryTemplateId(1L); // 默认包邮
         return spuBO;
+    }
+
+    private ProductCategory getCategory(String name) {
+        ProductCategory category = productCategoryService.getOne(new LambdaQueryWrapper<ProductCategory>()
+                .eq(ProductCategory::getName, name)
+                .last("LIMIT 1"));
+        if (category == null) {
+            throw new IllegalStateException("未找到分类: " + name);
+        }
+        return category;
+    }
+
+    private ProductBrand getBrand(String name) {
+        ProductBrand brand = productBrandService.getOne(new LambdaQueryWrapper<ProductBrand>()
+                .eq(ProductBrand::getName, name)
+                .last("LIMIT 1"));
+        if (brand == null) {
+            throw new IllegalStateException("未找到品牌: " + name);
+        }
+        return brand;
+    }
+
+    private ProductProperty getProperty(String name) {
+        ProductProperty property = productPropertyService.getOne(new LambdaQueryWrapper<ProductProperty>()
+                .eq(ProductProperty::getName, name)
+                .last("LIMIT 1"));
+        if (property == null) {
+            throw new IllegalStateException("未找到属性: " + name);
+        }
+        return property;
+    }
+
+    private List<ProductPropertyValue> getPropertyValues(Long propertyId, List<String> names) {
+        return productPropertyValueService.list(new LambdaQueryWrapper<ProductPropertyValue>()
+                .eq(ProductPropertyValue::getPropertyId, propertyId)
+                .in(ProductPropertyValue::getName, names));
+    }
+
+    private ProductSpu saveSpu(ProductSpuBO spuBO) {
+        boolean saved = productSpuService.add(spuBO);
+        assertTrue(saved, "保存商品失败: " + spuBO.getName());
+        ProductSpu savedSpu = productSpuService.getOne(new LambdaQueryWrapper<ProductSpu>()
+                .eq(ProductSpu::getName, spuBO.getName())
+                .last("LIMIT 1"));
+        assertNotNull(savedSpu, "未查询到保存的商品: " + spuBO.getName());
+        return savedSpu;
     }
 
     /**
