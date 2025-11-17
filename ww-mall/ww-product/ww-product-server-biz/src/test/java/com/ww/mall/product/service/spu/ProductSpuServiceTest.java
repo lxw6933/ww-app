@@ -4,6 +4,7 @@ import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.ww.mall.product.controller.admin.sku.req.ProductSkuBO;
 import com.ww.mall.product.controller.admin.spu.req.ProductSpuBO;
 import com.ww.mall.product.controller.admin.spu.req.ProductSpuStatusBO;
+import com.ww.mall.product.controller.app.spu.res.AppProductSpuDetailVO;
 import com.ww.mall.product.entity.brand.ProductBrand;
 import com.ww.mall.product.entity.category.ProductCategory;
 import com.ww.mall.product.entity.property.ProductProperty;
@@ -437,6 +438,13 @@ class ProductSpuServiceTest {
         log.info("========== 商品查询测试通过 ==========");
     }
 
+    @Test
+    @DisplayName("测试商品详情")
+    void testProductDetail() {
+        AppProductSpuDetailVO spu = productSpuService.detail(4L);
+        printSpuDetail(spu);
+    }
+
     /**
      * 测试商品状态更新
      */
@@ -858,5 +866,79 @@ class ProductSpuServiceTest {
         spuBO.setDeliveryTemplateId(1L); // 默认包邮
         return spuBO;
     }
+
+    /**
+     * 打印商品SPU详情信息（控制台直观展示）
+     * @param spuDetail 商品SPU详情对象
+     */
+    public void printSpuDetail(AppProductSpuDetailVO spuDetail) {
+        if (spuDetail == null) {
+            System.out.println("❌ 商品SPU详情为空");
+            return;
+        }
+
+        String split = "================================================================================";
+        System.out.println(split);
+        System.out.println("🛍️  商品SPU详情信息");
+        System.out.println(split);
+
+        // ========== 基本信息 =========
+        System.out.println("📋 【基本信息】");
+        System.out.printf("  商品编号: %d\n", spuDetail.getId());
+        System.out.printf("  商品名称: %s\n", spuDetail.getName());
+        System.out.printf("  商品类型: %s\n", spuDetail.getSpuType());
+        System.out.printf("  商品简介: %s\n", spuDetail.getIntroduction());
+        System.out.printf("  商品分类: %d\n", spuDetail.getCategoryId());
+        System.out.printf("  商品品牌: %d\n", spuDetail.getBrandId());
+        System.out.printf("  封面图: %s\n", spuDetail.getImg());
+
+        // 轮播图
+        if (spuDetail.getSliderImgList() != null && !spuDetail.getSliderImgList().isEmpty()) {
+            System.out.println("  轮播图:");
+            for (int i = 0; i < spuDetail.getSliderImgList().size(); i++) {
+                System.out.printf("    %d. %s\n", i + 1, spuDetail.getSliderImgList().get(i));
+            }
+        } else {
+            System.out.println("  轮播图: 无");
+        }
+
+        // ========== 统计信息 =========
+        System.out.println("\n📊 【统计信息】");
+        System.out.printf("  商品销量: %,d 件\n", spuDetail.getSalesCount());
+
+        // ========== SKU信息 =========
+        System.out.println("\n📦 【SKU信息】");
+        if (spuDetail.getSkus() != null && !spuDetail.getSkus().isEmpty()) {
+            for (int i = 0; i < spuDetail.getSkus().size(); i++) {
+                AppProductSpuDetailVO.Sku sku = spuDetail.getSkus().get(i);
+                System.out.printf("  SKU #%d:\n", i + 1);
+                System.out.printf("    SKU编号: %d\n", sku.getId());
+                System.out.printf("    销售价: ¥%.2f\n", sku.getPrice() / 100.0);
+                System.out.printf("    市场价: ¥%.2f\n", sku.getMarketPrice() / 100.0);
+                System.out.printf("    库存: %d 件\n", sku.getStock());
+                System.out.printf("    图片: %s\n", sku.getImg());
+
+                // 商品属性
+                if (sku.getProperties() != null && !sku.getProperties().isEmpty()) {
+                    System.out.println("    商品属性:");
+                    for (ProductSku.Property property : sku.getProperties()) {
+                        System.out.printf("      - %s: %s\n",
+                                property.getPropertyName() != null ? property.getPropertyName() : "未知属性",
+                                property.getValueName() != null ? property.getValueName() : "未知值");
+                    }
+                } else {
+                    System.out.println("    商品属性: 无");
+                }
+                System.out.println();
+            }
+        } else {
+            System.out.println("  暂无SKU信息");
+        }
+
+        System.out.println(split);
+        System.out.println("✅ 商品信息展示完毕");
+        System.out.println(split);
+    }
+
 }
 

@@ -12,7 +12,7 @@ import lombok.EqualsAndHashCode;
  */
 @EqualsAndHashCode(callSuper = true)
 @Data
-@TableName("product_brand")
+@TableName(value = "product_brand", autoResultMap = true)
 public class ProductBrand extends BaseEntity {
 
     /**

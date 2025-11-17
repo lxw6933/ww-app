@@ -6,19 +6,16 @@ import io.minio.MinioAsyncClient;
 import io.minio.MinioClient;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
-import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.data.mongodb.core.MongoTemplate;
 
 @Slf4j
 @Configuration(proxyBeanMethods = false)
-@ConditionalOnClass({MinioClient.class, MongoTemplate.class})
-@EnableConfigurationProperties({MinioProperties.class})
+@ConditionalOnClass({MinioClient.class})
 public class MinioAutoConfiguration {
 
     @Bean
-    public MinioS3Client mallMinioS3Client(MinioProperties minioProperties) {
+    public MinioS3Client minioS3Client(MinioProperties minioProperties) {
         MinioAsyncClient minioAsyncClient = MinioAsyncClient.builder()
                 .endpoint(minioProperties.getEndpoint())
                 .credentials(minioProperties.getAccessKey(), minioProperties.getSecretKey())
@@ -35,7 +32,7 @@ public class MinioAutoConfiguration {
     }
 
     @Bean
-    public MinioTemplate mallMinioTemplate(MinioClient minioClient, MinioS3Client minioS3Client) {
+    public MinioTemplate minioTemplate(MinioClient minioClient, MinioS3Client minioS3Client) {
         return new MinioTemplate(minioClient, minioS3Client);
     }
 

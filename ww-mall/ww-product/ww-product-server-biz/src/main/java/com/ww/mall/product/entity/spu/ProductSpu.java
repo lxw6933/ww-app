@@ -20,7 +20,7 @@ import java.util.List;
  */
 @EqualsAndHashCode(callSuper = true)
 @Data
-@TableName("product_spu")
+@TableName(value = "product_spu", autoResultMap = true)
 public class ProductSpu extends BaseEntity {
 
     /**

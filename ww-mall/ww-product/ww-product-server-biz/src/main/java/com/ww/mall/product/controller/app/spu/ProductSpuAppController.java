@@ -20,7 +20,7 @@ import javax.annotation.Resource;
 @RestController
 @Tag(name = "APP - 商品")
 @RequestMapping("/product/spu")
-public class ProductSpuController {
+public class ProductSpuAppController {
 
     @Resource
     private ProductSpuService productSpuService;

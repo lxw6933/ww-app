@@ -233,7 +233,7 @@ public class ProductSpuServiceImpl extends ServiceImpl<ProductSpuMapper, Product
         // 若是 spu 已有状态则不处理
         if (spu.getStatus() == null) {
             // 默认状态为上架
-            spu.setStatus(SpuStatus.UP);
+            spu.setStatus(SpuStatus.DOWN);
             // 默认商品销量
             spu.setSalesCount(0);
             // 默认商品浏览量

@@ -1,1 +1,2 @@
+com.ww.app.minio.config.MinioProperties
 com.ww.app.minio.config.MinioAutoConfiguration
