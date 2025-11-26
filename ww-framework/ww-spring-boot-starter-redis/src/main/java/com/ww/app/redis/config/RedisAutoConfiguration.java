@@ -11,6 +11,7 @@ import com.ww.app.redis.aspect.ResubmissionAspect;
 import com.ww.app.redis.component.ShortCodeRedisComponent;
 import com.ww.app.redis.component.key.*;
 import com.ww.app.redis.component.lua.RedisScriptComponent;
+import com.ww.app.redis.component.rank.RankingRedisComponent;
 import com.ww.app.redis.listener.RedisChannelListener;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
@@ -164,6 +165,8 @@ public class RedisAutoConfiguration implements ApplicationContextAware {
         return new AppRedisTemplate();
     }
 
+    // ==================================component====================================
+
     @Bean
     public ShortCodeRedisComponent shortCodeRedisComponent() {
         return new ShortCodeRedisComponent();
@@ -173,6 +176,13 @@ public class RedisAutoConfiguration implements ApplicationContextAware {
     public RedisScriptComponent redisScriptComponent() {
         return new RedisScriptComponent();
     }
+
+    @Bean
+    public RankingRedisComponent rankingRedisComponent() {
+        return new RankingRedisComponent();
+    }
+
+    // ==================================key builder====================================
 
     @Bean
     public AppLockRedisKeyBuilder appLockRedisKeyBuilder() {
@@ -197,6 +207,11 @@ public class RedisAutoConfiguration implements ApplicationContextAware {
     @Bean
     public RateLimitRedisKeyBuilder rateLimitRedisKeyBuilder() {
         return new RateLimitRedisKeyBuilder();
+    }
+
+    @Bean
+    public RankingRedisKeyBuilder rankingRedisKeyBuilder() {
+        return new RankingRedisKeyBuilder();
     }
 
     @Override
