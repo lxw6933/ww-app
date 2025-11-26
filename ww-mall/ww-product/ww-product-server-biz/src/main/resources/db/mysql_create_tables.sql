@@ -171,217 +171,244 @@ INSERT INTO `product_category` (`name`, `parent_id`, `status`, `sort`, `icon`, `
 ('汽车用品', 0, 1, 8, 'https://example.com/icon/car.png', 0, 1, 1);
 
 -- 二级分类 - 电子产品
+SELECT @cat_电子产品 := id FROM `product_category` WHERE `name` = '电子产品' AND `parent_id` = 0 LIMIT 1;
 INSERT INTO `product_category` (`name`, `parent_id`, `status`, `sort`, `icon`, `version`, `creator_id`, `updater_id`) VALUES
-('手机通讯', 1, 1, 1, 'https://example.com/icon/phone.png', 0, 1, 1),
-('电脑办公', 1, 1, 2, 'https://example.com/icon/computer.png', 0, 1, 1),
-('数码配件', 1, 1, 3, 'https://example.com/icon/accessories.png', 0, 1, 1),
-('智能设备', 1, 1, 4, 'https://example.com/icon/smart.png', 0, 1, 1),
-('家用电器', 1, 1, 5, 'https://example.com/icon/appliance.png', 0, 1, 1);
+('手机通讯', @cat_电子产品, 1, 1, 'https://example.com/icon/phone.png', 0, 1, 1),
+('电脑办公', @cat_电子产品, 1, 2, 'https://example.com/icon/computer.png', 0, 1, 1),
+('数码配件', @cat_电子产品, 1, 3, 'https://example.com/icon/accessories.png', 0, 1, 1),
+('智能设备', @cat_电子产品, 1, 4, 'https://example.com/icon/smart.png', 0, 1, 1),
+('家用电器', @cat_电子产品, 1, 5, 'https://example.com/icon/appliance.png', 0, 1, 1);
 
 -- 三级分类 - 手机通讯
+SELECT @cat_手机通讯 := id FROM `product_category` WHERE `name` = '手机通讯' AND `parent_id` != 0 LIMIT 1;
 INSERT INTO `product_category` (`name`, `parent_id`, `status`, `sort`, `icon`, `version`, `creator_id`, `updater_id`) VALUES
-('智能手机', 9, 1, 1, NULL, 0, 1, 1),
-('功能手机', 9, 1, 2, NULL, 0, 1, 1),
-('手机配件', 9, 1, 3, NULL, 0, 1, 1),
-('手机壳', 9, 1, 4, NULL, 0, 1, 1),
-('充电器', 9, 1, 5, NULL, 0, 1, 1),
-('数据线', 9, 1, 6, NULL, 0, 1, 1);
+('智能手机', @cat_手机通讯, 1, 1, NULL, 0, 1, 1),
+('功能手机', @cat_手机通讯, 1, 2, NULL, 0, 1, 1),
+('手机配件', @cat_手机通讯, 1, 3, NULL, 0, 1, 1),
+('手机壳', @cat_手机通讯, 1, 4, NULL, 0, 1, 1),
+('充电器', @cat_手机通讯, 1, 5, NULL, 0, 1, 1),
+('数据线', @cat_手机通讯, 1, 6, NULL, 0, 1, 1);
 
 -- 三级分类 - 电脑办公
+SELECT @cat_电脑办公 := id FROM `product_category` WHERE `name` = '电脑办公' AND `parent_id` != 0 LIMIT 1;
 INSERT INTO `product_category` (`name`, `parent_id`, `status`, `sort`, `icon`, `version`, `creator_id`, `updater_id`) VALUES
-('笔记本电脑', 10, 1, 1, NULL, 0, 1, 1),
-('台式电脑', 10, 1, 2, NULL, 0, 1, 1),
-('平板电脑', 10, 1, 3, NULL, 0, 1, 1),
-('显示器', 10, 1, 4, NULL, 0, 1, 1),
-('键盘鼠标', 10, 1, 5, NULL, 0, 1, 1),
-('打印机', 10, 1, 6, NULL, 0, 1, 1),
-('办公文具', 10, 1, 7, NULL, 0, 1, 1);
+('笔记本电脑', @cat_电脑办公, 1, 1, NULL, 0, 1, 1),
+('台式电脑', @cat_电脑办公, 1, 2, NULL, 0, 1, 1),
+('平板电脑', @cat_电脑办公, 1, 3, NULL, 0, 1, 1),
+('显示器', @cat_电脑办公, 1, 4, NULL, 0, 1, 1),
+('键盘鼠标', @cat_电脑办公, 1, 5, NULL, 0, 1, 1),
+('打印机', @cat_电脑办公, 1, 6, NULL, 0, 1, 1),
+('办公文具', @cat_电脑办公, 1, 7, NULL, 0, 1, 1);
 
 -- 三级分类 - 数码配件
+SELECT @cat_数码配件 := id FROM `product_category` WHERE `name` = '数码配件' AND `parent_id` != 0 LIMIT 1;
 INSERT INTO `product_category` (`name`, `parent_id`, `status`, `sort`, `icon`, `version`, `creator_id`, `updater_id`) VALUES
-('耳机音响', 11, 1, 1, NULL, 0, 1, 1),
-('存储设备', 11, 1, 2, NULL, 0, 1, 1),
-('摄影摄像', 11, 1, 3, NULL, 0, 1, 1),
-('智能穿戴', 11, 1, 4, NULL, 0, 1, 1);
+('耳机音响', @cat_数码配件, 1, 1, NULL, 0, 1, 1),
+('存储设备', @cat_数码配件, 1, 2, NULL, 0, 1, 1),
+('摄影摄像', @cat_数码配件, 1, 3, NULL, 0, 1, 1),
+('智能穿戴', @cat_数码配件, 1, 4, NULL, 0, 1, 1);
 
 -- 三级分类 - 智能设备
+SELECT @cat_智能设备 := id FROM `product_category` WHERE `name` = '智能设备' AND `parent_id` != 0 LIMIT 1;
 INSERT INTO `product_category` (`name`, `parent_id`, `status`, `sort`, `icon`, `version`, `creator_id`, `updater_id`) VALUES
-('智能音箱', 12, 1, 1, NULL, 0, 1, 1),
-('智能门锁', 12, 1, 2, NULL, 0, 1, 1),
-('智能摄像头', 12, 1, 3, NULL, 0, 1, 1),
-('智能开关', 12, 1, 4, NULL, 0, 1, 1);
+('智能音箱', @cat_智能设备, 1, 1, NULL, 0, 1, 1),
+('智能门锁', @cat_智能设备, 1, 2, NULL, 0, 1, 1),
+('智能摄像头', @cat_智能设备, 1, 3, NULL, 0, 1, 1),
+('智能开关', @cat_智能设备, 1, 4, NULL, 0, 1, 1);
 
 -- 三级分类 - 家用电器
+SELECT @cat_家用电器 := id FROM `product_category` WHERE `name` = '家用电器' AND `parent_id` != 0 LIMIT 1;
 INSERT INTO `product_category` (`name`, `parent_id`, `status`, `sort`, `icon`, `version`, `creator_id`, `updater_id`) VALUES
-('大家电', 13, 1, 1, NULL, 0, 1, 1),
-('厨房电器', 13, 1, 2, NULL, 0, 1, 1),
-('生活电器', 13, 1, 3, NULL, 0, 1, 1),
-('个人护理', 13, 1, 4, NULL, 0, 1, 1);
+('大家电', @cat_家用电器, 1, 1, NULL, 0, 1, 1),
+('厨房电器', @cat_家用电器, 1, 2, NULL, 0, 1, 1),
+('生活电器', @cat_家用电器, 1, 3, NULL, 0, 1, 1),
+('个人护理', @cat_家用电器, 1, 4, NULL, 0, 1, 1);
 
 -- 二级分类 - 服装鞋帽
+SELECT @cat_服装鞋帽 := id FROM `product_category` WHERE `name` = '服装鞋帽' AND `parent_id` = 0 LIMIT 1;
 INSERT INTO `product_category` (`name`, `parent_id`, `status`, `sort`, `icon`, `version`, `creator_id`, `updater_id`) VALUES
-('男装', 2, 1, 1, 'https://example.com/icon/men.png', 0, 1, 1),
-('女装', 2, 1, 2, 'https://example.com/icon/women.png', 0, 1, 1),
-('童装', 2, 1, 3, 'https://example.com/icon/kids.png', 0, 1, 1),
-('鞋靴', 2, 1, 4, 'https://example.com/icon/shoes.png', 0, 1, 1),
-('箱包', 2, 1, 5, 'https://example.com/icon/bag.png', 0, 1, 1),
-('配饰', 2, 1, 6, 'https://example.com/icon/accessory.png', 0, 1, 1);
+('男装', @cat_服装鞋帽, 1, 1, 'https://example.com/icon/men.png', 0, 1, 1),
+('女装', @cat_服装鞋帽, 1, 2, 'https://example.com/icon/women.png', 0, 1, 1),
+('童装', @cat_服装鞋帽, 1, 3, 'https://example.com/icon/kids.png', 0, 1, 1),
+('鞋靴', @cat_服装鞋帽, 1, 4, 'https://example.com/icon/shoes.png', 0, 1, 1),
+('箱包', @cat_服装鞋帽, 1, 5, 'https://example.com/icon/bag.png', 0, 1, 1),
+('配饰', @cat_服装鞋帽, 1, 6, 'https://example.com/icon/accessory.png', 0, 1, 1);
 
 -- 三级分类 - 男装
+SELECT @cat_男装 := id FROM `product_category` WHERE `name` = '男装' AND `parent_id` != 0 LIMIT 1;
 INSERT INTO `product_category` (`name`, `parent_id`, `status`, `sort`, `icon`, `version`, `creator_id`, `updater_id`) VALUES
-('T恤', 14, 1, 1, NULL, 0, 1, 1),
-('衬衫', 14, 1, 2, NULL, 0, 1, 1),
-('外套', 14, 1, 3, NULL, 0, 1, 1),
-('裤子', 14, 1, 4, NULL, 0, 1, 1),
-('牛仔裤', 14, 1, 5, NULL, 0, 1, 1),
-('休闲裤', 14, 1, 6, NULL, 0, 1, 1),
-('运动服', 14, 1, 7, NULL, 0, 1, 1);
+('T恤', @cat_男装, 1, 1, NULL, 0, 1, 1),
+('衬衫', @cat_男装, 1, 2, NULL, 0, 1, 1),
+('外套', @cat_男装, 1, 3, NULL, 0, 1, 1),
+('裤子', @cat_男装, 1, 4, NULL, 0, 1, 1),
+('牛仔裤', @cat_男装, 1, 5, NULL, 0, 1, 1),
+('休闲裤', @cat_男装, 1, 6, NULL, 0, 1, 1),
+('运动服', @cat_男装, 1, 7, NULL, 0, 1, 1);
 
 -- 三级分类 - 女装
+SELECT @cat_女装 := id FROM `product_category` WHERE `name` = '女装' AND `parent_id` != 0 LIMIT 1;
 INSERT INTO `product_category` (`name`, `parent_id`, `status`, `sort`, `icon`, `version`, `creator_id`, `updater_id`) VALUES
-('连衣裙', 15, 1, 1, NULL, 0, 1, 1),
-('上衣', 15, 1, 2, NULL, 0, 1, 1),
-('下装', 15, 1, 3, NULL, 0, 1, 1),
-('外套', 15, 1, 4, NULL, 0, 1, 1),
-('内衣', 15, 1, 5, NULL, 0, 1, 1),
-('睡衣', 15, 1, 6, NULL, 0, 1, 1);
+('连衣裙', @cat_女装, 1, 1, NULL, 0, 1, 1),
+('上衣', @cat_女装, 1, 2, NULL, 0, 1, 1),
+('下装', @cat_女装, 1, 3, NULL, 0, 1, 1),
+('外套', @cat_女装, 1, 4, NULL, 0, 1, 1),
+('内衣', @cat_女装, 1, 5, NULL, 0, 1, 1),
+('睡衣', @cat_女装, 1, 6, NULL, 0, 1, 1);
 
 -- 三级分类 - 童装
+SELECT @cat_童装 := id FROM `product_category` WHERE `name` = '童装' AND `parent_id` != 0 LIMIT 1;
 INSERT INTO `product_category` (`name`, `parent_id`, `status`, `sort`, `icon`, `version`, `creator_id`, `updater_id`) VALUES
-('男童装', 16, 1, 1, NULL, 0, 1, 1),
-('女童装', 16, 1, 2, NULL, 0, 1, 1),
-('婴儿装', 16, 1, 3, NULL, 0, 1, 1),
-('童鞋', 16, 1, 4, NULL, 0, 1, 1);
+('男童装', @cat_童装, 1, 1, NULL, 0, 1, 1),
+('女童装', @cat_童装, 1, 2, NULL, 0, 1, 1),
+('婴儿装', @cat_童装, 1, 3, NULL, 0, 1, 1),
+('童鞋', @cat_童装, 1, 4, NULL, 0, 1, 1);
 
 -- 三级分类 - 鞋靴
+SELECT @cat_鞋靴 := id FROM `product_category` WHERE `name` = '鞋靴' AND `parent_id` != 0 LIMIT 1;
 INSERT INTO `product_category` (`name`, `parent_id`, `status`, `sort`, `icon`, `version`, `creator_id`, `updater_id`) VALUES
-('运动鞋', 17, 1, 1, NULL, 0, 1, 1),
-('休闲鞋', 17, 1, 2, NULL, 0, 1, 1),
-('皮鞋', 17, 1, 3, NULL, 0, 1, 1),
-('靴子', 17, 1, 4, NULL, 0, 1, 1),
-('凉鞋', 17, 1, 5, NULL, 0, 1, 1),
-('拖鞋', 17, 1, 6, NULL, 0, 1, 1);
+('运动鞋', @cat_鞋靴, 1, 1, NULL, 0, 1, 1),
+('休闲鞋', @cat_鞋靴, 1, 2, NULL, 0, 1, 1),
+('皮鞋', @cat_鞋靴, 1, 3, NULL, 0, 1, 1),
+('靴子', @cat_鞋靴, 1, 4, NULL, 0, 1, 1),
+('凉鞋', @cat_鞋靴, 1, 5, NULL, 0, 1, 1),
+('拖鞋', @cat_鞋靴, 1, 6, NULL, 0, 1, 1);
 
 -- 二级分类 - 食品饮料
+SELECT @cat_食品饮料 := id FROM `product_category` WHERE `name` = '食品饮料' AND `parent_id` = 0 LIMIT 1;
 INSERT INTO `product_category` (`name`, `parent_id`, `status`, `sort`, `icon`, `version`, `creator_id`, `updater_id`) VALUES
-('休闲零食', 3, 1, 1, 'https://example.com/icon/snacks.png', 0, 1, 1),
-('生鲜食品', 3, 1, 2, 'https://example.com/icon/fresh.png', 0, 1, 1),
-('酒水饮料', 3, 1, 3, 'https://example.com/icon/drinks.png', 0, 1, 1),
-('茶饮冲调', 3, 1, 4, 'https://example.com/icon/tea.png', 0, 1, 1),
-('粮油调味', 3, 1, 5, 'https://example.com/icon/grain.png', 0, 1, 1);
+('休闲零食', @cat_食品饮料, 1, 1, 'https://example.com/icon/snacks.png', 0, 1, 1),
+('生鲜食品', @cat_食品饮料, 1, 2, 'https://example.com/icon/fresh.png', 0, 1, 1),
+('酒水饮料', @cat_食品饮料, 1, 3, 'https://example.com/icon/drinks.png', 0, 1, 1),
+('茶饮冲调', @cat_食品饮料, 1, 4, 'https://example.com/icon/tea.png', 0, 1, 1),
+('粮油调味', @cat_食品饮料, 1, 5, 'https://example.com/icon/grain.png', 0, 1, 1);
 
 -- 三级分类 - 休闲零食
+SELECT @cat_休闲零食 := id FROM `product_category` WHERE `name` = '休闲零食' AND `parent_id` != 0 LIMIT 1;
 INSERT INTO `product_category` (`name`, `parent_id`, `status`, `sort`, `icon`, `version`, `creator_id`, `updater_id`) VALUES
-('坚果炒货', 20, 1, 1, NULL, 0, 1, 1),
-('饼干糕点', 20, 1, 2, NULL, 0, 1, 1),
-('膨化食品', 20, 1, 3, NULL, 0, 1, 1),
-('糖果巧克力', 20, 1, 4, NULL, 0, 1, 1),
-('肉干肉脯', 20, 1, 5, NULL, 0, 1, 1);
+('坚果炒货', @cat_休闲零食, 1, 1, NULL, 0, 1, 1),
+('饼干糕点', @cat_休闲零食, 1, 2, NULL, 0, 1, 1),
+('膨化食品', @cat_休闲零食, 1, 3, NULL, 0, 1, 1),
+('糖果巧克力', @cat_休闲零食, 1, 4, NULL, 0, 1, 1),
+('肉干肉脯', @cat_休闲零食, 1, 5, NULL, 0, 1, 1);
 
 -- 三级分类 - 生鲜食品
+SELECT @cat_生鲜食品 := id FROM `product_category` WHERE `name` = '生鲜食品' AND `parent_id` != 0 LIMIT 1;
 INSERT INTO `product_category` (`name`, `parent_id`, `status`, `sort`, `icon`, `version`, `creator_id`, `updater_id`) VALUES
-('新鲜水果', 21, 1, 1, NULL, 0, 1, 1),
-('新鲜蔬菜', 21, 1, 2, NULL, 0, 1, 1),
-('海鲜水产', 21, 1, 3, NULL, 0, 1, 1),
-('肉禽蛋品', 21, 1, 4, NULL, 0, 1, 1);
+('新鲜水果', @cat_生鲜食品, 1, 1, NULL, 0, 1, 1),
+('新鲜蔬菜', @cat_生鲜食品, 1, 2, NULL, 0, 1, 1),
+('海鲜水产', @cat_生鲜食品, 1, 3, NULL, 0, 1, 1),
+('肉禽蛋品', @cat_生鲜食品, 1, 4, NULL, 0, 1, 1);
 
 -- 三级分类 - 酒水饮料
+SELECT @cat_酒水饮料 := id FROM `product_category` WHERE `name` = '酒水饮料' AND `parent_id` != 0 LIMIT 1;
 INSERT INTO `product_category` (`name`, `parent_id`, `status`, `sort`, `icon`, `version`, `creator_id`, `updater_id`) VALUES
-('白酒', 22, 1, 1, NULL, 0, 1, 1),
-('啤酒', 22, 1, 2, NULL, 0, 1, 1),
-('葡萄酒', 22, 1, 3, NULL, 0, 1, 1),
-('碳酸饮料', 22, 1, 4, NULL, 0, 1, 1),
-('果汁饮料', 22, 1, 5, NULL, 0, 1, 1),
-('功能饮料', 22, 1, 6, NULL, 0, 1, 1);
+('白酒', @cat_酒水饮料, 1, 1, NULL, 0, 1, 1),
+('啤酒', @cat_酒水饮料, 1, 2, NULL, 0, 1, 1),
+('葡萄酒', @cat_酒水饮料, 1, 3, NULL, 0, 1, 1),
+('碳酸饮料', @cat_酒水饮料, 1, 4, NULL, 0, 1, 1),
+('果汁饮料', @cat_酒水饮料, 1, 5, NULL, 0, 1, 1),
+('功能饮料', @cat_酒水饮料, 1, 6, NULL, 0, 1, 1);
 
 -- 二级分类 - 美妆个护
+SELECT @cat_美妆个护 := id FROM `product_category` WHERE `name` = '美妆个护' AND `parent_id` = 0 LIMIT 1;
 INSERT INTO `product_category` (`name`, `parent_id`, `status`, `sort`, `icon`, `version`, `creator_id`, `updater_id`) VALUES
-('面部护肤', 4, 1, 1, 'https://example.com/icon/skincare.png', 0, 1, 1),
-('彩妆', 4, 1, 2, 'https://example.com/icon/makeup.png', 0, 1, 1),
-('香水', 4, 1, 3, 'https://example.com/icon/perfume.png', 0, 1, 1),
-('个人护理', 4, 1, 4, 'https://example.com/icon/personal.png', 0, 1, 1);
+('面部护肤', @cat_美妆个护, 1, 1, 'https://example.com/icon/skincare.png', 0, 1, 1),
+('彩妆', @cat_美妆个护, 1, 2, 'https://example.com/icon/makeup.png', 0, 1, 1),
+('香水', @cat_美妆个护, 1, 3, 'https://example.com/icon/perfume.png', 0, 1, 1),
+('个人护理', @cat_美妆个护, 1, 4, 'https://example.com/icon/personal.png', 0, 1, 1);
 
 -- 三级分类 - 面部护肤
+SELECT @cat_面部护肤 := id FROM `product_category` WHERE `name` = '面部护肤' AND `parent_id` != 0 LIMIT 1;
 INSERT INTO `product_category` (`name`, `parent_id`, `status`, `sort`, `icon`, `version`, `creator_id`, `updater_id`) VALUES
-('洁面', 25, 1, 1, NULL, 0, 1, 1),
-('爽肤水', 25, 1, 2, NULL, 0, 1, 1),
-('精华', 25, 1, 3, NULL, 0, 1, 1),
-('面霜', 25, 1, 4, NULL, 0, 1, 1),
-('面膜', 25, 1, 5, NULL, 0, 1, 1),
-('防晒', 25, 1, 6, NULL, 0, 1, 1);
+('洁面', @cat_面部护肤, 1, 1, NULL, 0, 1, 1),
+('爽肤水', @cat_面部护肤, 1, 2, NULL, 0, 1, 1),
+('精华', @cat_面部护肤, 1, 3, NULL, 0, 1, 1),
+('面霜', @cat_面部护肤, 1, 4, NULL, 0, 1, 1),
+('面膜', @cat_面部护肤, 1, 5, NULL, 0, 1, 1),
+('防晒', @cat_面部护肤, 1, 6, NULL, 0, 1, 1);
 
 -- 三级分类 - 彩妆
+SELECT @cat_彩妆 := id FROM `product_category` WHERE `name` = '彩妆' AND `parent_id` != 0 LIMIT 1;
 INSERT INTO `product_category` (`name`, `parent_id`, `status`, `sort`, `icon`, `version`, `creator_id`, `updater_id`) VALUES
-('粉底', 26, 1, 1, NULL, 0, 1, 1),
-('口红', 26, 1, 2, NULL, 0, 1, 1),
-('眼影', 26, 1, 3, NULL, 0, 1, 1),
-('睫毛膏', 26, 1, 4, NULL, 0, 1, 1),
-('腮红', 26, 1, 5, NULL, 0, 1, 1);
+('粉底', @cat_彩妆, 1, 1, NULL, 0, 1, 1),
+('口红', @cat_彩妆, 1, 2, NULL, 0, 1, 1),
+('眼影', @cat_彩妆, 1, 3, NULL, 0, 1, 1),
+('睫毛膏', @cat_彩妆, 1, 4, NULL, 0, 1, 1),
+('腮红', @cat_彩妆, 1, 5, NULL, 0, 1, 1);
 
 -- 二级分类 - 家居用品
+SELECT @cat_家居用品 := id FROM `product_category` WHERE `name` = '家居用品' AND `parent_id` = 0 LIMIT 1;
 INSERT INTO `product_category` (`name`, `parent_id`, `status`, `sort`, `icon`, `version`, `creator_id`, `updater_id`) VALUES
-('家纺', 5, 1, 1, 'https://example.com/icon/textile.png', 0, 1, 1),
-('家具', 5, 1, 2, 'https://example.com/icon/furniture.png', 0, 1, 1),
-('厨具', 5, 1, 3, 'https://example.com/icon/kitchen.png', 0, 1, 1),
-('收纳', 5, 1, 4, 'https://example.com/icon/storage.png', 0, 1, 1),
-('装饰', 5, 1, 5, 'https://example.com/icon/decor.png', 0, 1, 1);
+('家纺', @cat_家居用品, 1, 1, 'https://example.com/icon/textile.png', 0, 1, 1),
+('家具', @cat_家居用品, 1, 2, 'https://example.com/icon/furniture.png', 0, 1, 1),
+('厨具', @cat_家居用品, 1, 3, 'https://example.com/icon/kitchen.png', 0, 1, 1),
+('收纳', @cat_家居用品, 1, 4, 'https://example.com/icon/storage.png', 0, 1, 1),
+('装饰', @cat_家居用品, 1, 5, 'https://example.com/icon/decor.png', 0, 1, 1);
 
 -- 三级分类 - 家纺
+SELECT @cat_家纺 := id FROM `product_category` WHERE `name` = '家纺' AND `parent_id` != 0 LIMIT 1;
 INSERT INTO `product_category` (`name`, `parent_id`, `status`, `sort`, `icon`, `version`, `creator_id`, `updater_id`) VALUES
-('四件套', 29, 1, 1, NULL, 0, 1, 1),
-('被子', 29, 1, 2, NULL, 0, 1, 1),
-('枕头', 29, 1, 3, NULL, 0, 1, 1),
-('床垫', 29, 1, 4, NULL, 0, 1, 1),
-('窗帘', 29, 1, 5, NULL, 0, 1, 1),
-('地毯', 29, 1, 6, NULL, 0, 1, 1);
+('四件套', @cat_家纺, 1, 1, NULL, 0, 1, 1),
+('被子', @cat_家纺, 1, 2, NULL, 0, 1, 1),
+('枕头', @cat_家纺, 1, 3, NULL, 0, 1, 1),
+('床垫', @cat_家纺, 1, 4, NULL, 0, 1, 1),
+('窗帘', @cat_家纺, 1, 5, NULL, 0, 1, 1),
+('地毯', @cat_家纺, 1, 6, NULL, 0, 1, 1);
 
 -- 二级分类 - 运动户外
+SELECT @cat_运动户外 := id FROM `product_category` WHERE `name` = '运动户外' AND `parent_id` = 0 LIMIT 1;
 INSERT INTO `product_category` (`name`, `parent_id`, `status`, `sort`, `icon`, `version`, `creator_id`, `updater_id`) VALUES
-('运动服饰', 6, 1, 1, 'https://example.com/icon/sportswear.png', 0, 1, 1),
-('运动器材', 6, 1, 2, 'https://example.com/icon/equipment.png', 0, 1, 1),
-('户外装备', 6, 1, 3, 'https://example.com/icon/outdoor.png', 0, 1, 1),
-('健身器材', 6, 1, 4, 'https://example.com/icon/fitness.png', 0, 1, 1);
+('运动服饰', @cat_运动户外, 1, 1, 'https://example.com/icon/sportswear.png', 0, 1, 1),
+('运动器材', @cat_运动户外, 1, 2, 'https://example.com/icon/equipment.png', 0, 1, 1),
+('户外装备', @cat_运动户外, 1, 3, 'https://example.com/icon/outdoor.png', 0, 1, 1),
+('健身器材', @cat_运动户外, 1, 4, 'https://example.com/icon/fitness.png', 0, 1, 1);
 
 -- 三级分类 - 运动服饰
+SELECT @cat_运动服饰 := id FROM `product_category` WHERE `name` = '运动服饰' AND `parent_id` != 0 LIMIT 1;
 INSERT INTO `product_category` (`name`, `parent_id`, `status`, `sort`, `icon`, `version`, `creator_id`, `updater_id`) VALUES
-('运动T恤', 34, 1, 1, NULL, 0, 1, 1),
-('运动裤', 34, 1, 2, NULL, 0, 1, 1),
-('运动外套', 34, 1, 3, NULL, 0, 1, 1),
-('运动内衣', 34, 1, 4, NULL, 0, 1, 1);
+('运动T恤', @cat_运动服饰, 1, 1, NULL, 0, 1, 1),
+('运动裤', @cat_运动服饰, 1, 2, NULL, 0, 1, 1),
+('运动外套', @cat_运动服饰, 1, 3, NULL, 0, 1, 1),
+('运动内衣', @cat_运动服饰, 1, 4, NULL, 0, 1, 1);
 
 -- 三级分类 - 运动器材
+SELECT @cat_运动器材 := id FROM `product_category` WHERE `name` = '运动器材' AND `parent_id` != 0 LIMIT 1;
 INSERT INTO `product_category` (`name`, `parent_id`, `status`, `sort`, `icon`, `version`, `creator_id`, `updater_id`) VALUES
-('球类', 35, 1, 1, NULL, 0, 1, 1),
-('球拍', 35, 1, 2, NULL, 0, 1, 1),
-('护具', 35, 1, 3, NULL, 0, 1, 1);
+('球类', @cat_运动器材, 1, 1, NULL, 0, 1, 1),
+('球拍', @cat_运动器材, 1, 2, NULL, 0, 1, 1),
+('护具', @cat_运动器材, 1, 3, NULL, 0, 1, 1);
 
 -- 二级分类 - 图书文教
+SELECT @cat_图书文教 := id FROM `product_category` WHERE `name` = '图书文教' AND `parent_id` = 0 LIMIT 1;
 INSERT INTO `product_category` (`name`, `parent_id`, `status`, `sort`, `icon`, `version`, `creator_id`, `updater_id`) VALUES
-('图书', 7, 1, 1, 'https://example.com/icon/books.png', 0, 1, 1),
-('文具', 7, 1, 2, 'https://example.com/icon/stationery.png', 0, 1, 1),
-('办公用品', 7, 1, 3, 'https://example.com/icon/office.png', 0, 1, 1);
+('图书', @cat_图书文教, 1, 1, 'https://example.com/icon/books.png', 0, 1, 1),
+('文具', @cat_图书文教, 1, 2, 'https://example.com/icon/stationery.png', 0, 1, 1),
+('办公用品', @cat_图书文教, 1, 3, 'https://example.com/icon/office.png', 0, 1, 1);
 
 -- 三级分类 - 图书
+SELECT @cat_图书 := id FROM `product_category` WHERE `name` = '图书' AND `parent_id` != 0 LIMIT 1;
 INSERT INTO `product_category` (`name`, `parent_id`, `status`, `sort`, `icon`, `version`, `creator_id`, `updater_id`) VALUES
-('小说', 38, 1, 1, NULL, 0, 1, 1),
-('文学', 38, 1, 2, NULL, 0, 1, 1),
-('历史', 38, 1, 3, NULL, 0, 1, 1),
-('科技', 38, 1, 4, NULL, 0, 1, 1),
-('教育', 38, 1, 5, NULL, 0, 1, 1),
-('童书', 38, 1, 6, NULL, 0, 1, 1);
+('小说', @cat_图书, 1, 1, NULL, 0, 1, 1),
+('文学', @cat_图书, 1, 2, NULL, 0, 1, 1),
+('历史', @cat_图书, 1, 3, NULL, 0, 1, 1),
+('科技', @cat_图书, 1, 4, NULL, 0, 1, 1),
+('教育', @cat_图书, 1, 5, NULL, 0, 1, 1),
+('童书', @cat_图书, 1, 6, NULL, 0, 1, 1);
 
 -- 二级分类 - 汽车用品
+SELECT @cat_汽车用品 := id FROM `product_category` WHERE `name` = '汽车用品' AND `parent_id` = 0 LIMIT 1;
 INSERT INTO `product_category` (`name`, `parent_id`, `status`, `sort`, `icon`, `version`, `creator_id`, `updater_id`) VALUES
-('汽车装饰', 8, 1, 1, 'https://example.com/icon/car-decor.png', 0, 1, 1),
-('汽车配件', 8, 1, 2, 'https://example.com/icon/car-parts.png', 0, 1, 1),
-('汽车保养', 8, 1, 3, 'https://example.com/icon/car-care.png', 0, 1, 1);
+('汽车装饰', @cat_汽车用品, 1, 1, 'https://example.com/icon/car-decor.png', 0, 1, 1),
+('汽车配件', @cat_汽车用品, 1, 2, 'https://example.com/icon/car-parts.png', 0, 1, 1),
+('汽车保养', @cat_汽车用品, 1, 3, 'https://example.com/icon/car-care.png', 0, 1, 1);
 
 -- 三级分类 - 汽车装饰
+SELECT @cat_汽车装饰 := id FROM `product_category` WHERE `name` = '汽车装饰' AND `parent_id` != 0 LIMIT 1;
 INSERT INTO `product_category` (`name`, `parent_id`, `status`, `sort`, `icon`, `version`, `creator_id`, `updater_id`) VALUES
-('座垫', 41, 1, 1, NULL, 0, 1, 1),
-('脚垫', 41, 1, 2, NULL, 0, 1, 1),
-('方向盘套', 41, 1, 3, NULL, 0, 1, 1),
-('挂件', 41, 1, 4, NULL, 0, 1, 1);
+('座垫', @cat_汽车装饰, 1, 1, NULL, 0, 1, 1),
+('脚垫', @cat_汽车装饰, 1, 2, NULL, 0, 1, 1),
+('方向盘套', @cat_汽车装饰, 1, 3, NULL, 0, 1, 1),
+('挂件', @cat_汽车装饰, 1, 4, NULL, 0, 1, 1);
 
 -- ==========================================
 -- 3. 商品属性表初始化数据（SKU属性名）
