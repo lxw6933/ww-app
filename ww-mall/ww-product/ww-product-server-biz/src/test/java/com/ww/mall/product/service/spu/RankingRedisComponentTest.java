@@ -1,8 +1,6 @@
-package com.ww.app.redis.component;
+package com.ww.mall.product.service.spu;
 
-import cn.hutool.core.collection.CollUtil;
 import cn.hutool.core.util.RandomUtil;
-import com.ww.app.redis.RedisTestApplication;
 import com.ww.app.redis.component.key.RankingRedisKeyBuilder;
 import com.ww.app.redis.component.rank.RankingItem;
 import com.ww.app.redis.component.rank.RankingRedisComponent;
@@ -24,7 +22,7 @@ import java.util.*;
  * @author ww
  */
 @Slf4j
-@SpringBootTest(classes = RedisTestApplication.class)
+@SpringBootTest
 public class RankingRedisComponentTest {
 
     @Resource
@@ -52,11 +50,11 @@ public class RankingRedisComponentTest {
     }
 
     private void cleanup() {
-        String keyPrefix = rankingRedisKeyBuilder.buildRankingKey(bizType, bizId);
-        Set<String> keys = stringRedisTemplate.keys(keyPrefix + "*");
-        if (CollUtil.isNotEmpty(keys)) {
-            stringRedisTemplate.delete(keys);
-        }
+//        String keyPrefix = rankingRedisKeyBuilder.buildRankingKey(bizType, bizId);
+//        Set<String> keys = stringRedisTemplate.keys(keyPrefix + "*");
+//        if (CollUtil.isNotEmpty(keys)) {
+//            stringRedisTemplate.delete(keys);
+//        }
     }
 
     @Test
@@ -155,6 +153,19 @@ public class RankingRedisComponentTest {
 
         RankingItem top = rankingRedisComponent.getRanking(bizType, bizId, 1, 1, true).get(0);
         Assertions.assertEquals("user_" + (members - 1), top.getMemberId(), "分片排行榜排序错误");
+
     }
+
+    @Test
+    public void testAutoShardingForSmallDataset() {
+        List<RankingItem> descRankingItems = rankingRedisComponent.getRanking(bizType, "scene_694872", 1, 10, true);
+        descRankingItems.forEach(System.out::println);
+
+        System.out.println("============================================");
+
+        List<RankingItem> rankingItems = rankingRedisComponent.getRanking(bizType, "scene_694872", 1, 10, false);
+        rankingItems.forEach(System.out::println);
+    }
+
 }
 
