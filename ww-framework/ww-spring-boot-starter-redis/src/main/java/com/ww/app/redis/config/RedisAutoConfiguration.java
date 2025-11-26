@@ -1,5 +1,9 @@
 package com.ww.app.redis.config;
 
+import com.fasterxml.jackson.annotation.JsonAutoDetect;
+import com.fasterxml.jackson.annotation.PropertyAccessor;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.jsontype.impl.LaissezFaireSubTypeValidator;
 import com.ww.app.common.utils.json.JacksonUtils;
 import com.ww.app.redis.AppRedisTemplate;
 import com.ww.app.redis.aspect.RateLimitAspect;
@@ -22,7 +26,7 @@ import org.springframework.data.redis.cache.RedisCacheConfiguration;
 import org.springframework.data.redis.connection.RedisConnectionFactory;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.data.redis.listener.RedisMessageListenerContainer;
-import org.springframework.data.redis.serializer.Jackson2JsonRedisSerializer;
+import org.springframework.data.redis.serializer.GenericJackson2JsonRedisSerializer;
 import org.springframework.data.redis.serializer.RedisSerializationContext;
 import org.springframework.data.redis.serializer.StringRedisSerializer;
 
@@ -49,12 +53,12 @@ public class RedisAutoConfiguration implements ApplicationContextAware {
         template.setKeySerializer(keySerializer());
         // hash的key也采用String的序列化方式
         template.setHashKeySerializer(keySerializer());
-        // value序列化方式采用jackson
+        // value序列化方式采用GenericJackson2JsonRedisSerializer（支持类型信息）
         template.setValueSerializer(valueSerializer());
-        // hash的value序列化方式采用jackson
+        // hash的value序列化方式采用GenericJackson2JsonRedisSerializer（支持类型信息）
         template.setHashValueSerializer(valueSerializer());
         template.afterPropertiesSet();
-        log.info("初始化RedisTemplate成功...");
+        log.info("初始化RedisTemplate成功，使用GenericJackson2JsonRedisSerializer支持类型信息...");
         return template;
     }
 
@@ -104,10 +108,45 @@ public class RedisAutoConfiguration implements ApplicationContextAware {
         return new StringRedisSerializer();
     }
 
-    private Jackson2JsonRedisSerializer<Object> valueSerializer() {
-        Jackson2JsonRedisSerializer<Object> jackson2JsonRedisSerializer = new Jackson2JsonRedisSerializer<>(Object.class);
-        jackson2JsonRedisSerializer.setObjectMapper(JacksonUtils.getObjectMapper());
-        return jackson2JsonRedisSerializer;
+    /**
+     * 值序列化器
+     * 使用GenericJackson2JsonRedisSerializer，会在JSON中保存类型信息（@class字段）
+     * 这样反序列化时能够恢复原始类型，避免LinkedHashMap类型转换错误
+     * <p>
+     * 注意：GenericJackson2JsonRedisSerializer内部会创建自己的ObjectMapper并配置类型信息
+     * 如果需要使用项目统一的ObjectMapper配置，可以创建自定义序列化器
+     * 
+     * @return 值序列化器
+     */
+    private GenericJackson2JsonRedisSerializer valueSerializer() {
+        // GenericJackson2JsonRedisSerializer会在JSON中添加@class字段保存类型信息
+        // 反序列化时可以根据@class字段恢复原始类型
+        return new GenericJackson2JsonRedisSerializer(createObjectMapperWithTypeInfo());
+    }
+    
+    /**
+     * 创建带类型信息的ObjectMapper
+     * 用于GenericJackson2JsonRedisSerializer，确保序列化时保存类型信息
+     * 
+     * @return 配置好的ObjectMapper
+     */
+    private ObjectMapper createObjectMapperWithTypeInfo() {
+        // 复制项目统一的ObjectMapper配置
+        ObjectMapper objectMapper = JacksonUtils.getObjectMapper().copy();
+        
+        // 启用默认类型信息，这样序列化时会在JSON中添加@class字段
+        // NON_FINAL表示所有非final类都会添加类型信息
+        // PROPERTY表示类型信息作为JSON的一个属性（@class字段）存储
+        objectMapper.activateDefaultTyping(
+                LaissezFaireSubTypeValidator.instance,
+                ObjectMapper.DefaultTyping.NON_FINAL,
+                com.fasterxml.jackson.annotation.JsonTypeInfo.As.PROPERTY
+        );
+        
+        // 确保所有字段可见（包括private字段）
+        objectMapper.setVisibility(PropertyAccessor.ALL, JsonAutoDetect.Visibility.ANY);
+        
+        return objectMapper;
     }
 
     @Bean
