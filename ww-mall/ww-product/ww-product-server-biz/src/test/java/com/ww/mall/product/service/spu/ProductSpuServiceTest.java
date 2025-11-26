@@ -2,6 +2,7 @@ package com.ww.mall.product.service.spu;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.ww.mall.product.controller.admin.sku.req.ProductSkuBO;
+import com.ww.mall.product.controller.admin.category.res.ProductCategoryVO;
 import com.ww.mall.product.controller.admin.spu.req.ProductSpuBO;
 import com.ww.mall.product.controller.admin.spu.req.ProductSpuStatusBO;
 import com.ww.mall.product.controller.app.spu.res.AppProductSpuDetailVO;
@@ -323,6 +324,12 @@ class ProductSpuServiceTest {
     void testProductDetail() {
         AppProductSpuDetailVO spu = productSpuService.detail(4L);
         printSpuDetail(spu);
+    }
+
+    @Test
+    @DisplayName("测试打印商品分类树")
+    void testPrintCategoryTree() {
+        printCategoryTree();
     }
 
     @Test
@@ -780,6 +787,121 @@ class ProductSpuServiceTest {
         System.out.println(split);
         System.out.println("✅ 商品信息展示完毕");
         System.out.println(split);
+    }
+
+    /**
+     * 打印商品分类树形结构（控制台直观展示）
+     * 用于测试 productCategoryService 中的分类
+     */
+    public void printCategoryTree() {
+        log.info("========== 开始打印商品分类树 ==========");
+        
+        // 获取分类树
+        List<ProductCategoryVO> categoryTree = productCategoryService.listCategoryTree();
+        
+        if (categoryTree == null || categoryTree.isEmpty()) {
+            System.out.println("❌ 分类树为空");
+            return;
+        }
+
+        String split = "================================================================================";
+        System.out.println(split);
+        System.out.println("📁 商品分类树形结构");
+        System.out.println(split);
+        System.out.println();
+
+        // 递归打印分类树
+        printCategoryTreeRecursive(categoryTree, 0, "");
+
+        System.out.println();
+        System.out.println(split);
+        System.out.println("✅ 分类树展示完毕，共 " + countCategories(categoryTree) + " 个分类");
+        System.out.println(split);
+    }
+
+    /**
+     * 递归打印分类树
+     * @param categories 分类列表
+     * @param level 当前层级（0为一级分类）
+     * @param prefix 前缀字符串（用于树形结构显示）
+     */
+    private void printCategoryTreeRecursive(List<ProductCategoryVO> categories, int level, String prefix) {
+        if (categories == null || categories.isEmpty()) {
+            return;
+        }
+
+        for (int i = 0; i < categories.size(); i++) {
+            ProductCategoryVO category = categories.get(i);
+            boolean isLast = (i == categories.size() - 1);
+
+            // 构建当前节点的前缀
+            String currentPrefix = isLast ? "└── " : "├── ";
+            String connector = isLast ? "    " : "│   ";
+
+            // 打印当前分类
+            System.out.print(prefix + currentPrefix);
+            printCategoryInfo(category, level);
+
+            // 递归打印子分类
+            if (category.getChildren() != null && !category.getChildren().isEmpty()) {
+                printCategoryTreeRecursive(category.getChildren(), level + 1, prefix + connector);
+            }
+        }
+    }
+
+    /**
+     * 打印单个分类的详细信息
+     * @param category 分类对象
+     * @param level 层级
+     */
+    private void printCategoryInfo(ProductCategoryVO category, int level) {
+        String levelPrefix = "【" + getLevelName(level) + "】";
+        String statusIcon = Boolean.TRUE.equals(category.getStatus()) ? "✅" : "❌";
+        
+        System.out.printf("%s %s [ID: %d] | 排序: %d | 父ID: %d | 图标: %s\n",
+                levelPrefix,
+                category.getName(),
+                category.getId(),
+                category.getSort() != null ? category.getSort() : 0,
+                category.getParentId() != null ? category.getParentId() : 0,
+                category.getIcon() != null && !category.getIcon().isEmpty() ? category.getIcon() : "无"
+        );
+    }
+
+    /**
+     * 获取层级名称
+     * @param level 层级（0为一级分类，1为二级分类，2为三级分类）
+     * @return 层级名称
+     */
+    private String getLevelName(int level) {
+        switch (level) {
+            case 0:
+                return "一级分类";
+            case 1:
+                return "二级分类";
+            case 2:
+                return "三级分类";
+            default:
+                return "未知层级";
+        }
+    }
+
+    /**
+     * 统计分类总数（递归统计）
+     * @param categories 分类列表
+     * @return 分类总数
+     */
+    private int countCategories(List<ProductCategoryVO> categories) {
+        if (categories == null || categories.isEmpty()) {
+            return 0;
+        }
+        int count = categories.size();
+        for (ProductCategoryVO category : categories) {
+            if (category.getChildren() != null && !category.getChildren().isEmpty()) {
+                count += countCategories(category.getChildren());
+            }
+        }
+        return count;
     }
 
 }
