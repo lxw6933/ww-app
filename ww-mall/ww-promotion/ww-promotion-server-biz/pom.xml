@@ -1,0 +1,106 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+    <parent>
+        <groupId>com.ww.app</groupId>
+        <artifactId>ww-promotion</artifactId>
+        <version>${revision}</version>
+    </parent>
+
+    <artifactId>ww-promotion-server-biz</artifactId>
+    <packaging>jar</packaging>
+
+    <name>${project.artifactId}</name>
+    <description>
+        促销活动业务模块
+    </description>
+
+    <dependencies>
+        <!-- api -->
+        <dependency>
+            <groupId>com.ww.app</groupId>
+            <artifactId>ww-promotion-server-api</artifactId>
+            <version>${revision}</version>
+        </dependency>
+        <!-- web -->
+        <dependency>
+            <groupId>com.ww.app</groupId>
+            <artifactId>ww-spring-boot-starter-web</artifactId>
+            <version>${revision}</version>
+        </dependency>
+        <!-- redis starter -->
+        <dependency>
+            <groupId>com.ww.app</groupId>
+            <artifactId>ww-spring-boot-starter-redis</artifactId>
+            <version>${revision}</version>
+        </dependency>
+        <!-- rabbitmq starter -->
+        <dependency>
+            <groupId>com.ww.app</groupId>
+            <artifactId>ww-spring-boot-starter-rabbitmq</artifactId>
+            <version>${revision}</version>
+        </dependency>
+        <!-- mongodb starter -->
+        <dependency>
+            <groupId>com.ww.app</groupId>
+            <artifactId>ww-spring-boot-starter-mongodb</artifactId>
+            <version>${revision}</version>
+        </dependency>
+        <!-- mybatis starter -->
+        <dependency>
+            <groupId>com.ww.app</groupId>
+            <artifactId>ww-spring-boot-starter-mybatis</artifactId>
+            <version>${revision}</version>
+        </dependency>
+        <!-- excel starter -->
+        <dependency>
+            <groupId>com.ww.app</groupId>
+            <artifactId>ww-spring-boot-starter-excel</artifactId>
+            <version>${revision}</version>
+        </dependency>
+        <!-- minio starter -->
+        <dependency>
+            <groupId>com.ww.app</groupId>
+            <artifactId>ww-spring-boot-starter-minio</artifactId>
+            <version>${revision}</version>
+        </dependency>
+        <!-- xxl job starter -->
+        <dependency>
+            <groupId>com.ww.app</groupId>
+            <artifactId>ww-spring-boot-starter-job</artifactId>
+            <version>${revision}</version>
+        </dependency>
+        <!-- operate log starter -->
+        <dependency>
+            <groupId>com.ww.app</groupId>
+            <artifactId>ww-spring-boot-starter-operatelog</artifactId>
+            <version>${revision}</version>
+        </dependency>
+        <!-- test -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-test</artifactId>
+            <scope>test</scope>
+        </dependency>
+    </dependencies>
+
+    <build>
+        <finalName>${project.artifactId}</finalName>
+        <plugins>
+            <plugin>
+                <groupId>org.springframework.boot</groupId>
+                <artifactId>spring-boot-maven-plugin</artifactId>
+                <executions>
+                    <execution>
+                        <goals>
+                            <goal>repackage</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
+        </plugins>
+    </build>
+
+
+</project>

@@ -27,6 +27,8 @@
         <module>ww-seckill</module>
         <!-- 抽奖服务 -->
         <module>ww-lottery</module>
+        <!-- 促销活动服务 -->
+        <module>ww-promotion</module>
     </modules>
 
     <artifactId>ww-mall</artifactId>
