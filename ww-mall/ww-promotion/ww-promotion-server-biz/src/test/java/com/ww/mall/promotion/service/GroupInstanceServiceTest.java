@@ -1,5 +1,7 @@
 package com.ww.mall.promotion.service;
 
+import com.ww.app.common.common.ClientUser;
+import com.ww.app.common.context.AuthorizationContext;
 import com.ww.app.common.exception.ApiException;
 import com.ww.mall.promotion.controller.app.group.req.CreateGroupRequest;
 import com.ww.mall.promotion.controller.app.group.req.JoinGroupRequest;
@@ -82,6 +84,8 @@ class GroupInstanceServiceTest {
         cleanRedisTestData();
         // 清理MongoDB测试数据
         cleanMongoTestData();
+        // 清理AuthorizationContext
+        AuthorizationContext.clear();
     }
 
     /**
@@ -92,6 +96,9 @@ class GroupInstanceServiceTest {
     @DisplayName("测试创建拼团 - 正常流程")
     void testCreateGroup_Success() {
         log.info("========== 测试创建拼团 - 正常流程 ==========");
+
+        // 设置用户上下文
+        setClientUser(testUserId1);
 
         // 1. 创建测试活动
         GroupActivity activity = createTestActivity();
@@ -128,6 +135,9 @@ class GroupInstanceServiceTest {
     void testCreateGroup_OrderIdEmpty() {
         log.info("========== 测试创建拼团 - 订单号为空 ==========");
 
+        // 设置用户上下文
+        setClientUser(testUserId1);
+
         // 1. 创建测试活动
         GroupActivity activity = createTestActivity();
 
@@ -155,6 +165,9 @@ class GroupInstanceServiceTest {
     void testCreateGroup_ActivityNotExists() {
         log.info("========== 测试创建拼团 - 活动不存在 ==========");
 
+        // 设置用户上下文
+        setClientUser(testUserId1);
+
         // 1. 创建拼团请求（活动ID不存在）
         CreateGroupRequest request = buildCreateRequest("NON_EXIST_ACTIVITY", testUserId1, testOrderId1);
 
@@ -174,6 +187,9 @@ class GroupInstanceServiceTest {
     @DisplayName("测试创建拼团 - 库存不足")
     void testCreateGroup_StockInsufficient() {
         log.info("========== 测试创建拼团 - 库存不足 ==========");
+
+        // 设置用户上下文
+        setClientUser(testUserId1);
 
         // 1. 创建测试活动（库存为1）
         GroupActivity activity = createTestActivity();
@@ -209,6 +225,7 @@ class GroupInstanceServiceTest {
         testActivityId = activity.getId();
 
         // 2. 创建拼团
+        setClientUser(testUserId1);
         CreateGroupRequest createRequest = buildCreateRequest(testActivityId, testUserId1, testOrderId1);
 
         GroupInstanceVO createdGroup = groupInstanceService.createGroup(createRequest);
@@ -216,6 +233,7 @@ class GroupInstanceServiceTest {
         log.info("创建拼团成功: groupId={}", testGroupId);
 
         // 3. 加入拼团
+        setClientUser(testUserId2);
         JoinGroupRequest joinRequest = buildJoinRequest(testGroupId, testUserId2, testOrderId2);
 
         GroupInstanceVO joinedGroup = groupInstanceService.joinGroup(joinRequest);
@@ -243,8 +261,11 @@ class GroupInstanceServiceTest {
 
         // 1. 创建测试活动并拼团
         GroupActivity activity = createTestActivity();
+        setClientUser(testUserId1);
         CreateGroupRequest createRequest = buildCreateRequest(activity.getId(), testUserId1, testOrderId1);
         GroupInstanceVO createdGroup = groupInstanceService.createGroup(createRequest);
+        
+        setClientUser(testUserId2);
 
         // 2. 加入拼团请求（订单号为空）
         JoinGroupRequest joinRequest = new JoinGroupRequest();
@@ -269,6 +290,9 @@ class GroupInstanceServiceTest {
     @DisplayName("测试加入拼团 - 拼团不存在")
     void testJoinGroup_GroupNotExists() {
         log.info("========== 测试加入拼团 - 拼团不存在 ==========");
+
+        // 设置用户上下文
+        setClientUser(testUserId2);
 
         // 1. 加入拼团请求（拼团ID不存在）
         JoinGroupRequest joinRequest = new JoinGroupRequest();
@@ -296,10 +320,12 @@ class GroupInstanceServiceTest {
 
         // 1. 创建测试活动并拼团
         GroupActivity activity = createTestActivity();
+        setClientUser(testUserId1);
         CreateGroupRequest createRequest = buildCreateRequest(activity.getId(), testUserId1, testOrderId1);
         GroupInstanceVO createdGroup = groupInstanceService.createGroup(createRequest);
 
         // 2. 第一次加入拼团
+        setClientUser(testUserId2);
         JoinGroupRequest joinRequest = buildJoinRequest(createdGroup.getId(), testUserId2, testOrderId2);
 
         GroupInstanceVO firstJoin = groupInstanceService.joinGroup(joinRequest);
@@ -325,14 +351,17 @@ class GroupInstanceServiceTest {
 
         // 1. 创建测试活动（2人拼团）
         GroupActivity activity = createTestActivity();
+        setClientUser(testUserId1);
         CreateGroupRequest createRequest = buildCreateRequest(activity.getId(), testUserId1, testOrderId1);
         GroupInstanceVO createdGroup = groupInstanceService.createGroup(createRequest);
 
         // 2. 第一个用户加入（拼团完成）
+        setClientUser(testUserId2);
         JoinGroupRequest joinRequest1 = buildJoinRequest(createdGroup.getId(), testUserId2, testOrderId2);
         groupInstanceService.joinGroup(joinRequest1);
 
         // 3. 第二个用户尝试加入（应该失败）
+        setClientUser(testUserId3);
         JoinGroupRequest joinRequest2 = buildJoinRequest(createdGroup.getId(), testUserId3, testOrderId3);
 
         ApiException exception = assertThrows(ApiException.class, () -> groupInstanceService.joinGroup(joinRequest2), "应该抛出拼团已满的异常");
@@ -354,6 +383,7 @@ class GroupInstanceServiceTest {
 
         // 1. 创建测试活动并拼团
         GroupActivity activity = createTestActivity();
+        setClientUser(testUserId1);
         CreateGroupRequest createRequest = buildCreateRequest(activity.getId(), testUserId1, testOrderId1);
         GroupInstanceVO createdGroup = groupInstanceService.createGroup(createRequest);
 
@@ -385,11 +415,12 @@ class GroupInstanceServiceTest {
         GroupActivity activity = createTestActivity();
 
         // 2. 用户1创建拼团
+        setClientUser(testUserId1);
         CreateGroupRequest createRequest = buildCreateRequest(activity.getId(), testUserId1, testOrderId1);
         GroupInstanceVO createdGroup = groupInstanceService.createGroup(createRequest);
 
         // 3. 查询用户1的拼团列表
-        List<GroupInstanceVO> userGroups = groupInstanceService.getUserGroups(testUserId1);
+        List<GroupInstanceVO> userGroups = groupInstanceService.getUserGroups();
 
         // 4. 验证结果
         assertNotNull(userGroups, "拼团列表不能为空");
@@ -415,6 +446,7 @@ class GroupInstanceServiceTest {
 
         // 2. 创建多个拼团
         for (int i = 1; i <= 3; i++) {
+            setClientUser(testUserId1 + i);
             CreateGroupRequest createRequest = buildCreateRequest(activity.getId(), testUserId1 + i, "ORDER_TEST_" + i);
             groupInstanceService.createGroup(createRequest);
         }
@@ -444,6 +476,7 @@ class GroupInstanceServiceTest {
         GroupActivity activity = createTestActivity();
 
         // 2. 用户1创建拼团
+        setClientUser(testUserId1);
         CreateGroupRequest createRequest = buildCreateRequest(activity.getId(), testUserId1, testOrderId1);
         
         GroupInstanceVO createdGroup = groupInstanceService.createGroup(createRequest);
@@ -454,6 +487,7 @@ class GroupInstanceServiceTest {
                 createdGroup.getId(), createdGroup.getRemainingSlots());
 
         // 3. 用户2加入拼团
+        setClientUser(testUserId2);
         JoinGroupRequest joinRequest = buildJoinRequest(createdGroup.getId(), testUserId2, testOrderId2);
 
         GroupInstanceVO completedGroup = groupInstanceService.joinGroup(joinRequest);
@@ -524,6 +558,15 @@ class GroupInstanceServiceTest {
 
     private String randomOrderId() {
         return "ORDER_TEST_" + System.nanoTime();
+    }
+
+    /**
+     * 设置客户端用户上下文
+     */
+    private void setClientUser(Long userId) {
+        ClientUser clientUser = new ClientUser();
+        clientUser.setId(userId);
+        AuthorizationContext.setClientUser(clientUser);
     }
 
     /**

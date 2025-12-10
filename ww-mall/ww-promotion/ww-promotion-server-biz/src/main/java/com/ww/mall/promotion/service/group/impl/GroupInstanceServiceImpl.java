@@ -2,6 +2,7 @@ package com.ww.mall.promotion.service.group.impl;
 
 import cn.hutool.core.collection.CollectionUtil;
 import com.github.benmanes.caffeine.cache.LoadingCache;
+import com.ww.app.common.context.AuthorizationContext;
 import com.ww.app.common.exception.ApiException;
 import com.ww.app.common.utils.ThreadUtil;
 import com.ww.app.rabbitmq.RabbitMqPublisher;
@@ -89,7 +90,8 @@ public class GroupInstanceServiceImpl implements GroupInstanceService {
         validateActivity(activity);
 
         // 4. 检查用户限购
-        checkUserLimit(request.getActivityId(), request.getUserId(), activity.getLimitPerUser());
+        Long userId = AuthorizationContext.getClientUser().getId();
+        checkUserLimit(request.getActivityId(), userId, activity.getLimitPerUser());
 
         // 5. 检查库存
         String stockKey = groupRedisKeyBuilder.buildActivityStockKey(request.getActivityId());
@@ -118,7 +120,7 @@ public class GroupInstanceServiceImpl implements GroupInstanceService {
                 GroupStatus.OPEN.getCode(), // [1] status
                 String.valueOf(activity.getRequiredSize()), // [2] requiredSize
                 String.valueOf(expireMillis), // [3] expiresAt
-                String.valueOf(request.getUserId()), // [4] leaderUserId
+                String.valueOf(userId), // [4] leaderUserId
                 request.getOrderId(), // [5] leaderOrderId
                 request.getOrderInfo() != null ? request.getOrderInfo() : "{}", // [6] leaderOrderJson
                 String.valueOf(activity.getRequiredSize() - 1), // [7] slotsAfterLeader
@@ -147,9 +149,9 @@ public class GroupInstanceServiceImpl implements GroupInstanceService {
         } catch (Exception e) {
             // 回滚库存
             rollbackStock(stockKey);
-            log.error("创建拼团异常: groupId={}, userId={}, orderId={}", groupId, request.getUserId(), request.getOrderId(), e);
+            log.error("创建拼团异常: groupId={}, userId={}, orderId={}", groupId, userId, request.getOrderId(), e);
             // 发送退款消息
-            sendRefundMessage(request.getUserId(), request.getOrderId(), activity.getGroupPrice(), "创建拼团异常");
+            sendRefundMessage(userId, request.getOrderId(), activity.getGroupPrice(), "创建拼团异常");
             throw new ApiException("创建拼团失败: " + e.getMessage());
         }
 
@@ -157,16 +159,16 @@ public class GroupInstanceServiceImpl implements GroupInstanceService {
         stringRedisTemplate.opsForZSet().add(expiryIndexKey, groupId, expireMillis);
 
         // 11. 将用户添加到用户拼团Set中
-        String userGroupKey = groupRedisKeyBuilder.buildUserGroupKey(request.getUserId());
+        String userGroupKey = groupRedisKeyBuilder.buildUserGroupKey(userId);
         stringRedisTemplate.opsForSet().add(userGroupKey, groupId);
 
         // 12. 更新用户参与活动次数
         String userActivityCountKey = groupRedisKeyBuilder.buildUserActivityCountKey(request.getActivityId());
-        stringRedisTemplate.opsForHash().increment(userActivityCountKey, String.valueOf(request.getUserId()), 1);
+        stringRedisTemplate.opsForHash().increment(userActivityCountKey, String.valueOf(userId), 1);
 
         // 13. 保存到MongoDB（异步）
         try {
-            saveGroupInstanceToMongo(groupId, request, activity, expireMillis);
+            saveGroupInstanceToMongo(groupId, request, activity, expireMillis, userId);
         } catch (Exception e) {
             log.error("保存拼团实例到MongoDB失败: groupId={}", groupId, e);
             // 这里不抛异常，因为Redis已经创建成功，后续可以通过定时任务同步
@@ -196,7 +198,8 @@ public class GroupInstanceServiceImpl implements GroupInstanceService {
         GroupActivity activity = groupActivityCache.get(activityId);
 
         // 4. 检查用户限购
-        checkUserLimit(activityId, request.getUserId(), activity.getLimitPerUser());
+        Long userId = AuthorizationContext.getClientUser().getId();
+        checkUserLimit(activityId, userId, activity.getLimitPerUser());
 
         // 5. 构建Redis Key
         String slotsKey = groupRedisKeyBuilder.buildGroupSlotsKey(request.getGroupId());
@@ -207,7 +210,7 @@ public class GroupInstanceServiceImpl implements GroupInstanceService {
         // 6. 执行Lua脚本加入拼团（Lua脚本内部获取当前时间，减少参数传递）
         List<String> keys = Arrays.asList(metaKey, slotsKey, membersKey, ordersKey, expiryIndexKey);
         List<String> args = Arrays.asList(
-                String.valueOf(request.getUserId()), // [1] userId
+                String.valueOf(userId), // [1] userId
                 request.getOrderId(), // [2] orderId
                 request.getOrderInfo() != null ? request.getOrderInfo() : "{}", // [3] orderJson
                 request.getGroupId() // [4] groupId
@@ -246,19 +249,19 @@ public class GroupInstanceServiceImpl implements GroupInstanceService {
                 handleGroupSuccessAsync(request.getGroupId());
             } else if (result == 2) {
                 // 加入成功，将用户添加到用户拼团Set中
-                String userGroupKey = groupRedisKeyBuilder.buildUserGroupKey(request.getUserId());
+                String userGroupKey = groupRedisKeyBuilder.buildUserGroupKey(userId);
                 stringRedisTemplate.opsForSet().add(userGroupKey, request.getGroupId());
                 // 更新用户参与活动次数
                 String userActivityCountKey = groupRedisKeyBuilder.buildUserActivityCountKey(activityId);
-                stringRedisTemplate.opsForHash().increment(userActivityCountKey, String.valueOf(request.getUserId()), 1);
+                stringRedisTemplate.opsForHash().increment(userActivityCountKey, String.valueOf(userId), 1);
             }
         } catch (ApiException e) {
             throw e;
         } catch (Exception e) {
             log.error("加入拼团异常: groupId={}, userId={}, orderId={}", 
-                    request.getGroupId(), request.getUserId(), request.getOrderId(), e);
+                    request.getGroupId(), userId, request.getOrderId(), e);
             // 发送退款消息
-            sendRefundMessage(request.getUserId(), request.getOrderId(), activity.getGroupPrice(), "加入拼团异常");
+            sendRefundMessage(userId, request.getOrderId(), activity.getGroupPrice(), "加入拼团异常");
             throw new ApiException("加入拼团失败: " + e.getMessage());
         }
 
@@ -266,7 +269,7 @@ public class GroupInstanceServiceImpl implements GroupInstanceService {
         try {
             saveGroupMemberToMongo(request.getGroupId(), request, activity);
         } catch (Exception e) {
-            log.error("保存拼团成员到MongoDB失败: groupId={}, userId={}", request.getGroupId(), request.getUserId(), e);
+            log.error("保存拼团成员到MongoDB失败: groupId={}, userId={}", request.getGroupId(), userId, e);
         }
 
         // 8. 返回结果
@@ -341,7 +344,8 @@ public class GroupInstanceServiceImpl implements GroupInstanceService {
     }
 
     @Override
-    public List<GroupInstanceVO> getUserGroups(Long userId) {
+    public List<GroupInstanceVO> getUserGroups() {
+        Long userId = AuthorizationContext.getClientUser().getId();
         String userGroupKey = groupRedisKeyBuilder.buildUserGroupKey(userId);
         Set<String> groupIds = stringRedisTemplate.opsForSet().members(userGroupKey);
         if (groupIds == null || groupIds.isEmpty()) {
@@ -470,11 +474,11 @@ public class GroupInstanceServiceImpl implements GroupInstanceService {
      * 保存拼团实例到MongoDB
      */
     private void saveGroupInstanceToMongo(String groupId, CreateGroupRequest request, 
-                                         GroupActivity activity, long expireMillis) {
+                                         GroupActivity activity, long expireMillis, Long userId) {
         GroupInstance instance = new GroupInstance();
         instance.setId(groupId);
         instance.setActivityId(request.getActivityId());
-        instance.setLeaderUserId(request.getUserId());
+        instance.setLeaderUserId(userId);
         instance.setStatus(GroupStatus.OPEN.getCode());
         instance.setRequiredSize(activity.getRequiredSize());
         instance.setCurrentSize(1);
@@ -489,7 +493,7 @@ public class GroupInstanceServiceImpl implements GroupInstanceService {
         GroupMember leader = new GroupMember();
         leader.setGroupInstanceId(groupId);
         leader.setActivityId(request.getActivityId());
-        leader.setUserId(request.getUserId());
+        leader.setUserId(userId);
         leader.setOrderId(request.getOrderId());
         leader.setIsLeader(1);
         leader.setJoinTime(new Date());
@@ -510,10 +514,11 @@ public class GroupInstanceServiceImpl implements GroupInstanceService {
             return;
         }
 
+        Long userId = AuthorizationContext.getClientUser().getId();
         GroupMember member = new GroupMember();
         member.setGroupInstanceId(groupId);
         member.setActivityId(instance.getActivityId());
-        member.setUserId(request.getUserId());
+        member.setUserId(userId);
         member.setOrderId(request.getOrderId());
         member.setIsLeader(0);
         member.setJoinTime(new Date());

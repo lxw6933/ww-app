@@ -31,7 +31,7 @@ public interface GroupInstanceService {
     /**
      * 查询用户参与的拼团列表
      */
-    List<GroupInstanceVO> getUserGroups(Long userId);
+    List<GroupInstanceVO> getUserGroups();
 
     /**
      * 查询活动下的拼团列表
