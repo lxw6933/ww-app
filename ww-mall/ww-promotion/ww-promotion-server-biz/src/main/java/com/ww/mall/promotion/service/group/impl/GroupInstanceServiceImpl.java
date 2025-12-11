@@ -22,6 +22,7 @@ import com.ww.mall.promotion.mq.GroupSuccessMessage;
 import com.ww.mall.promotion.service.group.GroupInstanceService;
 import com.ww.mall.promotion.service.group.convert.GroupConvert;
 import lombok.extern.slf4j.Slf4j;
+import org.jetbrains.annotations.NotNull;
 import org.springframework.data.mongodb.core.MongoTemplate;
 import org.springframework.data.mongodb.core.query.Query;
 import org.springframework.data.redis.connection.ReturnType;
@@ -515,6 +516,17 @@ public class GroupInstanceServiceImpl implements GroupInstanceService {
             return;
         }
 
+        GroupMember member = getGroupMember(groupId, request, instance);
+        mongoTemplate.save(member);
+
+        // 更新实例当前人数
+        instance.setCurrentSize(instance.getCurrentSize() + 1);
+        instance.setRemainingSlots(instance.getRemainingSlots() - 1);
+        mongoTemplate.save(instance);
+    }
+
+    @NotNull
+    private static GroupMember getGroupMember(String groupId, JoinGroupRequest request, GroupInstance instance) {
         Long userId = AuthorizationContext.getClientUser().getId();
         GroupMember member = new GroupMember();
         member.setGroupInstanceId(groupId);
@@ -527,12 +539,7 @@ public class GroupInstanceServiceImpl implements GroupInstanceService {
         member.setSpuId(instance.getSpuId());
         member.setSkuId(instance.getSkuId());
         member.setStatus(GroupMemberStatus.NORMAL.getCode());
-        mongoTemplate.save(member);
-
-        // 更新实例当前人数
-        instance.setCurrentSize(instance.getCurrentSize() + 1);
-        instance.setRemainingSlots(instance.getRemainingSlots() - 1);
-        mongoTemplate.save(instance);
+        return member;
     }
 
     /**
