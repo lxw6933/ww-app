@@ -18,20 +18,10 @@ public class GroupRedisKeyBuilder extends RedisKeyBuilder {
     private static final String SLOTS = "slots";
     private static final String MEMBERS = "members";
     private static final String ORDERS = "orders";
-    private static final String IDEMPOTENCY = "idem";
     private static final String EXPIRY = "expiry";
     private static final String STOCK = "stock";
     private static final String USER_GROUP = "user:group";
-    private static final String ACTIVITY_CACHE = "activity:cache";
     private static final String USER_COUNT = "user:count";
-
-    /**
-     * 活动缓存Key
-     * 示例：{prefix}group:activity:cache:{activityId}
-     */
-    public String buildActivityCacheKey(String activityId) {
-        return join(GROUP, ACTIVITY_CACHE, activityId);
-    }
 
     /**
      * 拼团实例元数据Key
@@ -63,14 +53,6 @@ public class GroupRedisKeyBuilder extends RedisKeyBuilder {
      */
     public String buildGroupOrdersKey(String groupId) {
         return join(GROUP, INSTANCE, ORDERS, groupId);
-    }
-
-    /**
-     * 幂等性Key
-     * 示例：{prefix}group:idem:{userId}:{orderId}
-     */
-    public String buildIdempotencyKey(String userId, String orderId) {
-        return join(GROUP, IDEMPOTENCY, userId, orderId);
     }
 
     /**

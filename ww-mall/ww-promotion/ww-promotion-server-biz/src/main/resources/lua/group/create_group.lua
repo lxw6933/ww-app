@@ -1,14 +1,19 @@
 -- ============================================================================
--- 创建拼团Lua脚本
+-- 创建拼团Lua脚本（优化版）
 -- ============================================================================
--- 功能：原子性地创建拼团实例，包括元数据、剩余名额、成员列表和订单信息
+-- 功能：原子性地创建拼团实例，包括库存扣减、元数据、剩余名额、成员列表和订单信息
 -- 特点：保证原子性操作，防止并发创建，通过groupId存在性实现幂等性校验
+-- 优化：将库存扣减、用户计数、用户组Set等操作合并到Lua脚本中，减少Redis往返次数
 --
 -- KEYS（Redis键列表）:
 --   [1] metaKey         - 拼团元数据Hash键 (group:instance:meta:{groupId})
 --   [2] slotsKey        - 剩余名额键 (group:instance:slots:{groupId})
 --   [3] membersKey      - 成员列表Sorted Set键 (group:instance:members:{groupId})
---   [4] ordersKey       - 订单信息Hash键 (group:instance:orders:{groupId})
+--   [4] ordersKey        - 订单信息Hash键 (group:instance:orders:{groupId})
+--   [5] userGroupKey    - 用户拼团Set键 (group:user:group:{userId})
+--   [6] userCountKey    - 用户活动计数Hash键 (group:activity:user:count:{activityId})
+--   [7] expiryIndexKey  - 过期索引Sorted Set键 (group:expiry)
+--   [8] stockKey        - 活动库存键 (group:activity:stock:{activityId})
 --
 -- ARGV（参数列表）:
 --   [1] status          - 拼团状态 (OPEN)
@@ -19,24 +24,24 @@
 --   [6] leaderOrderJson - 团长订单信息（JSON字符串）
 --   [7] slotsAfterLeader- 剩余名额（requiredSize - 1）
 --   [8] activityId      - 活动ID
+--   [9] groupId         - 拼团ID（用于过期索引）
 --
 -- 返回值（Long类型）:
 --   1   - 创建成功
 --   -1  - 拼团已存在（幂等性：groupId已存在）
 --   -2  - 订单已存在（幂等性：订单ID已在ordersKey中）
+--   -3  - 库存不足
 -- ============================================================================
 
 -- ============================================================================
 -- 获取当前时间戳（毫秒）
 -- ============================================================================
--- Redis TIME命令返回 {seconds, microseconds}，需要转换为毫秒
 local timeResult = redis.call('TIME')
 local nowMillis = tonumber(timeResult[1]) * 1000 + math.floor(tonumber(timeResult[2]) / 1000)
 
 -- ============================================================================
 -- 步骤1：幂等性校验 - 检查拼团是否已存在
 -- ============================================================================
--- 如果groupId已存在，说明已经创建过拼团，直接返回幂等
 local metaExists = redis.call("EXISTS", KEYS[1])
 if metaExists == 1 then
     return -1  -- 拼团已存在（幂等性），返回-1
@@ -45,16 +50,25 @@ end
 -- ============================================================================
 -- 步骤2：幂等性校验 - 检查订单是否已存在
 -- ============================================================================
--- 检查订单ID是否已经在ordersKey中（防止重复创建）
 local orderExists = redis.call("HEXISTS", KEYS[4], ARGV[5])
 if orderExists == 1 then
     return -2  -- 订单已存在（幂等性），返回-2
 end
 
 -- ============================================================================
--- 步骤3：创建拼团元数据
+-- 步骤3：扣减库存（原子性操作）
 -- ============================================================================
--- 使用HMSET一次性设置多个字段，提高性能
+local stock = redis.call("DECR", KEYS[8])
+if stock == nil or stock < 0 then
+    if stock ~= nil then
+        redis.call("INCR", KEYS[8])
+    end
+    return -3  -- 库存不足，返回-3
+end
+
+-- ============================================================================
+-- 步骤4：创建拼团元数据
+-- ============================================================================
 redis.call("HMSET", KEYS[1],
         "status", ARGV[1],           -- 拼团状态：OPEN
         "requiredSize", ARGV[2],     -- 需要的人数
@@ -62,33 +76,41 @@ redis.call("HMSET", KEYS[1],
         "createdAt", tostring(nowMillis), -- 创建时间戳（使用Redis服务器时间）
         "currentSize", "1",          -- 当前人数（初始为1，包含团长）
         "leaderUserId", ARGV[4],     -- 团长用户ID
-        "activityId", ARGV[8]       -- 活动ID
+        "activityId", ARGV[8]        -- 活动ID
 )
 
 -- ============================================================================
--- 步骤4：设置剩余名额
+-- 步骤5：设置剩余名额
 -- ============================================================================
--- 剩余名额 = 需要人数 - 1（因为团长已经占了一个位置）
 redis.call("SET", KEYS[2], ARGV[7])
 
 -- ============================================================================
--- 步骤5：添加团长到成员列表和订单信息
+-- 步骤6：添加团长到成员列表和订单信息
 -- ============================================================================
--- 使用Sorted Set存储成员，score为加入时间戳，便于按时间排序
 redis.call("ZADD", KEYS[3], nowMillis, ARGV[4])
--- 使用Hash存储订单信息，key为订单ID，value为订单JSON
 redis.call("HSET", KEYS[4], ARGV[5], ARGV[6])
 
 -- ============================================================================
--- 步骤6：设置键的过期时间
+-- 步骤7：添加用户到用户拼团Set并更新用户活动计数
 -- ============================================================================
--- 设置2天的过期时间作为缓冲，确保数据不会永久占用内存
--- 实际过期时间由expiresAt字段控制，这里只是防止数据泄露
+redis.call("SADD", KEYS[5], ARGV[9])
+redis.call("HINCRBY", KEYS[6], ARGV[4], 1)
+
+-- ============================================================================
+-- 步骤8：添加到过期索引
+-- ============================================================================
+redis.call("ZADD", KEYS[7], ARGV[3], ARGV[9])
+
+-- ============================================================================
+-- 步骤9：设置键的过期时间
+-- ============================================================================
 local expireSeconds = 3600 * 24 * 2  -- 2天缓冲时间
-redis.call("EXPIRE", KEYS[1], expireSeconds)  -- 元数据
-redis.call("EXPIRE", KEYS[2], expireSeconds)  -- 剩余名额
-redis.call("EXPIRE", KEYS[3], expireSeconds)  -- 成员列表
-redis.call("EXPIRE", KEYS[4], expireSeconds)  -- 订单信息
+redis.call("EXPIRE", KEYS[1], expireSeconds)
+redis.call("EXPIRE", KEYS[2], expireSeconds)
+redis.call("EXPIRE", KEYS[3], expireSeconds)
+redis.call("EXPIRE", KEYS[4], expireSeconds)
+redis.call("EXPIRE", KEYS[5], expireSeconds)
+redis.call("EXPIRE", KEYS[6], expireSeconds)
 
 -- ============================================================================
 -- 返回成功标识

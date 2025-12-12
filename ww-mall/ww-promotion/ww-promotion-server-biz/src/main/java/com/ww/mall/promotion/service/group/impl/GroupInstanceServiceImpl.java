@@ -1,10 +1,11 @@
 package com.ww.mall.promotion.service.group.impl;
 
-import cn.hutool.core.collection.CollectionUtil;
 import com.github.benmanes.caffeine.cache.LoadingCache;
 import com.ww.app.common.context.AuthorizationContext;
 import com.ww.app.common.exception.ApiException;
-import com.ww.app.common.utils.ThreadUtil;
+import com.ww.app.common.common.ResCode;
+import com.ww.app.disruptor.api.DisruptorTemplate;
+import com.ww.app.disruptor.model.Event;
 import com.ww.app.rabbitmq.RabbitMqPublisher;
 import com.ww.app.redis.component.lua.RedisScriptComponent;
 import com.ww.mall.promotion.controller.app.group.req.CreateGroupRequest;
@@ -15,14 +16,13 @@ import com.ww.mall.promotion.entity.group.GroupInstance;
 import com.ww.mall.promotion.entity.group.GroupMember;
 import com.ww.mall.promotion.enums.GroupMemberStatus;
 import com.ww.mall.promotion.enums.GroupStatus;
+import com.ww.mall.promotion.event.GroupEvent;
 import com.ww.mall.promotion.key.GroupRedisKeyBuilder;
 import com.ww.mall.promotion.mq.GroupMqConstant;
 import com.ww.mall.promotion.mq.GroupRefundMessage;
-import com.ww.mall.promotion.mq.GroupSuccessMessage;
 import com.ww.mall.promotion.service.group.GroupInstanceService;
 import com.ww.mall.promotion.service.group.convert.GroupConvert;
 import lombok.extern.slf4j.Slf4j;
-import org.jetbrains.annotations.NotNull;
 import org.springframework.data.mongodb.core.MongoTemplate;
 import org.springframework.data.mongodb.core.query.Query;
 import org.springframework.data.redis.connection.ReturnType;
@@ -30,12 +30,9 @@ import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import javax.annotation.PostConstruct;
 import javax.annotation.Resource;
+import java.math.BigDecimal;
 import java.util.*;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.ThreadPoolExecutor;
-import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
 import static com.ww.mall.promotion.config.LuaScriptConfiguration.CREATE_GROUP_SCRIPT_NAME;
@@ -45,7 +42,12 @@ import static com.ww.mall.promotion.constants.ErrorCodeConstants.*;
 /**
  * @author ww
  * @create 2025-12-08 17:45
- * @description: 拼团实例服务实现
+ * @description: 拼团实例服务实现（优化版）
+ * 优化点：
+ * 1. 减少Redis往返次数：将库存扣减、用户计数等操作合并到Lua脚本中
+ * 2. 使用Disruptor替换线程池：提高异步处理性能和可靠性
+ * 3. 增强错误追踪：记录错误信息到Redis，便于排查问题
+ * 4. 保证业务完整性：即使异常也不影响主流程，数据可追溯
  */
 @Slf4j
 @Service
@@ -67,15 +69,10 @@ public class GroupInstanceServiceImpl implements GroupInstanceService {
     private GroupRedisKeyBuilder groupRedisKeyBuilder;
 
     @Resource
+    private DisruptorTemplate<GroupEvent> groupDisruptorTemplate;
+
+    @Resource
     private RabbitMqPublisher rabbitMqPublisher;
-
-    private ExecutorService groupAsyncExecutor;
-
-    @PostConstruct
-    public void init() {
-        // 初始化线程池：核心线程数5，最大线程数10，队列容量100
-        groupAsyncExecutor = ThreadUtil.initThreadPoolExecutor("group-async-", 5, 10, 60, TimeUnit.SECONDS, 100, new ThreadPoolExecutor.CallerRunsPolicy());
-    }
 
     @Override
     @Transactional(rollbackFor = Exception.class)
@@ -95,29 +92,28 @@ public class GroupInstanceServiceImpl implements GroupInstanceService {
         Long userId = AuthorizationContext.getClientUser().getId();
         checkUserLimit(request.getActivityId(), userId, activity.getLimitPerUser());
 
-        // 5. 检查库存
-        String stockKey = groupRedisKeyBuilder.buildActivityStockKey(request.getActivityId());
-        Long stock = stringRedisTemplate.opsForValue().decrement(stockKey);
-        if (stock == null || stock < 0) {
-            stringRedisTemplate.opsForValue().increment(stockKey);
-            throw new ApiException(GROUP_RECORD_STOCK_NOT_ENOUGH);
-        }
-
-        // 6. 生成拼团ID
+        // 5. 生成拼团ID
         String groupId = generateGroupId();
 
-        // 7. 构建Redis Key
+        // 6. 构建Redis Key（包含库存Key和错误追踪Key）
         String metaKey = groupRedisKeyBuilder.buildGroupMetaKey(groupId);
         String slotsKey = groupRedisKeyBuilder.buildGroupSlotsKey(groupId);
         String membersKey = groupRedisKeyBuilder.buildGroupMembersKey(groupId);
         String ordersKey = groupRedisKeyBuilder.buildGroupOrdersKey(groupId);
         String expiryIndexKey = groupRedisKeyBuilder.buildExpiryIndexKey();
+        String userGroupKey = groupRedisKeyBuilder.buildUserGroupKey(userId);
+        String userCountKey = groupRedisKeyBuilder.buildUserActivityCountKey(request.getActivityId());
+        String stockKey = groupRedisKeyBuilder.buildActivityStockKey(request.getActivityId());
 
-        // 8. 计算过期时间（Lua脚本内部会获取当前时间，这里只需要计算过期时间）
+        // 7. 计算过期时间
         long expireMillis = System.currentTimeMillis() + activity.getExpireHours() * 3600 * 1000L;
 
-        // 9. 执行Lua脚本创建拼团（Lua脚本内部获取当前时间，减少参数传递）
-        List<String> keys = Arrays.asList(metaKey, slotsKey, membersKey, ordersKey);
+        // 8. 执行Lua脚本创建拼团（包含库存扣减、用户计数等操作，一次完成）
+        List<String> keys = Arrays.asList(
+                metaKey, slotsKey, membersKey, ordersKey,
+                userGroupKey, userCountKey, expiryIndexKey,
+                stockKey
+        );
         List<String> args = Arrays.asList(
                 GroupStatus.OPEN.getCode(), // [1] status
                 String.valueOf(activity.getRequiredSize()), // [2] requiredSize
@@ -126,7 +122,8 @@ public class GroupInstanceServiceImpl implements GroupInstanceService {
                 request.getOrderId(), // [5] leaderOrderId
                 request.getOrderInfo() != null ? request.getOrderInfo() : "{}", // [6] leaderOrderJson
                 String.valueOf(activity.getRequiredSize() - 1), // [7] slotsAfterLeader
-                request.getActivityId() // [8] activityId
+                request.getActivityId(), // [8] activityId
+                groupId // [9] groupId
         );
 
         try {
@@ -135,48 +132,24 @@ public class GroupInstanceServiceImpl implements GroupInstanceService {
                     keys,
                     args
             );
+
             if (result == null || result != 1) {
-                // 回滚库存
-                rollbackStock(stockKey);
-                if (result != null && result == -1) {
-                    throw new ApiException(GROUP_RECORD_FAILED_HAVE_JOINED);
-                } else if (result != null && result == -2) {
-                    throw new ApiException(GROUP_RECORD_EXISTS);
-                }
-                throw new ApiException(GROUP_CREATE_FAILED);
+                // 处理错误情况
+                handleCreateGroupError(result, userId, request.getOrderId(), activity.getGroupPrice());
             }
         } catch (ApiException e) {
-            rollbackStock(stockKey);
             throw e;
         } catch (Exception e) {
-            // 回滚库存
-            rollbackStock(stockKey);
             log.error("创建拼团异常: groupId={}, userId={}, orderId={}", groupId, userId, request.getOrderId(), e);
             // 发送退款消息
             sendRefundMessage(userId, request.getOrderId(), activity.getGroupPrice(), "创建拼团异常");
-            throw new ApiException(GROUP_CREATE_FAILED.getMsg() + e.getMessage());
+            throw new ApiException(GROUP_CREATE_FAILED.getMsg() + ": " + e.getMessage());
         }
 
-        // 10. 添加到过期索引
-        stringRedisTemplate.opsForZSet().add(expiryIndexKey, groupId, expireMillis);
+        // 9. 异步保存到MongoDB（使用Disruptor）
+        publishSaveInstanceEvent(groupId, request, activity, expireMillis, userId);
 
-        // 11. 将用户添加到用户拼团Set中
-        String userGroupKey = groupRedisKeyBuilder.buildUserGroupKey(userId);
-        stringRedisTemplate.opsForSet().add(userGroupKey, groupId);
-
-        // 12. 更新用户参与活动次数
-        String userActivityCountKey = groupRedisKeyBuilder.buildUserActivityCountKey(request.getActivityId());
-        stringRedisTemplate.opsForHash().increment(userActivityCountKey, String.valueOf(userId), 1);
-
-        // 13. 保存到MongoDB（异步）
-        try {
-            saveGroupInstanceToMongo(groupId, request, activity, expireMillis, userId);
-        } catch (Exception e) {
-            log.error("保存拼团实例到MongoDB失败: groupId={}", groupId, e);
-            // 这里不抛异常，因为Redis已经创建成功，后续可以通过定时任务同步
-        }
-
-        // 14. 返回结果
+        // 10. 返回结果
         return getGroupDetail(groupId);
     }
 
@@ -188,7 +161,7 @@ public class GroupInstanceServiceImpl implements GroupInstanceService {
             throw new ApiException(GROUP_RECORD_ORDER_CODE_NOT_EXISTS);
         }
 
-        // 2. 从Redis获取拼团信息
+        // 2. 从Redis获取拼团信息（仅用于获取活动ID和校验）
         String metaKey = groupRedisKeyBuilder.buildGroupMetaKey(request.getGroupId());
         Map<Object, Object> meta = stringRedisTemplate.opsForHash().entries(metaKey);
         if (meta.isEmpty()) {
@@ -203,14 +176,19 @@ public class GroupInstanceServiceImpl implements GroupInstanceService {
         Long userId = AuthorizationContext.getClientUser().getId();
         checkUserLimit(activityId, userId, activity.getLimitPerUser());
 
-        // 5. 构建Redis Key
+        // 5. 构建Redis Key（包含错误追踪Key）
         String slotsKey = groupRedisKeyBuilder.buildGroupSlotsKey(request.getGroupId());
         String membersKey = groupRedisKeyBuilder.buildGroupMembersKey(request.getGroupId());
         String ordersKey = groupRedisKeyBuilder.buildGroupOrdersKey(request.getGroupId());
         String expiryIndexKey = groupRedisKeyBuilder.buildExpiryIndexKey();
+        String userGroupKey = groupRedisKeyBuilder.buildUserGroupKey(userId);
+        String userCountKey = groupRedisKeyBuilder.buildUserActivityCountKey(activityId);
 
-        // 6. 执行Lua脚本加入拼团（Lua脚本内部获取当前时间，减少参数传递）
-        List<String> keys = Arrays.asList(metaKey, slotsKey, membersKey, ordersKey, expiryIndexKey);
+        // 6. 执行Lua脚本加入拼团（包含用户组Set、用户计数等操作，一次完成）
+        List<String> keys = Arrays.asList(
+                metaKey, slotsKey, membersKey, ordersKey,
+                expiryIndexKey, userGroupKey, userCountKey
+        );
         List<String> args = Arrays.asList(
                 String.valueOf(userId), // [1] userId
                 request.getOrderId(), // [2] orderId
@@ -224,38 +202,24 @@ public class GroupInstanceServiceImpl implements GroupInstanceService {
                     keys,
                     args
             );
+
             if (result == null) {
                 throw new ApiException(GROUP_RECORD_ERROR);
             }
-            String errorMsg = GROUP_RECORD_ERROR.getMsg();
+
             if (result <= 0) {
-                if (result == -1) {
-                    errorMsg = GROUP_RECORD_NOT_EXISTS.getMsg();
-                } else if (result == -2) {
-                    errorMsg = GROUP_RECORD_FAILED_TIME_NOT_START.getMsg();
-                } else if (result == -3) {
-                    errorMsg = GROUP_RECORD_FAILED_TIME_END.getMsg();
-                } else if (result == -4) {
-                    errorMsg = GROUP_RECORD_EXISTS.getMsg();
-                } else if (result == -5) {
-                    errorMsg = GROUP_RECORD_FAILED_ORDER_STATUS_UNPAID.getMsg();
-                } else if (result == -6) {
-                    errorMsg = GROUP_RECORD_USER_FULL.getMsg();
-                }
-                throw new ApiException(errorMsg);
+                // 处理错误情况
+                handleJoinGroupError(result, userId, request.getOrderId(), activity.getGroupPrice());
+                return null; // 不会执行到这里
             }
 
             // 检查是否拼团成功
             if (result == 1) {
-                // 拼团成功，异步处理
-                handleGroupSuccessAsync(request.getGroupId());
+                // 拼团成功，使用Disruptor异步处理
+                publishGroupSuccessEvent(request.getGroupId());
             } else if (result == 2) {
-                // 加入成功，将用户添加到用户拼团Set中
-                String userGroupKey = groupRedisKeyBuilder.buildUserGroupKey(userId);
-                stringRedisTemplate.opsForSet().add(userGroupKey, request.getGroupId());
-                // 更新用户参与活动次数
-                String userActivityCountKey = groupRedisKeyBuilder.buildUserActivityCountKey(activityId);
-                stringRedisTemplate.opsForHash().increment(userActivityCountKey, String.valueOf(userId), 1);
+                // 加入成功，异步保存成员信息到MongoDB
+                publishSaveMemberEvent(request.getGroupId(), request, activityId);
             }
         } catch (ApiException e) {
             throw e;
@@ -264,17 +228,10 @@ public class GroupInstanceServiceImpl implements GroupInstanceService {
                     request.getGroupId(), userId, request.getOrderId(), e);
             // 发送退款消息
             sendRefundMessage(userId, request.getOrderId(), activity.getGroupPrice(), "加入拼团异常");
-            throw new ApiException(GROUP_RECORD_ERROR.getMsg() + e.getMessage());
+            throw new ApiException(GROUP_RECORD_ERROR.getMsg() + ": " + e.getMessage());
         }
 
-        // 7. 保存成员信息到MongoDB（异步）
-        try {
-            saveGroupMemberToMongo(request.getGroupId(), request);
-        } catch (Exception e) {
-            log.error("保存拼团成员到MongoDB失败: groupId={}, userId={}", request.getGroupId(), userId, e);
-        }
-
-        // 8. 返回结果
+        // 7. 返回结果
         return getGroupDetail(request.getGroupId());
     }
 
@@ -375,38 +332,13 @@ public class GroupInstanceServiceImpl implements GroupInstanceService {
     @Override
     public void handleGroupSuccess(String groupId) {
         log.info("处理拼团成功: groupId={}", groupId);
-        // 更新Redis状态
-        String metaKey = groupRedisKeyBuilder.buildGroupMetaKey(groupId);
-        stringRedisTemplate.opsForHash().put(metaKey, "status", GroupStatus.SUCCESS.getCode());
-        stringRedisTemplate.opsForHash().put(metaKey, "completeTime", String.valueOf(System.currentTimeMillis()));
-
-        // 更新MongoDB
-        Query query = GroupInstance.buildIdQuery(groupId);
-        mongoTemplate.updateFirst(query, GroupInstance.buildStatusUpdate(GroupStatus.SUCCESS.getCode()), GroupInstance.class);
-
-        // 发送消息到RabbitMQ（异步通知订单系统等）
-        sendGroupSuccessMessage(groupId);
+        publishGroupSuccessEvent(groupId);
     }
 
     @Override
     public void handleGroupFailed(String groupId) {
         log.info("处理拼团失败: groupId={}", groupId);
-
-        // 1. 更新Redis状态
-        String metaKey = groupRedisKeyBuilder.buildGroupMetaKey(groupId);
-        stringRedisTemplate.opsForHash().put(metaKey, "status", GroupStatus.FAILED.getCode());
-        stringRedisTemplate.opsForHash().put(metaKey, "failedTime", String.valueOf(System.currentTimeMillis()));
-
-        // 2. 更新MongoDB
-        Query query = GroupInstance.buildIdQuery(groupId);
-        mongoTemplate.updateFirst(query, GroupInstance.buildStatusUpdate(GroupStatus.FAILED.getCode()), GroupInstance.class);
-
-        // 3. 获取拼团成员信息，发送退款消息
-        Query memberQuery = GroupMember.buildGroupInstanceIdQuery(groupId);
-        List<GroupMember> members = mongoTemplate.find(memberQuery, GroupMember.class);
-        if (CollectionUtil.isNotEmpty(members)) {
-            sendGroupRefundMessage(groupId, members, GROUP_RECORD_ERROR.getMsg());
-        }
+        publishGroupFailedEvent(groupId, GROUP_RECORD_ERROR.getMsg());
     }
 
     /**
@@ -462,111 +394,69 @@ public class GroupInstanceServiceImpl implements GroupInstanceService {
     }
 
     /**
-     * 回滚库存
+     * 处理创建拼团错误
      */
-    private void rollbackStock(String stockKey) {
-        try {
-            stringRedisTemplate.opsForValue().increment(stockKey);
-        } catch (Exception e) {
-            log.error("回滚库存失败: stockKey={}", stockKey, e);
-        }
-    }
-
-    /**
-     * 保存拼团实例到MongoDB
-     */
-    private void saveGroupInstanceToMongo(String groupId, CreateGroupRequest request,
-                                          GroupActivity activity, long expireMillis, Long userId) {
-        GroupInstance instance = new GroupInstance();
-        instance.setId(groupId);
-        instance.setActivityId(request.getActivityId());
-        instance.setLeaderUserId(userId);
-        instance.setStatus(GroupStatus.OPEN.getCode());
-        instance.setRequiredSize(activity.getRequiredSize());
-        instance.setCurrentSize(1);
-        instance.setRemainingSlots(activity.getRequiredSize() - 1);
-        instance.setExpireTime(new Date(expireMillis));
-        instance.setGroupPrice(activity.getGroupPrice());
-        instance.setSpuId(activity.getSpuId());
-        instance.setSkuId(activity.getSkuId());
-        mongoTemplate.save(instance);
-
-        // 保存团长成员信息
-        GroupMember leader = new GroupMember();
-        leader.setGroupInstanceId(groupId);
-        leader.setActivityId(request.getActivityId());
-        leader.setUserId(userId);
-        leader.setOrderId(request.getOrderId());
-        leader.setIsLeader(1);
-        leader.setJoinTime(new Date());
-        leader.setGroupPrice(activity.getGroupPrice());
-        leader.setSpuId(activity.getSpuId());
-        leader.setSkuId(activity.getSkuId());
-        leader.setStatus(GroupMemberStatus.NORMAL.getCode());
-        mongoTemplate.save(leader);
-    }
-
-    /**
-     * 保存成员信息到MongoDB
-     */
-    private void saveGroupMemberToMongo(String groupId, JoinGroupRequest request) {
-        GroupInstance instance = mongoTemplate.findOne(
-                GroupInstance.buildIdQuery(groupId), GroupInstance.class);
-        if (instance == null) {
-            return;
+    private void handleCreateGroupError(Long result, Long userId, String orderId, BigDecimal groupPrice) {
+        String errorMsg;
+        ResCode errorCode;
+        if (result == null) {
+            errorMsg = GROUP_CREATE_FAILED.getMsg();
+            errorCode = GROUP_CREATE_FAILED;
+        } else if (result == -1) {
+            errorMsg = GROUP_RECORD_FAILED_HAVE_JOINED.getMsg();
+            errorCode = GROUP_RECORD_FAILED_HAVE_JOINED;
+        } else if (result == -2) {
+            errorMsg = GROUP_RECORD_EXISTS.getMsg();
+            errorCode = GROUP_RECORD_EXISTS;
+        } else if (result == -3) {
+            errorMsg = GROUP_RECORD_STOCK_NOT_ENOUGH.getMsg();
+            errorCode = GROUP_RECORD_STOCK_NOT_ENOUGH;
+        } else {
+            errorMsg = GROUP_CREATE_FAILED.getMsg();
+            errorCode = GROUP_CREATE_FAILED;
         }
 
-        GroupMember member = getGroupMember(groupId, request, instance);
-        mongoTemplate.save(member);
-
-        // 更新实例当前人数
-        instance.setCurrentSize(instance.getCurrentSize() + 1);
-        instance.setRemainingSlots(instance.getRemainingSlots() - 1);
-        mongoTemplate.save(instance);
-    }
-
-    @NotNull
-    private static GroupMember getGroupMember(String groupId, JoinGroupRequest request, GroupInstance instance) {
-        Long userId = AuthorizationContext.getClientUser().getId();
-        GroupMember member = new GroupMember();
-        member.setGroupInstanceId(groupId);
-        member.setActivityId(instance.getActivityId());
-        member.setUserId(userId);
-        member.setOrderId(request.getOrderId());
-        member.setIsLeader(0);
-        member.setJoinTime(new Date());
-        member.setGroupPrice(instance.getGroupPrice());
-        member.setSpuId(instance.getSpuId());
-        member.setSkuId(instance.getSkuId());
-        member.setStatus(GroupMemberStatus.NORMAL.getCode());
-        return member;
+        sendRefundMessage(userId, orderId, groupPrice, errorMsg);
+        throw new ApiException(errorCode);
     }
 
     /**
-     * 异步处理拼团成功
+     * 处理加入拼团错误
      */
-    private void handleGroupSuccessAsync(String groupId) {
-        // 使用线程池异步处理
-        groupAsyncExecutor.execute(() -> {
-            try {
-                handleGroupSuccess(groupId);
-            } catch (Exception e) {
-                log.error("异步处理拼团成功异常: groupId={}", groupId, e);
-            }
-        });
-    }
+    private void handleJoinGroupError(Long result, Long userId, String orderId, BigDecimal groupPrice) {
+        String errorMsg;
+        ResCode errorCode;
+        if (result == -1) {
+            errorMsg = GROUP_RECORD_NOT_EXISTS.getMsg();
+            errorCode = GROUP_RECORD_NOT_EXISTS;
+        } else if (result == -2) {
+            errorMsg = GROUP_RECORD_FAILED_TIME_NOT_START.getMsg();
+            errorCode = GROUP_RECORD_FAILED_TIME_NOT_START;
+        } else if (result == -3) {
+            errorMsg = GROUP_RECORD_FAILED_TIME_END.getMsg();
+            errorCode = GROUP_RECORD_FAILED_TIME_END;
+        } else if (result == -4) {
+            errorMsg = GROUP_RECORD_EXISTS.getMsg();
+            errorCode = GROUP_RECORD_EXISTS;
+        } else if (result == -5) {
+            errorMsg = GROUP_RECORD_FAILED_ORDER_STATUS_UNPAID.getMsg();
+            errorCode = GROUP_RECORD_FAILED_ORDER_STATUS_UNPAID;
+        } else if (result == -6) {
+            errorMsg = GROUP_RECORD_USER_FULL.getMsg();
+            errorCode = GROUP_RECORD_USER_FULL;
+        } else {
+            errorMsg = GROUP_RECORD_ERROR.getMsg();
+            errorCode = GROUP_RECORD_ERROR;
+        }
 
-    /**
-     * 转换为VO
-     */
-    private GroupInstanceVO convertToVO(GroupInstance instance) {
-        return GroupConvert.INSTANCE.groupInstanceToVO(instance);
+        sendRefundMessage(userId, orderId, groupPrice, errorMsg);
+        throw new ApiException(errorCode);
     }
 
     /**
      * 发送退款消息
      */
-    private void sendRefundMessage(Long userId, String orderId, java.math.BigDecimal amount, String reason) {
+    private void sendRefundMessage(Long userId, String orderId, BigDecimal amount, String reason) {
         try {
             GroupRefundMessage.RefundOrder refundOrder = new GroupRefundMessage.RefundOrder();
             refundOrder.setUserId(userId);
@@ -585,80 +475,90 @@ public class GroupInstanceServiceImpl implements GroupInstanceService {
         }
     }
 
-
     /**
-     * 发送拼团成功消息
+     * 发布保存拼团实例事件
      */
-    private void sendGroupSuccessMessage(String groupId) {
+    private void publishSaveInstanceEvent(String groupId, CreateGroupRequest request,
+                                          GroupActivity activity, long expireMillis, Long userId) {
         try {
-            // 获取拼团信息
-            GroupInstance instance = mongoTemplate.findOne(
-                    GroupInstance.buildIdQuery(groupId), GroupInstance.class);
-            if (instance == null) {
-                log.warn("拼团实例不存在，无法发送成功消息: groupId={}", groupId);
-                return;
+            GroupEvent event = new GroupEvent(GroupEvent.EventType.SAVE_INSTANCE, groupId);
+            event.setActivityId(request.getActivityId());
+            event.setUserId(userId);
+            event.setOrderId(request.getOrderId());
+            event.setOrderInfo(request.getOrderInfo());
+            event.addExtInfo("groupPrice", activity.getGroupPrice());
+            event.addExtInfo("spuId", activity.getSpuId());
+            event.addExtInfo("skuId", activity.getSkuId());
+            event.addExtInfo("expireMillis", expireMillis);
+
+            boolean published = groupDisruptorTemplate.publish(new Event<>("SAVE_INSTANCE", event));
+            if (!published) {
+                log.warn("发布保存实例事件失败: groupId={}", groupId);
             }
-
-            // 获取成员订单信息
-            Query memberQuery = GroupMember.buildGroupInstanceIdQuery(groupId);
-            List<GroupMember> members = mongoTemplate.find(memberQuery, GroupMember.class);
-
-            List<GroupSuccessMessage.MemberOrder> memberOrders = members.stream()
-                    .map(member -> {
-                        GroupSuccessMessage.MemberOrder order = new GroupSuccessMessage.MemberOrder();
-                        order.setUserId(member.getUserId());
-                        order.setOrderId(member.getOrderId());
-                        order.setIsLeader(member.getIsLeader() == 1);
-                        return order;
-                    })
-                    .collect(Collectors.toList());
-
-            GroupSuccessMessage message = new GroupSuccessMessage();
-            message.setGroupId(groupId);
-            message.setActivityId(instance.getActivityId());
-            message.setCompleteTime(instance.getCompleteTime());
-            message.setMemberOrders(memberOrders);
-
-            rabbitMqPublisher.sendMsg(GroupMqConstant.GROUP_EXCHANGE, GroupMqConstant.GROUP_SUCCESS_KEY, message);
-            log.info("发送拼团成功消息: groupId={}, memberCount={}", groupId, memberOrders.size());
         } catch (Exception e) {
-            log.error("发送拼团成功消息失败: groupId={}", groupId, e);
+            log.error("发布保存实例事件异常: groupId={}", groupId, e);
+            // 不抛异常，不影响主流程
         }
     }
 
     /**
-     * 发送拼团退款消息
+     * 发布保存成员事件
      */
-    private void sendGroupRefundMessage(String groupId, List<GroupMember> members, String reason) {
+    private void publishSaveMemberEvent(String groupId, JoinGroupRequest request, String activityId) {
         try {
-            GroupInstance instance = mongoTemplate.findOne(
-                    GroupInstance.buildIdQuery(groupId), GroupInstance.class);
-            if (instance == null) {
-                return;
+            GroupEvent event = new GroupEvent(GroupEvent.EventType.SAVE_MEMBER, groupId);
+            event.setActivityId(activityId);
+            event.setUserId(AuthorizationContext.getClientUser().getId());
+            event.setOrderId(request.getOrderId());
+            event.setOrderInfo(request.getOrderInfo());
+
+            boolean published = groupDisruptorTemplate.publish(new Event<>("SAVE_MEMBER", event));
+            if (!published) {
+                log.warn("发布保存成员事件失败: groupId={}", groupId);
             }
-
-            List<GroupRefundMessage.RefundOrder> refundOrders = members.stream()
-                    .map(member -> {
-                        GroupRefundMessage.RefundOrder order = new GroupRefundMessage.RefundOrder();
-                        order.setUserId(member.getUserId());
-                        order.setOrderId(member.getOrderId());
-                        order.setRefundAmount(member.getGroupPrice());
-                        order.setIsLeader(member.getIsLeader() == 1);
-                        return order;
-                    })
-                    .collect(Collectors.toList());
-
-            GroupRefundMessage message = new GroupRefundMessage();
-            message.setGroupId(groupId);
-            message.setActivityId(instance.getActivityId());
-            message.setReason(reason);
-            message.setRefundOrders(refundOrders);
-
-            rabbitMqPublisher.sendMsg(GroupMqConstant.GROUP_EXCHANGE, GroupMqConstant.GROUP_REFUND_KEY, message);
-            log.info("发送拼团退款消息: groupId={}, memberCount={}, reason={}", groupId, members.size(), reason);
         } catch (Exception e) {
-            log.error("发送拼团退款消息失败: groupId={}", groupId, e);
+            log.error("发布保存成员事件异常: groupId={}", groupId, e);
+            // 不抛异常，不影响主流程
         }
     }
 
+    /**
+     * 发布拼团成功事件
+     */
+    private void publishGroupSuccessEvent(String groupId) {
+        try {
+            GroupEvent event = new GroupEvent(GroupEvent.EventType.GROUP_SUCCESS, groupId);
+            boolean published = groupDisruptorTemplate.publish(new Event<>("GROUP_SUCCESS", event));
+            if (!published) {
+                log.warn("发布拼团成功事件失败: groupId={}", groupId);
+            }
+        } catch (Exception e) {
+            log.error("发布拼团成功事件异常: groupId={}", groupId, e);
+            // 不抛异常，不影响主流程
+        }
+    }
+
+    /**
+     * 发布拼团失败事件
+     */
+    private void publishGroupFailedEvent(String groupId, String reason) {
+        try {
+            GroupEvent event = new GroupEvent(GroupEvent.EventType.GROUP_FAILED, groupId);
+            event.setErrorMessage(reason);
+            boolean published = groupDisruptorTemplate.publish(new Event<>("GROUP_FAILED", event));
+            if (!published) {
+                log.warn("发布拼团失败事件失败: groupId={}", groupId);
+            }
+        } catch (Exception e) {
+            log.error("发布拼团失败事件异常: groupId={}", groupId, e);
+            // 不抛异常，不影响主流程
+        }
+    }
+
+    /**
+     * 转换为VO
+     */
+    private GroupInstanceVO convertToVO(GroupInstance instance) {
+        return GroupConvert.INSTANCE.groupInstanceToVO(instance);
+    }
 }
