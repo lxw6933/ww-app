@@ -56,16 +56,16 @@ public class GroupExpireJob {
             String expiryIndexKey = groupRedisKeyBuilder.buildExpiryIndexKey();
             long nowMillis = System.currentTimeMillis();
 
-            // 查询过期的拼团ID（score <= nowMillis）
+            // 查询过期的拼团ID（score <= nowMillis），限制每次最多处理100个，避免一次性处理过多
             Set<String> expiredGroupIds = stringRedisTemplate.opsForZSet()
-                    .rangeByScore(expiryIndexKey, 0, nowMillis);
+                    .rangeByScore(expiryIndexKey, 0, nowMillis, 0, 100);
 
             if (expiredGroupIds == null || expiredGroupIds.isEmpty()) {
-                log.info("没有过期的拼团");
+                log.debug("没有过期的拼团");
                 return;
             }
 
-            log.info("发现{}个过期拼团", expiredGroupIds.size());
+            log.info("发现{}个过期拼团，开始处理", expiredGroupIds.size());
 
             int successCount = 0;
             int failCount = 0;
@@ -119,9 +119,10 @@ public class GroupExpireJob {
         int errorCount = 0;
 
         try {
-            // 从过期索引中获取所有拼团ID（包括未过期的）
+            // 从过期索引中获取所有拼团ID（包括未过期的），限制数量避免一次性处理过多
             String expiryIndexKey = groupRedisKeyBuilder.buildExpiryIndexKey();
-            Set<String> allGroupIds = stringRedisTemplate.opsForZSet().range(expiryIndexKey, 0, -1);
+            // 限制每次最多处理1000个，避免内存占用过大
+            Set<String> allGroupIds = stringRedisTemplate.opsForZSet().range(expiryIndexKey, 0, 999);
 
             if (allGroupIds == null || allGroupIds.isEmpty()) {
                 log.info("没有需要同步的拼团数据");
@@ -153,6 +154,7 @@ public class GroupExpireJob {
         String metaKey = groupRedisKeyBuilder.buildGroupMetaKey(groupId);
         Map<Object, Object> meta = stringRedisTemplate.opsForHash().entries(metaKey);
         if (meta.isEmpty()) {
+            log.debug("拼团实例在Redis中不存在，跳过同步: groupId={}", groupId);
             return;
         }
 

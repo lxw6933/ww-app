@@ -39,6 +39,9 @@ public class GroupActivityServiceImpl implements GroupActivityService {
     @Override
     public GroupActivity createActivity(GroupActivityBO bo) {
         // 参数校验
+        if (bo == null) {
+            throw new ApiException("活动信息不能为空");
+        }
         validateActivityBO(bo);
 
         // 构建活动实体
@@ -61,6 +64,9 @@ public class GroupActivityServiceImpl implements GroupActivityService {
     @Override
     @RedisPublishMsg(value = RedisChannelConstant.GROUP_ACTIVITY_CACHE_CHANNEL, message = "#bo.id")
     public GroupActivity updateActivity(GroupActivityBO bo) {
+        if (bo == null || bo.getId() == null || bo.getId().trim().isEmpty()) {
+            throw new ApiException("活动ID不能为空");
+        }
         GroupActivity activity = getActivityById(bo.getId());
 
         // 如果活动已开始，不允许修改关键信息
@@ -79,6 +85,9 @@ public class GroupActivityServiceImpl implements GroupActivityService {
 
     @Override
     public GroupActivity getActivityById(String activityId) {
+        if (activityId == null || activityId.trim().isEmpty()) {
+            throw new ApiException("活动ID不能为空");
+        }
         GroupActivity activity = mongoTemplate.findOne(GroupActivity.buildIdQuery(activityId), GroupActivity.class);
         if (activity == null) {
             throw new ApiException("活动不存在");
@@ -102,6 +111,12 @@ public class GroupActivityServiceImpl implements GroupActivityService {
     @Override
     @RedisPublishMsg(value = RedisChannelConstant.GROUP_ACTIVITY_CACHE_CHANNEL, message = "#activityId")
     public void enableActivity(String activityId, Integer enabled) {
+        if (activityId == null || activityId.trim().isEmpty()) {
+            throw new ApiException("活动ID不能为空");
+        }
+        if (enabled == null || (enabled != 0 && enabled != 1)) {
+            throw new ApiException("启用状态参数错误，只能是0或1");
+        }
         mongoTemplate.updateFirst(GroupActivity.buildIdQuery(activityId), GroupActivity.buildEnabledUpdate(enabled), GroupActivity.class);
         log.info("{}活动: activityId={}", enabled == 1 ? "启用" : "禁用", activityId);
     }

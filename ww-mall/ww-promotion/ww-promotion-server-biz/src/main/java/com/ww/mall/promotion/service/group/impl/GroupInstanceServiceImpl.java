@@ -29,7 +29,6 @@ import org.springframework.data.mongodb.core.query.Query;
 import org.springframework.data.redis.connection.ReturnType;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 
 import javax.annotation.Resource;
 import java.math.BigDecimal;
@@ -76,9 +75,14 @@ public class GroupInstanceServiceImpl implements GroupInstanceService {
     private RabbitMqPublisher rabbitMqPublisher;
 
     @Override
-    @Transactional(rollbackFor = Exception.class)
     public GroupInstanceVO createGroup(CreateGroupRequest request) {
-        // 1. 参数校验：订单号必填
+        // 1. 参数校验
+        if (request == null) {
+            throw new ApiException(GROUP_RECORD_ERROR);
+        }
+        if (request.getActivityId() == null || request.getActivityId().trim().isEmpty()) {
+            throw new ApiException(GROUP_RECORD_ERROR);
+        }
         if (request.getOrderId() == null || request.getOrderId().trim().isEmpty()) {
             throw new ApiException(GROUP_RECORD_ORDER_CODE_NOT_EXISTS);
         }
@@ -155,9 +159,14 @@ public class GroupInstanceServiceImpl implements GroupInstanceService {
     }
 
     @Override
-    @Transactional(rollbackFor = Exception.class)
     public GroupInstanceVO joinGroup(JoinGroupRequest request) {
-        // 1. 参数校验：订单号必填
+        // 1. 参数校验
+        if (request == null) {
+            throw new ApiException(GROUP_RECORD_ERROR);
+        }
+        if (request.getGroupId() == null || request.getGroupId().trim().isEmpty()) {
+            throw new ApiException(GROUP_RECORD_ERROR);
+        }
         if (request.getOrderId() == null || request.getOrderId().trim().isEmpty()) {
             throw new ApiException(GROUP_RECORD_ORDER_CODE_NOT_EXISTS);
         }
@@ -170,8 +179,15 @@ public class GroupInstanceServiceImpl implements GroupInstanceService {
         }
 
         // 3. 获取活动信息（用于退款和限购检查）
-        String activityId = String.valueOf(meta.get("activityId"));
+        Object activityIdObj = meta.get("activityId");
+        if (activityIdObj == null) {
+            throw new ApiException(GROUP_RECORD_ERROR);
+        }
+        String activityId = String.valueOf(activityIdObj);
         GroupActivity activity = groupActivityCache.get(activityId);
+        if (activity == null) {
+            throw new ApiException(GROUP_RECORD_ERROR);
+        }
 
         // 4. 检查用户限购
         Long userId = AuthorizationContext.getClientUser().getId();
@@ -198,29 +214,32 @@ public class GroupInstanceServiceImpl implements GroupInstanceService {
         );
 
         try {
-            Long result = redisScriptComponent.executeLuaScript(JOIN_GROUP_SCRIPT_NAME,
-                    ReturnType.INTEGER,
+            Object luaResult = redisScriptComponent.executeLuaScript(JOIN_GROUP_SCRIPT_NAME,
+                    ReturnType.MULTI,
                     keys,
                     args
             );
 
-            if (result == null) {
+            if (!(luaResult instanceof List)) {
                 throw new ApiException(GROUP_RECORD_ERROR);
             }
 
-            if (result <= 0) {
-                // 处理错误情况
-                handleJoinGroupError(result, userId, request.getOrderId(), activity.getGroupPrice());
-                return null; // 不会执行到这里
+            List<?> res = (List<?>) luaResult;
+            Long code = !res.isEmpty() && res.get(0) instanceof Long ? (Long) res.get(0) : null;
+            Long newSlots = res.size() > 1 && res.get(1) instanceof Long ? (Long) res.get(1) : null;
+            Long completeTime = res.size() > 2 && res.get(2) instanceof Long ? (Long) res.get(2) : null;
+
+            if (code == null || code <= 0) {
+                handleJoinGroupError(code, userId, request.getOrderId(), activity.getGroupPrice());
+                throw new ApiException(GROUP_RECORD_ERROR);
             }
 
-            // 检查是否拼团成功
-            if (result == 1) {
-                // 拼团成功，使用Disruptor异步处理
-                publishGroupSuccessEvent(request.getGroupId());
-            } else if (result == 2) {
-                // 加入成功，异步保存成员信息到MongoDB
-                publishSaveMemberEvent(request.getGroupId(), request, activityId);
+            if (code == 1) {
+                // 拼团成功，携带完成时间减少后查
+                publishGroupSuccessEvent(request.getGroupId(), completeTime);
+            } else if (code == 2) {
+                // 加入成功，异步保存成员信息到MongoDB，携带剩余名额
+                publishSaveMemberEvent(request.getGroupId(), request, activityId, newSlots);
             }
         } catch (ApiException e) {
             throw e;
@@ -238,6 +257,11 @@ public class GroupInstanceServiceImpl implements GroupInstanceService {
 
     @Override
     public GroupInstanceVO getGroupDetail(String groupId) {
+        // 参数校验
+        if (groupId == null || groupId.trim().isEmpty()) {
+            throw new ApiException(GROUP_RECORD_ERROR);
+        }
+
         // 1. 从Redis获取拼团信息
         String metaKey = groupRedisKeyBuilder.buildGroupMetaKey(groupId);
         Map<Object, Object> meta = stringRedisTemplate.opsForHash().entries(metaKey);
@@ -251,12 +275,12 @@ public class GroupInstanceServiceImpl implements GroupInstanceService {
             return convertToVO(instance);
         }
 
-        // 2. 构建VO
+            // 2. 构建VO
         GroupInstanceVO vo = new GroupInstanceVO();
         vo.setId(groupId);
-        vo.setStatus(String.valueOf(meta.get("status")));
-        vo.setRequiredSize(Integer.valueOf(String.valueOf(meta.get("requiredSize"))));
-        vo.setCurrentSize(Integer.valueOf(String.valueOf(meta.getOrDefault("currentSize", "1"))));
+        vo.setStatus(getStringValue(meta.get("status"), GroupStatus.OPEN.getCode()));
+        vo.setRequiredSize(getIntegerValue(meta.get("requiredSize"), 1));
+        vo.setCurrentSize(getIntegerValue(meta.get("currentSize"), 1));
 
         // 3. 获取剩余名额
         String slotsKey = groupRedisKeyBuilder.buildGroupSlotsKey(groupId);
@@ -268,7 +292,12 @@ public class GroupInstanceServiceImpl implements GroupInstanceService {
         Set<String> memberIds = stringRedisTemplate.opsForZSet().range(membersKey, 0, -1);
         if (memberIds != null && !memberIds.isEmpty()) {
             List<GroupInstanceVO.MemberInfo> members = new ArrayList<>();
-            Long leaderUserId = Long.valueOf(String.valueOf(meta.get("leaderUserId")));
+            Object leaderUserIdObj = meta.get("leaderUserId");
+            if (leaderUserIdObj == null) {
+                log.warn("拼团缺少团长ID: groupId={}", groupId);
+                return vo;
+            }
+            Long leaderUserId = Long.valueOf(String.valueOf(leaderUserIdObj));
 
             // 从MongoDB批量查询成员订单信息（更准确）
             Query memberQuery = GroupMember.buildGroupInstanceIdQuery(groupId);
@@ -306,6 +335,9 @@ public class GroupInstanceServiceImpl implements GroupInstanceService {
     @Override
     public List<GroupInstanceVO> getUserGroups() {
         Long userId = AuthorizationContext.getClientUser().getId();
+        if (userId == null) {
+            throw new ApiException(GROUP_RECORD_ERROR);
+        }
         String userGroupKey = groupRedisKeyBuilder.buildUserGroupKey(userId);
         Set<String> groupIds = stringRedisTemplate.opsForSet().members(userGroupKey);
         if (groupIds == null || groupIds.isEmpty()) {
@@ -323,6 +355,9 @@ public class GroupInstanceServiceImpl implements GroupInstanceService {
 
     @Override
     public List<GroupInstanceVO> getActivityGroups(String activityId, String status) {
+        if (activityId == null || activityId.trim().isEmpty()) {
+            throw new ApiException(GROUP_RECORD_ERROR);
+        }
         Query query = GroupInstance.buildActivityIdAndStatusQuery(activityId, status);
         List<GroupInstance> instances = mongoTemplate.find(query, GroupInstance.class);
         return instances.stream()
@@ -370,16 +405,25 @@ public class GroupInstanceServiceImpl implements GroupInstanceService {
         // 从Redis获取用户参与次数
         String userActivityCountKey = groupRedisKeyBuilder.buildUserActivityCountKey(activityId);
         Object countObj = stringRedisTemplate.opsForHash().get(userActivityCountKey, String.valueOf(userId));
-        int currentCount = countObj != null ? Integer.parseInt(String.valueOf(countObj)) : 0;
+        int currentCount = 0;
+        if (countObj != null) {
+            try {
+                currentCount = Integer.parseInt(String.valueOf(countObj));
+            } catch (NumberFormatException e) {
+                log.warn("解析用户参与次数失败: activityId={}, userId={}, countObj={}", activityId, userId, countObj, e);
+            }
+        }
 
-        // 如果Redis中没有，从MongoDB查询
+        // 如果Redis中没有或为0，从MongoDB查询（作为兜底，保证数据准确性）
         if (currentCount == 0) {
             Query query = GroupMember.buildUserIdAndStatusQuery(userId, GroupMemberStatus.NORMAL.getCode());
             List<GroupMember> members = mongoTemplate.find(query, GroupMember.class);
-            // 统计该用户在该活动下的参与次数
-            currentCount = (int) members.stream()
-                    .filter(m -> activityId.equals(m.getActivityId()))
-                    .count();
+            if (!members.isEmpty()) {
+                // 统计该用户在该活动下的参与次数
+                currentCount = (int) members.stream()
+                        .filter(m -> activityId.equals(m.getActivityId()))
+                        .count();
+            }
         }
 
         if (currentCount >= limitPerUser) {
@@ -484,6 +528,12 @@ public class GroupInstanceServiceImpl implements GroupInstanceService {
             event.addExtInfo("spuId", activity.getSpuId());
             event.addExtInfo("skuId", activity.getSkuId());
             event.addExtInfo("expireMillis", expireMillis);
+            event.addExtInfo("requiredSize", activity.getRequiredSize());
+            event.addExtInfo("currentSize", 1);
+            event.addExtInfo("remainingSlots", activity.getRequiredSize() - 1);
+            event.addExtInfo("status", GroupStatus.OPEN.getCode());
+            event.addExtInfo("leaderUserId", userId);
+            event.addExtInfo("createdAt", System.currentTimeMillis());
 
             boolean published = groupDisruptorTemplate.publish(new Event<>("SAVE_INSTANCE", event));
             if (!published) {
@@ -498,13 +548,23 @@ public class GroupInstanceServiceImpl implements GroupInstanceService {
     /**
      * 发布保存成员事件
      */
-    private void publishSaveMemberEvent(String groupId, JoinGroupRequest request, String activityId) {
+    private void publishSaveMemberEvent(String groupId, JoinGroupRequest request, String activityId, Long newSlots) {
         try {
             GroupEvent event = new GroupEvent(GroupEvent.EventType.SAVE_MEMBER, groupId);
             event.setActivityId(activityId);
             event.setUserId(AuthorizationContext.getClientUser().getId());
             event.setOrderId(request.getOrderId());
             event.setOrderInfo(request.getOrderInfo());
+            GroupActivity activity = groupActivityCache.get(activityId);
+            if (activity != null) {
+                event.addExtInfo("groupPrice", activity.getGroupPrice());
+                event.addExtInfo("spuId", activity.getSpuId());
+                event.addExtInfo("skuId", activity.getSkuId());
+            }
+            event.addExtInfo("joinTime", System.currentTimeMillis());
+            if (newSlots != null) {
+                event.addExtInfo("newSlots", newSlots);
+            }
 
             boolean published = groupDisruptorTemplate.publish(new Event<>("SAVE_MEMBER", event));
             if (!published) {
@@ -520,8 +580,15 @@ public class GroupInstanceServiceImpl implements GroupInstanceService {
      * 发布拼团成功事件
      */
     private void publishGroupSuccessEvent(String groupId) {
+        publishGroupSuccessEvent(groupId, null);
+    }
+
+    private void publishGroupSuccessEvent(String groupId, Long completeTime) {
         try {
             GroupEvent event = new GroupEvent(GroupEvent.EventType.GROUP_SUCCESS, groupId);
+            if (completeTime != null) {
+                event.addExtInfo("completeTime", completeTime);
+            }
             boolean published = groupDisruptorTemplate.publish(new Event<>("GROUP_SUCCESS", event));
             if (!published) {
                 log.warn("发布拼团成功事件失败: groupId={}", groupId);
@@ -554,5 +621,33 @@ public class GroupInstanceServiceImpl implements GroupInstanceService {
      */
     private GroupInstanceVO convertToVO(GroupInstance instance) {
         return GroupConvert.INSTANCE.groupInstanceToVO(instance);
+    }
+
+    /**
+     * 安全获取整数值
+     */
+    private Integer getIntegerValue(Object value, Integer defaultValue) {
+        if (value == null) {
+            return defaultValue;
+        }
+        if (value instanceof Number) {
+            return ((Number) value).intValue();
+        }
+        try {
+            return Integer.parseInt(String.valueOf(value));
+        } catch (Exception e) {
+            log.warn("转换整数值失败: value={}, defaultValue={}", value, defaultValue);
+            return defaultValue;
+        }
+    }
+
+    /**
+     * 安全获取字符串值
+     */
+    private String getStringValue(Object value, String defaultValue) {
+        if (value == null) {
+            return defaultValue;
+        }
+        return String.valueOf(value);
     }
 }

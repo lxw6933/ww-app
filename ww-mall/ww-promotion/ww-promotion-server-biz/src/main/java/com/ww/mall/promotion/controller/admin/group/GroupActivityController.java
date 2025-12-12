@@ -60,11 +60,10 @@ public class GroupActivityController {
 
     @PutMapping("/enable/{activityId}")
     @Operation(summary = "启用/禁用活动", description = "启用或禁用拼团活动，禁用后活动将不可见")
-    public Void enableActivity(
+    public void enableActivity(
             @Parameter(description = "活动ID", required = true) @PathVariable String activityId,
             @Parameter(description = "启用状态：1-启用，0-禁用", required = true) @RequestParam Integer enabled) {
         activityService.enableActivity(activityId, enabled);
-        return null;
     }
 
 }

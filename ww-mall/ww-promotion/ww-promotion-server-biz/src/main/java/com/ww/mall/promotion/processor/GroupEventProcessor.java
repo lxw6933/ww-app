@@ -5,6 +5,7 @@ import com.ww.app.disruptor.model.Event;
 import com.ww.app.disruptor.model.EventBatch;
 import com.ww.app.disruptor.model.ProcessResult;
 import com.ww.app.disruptor.processor.BatchEventProcessor;
+import com.ww.app.mongodb.handler.MongoBulkDataHandler;
 import com.ww.app.rabbitmq.RabbitMqPublisher;
 import com.ww.mall.promotion.entity.group.GroupInstance;
 import com.ww.mall.promotion.entity.group.GroupMember;
@@ -22,9 +23,11 @@ import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Component;
 
 import javax.annotation.Resource;
+import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 /**
@@ -50,6 +53,12 @@ public class GroupEventProcessor implements BatchEventProcessor<GroupEvent> {
     @Resource
     private RabbitMqPublisher rabbitMqPublisher;
 
+    @Resource
+    private MongoBulkDataHandler<GroupInstance> groupInstanceBulkHandler;
+
+    @Resource
+    private MongoBulkDataHandler<GroupMember> groupMemberBulkHandler;
+
     @Override
     public ProcessResult processBatch(EventBatch<GroupEvent> batch) {
         List<Event<GroupEvent>> events = batch.getEvents();
@@ -61,6 +70,8 @@ public class GroupEventProcessor implements BatchEventProcessor<GroupEvent> {
 
         int successCount = 0;
         int failCount = 0;
+        List<GroupInstance> instancesToSave = new ArrayList<>();
+        List<GroupMember> membersToSave = new ArrayList<>();
 
         for (Event<GroupEvent> event : events) {
             try {
@@ -88,11 +99,18 @@ public class GroupEventProcessor implements BatchEventProcessor<GroupEvent> {
                         successCount++;
                         break;
                     case SAVE_INSTANCE:
-                        handleSaveInstance(groupEvent);
+                        Optional<SaveInstanceResult> instanceOpt = handleSaveInstance(groupEvent);
+                        instanceOpt.ifPresent(result -> {
+                            instancesToSave.add(result.instance);
+                            if (result.leader != null) {
+                                membersToSave.add(result.leader);
+                            }
+                        });
                         successCount++;
                         break;
                     case SAVE_MEMBER:
-                        handleSaveMember(groupEvent);
+                        Optional<GroupMember> memberOpt = handleSaveMember(groupEvent);
+                        memberOpt.ifPresent(membersToSave::add);
                         successCount++;
                         break;
                     default:
@@ -106,6 +124,22 @@ public class GroupEventProcessor implements BatchEventProcessor<GroupEvent> {
                         event.getPayload() != null ? event.getPayload().getGroupId() : "unknown",
                         e);
                 failCount++;
+            }
+        }
+
+        // 批量入库（无序插入，失败不会影响其他记录）
+        if (!instancesToSave.isEmpty()) {
+            try {
+                groupInstanceBulkHandler.bulkSave(instancesToSave);
+            } catch (Exception e) {
+                log.error("批量保存拼团实例失败，size={}", instancesToSave.size(), e);
+            }
+        }
+        if (!membersToSave.isEmpty()) {
+            try {
+                groupMemberBulkHandler.bulkSave(membersToSave);
+            } catch (Exception e) {
+                log.error("批量保存拼团成员失败，size={}", membersToSave.size(), e);
             }
         }
 
@@ -123,10 +157,14 @@ public class GroupEventProcessor implements BatchEventProcessor<GroupEvent> {
         try {
             // 1. 更新Redis状态（如果还未更新）
             String metaKey = groupRedisKeyBuilder.buildGroupMetaKey(groupId);
-            String currentStatus = (String) stringRedisTemplate.opsForHash().get(metaKey, "status");
+            Object statusObj = stringRedisTemplate.opsForHash().get(metaKey, "status");
+            String currentStatus = statusObj != null ? String.valueOf(statusObj) : null;
             if (!GroupStatus.SUCCESS.getCode().equals(currentStatus)) {
                 stringRedisTemplate.opsForHash().put(metaKey, "status", GroupStatus.SUCCESS.getCode());
-                stringRedisTemplate.opsForHash().put(metaKey, "completeTime", String.valueOf(System.currentTimeMillis()));
+                // 优先使用事件中的 completeTime，减少再次读系统时间
+                Object ct = event.getExtInfo() != null ? event.getExtInfo().get("completeTime") : null;
+                String completeTime = ct != null ? String.valueOf(ct) : String.valueOf(System.currentTimeMillis());
+                stringRedisTemplate.opsForHash().put(metaKey, "completeTime", completeTime);
             }
 
             // 2. 更新MongoDB状态
@@ -166,8 +204,12 @@ public class GroupEventProcessor implements BatchEventProcessor<GroupEvent> {
             Query memberQuery = GroupMember.buildGroupInstanceIdQuery(groupId);
             List<GroupMember> members = mongoTemplate.find(memberQuery, GroupMember.class);
             if (CollectionUtil.isNotEmpty(members)) {
-                String reason = event.getErrorMessage() != null ? event.getErrorMessage() : "拼团失败";
+                String reason = event.getErrorMessage() != null && !event.getErrorMessage().trim().isEmpty() 
+                        ? event.getErrorMessage() 
+                        : "拼团失败";
                 sendGroupRefundMessage(groupId, members, reason);
+            } else {
+                log.warn("拼团失败但未找到成员信息: groupId={}", groupId);
             }
         } catch (Exception e) {
             log.error("处理拼团失败事件异常: groupId={}", groupId, e);
@@ -178,7 +220,7 @@ public class GroupEventProcessor implements BatchEventProcessor<GroupEvent> {
     /**
      * 处理保存拼团实例事件
      */
-    private void handleSaveInstance(GroupEvent event) {
+    private Optional<SaveInstanceResult> handleSaveInstance(GroupEvent event) {
         String groupId = event.getGroupId();
         log.debug("处理保存拼团实例事件: groupId={}", groupId);
 
@@ -188,7 +230,7 @@ public class GroupEventProcessor implements BatchEventProcessor<GroupEvent> {
             Map<Object, Object> meta = stringRedisTemplate.opsForHash().entries(metaKey);
             if (meta.isEmpty()) {
                 log.warn("拼团实例不存在于Redis，跳过保存: groupId={}", groupId);
-                return;
+                return Optional.empty();
             }
 
             // 检查MongoDB中是否已存在
@@ -196,110 +238,158 @@ public class GroupEventProcessor implements BatchEventProcessor<GroupEvent> {
                     GroupInstance.buildIdQuery(groupId), GroupInstance.class);
             if (existing != null) {
                 log.debug("拼团实例已存在于MongoDB，跳过保存: groupId={}", groupId);
-                return;
+                return Optional.empty();
             }
 
             // 构建GroupInstance对象
             GroupInstance instance = new GroupInstance();
             instance.setId(groupId);
-            instance.setActivityId(String.valueOf(meta.get("activityId")));
-            instance.setLeaderUserId(Long.valueOf(String.valueOf(meta.get("leaderUserId"))));
-            instance.setStatus(String.valueOf(meta.get("status")));
-            instance.setRequiredSize(Integer.valueOf(String.valueOf(meta.get("requiredSize"))));
-            instance.setCurrentSize(Integer.valueOf(String.valueOf(meta.getOrDefault("currentSize", "1"))));
-
-            String slotsKey = groupRedisKeyBuilder.buildGroupSlotsKey(groupId);
-            String slotsStr = stringRedisTemplate.opsForValue().get(slotsKey);
-            instance.setRemainingSlots(slotsStr != null ? Integer.parseInt(slotsStr) : 0);
-
-            String expiresAtStr = String.valueOf(meta.get("expiresAt"));
-            if (expiresAtStr != null && !"null".equals(expiresAtStr)) {
-                instance.setExpireTime(new Date(Long.parseLong(expiresAtStr)));
+            instance.setActivityId(event.getActivityId());
+            instance.setLeaderUserId(event.getUserId());
+            instance.setStatus(getStringExt(event, "status", GroupStatus.OPEN.getCode()));
+            instance.setRequiredSize(getIntegerExt(event, "requiredSize", 1));
+            instance.setCurrentSize(getIntegerExt(event, "currentSize", 1));
+            instance.setRemainingSlots(getIntegerExt(event, "remainingSlots", instance.getRequiredSize() - 1));
+            Long expireMillis = getLongExt(event, "expireMillis", null);
+            if (expireMillis != null) {
+                instance.setExpireTime(new Date(expireMillis));
+            } else {
+                // 兜底从Redis读取
+                Object expiresAtObj = meta.get("expiresAt");
+                if (expiresAtObj != null) {
+                    try {
+                        String expiresAtStr = String.valueOf(expiresAtObj);
+                        if (!"null".equals(expiresAtStr) && !expiresAtStr.trim().isEmpty()) {
+                            instance.setExpireTime(new Date(Long.parseLong(expiresAtStr)));
+                        }
+                    } catch (Exception e) {
+                        log.warn("解析过期时间失败: groupId={}, expiresAt={}", groupId, expiresAtObj, e);
+                    }
+                }
             }
 
-            // 从扩展信息中获取其他字段
+                // 从扩展信息中获取其他字段
             if (event.getExtInfo() != null) {
                 Object groupPrice = event.getExtInfo().get("groupPrice");
                 Object spuId = event.getExtInfo().get("spuId");
                 Object skuId = event.getExtInfo().get("skuId");
-                if (groupPrice != null) instance.setGroupPrice((java.math.BigDecimal) groupPrice);
-                if (spuId != null) instance.setSpuId(Long.valueOf(spuId.toString()));
-                if (skuId != null) instance.setSkuId(Long.valueOf(skuId.toString()));
+                if (groupPrice instanceof java.math.BigDecimal) {
+                    instance.setGroupPrice((java.math.BigDecimal) groupPrice);
+                }
+                if (spuId != null) {
+                    try {
+                        instance.setSpuId(Long.valueOf(spuId.toString()));
+                    } catch (Exception e) {
+                        log.warn("解析SPU ID失败: groupId={}, spuId={}", groupId, spuId, e);
+                    }
+                }
+                if (skuId != null) {
+                    try {
+                        instance.setSkuId(Long.valueOf(skuId.toString()));
+                    } catch (Exception e) {
+                        log.warn("解析SKU ID失败: groupId={}, skuId={}", groupId, skuId, e);
+                    }
+                }
             }
 
-            mongoTemplate.save(instance);
-
             // 保存团长成员信息
+            GroupMember leader = null;
             if (event.getUserId() != null && event.getOrderId() != null) {
-                GroupMember leader = new GroupMember();
+                leader = new GroupMember();
                 leader.setGroupInstanceId(groupId);
                 leader.setActivityId(instance.getActivityId());
                 leader.setUserId(event.getUserId());
                 leader.setOrderId(event.getOrderId());
                 leader.setIsLeader(1);
-                leader.setJoinTime(new Date());
+                Long joinTime = getLongExt(event, "createdAt", System.currentTimeMillis());
+                leader.setJoinTime(new Date(joinTime));
                 if (event.getExtInfo() != null) {
                     Object groupPrice = event.getExtInfo().get("groupPrice");
                     Object spuId = event.getExtInfo().get("spuId");
                     Object skuId = event.getExtInfo().get("skuId");
-                    if (groupPrice != null) leader.setGroupPrice((java.math.BigDecimal) groupPrice);
-                    if (spuId != null) leader.setSpuId(Long.valueOf(spuId.toString()));
-                    if (skuId != null) leader.setSkuId(Long.valueOf(skuId.toString()));
+                    if (groupPrice instanceof java.math.BigDecimal) {
+                        leader.setGroupPrice((java.math.BigDecimal) groupPrice);
+                    }
+                    if (spuId != null) {
+                        try {
+                            leader.setSpuId(Long.valueOf(spuId.toString()));
+                        } catch (Exception e) {
+                            log.warn("解析SPU ID失败: groupId={}, spuId={}", groupId, spuId, e);
+                        }
+                    }
+                    if (skuId != null) {
+                        try {
+                            leader.setSkuId(Long.valueOf(skuId.toString()));
+                        } catch (Exception e) {
+                            log.warn("解析SKU ID失败: groupId={}, skuId={}", groupId, skuId, e);
+                        }
+                    }
                 }
                 leader.setStatus(GroupMemberStatus.NORMAL.getCode());
-                mongoTemplate.save(leader);
             }
+            SaveInstanceResult result = new SaveInstanceResult();
+            result.instance = instance;
+            result.leader = leader;
+            return Optional.of(result);
         } catch (Exception e) {
             log.error("保存拼团实例到MongoDB异常: groupId={}", groupId, e);
-            // 不抛出异常，允许后续重试
+            return Optional.empty();
         }
     }
 
     /**
      * 处理保存拼团成员事件
      */
-    private void handleSaveMember(GroupEvent event) {
+    private Optional<GroupMember> handleSaveMember(GroupEvent event) {
         String groupId = event.getGroupId();
         log.debug("处理保存拼团成员事件: groupId={}, userId={}", groupId, event.getUserId());
 
         try {
-            GroupInstance instance = mongoTemplate.findOne(
-                    GroupInstance.buildIdQuery(groupId), GroupInstance.class);
-            if (instance == null) {
-                log.warn("拼团实例不存在，跳过保存成员: groupId={}", groupId);
-                return;
-            }
-
             // 检查成员是否已存在
             if (event.getUserId() != null) {
                 Query memberQuery = GroupMember.buildGroupInstanceIdAndUserIdQuery(groupId, event.getUserId());
                 GroupMember existing = mongoTemplate.findOne(memberQuery, GroupMember.class);
                 if (existing != null) {
                     log.debug("成员已存在，跳过保存: groupId={}, userId={}", groupId, event.getUserId());
-                    return;
+                    return Optional.empty();
                 }
             }
 
             GroupMember member = new GroupMember();
             member.setGroupInstanceId(groupId);
-            member.setActivityId(instance.getActivityId());
+            member.setActivityId(event.getActivityId());
             member.setUserId(event.getUserId());
             member.setOrderId(event.getOrderId());
             member.setIsLeader(0);
-            member.setJoinTime(new Date());
-            member.setGroupPrice(instance.getGroupPrice());
-            member.setSpuId(instance.getSpuId());
-            member.setSkuId(instance.getSkuId());
+            Long joinTime = getLongExt(event, "joinTime", System.currentTimeMillis());
+            member.setJoinTime(new Date(joinTime));
+            if (event.getExtInfo() != null) {
+                Object groupPrice = event.getExtInfo().get("groupPrice");
+                Object spuId = event.getExtInfo().get("spuId");
+                Object skuId = event.getExtInfo().get("skuId");
+                if (groupPrice instanceof java.math.BigDecimal) {
+                    member.setGroupPrice((java.math.BigDecimal) groupPrice);
+                }
+                if (spuId != null) {
+                    try {
+                        member.setSpuId(Long.valueOf(spuId.toString()));
+                    } catch (Exception e) {
+                        log.warn("解析SPU ID失败: groupId={}, userId={}, spuId={}", groupId, event.getUserId(), spuId, e);
+                    }
+                }
+                if (skuId != null) {
+                    try {
+                        member.setSkuId(Long.valueOf(skuId.toString()));
+                    } catch (Exception e) {
+                        log.warn("解析SKU ID失败: groupId={}, userId={}, skuId={}", groupId, event.getUserId(), skuId, e);
+                    }
+                }
+            }
             member.setStatus(GroupMemberStatus.NORMAL.getCode());
-            mongoTemplate.save(member);
-
-            // 更新实例当前人数
-            instance.setCurrentSize(instance.getCurrentSize() + 1);
-            instance.setRemainingSlots(instance.getRemainingSlots() - 1);
-            mongoTemplate.save(instance);
+            return Optional.of(member);
         } catch (Exception e) {
             log.error("保存拼团成员到MongoDB异常: groupId={}, userId={}", groupId, event.getUserId(), e);
-            // 不抛出异常，允许后续重试
+            return Optional.empty();
         }
     }
 
@@ -317,6 +407,11 @@ public class GroupEventProcessor implements BatchEventProcessor<GroupEvent> {
 
             Query memberQuery = GroupMember.buildGroupInstanceIdQuery(groupId);
             List<GroupMember> members = mongoTemplate.find(memberQuery, GroupMember.class);
+
+            if (members.isEmpty()) {
+                log.warn("拼团成功但未找到成员信息: groupId={}", groupId);
+                return;
+            }
 
             List<GroupSuccessMessage.MemberOrder> memberOrders = members.stream()
                     .map(member -> {
@@ -387,6 +482,41 @@ public class GroupEventProcessor implements BatchEventProcessor<GroupEvent> {
     @Override
     public long getBatchTimeout() {
         return 200L; // 200ms超时
+    }
+
+    private static class SaveInstanceResult {
+        GroupInstance instance;
+        GroupMember leader;
+    }
+
+    private Integer getIntegerExt(GroupEvent event, String key, Integer defaultVal) {
+        if (event.getExtInfo() == null) return defaultVal;
+        Object val = event.getExtInfo().get(key);
+        if (val == null) return defaultVal;
+        if (val instanceof Number) return ((Number) val).intValue();
+        try {
+            return Integer.parseInt(val.toString());
+        } catch (Exception ignored) {
+            return defaultVal;
+        }
+    }
+
+    private Long getLongExt(GroupEvent event, String key, Long defaultVal) {
+        if (event.getExtInfo() == null) return defaultVal;
+        Object val = event.getExtInfo().get(key);
+        if (val == null) return defaultVal;
+        if (val instanceof Number) return ((Number) val).longValue();
+        try {
+            return Long.parseLong(val.toString());
+        } catch (Exception ignored) {
+            return defaultVal;
+        }
+    }
+
+    private String getStringExt(GroupEvent event, String key, String defaultVal) {
+        if (event.getExtInfo() == null) return defaultVal;
+        Object val = event.getExtInfo().get(key);
+        return val != null ? val.toString() : defaultVal;
     }
 }
 
