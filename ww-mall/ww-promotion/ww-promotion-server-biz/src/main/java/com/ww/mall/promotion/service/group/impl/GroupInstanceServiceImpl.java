@@ -1,9 +1,9 @@
 package com.ww.mall.promotion.service.group.impl;
 
 import com.github.benmanes.caffeine.cache.LoadingCache;
+import com.ww.app.common.common.ResCode;
 import com.ww.app.common.context.AuthorizationContext;
 import com.ww.app.common.exception.ApiException;
-import com.ww.app.common.common.ResCode;
 import com.ww.app.disruptor.api.DisruptorTemplate;
 import com.ww.app.disruptor.model.Event;
 import com.ww.app.rabbitmq.RabbitMqPublisher;
@@ -23,6 +23,7 @@ import com.ww.mall.promotion.mq.GroupRefundMessage;
 import com.ww.mall.promotion.service.group.GroupInstanceService;
 import com.ww.mall.promotion.service.group.convert.GroupConvert;
 import lombok.extern.slf4j.Slf4j;
+import org.bson.types.ObjectId;
 import org.springframework.data.mongodb.core.MongoTemplate;
 import org.springframework.data.mongodb.core.query.Query;
 import org.springframework.data.redis.connection.ReturnType;
@@ -93,7 +94,7 @@ public class GroupInstanceServiceImpl implements GroupInstanceService {
         checkUserLimit(request.getActivityId(), userId, activity.getLimitPerUser());
 
         // 5. 生成拼团ID
-        String groupId = generateGroupId();
+        String groupId = new ObjectId().toString();
 
         // 6. 构建Redis Key（包含库存Key和错误追踪Key）
         String metaKey = groupRedisKeyBuilder.buildGroupMetaKey(groupId);
@@ -384,13 +385,6 @@ public class GroupInstanceServiceImpl implements GroupInstanceService {
         if (currentCount >= limitPerUser) {
             throw new ApiException(GROUP_RECORD_FAILED_TOTAL_LIMIT_COUNT_EXCEED);
         }
-    }
-
-    /**
-     * 生成拼团ID
-     */
-    private String generateGroupId() {
-        return "GROUP_" + System.currentTimeMillis() + "_" + UUID.randomUUID().toString().substring(0, 8);
     }
 
     /**

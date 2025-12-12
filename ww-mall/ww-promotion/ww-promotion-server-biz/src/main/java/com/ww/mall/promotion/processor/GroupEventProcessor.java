@@ -80,19 +80,19 @@ public class GroupEventProcessor implements BatchEventProcessor<GroupEvent> {
 
                 switch (eventType) {
                     case GROUP_SUCCESS:
-                handleGroupSuccess(groupEvent);
+                        handleGroupSuccess(groupEvent);
                         successCount++;
                         break;
                     case GROUP_FAILED:
-                handleGroupFailed(groupEvent);
+                        handleGroupFailed(groupEvent);
                         successCount++;
                         break;
                     case SAVE_INSTANCE:
-                handleSaveInstance(groupEvent);
+                        handleSaveInstance(groupEvent);
                         successCount++;
                         break;
                     case SAVE_MEMBER:
-                handleSaveMember(groupEvent);
+                        handleSaveMember(groupEvent);
                         successCount++;
                         break;
                     default:
@@ -101,9 +101,9 @@ public class GroupEventProcessor implements BatchEventProcessor<GroupEvent> {
                         break;
                 }
             } catch (Exception e) {
-                log.error("处理拼团事件异常: eventId={}, groupId={}", 
-                        event.getEventId(), 
-                        event.getPayload() != null ? event.getPayload().getGroupId() : "unknown", 
+                log.error("处理拼团事件异常: eventId={}, groupId={}",
+                        event.getEventId(),
+                        event.getPayload() != null ? event.getPayload().getGroupId() : "unknown",
                         e);
                 failCount++;
             }
@@ -131,8 +131,8 @@ public class GroupEventProcessor implements BatchEventProcessor<GroupEvent> {
 
             // 2. 更新MongoDB状态
             Query query = GroupInstance.buildIdQuery(groupId);
-            mongoTemplate.updateFirst(query, 
-                    GroupInstance.buildStatusUpdate(GroupStatus.SUCCESS.getCode()), 
+            mongoTemplate.updateFirst(query,
+                    GroupInstance.buildStatusUpdate(GroupStatus.SUCCESS.getCode()),
                     GroupInstance.class);
 
             // 3. 发送拼团成功消息到MQ
@@ -158,8 +158,8 @@ public class GroupEventProcessor implements BatchEventProcessor<GroupEvent> {
 
             // 2. 更新MongoDB状态
             Query query = GroupInstance.buildIdQuery(groupId);
-            mongoTemplate.updateFirst(query, 
-                    GroupInstance.buildStatusUpdate(GroupStatus.FAILED.getCode()), 
+            mongoTemplate.updateFirst(query,
+                    GroupInstance.buildStatusUpdate(GroupStatus.FAILED.getCode()),
                     GroupInstance.class);
 
             // 3. 获取拼团成员信息，发送退款消息
