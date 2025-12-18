@@ -1020,6 +1020,12 @@ public class SmsCouponServiceImpl implements SmsCouponService {
             case EXCLUDE_PRODUCT:
                 targetList = filterList(orderBOList, e -> !res.getIdList().contains(e.getSmsId()));
                 break;
+            case SPECIFY_BRAND:
+                targetList = filterList(orderBOList, e -> res.getIdList().contains(e.getBrandId()));
+                break;
+            case SPECIFY_CATEGORY:
+                targetList = filterList(orderBOList, e -> res.getIdList().contains(e.getCategoryId()));
+                break;
             default:
         }
         if (CollectionUtils.isEmpty(targetList)) {
