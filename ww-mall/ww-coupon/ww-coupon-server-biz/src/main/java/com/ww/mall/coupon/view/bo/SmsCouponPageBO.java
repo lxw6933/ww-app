@@ -4,6 +4,7 @@ import com.ww.app.common.utils.SpecialCharacterUtil;
 import com.ww.app.mongodb.common.AbstractMongoPage;
 import com.ww.mall.coupon.constant.CouponConstant;
 import com.ww.mall.coupon.entity.SmsCouponActivity;
+import com.ww.mall.coupon.entity.base.BaseCouponInfo;
 import com.ww.mall.coupon.eunms.CouponDiscountType;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
@@ -85,16 +86,7 @@ public class SmsCouponPageBO extends AbstractMongoPage<SmsCouponActivity> {
         if (this.status != null) {
             criteria.and("status").is(this.status);
         }
-        switch (type) {
-            case ALL:
-                break;
-            case INTEGRAL:
-                criteria.and("couponDiscountType").is(CouponDiscountType.INTEGRAL_DISCOUNT);
-                break;
-            case CASH:
-                criteria.and("couponDiscountType").in(CouponDiscountType.FULL_DISCOUNT, CouponDiscountType.FULL_REDUCTION, CouponDiscountType.DIRECT_REDUCTION);
-                break;
-        }
+        BaseCouponInfo.setCouponTypeCriteria(type, criteria);
         switch (activityStatus) {
             case WAIT_EFFECTIVE:
                 criteria.and("receiveStartTime").lt(now);

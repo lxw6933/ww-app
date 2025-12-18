@@ -152,6 +152,12 @@ public class BaseCouponInfo extends BaseDoc {
                 .and("receiveEndTime").gte(now)
                 .and("issueType").is(IssueType.RECEIVE)
                 .and("status").is(true);
+        setCouponTypeCriteria(type, criteria);
+        query.addCriteria(criteria);
+        return query;
+    }
+
+    public static void setCouponTypeCriteria(CouponConstant.Type type, Criteria criteria) {
         switch (type) {
             case ALL:
                 break;
@@ -162,8 +168,6 @@ public class BaseCouponInfo extends BaseDoc {
                 criteria.and("couponDiscountType").in(CouponDiscountType.FULL_DISCOUNT, CouponDiscountType.FULL_REDUCTION, CouponDiscountType.DIRECT_REDUCTION);
                 break;
         }
-        query.addCriteria(criteria);
-        return query;
     }
 
     public static Query buildActivityCodeQuery(String activityCode) {
