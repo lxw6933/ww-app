@@ -3,6 +3,7 @@ package com.ww.mall.coupon.entity;
 import com.ww.mall.coupon.entity.base.BaseCouponInfo;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
+import org.springframework.data.mongodb.core.index.Indexed;
 import org.springframework.data.mongodb.core.mapping.Document;
 
 import java.util.List;
@@ -20,6 +21,7 @@ public class MerchantCouponActivity extends BaseCouponInfo {
     /**
      * 商家id
      */
+    @Indexed(name = "idx_merchantId")
     private Long merchantId;
 
     /**

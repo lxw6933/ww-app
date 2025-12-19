@@ -5,6 +5,7 @@ import com.ww.mall.coupon.entity.base.BaseCouponInfo;
 import com.ww.mall.coupon.eunms.ApplyProductRangeType;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
+import org.springframework.data.mongodb.core.index.Indexed;
 import org.springframework.data.mongodb.core.mapping.Document;
 import org.springframework.data.mongodb.core.query.Criteria;
 import org.springframework.data.mongodb.core.query.Query;
@@ -22,6 +23,7 @@ public class SmsCouponActivity extends BaseCouponInfo {
     /**
      * 渠道id
      */
+    @Indexed(name = "idx_channelId")
     private Long channelId;
 
     public static Query buildSpuQuery(Long channelId, CouponConstant.Type type, Long smsId) {

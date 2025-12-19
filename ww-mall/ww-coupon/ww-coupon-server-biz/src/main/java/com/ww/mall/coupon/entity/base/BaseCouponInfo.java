@@ -5,6 +5,7 @@ import com.ww.mall.coupon.constant.CouponConstant;
 import com.ww.mall.coupon.eunms.*;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
+import org.springframework.data.mongodb.core.index.Indexed;
 import org.springframework.data.mongodb.core.query.Criteria;
 import org.springframework.data.mongodb.core.query.Query;
 import org.springframework.data.mongodb.core.query.Update;
@@ -25,6 +26,7 @@ public class BaseCouponInfo extends BaseDoc {
     /**
      * 活动编码
      */
+    @Indexed(name = "idx_activityCode", unique = true)
     private String activityCode;
 
     /**
