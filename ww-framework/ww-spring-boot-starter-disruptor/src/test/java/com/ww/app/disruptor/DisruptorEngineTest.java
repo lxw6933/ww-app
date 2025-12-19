@@ -207,20 +207,38 @@ class DisruptorEngineTest {
         template = DisruptorTemplate.<String>builder()
                 .businessName("test-concurrent-stress")
                 .ringBufferSize(8192)
-                .consumerThreads(24)
+                .consumerThreads(12)
                 .eventProcessor(eventProcessor)
                 .build();
-
         template.start();
 
-        int threadCount = 10;
-        int eventsPerThread = 1000;
-        int totalEvents = threadCount * eventsPerThread;
+        // 测试性能
+        testPerformance();
+    }
 
-        ExecutorService executor = Executors.newFixedThreadPool(threadCount);
+    private long getEventHandleEndTime(int totalEvents) throws InterruptedException {
+        // 等待处理完成 - 增加等待时间确保所有事件都被处理
+        // 使用轮询方式等待，最多等待10秒
+        int maxWaitSeconds = 10;
+        for (int i = 0; i < maxWaitSeconds * 10; i++) {
+            Thread.sleep(100);
+            if (template.getPendingCount() == 0) {
+                break;
+            }
+        }
+        // 验证结果
+        assertEquals(totalEvents, template.getPublishCount(), "发布计数应该准确");
+        // 在高并发场景下，processCount + failedCount 应该等于 publishCount
+        // 因为某些事件可能因为线程中断等原因处理失败
+        long actualProcessed = template.getProcessCount() + template.getFailedCount();
+        assertEquals(totalEvents, actualProcessed,
+                String.format("处理计数(%d) + 失败计数(%d) = %d 应该等于总事件数 %d",
+                        template.getProcessCount(), template.getFailedCount(), actualProcessed, totalEvents));
+        return System.currentTimeMillis();
+    }
+
+    private void testExecutorPublishEvent(int threadCount, ExecutorService executor, int eventsPerThread) throws InterruptedException {
         CountDownLatch latch = new CountDownLatch(threadCount);
-
-        long startTime = System.currentTimeMillis();
 
         // 多线程并发发布
         for (int t = 0; t < threadCount; t++) {
@@ -242,45 +260,6 @@ class DisruptorEngineTest {
 
         // 等待所有发布完成
         assertTrue(latch.await(30, TimeUnit.SECONDS), "发布应该在30秒内完成");
-
-        long publishEndTime = System.currentTimeMillis();
-
-        // 等待处理完成 - 增加等待时间确保所有事件都被处理
-        // 使用轮询方式等待，最多等待10秒
-        int maxWaitSeconds = 10;
-        for (int i = 0; i < maxWaitSeconds * 10; i++) {
-            Thread.sleep(100);
-            if (template.getPendingCount() == 0) {
-                break;
-            }
-        }
-
-        long endTime = System.currentTimeMillis();
-
-        // 验证结果
-        assertEquals(totalEvents, template.getPublishCount(), "发布计数应该准确");
-        // 在高并发场景下，processCount + failedCount 应该等于 publishCount
-        // 因为某些事件可能因为线程中断等原因处理失败
-        long actualProcessed = template.getProcessCount() + template.getFailedCount();
-        assertEquals(totalEvents, actualProcessed, 
-            String.format("处理计数(%d) + 失败计数(%d) = %d 应该等于总事件数 %d", 
-                template.getProcessCount(), template.getFailedCount(), actualProcessed, totalEvents));
-
-        // 性能指标
-        long totalTime = endTime - startTime;
-        long publishDuration = publishEndTime - startTime;
-        double tps = (totalEvents * 1000.0) / totalTime;
-        double publishTps = (totalEvents * 1000.0) / publishDuration;
-
-        log.info("✅ 测试5通过：并发压力测试完成");
-        log.info("  - 总事件数: {}", totalEvents);
-        log.info("  - 发布耗时: {} ms", publishDuration);
-        log.info("  - 总耗时: {} ms", totalTime);
-        log.info("  - 发布TPS: {}/s", String.format("%.2f", publishTps));
-        log.info("  - 处理TPS: {}/s", String.format("%.2f", tps));
-        log.info("  - 队列利用率: {}%", String.format("%.2f", template.getQueueUtilization()));
-
-        executor.shutdown();
     }
 
     @Test
@@ -288,63 +267,51 @@ class DisruptorEngineTest {
     @DisplayName("测试6：高并发批量处理压力测试")
     void testConcurrentBatchStressTest() throws InterruptedException {
         log.info("========== 测试6：高并发批量处理压力测试 ==========");
-
         batchEventProcessor = new TestBatchEventProcessor();
 
         template = DisruptorTemplate.<String>builder()
                 .businessName("test-batch-stress")
                 .ringBufferSize(8192)
-                .consumerThreads(4)
-                .batchSize(50)
-                .batchTimeout(50)
+                .consumerThreads(12)
+                .batchSize(100)
+                .batchTimeout(10)
                 .batchEnabled(true)
                 .batchEventProcessor(batchEventProcessor)
                 .build();
-
         template.start();
 
+        // 测试性能
+        testPerformance();
+
+        log.info("  - 批处理次数: {}", batchEventProcessor.getBatchCount());
+    }
+
+    private void testPerformance() throws InterruptedException {
         int threadCount = 10;
-        int eventsPerThread = 1000;
+        int eventsPerThread = 10000;
         int totalEvents = threadCount * eventsPerThread;
 
         ExecutorService executor = Executors.newFixedThreadPool(threadCount);
-        CountDownLatch latch = new CountDownLatch(threadCount);
-
+        // 开始发布事件
         long startTime = System.currentTimeMillis();
+        // 线程池发布事件
+        testExecutorPublishEvent(threadCount, executor, eventsPerThread);
+        // 发布事件结束
+        long publishEndTime = System.currentTimeMillis();
+        // 获取事件全部处理结束时间
+        long handleEndTime = getEventHandleEndTime(totalEvents);
 
-        for (int t = 0; t < threadCount; t++) {
-            final int threadId = t;
-            executor.submit(() -> {
-                try {
-                    for (int i = 0; i < eventsPerThread; i++) {
-                        Event<String> event = new Event<>(
-                                "batch-stress-" + threadId + "-" + i,
-                                "BatchData-" + threadId + "-" + i
-                        );
-                        template.publish(event);
-                    }
-                } finally {
-                    latch.countDown();
-                }
-            });
-        }
+        // 性能指标信息
+        long totalTime = handleEndTime - startTime;
+        long publishDuration = publishEndTime - startTime;
+        double tps = (totalEvents * 1000.0) / totalTime;
+        double publishTps = (totalEvents * 1000.0) / publishDuration;
 
-        assertTrue(latch.await(30, TimeUnit.SECONDS), "发布应该在30秒内完成");
-
-        Thread.sleep(3000);
-
-        long endTime = System.currentTimeMillis();
-
-        // 验证结果
-        assertTrue(batchEventProcessor.getProcessedCount().get() >= totalEvents,
-                "应该处理至少" + totalEvents + "个事件");
-
-        double tps = (totalEvents * 1000.0) / (endTime - startTime);
-
-        log.info("✅ 测试6通过：批量并发压力测试完成");
+        log.info("✅ 性能指标信息");
         log.info("  - 总事件数: {}", totalEvents);
-        log.info("  - 批处理次数: {}", batchEventProcessor.getBatchCount());
-        log.info("  - 平均批大小: {}", totalEvents / batchEventProcessor.getBatchCount().get());
+        log.info("  - 发布耗时: {} ms", publishDuration);
+        log.info("  - 处理耗时: {} ms", totalTime);
+        log.info("  - 发布TPS: {}/s", String.format("%.2f", publishTps));
         log.info("  - 处理TPS: {}/s", String.format("%.2f", tps));
 
         executor.shutdown();
