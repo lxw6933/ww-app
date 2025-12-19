@@ -23,12 +23,21 @@ public class TestEventProcessor implements EventProcessor<String> {
     private final List<String> processedEvents = new CopyOnWriteArrayList<>();
     private final boolean throwException;
 
+    private final boolean sleep;
+
     public TestEventProcessor() {
         this.throwException = false;
+        this.sleep = false;
     }
 
     public TestEventProcessor(boolean throwException) {
         this.throwException = throwException;
+        this.sleep = false;
+    }
+
+    public TestEventProcessor(boolean throwException, boolean sleep) {
+        this.throwException = throwException;
+        this.sleep = sleep;
     }
 
     @Override
@@ -40,6 +49,11 @@ public class TestEventProcessor implements EventProcessor<String> {
             // 模拟异常 - 使用获取到的计数判断
             if (throwException && currentCount % 3 == 0) {
                 throw new RuntimeException("测试异常：模拟处理失败 (event #" + currentCount + ")");
+            }
+
+            if (sleep) {
+                // 模拟业务处理耗时
+                Thread.sleep(10);
             }
 
             // 记录处理（移除 Thread.sleep 以提高测试速度）

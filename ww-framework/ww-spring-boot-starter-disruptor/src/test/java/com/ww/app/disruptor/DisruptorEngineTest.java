@@ -64,10 +64,7 @@ class DisruptorEngineTest {
         template.start();
 
         // 发布单个事件
-        Event<String> event = new Event<>("test-event-1", "Hello Disruptor");
-        boolean published = template.publish(event);
-
-        assertTrue(published, "事件应该成功发布");
+        testPublishEvent(1);
 
         // 等待处理完成
         Thread.sleep(500);
@@ -100,12 +97,9 @@ class DisruptorEngineTest {
 
         template.start();
 
-        // 发布多个事件
+        // 发布事件
         int eventCount = 25;
-        for (int i = 0; i < eventCount; i++) {
-            Event<String> event = new Event<>("batch-event-" + i, "Batch Data " + i);
-            template.publish(event);
-        }
+        testPublishEvent(eventCount);
 
         // 等待批量处理完成
         Thread.sleep(1000);
@@ -244,8 +238,8 @@ class DisruptorEngineTest {
         // 等待处理完成 - 增加等待时间确保所有事件都被处理
         // 使用轮询方式等待，最多等待10秒
         int maxWaitSeconds = 10;
-        for (int i = 0; i < maxWaitSeconds * 10; i++) {
-            Thread.sleep(100);
+        for (int i = 0; i < maxWaitSeconds * 100; i++) {
+            Thread.sleep(maxWaitSeconds);
             if (template.getPendingCount() == 0) {
                 break;
             }
@@ -261,7 +255,7 @@ class DisruptorEngineTest {
         return System.currentTimeMillis();
     }
 
-    private void testExecutorPublishEvent(int threadCount, ExecutorService executor, int eventsPerThread) throws InterruptedException {
+    private void testExecutorPublishEvent(int threadCount, int eventsPerThread, ExecutorService executor) throws InterruptedException {
         CountDownLatch latch = new CountDownLatch(threadCount);
 
         // 多线程并发发布
@@ -271,7 +265,7 @@ class DisruptorEngineTest {
                 try {
                     for (int i = 0; i < eventsPerThread; i++) {
                         Event<String> event = new Event<>(
-                                "stress-event-" + threadId + "-" + i,
+                                "Event-" + threadId + "-" + i,
                                 "Thread-" + threadId + "-Data-" + i
                         );
                         template.publish(event);
@@ -297,7 +291,7 @@ class DisruptorEngineTest {
         // 开始发布事件
         long startTime = System.currentTimeMillis();
         // 线程池发布事件
-        testExecutorPublishEvent(threadCount, executor, eventsPerThread);
+        testExecutorPublishEvent(threadCount, eventsPerThread, executor);
         // 发布事件结束
         long publishEndTime = System.currentTimeMillis();
         // 获取事件全部处理结束时间
@@ -339,10 +333,8 @@ class DisruptorEngineTest {
         template.start();
 
         // 发布事件
-        for (int i = 0; i < 10; i++) {
-            Event<String> event = new Event<>("exception-event-" + i, "Data-" + i);
-            template.publish(event);
-        }
+        int eventCount = 10;
+        testPublishEvent(eventCount);
 
         Thread.sleep(1000);
 
@@ -374,10 +366,8 @@ class DisruptorEngineTest {
         template.start();
 
         // 发布事件
-        for (int i = 0; i < 15; i++) {
-            Event<String> event = new Event<>("batch-exception-" + i, "Data-" + i);
-            template.publish(event);
-        }
+        int eventCount = 15;
+        testPublishEvent(eventCount);
 
         Thread.sleep(1000);
 
@@ -415,9 +405,7 @@ class DisruptorEngineTest {
 
         // 发布事件
         int eventCount = 1000;
-        for (int i = 0; i < eventCount; i++) {
-            template.publish(new Event<>("metric-event-" + i, "Data-" + i));
-        }
+        testPublishEvent(eventCount);
 
         // 检查发布计数
         assertEquals(eventCount, template.getPublishCount(), "发布计数应该准确");
@@ -443,10 +431,10 @@ class DisruptorEngineTest {
     @Test
     @Order(10)
     @DisplayName("测试10：优雅关闭 - 确保事件不丢失")
-    void testGracefulShutdown() {
+    void testGracefulShutdown() throws InterruptedException {
         log.info("========== 测试10：优雅关闭测试 ==========");
 
-        eventProcessor = new TestEventProcessor();
+        eventProcessor = new TestEventProcessor(false, true);
 
         template = DisruptorTemplate.<String>builder()
                 .businessName("test-shutdown")
@@ -458,14 +446,8 @@ class DisruptorEngineTest {
         template.start();
 
         // 发布事件
-        int eventCount = 100;
-        for (int i = 0; i < eventCount; i++) {
-            template.publish(new Event<>("shutdown-event-" + i, "Data-" + i));
-        }
-
-        // 记录发布完成时的计数
-        long publishedCount = template.getPublishCount();
-        assertEquals(eventCount, publishedCount, "应该成功发布所有事件");
+        int publishedCount = 2 * 50;
+        testExecutorPublishEvent(2, 50, Executors.newFixedThreadPool(2));
 
         // 立即关闭（优雅关闭会等待处理完成）
         template.stop();
@@ -488,4 +470,11 @@ class DisruptorEngineTest {
         log.info("  - 失败: {}", failedCount);
         log.info("  - 总计: {} (无丢失)", totalHandled);
     }
+
+    private void testPublishEvent(int eventCount) {
+        for (int i = 0; i < eventCount; i++) {
+            template.publish(new Event<>("event-" + i, "Data-" + i));
+        }
+    }
+
 }
