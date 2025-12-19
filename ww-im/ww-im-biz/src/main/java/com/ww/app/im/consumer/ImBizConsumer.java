@@ -1,17 +1,14 @@
 package com.ww.app.im.consumer;
 
 import com.google.common.collect.Lists;
-import com.mongodb.bulk.BulkWriteResult;
 import com.ww.app.im.api.common.ImBizMqConstant;
 import com.ww.app.im.core.api.common.ImMsgBody;
 import com.ww.app.im.entity.SingleChatMessage;
 import com.ww.app.im.service.MsgService;
 import com.ww.app.im.utils.DocShardUtils;
+import com.ww.app.mongodb.handler.MongoBulkDataHandler;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.amqp.core.Message;
 import org.springframework.amqp.rabbit.annotation.RabbitListener;
-import org.springframework.data.mongodb.core.BulkOperations;
-import org.springframework.data.mongodb.core.MongoTemplate;
 import org.springframework.stereotype.Component;
 
 import javax.annotation.Resource;
@@ -34,12 +31,12 @@ public class ImBizConsumer {
     private MsgService msgService;
 
     @Resource
-    private MongoTemplate mongoTemplate;
+    private MongoBulkDataHandler<SingleChatMessage> mongoBulkDataHandler;
 
     private static final int BATCH_SIZE = 500;
 
     @RabbitListener(queues = {ImBizMqConstant.IM_BIZ_MSG_QUEUE}, containerFactory = "appDirectContainerFactory")
-    public void imBizMsg(Message message, ImMsgBody imMsgBody) {
+    public void imBizMsg(ImMsgBody imMsgBody) {
         msgService.handleImMsg(imMsgBody);
     }
 
@@ -53,17 +50,9 @@ public class ImBizConsumer {
         msgMap.forEach((collectionName, targetMsgList) -> {
             // 分批写入，避免单次批量过大
             Lists.partition(targetMsgList, BATCH_SIZE).forEach(batch -> {
-                BulkOperations bulkOps = mongoTemplate.bulkOps(
-                        BulkOperations.BulkMode.UNORDERED,
-                        SingleChatMessage.class,
-                        collectionName
-                );
-
-                batch.forEach(bulkOps::insert);
-
                 try {
-                    BulkWriteResult result = bulkOps.execute();
-                    log.debug("MongoDB批量写入成功: {}", result.getInsertedCount());
+                    int saveCount = mongoBulkDataHandler.bulkSave(batch, collectionName);
+                    log.debug("MongoDB批量写入成功: {}", saveCount);
                 } catch (Exception e) {
                     log.error("MongoDB批量写入失败, collection: {}", collectionName, e);
                     // 失败重试或记录死信队列
