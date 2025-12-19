@@ -216,6 +216,30 @@ class DisruptorEngineTest {
         testPerformance();
     }
 
+    @Test
+    @Order(6)
+    @DisplayName("测试6：高并发批量处理压力测试")
+    void testConcurrentBatchStressTest() throws InterruptedException {
+        log.info("========== 测试6：高并发批量处理压力测试 ==========");
+        batchEventProcessor = new TestBatchEventProcessor();
+
+        template = DisruptorTemplate.<String>builder()
+                .businessName("test-batch-stress")
+                .ringBufferSize(8192)
+                .consumerThreads(12)
+                .batchSize(100)
+                .batchTimeout(10)
+                .batchEnabled(true)
+                .batchEventProcessor(batchEventProcessor)
+                .build();
+        template.start();
+
+        // 测试性能
+        testPerformance();
+
+        log.info("  - 批处理次数: {}", batchEventProcessor.getBatchCount());
+    }
+
     private long getEventHandleEndTime(int totalEvents) throws InterruptedException {
         // 等待处理完成 - 增加等待时间确保所有事件都被处理
         // 使用轮询方式等待，最多等待10秒
@@ -262,34 +286,12 @@ class DisruptorEngineTest {
         assertTrue(latch.await(30, TimeUnit.SECONDS), "发布应该在30秒内完成");
     }
 
-    @Test
-    @Order(6)
-    @DisplayName("测试6：高并发批量处理压力测试")
-    void testConcurrentBatchStressTest() throws InterruptedException {
-        log.info("========== 测试6：高并发批量处理压力测试 ==========");
-        batchEventProcessor = new TestBatchEventProcessor();
-
-        template = DisruptorTemplate.<String>builder()
-                .businessName("test-batch-stress")
-                .ringBufferSize(8192)
-                .consumerThreads(12)
-                .batchSize(100)
-                .batchTimeout(10)
-                .batchEnabled(true)
-                .batchEventProcessor(batchEventProcessor)
-                .build();
-        template.start();
-
-        // 测试性能
-        testPerformance();
-
-        log.info("  - 批处理次数: {}", batchEventProcessor.getBatchCount());
-    }
-
     private void testPerformance() throws InterruptedException {
         int threadCount = 10;
         int eventsPerThread = 10000;
         int totalEvents = threadCount * eventsPerThread;
+
+        double perSecondEvent = totalEvents * 1000.0;
 
         ExecutorService executor = Executors.newFixedThreadPool(threadCount);
         // 开始发布事件
@@ -304,8 +306,8 @@ class DisruptorEngineTest {
         // 性能指标信息
         long totalTime = handleEndTime - startTime;
         long publishDuration = publishEndTime - startTime;
-        double tps = (totalEvents * 1000.0) / totalTime;
-        double publishTps = (totalEvents * 1000.0) / publishDuration;
+        double tps = perSecondEvent / totalTime;
+        double publishTps = perSecondEvent / publishDuration;
 
         log.info("✅ 性能指标信息");
         log.info("  - 总事件数: {}", totalEvents);
