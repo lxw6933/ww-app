@@ -18,6 +18,9 @@ import java.io.IOException;
 import java.math.BigDecimal;
 import java.text.DecimalFormat;
 import java.text.SimpleDateFormat;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.TreeMap;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
@@ -223,4 +226,38 @@ public class JacksonUtils {
             return text;
         }
     }
+
+    /**
+     * 解析jsonNode
+     *
+     * @param node node
+     * @return map
+     */
+    public static TreeMap<String, Object> convertJsonNode(JsonNode node) {
+        TreeMap<String, Object> map = new TreeMap<>();
+        node.fieldNames().forEachRemaining(field -> {
+            JsonNode value = node.get(field);
+            map.put(field, parseValue(value));
+        });
+        return map;
+    }
+
+    private static Object parseValue(JsonNode node) {
+        if (node.isValueNode()) {
+            if (node.isTextual()) return node.asText();
+            if (node.isNumber()) return node.numberValue();
+            if (node.isBoolean()) return node.asBoolean();
+            if (node.isNull()) return null;
+        }
+        if (node.isArray()) {
+            List<Object> list = new ArrayList<>();
+            node.forEach(item -> list.add(parseValue(item)));
+            return list;
+        }
+        if (node.isObject()) {
+            return convertJsonNode(node);
+        }
+        return node.toString();
+    }
+
 }

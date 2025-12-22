@@ -10,6 +10,8 @@ import com.fasterxml.jackson.datatype.jsr310.ser.LocalTimeSerializer;
 import com.ww.app.web.aop.TimeCostAspect;
 import com.ww.app.web.config.LoadBalancerConfiguration;
 import com.ww.app.web.config.runner.ServerStartUpFinishedApplicationRunner;
+import com.ww.app.web.filter.CacheRequestBodyFilter;
+import com.ww.app.web.filter.ServerRequestFilter;
 import com.ww.app.web.handler.RequestBodyHandler;
 import com.ww.app.web.handler.ResExceptionHandler;
 import com.ww.app.web.handler.ResponseBodyHandler;
@@ -98,6 +100,16 @@ public class WebApplication {
     @Bean
     public TimeCostAspect timeCostAspect() {
         return new TimeCostAspect();
+    }
+
+    @Bean
+    public CacheRequestBodyFilter cacheRequestBodyFilter() {
+        return new CacheRequestBodyFilter();
+    }
+
+    @Bean
+    public ServerRequestFilter serverRequestFilter() {
+        return new ServerRequestFilter();
     }
 
 }

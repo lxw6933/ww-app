@@ -1,5 +1,10 @@
 package com.ww.app.web.utils;
 
+import com.ww.app.web.aop.ApiSecurityAspect;
+import com.ww.app.web.constants.ApiSecurityConstant;
+import org.springframework.util.DigestUtils;
+
+import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -8,16 +13,6 @@ import java.util.Map;
  * 用于演示客户端如何生成签名
  */
 public class ApiSecurityClientUtils {
-
-    /**
-     * 生成签名
-     *
-     * @param params    请求参数
-     * @return 签名
-     */
-    public static String generateSign(Map<String, String> params) {
-        return SignUtils.generateSign(params);
-    }
 
     /**
      * 获取时间戳（秒）
@@ -34,25 +29,26 @@ public class ApiSecurityClientUtils {
      * @param params     请求参数
      * @return 安全请求头Map
      */
-    public static Map<String, String> generateSecurityHeaders(String appId, String secretKey, Map<String, String> params) {
+    public static Map<String, String> generateSecurityHeaders(String appId, String secretKey, Map<String, Object> params) {
         Map<String, String> headers = new HashMap<>();
         
         // 添加应用ID请求头
-        headers.put("X-App-Id", appId);
+        headers.put(ApiSecurityConstant.APP_ID, appId);
         
         // 添加时间戳请求头
         String timestamp = getTimestamp();
-        headers.put("X-Timestamp", timestamp);
+        headers.put(ApiSecurityConstant.APP_TIMESTAMP, timestamp);
         
         // 构造签名参数
-        Map<String, String> signParams = new HashMap<>(params);
-        signParams.put("appId", appId);
-        signParams.put("secret", secretKey);
-        signParams.put("timestamp", timestamp);
+        Map<String, Object> signParams = new HashMap<>(params);
+        signParams.put(ApiSecurityConstant.APP_ID, appId);
+        signParams.put(ApiSecurityConstant.APP_SECRET, secretKey);
+        signParams.put(ApiSecurityConstant.APP_TIMESTAMP, timestamp);
         
         // 生成签名并添加到请求头
-        String sign = generateSign(signParams);
-        headers.put("X-Sign", sign);
+        String singParams = ApiSecurityAspect.generateSignParams(signParams);
+        String sign = DigestUtils.md5DigestAsHex(singParams.getBytes(StandardCharsets.UTF_8)).toUpperCase();
+        headers.put(ApiSecurityConstant.APP_SIGN, sign);
         
         return headers;
     }
@@ -66,7 +62,7 @@ public class ApiSecurityClientUtils {
         String secretKey = "test_secret_key";
         
         // 构造请求参数
-        Map<String, String> params = new HashMap<>();
+        Map<String, Object> params = new HashMap<>();
         params.put("name", "测试名称");
         params.put("age", "25");
         
@@ -81,9 +77,9 @@ public class ApiSecurityClientUtils {
         HttpClient client = HttpClient.newHttpClient();
         HttpRequest request = HttpRequest.newBuilder()
             .uri(URI.create("https://api.example.com/data"))
-            .header("X-App-Id", securityHeaders.get("X-App-Id"))
-            .header("X-Timestamp", securityHeaders.get("X-Timestamp"))
-            .header("X-Sign", securityHeaders.get("X-Sign"))
+            .header(ApiSecurityConstant.APP_ID, securityHeaders.get(ApiSecurityConstant.APP_ID))
+            .header(ApiSecurityConstant.APP_TIMESTAMP, securityHeaders.get(ApiSecurityConstant.APP_TIMESTAMP))
+            .header(ApiSecurityConstant.APP_SIGN, securityHeaders.get(ApiSecurityConstant.APP_SIGN))
             .GET()
             .build();
         
