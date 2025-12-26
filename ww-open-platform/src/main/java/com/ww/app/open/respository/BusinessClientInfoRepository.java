@@ -27,4 +27,12 @@ public interface BusinessClientInfoRepository {
      */
     AppPageResult<BusinessClientInfo> page(AppPage appPage);
 
+    /**
+     * 根据商户编码查询商户信息
+     *
+     * @param sysCode 商户编码
+     * @return 商户信息
+     */
+    BusinessClientInfo getBySysCode(String sysCode);
+
 }

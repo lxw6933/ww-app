@@ -29,6 +29,12 @@
             <artifactId>ww-spring-boot-starter-mybatis</artifactId>
             <version>${revision}</version>
         </dependency>
+        <!-- disruptor starter -->
+        <dependency>
+            <groupId>com.ww.app</groupId>
+            <artifactId>ww-spring-boot-starter-disruptor</artifactId>
+            <version>${revision}</version>
+        </dependency>
         <!-- test -->
         <dependency>
             <groupId>org.springframework.boot</groupId>
