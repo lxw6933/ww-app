@@ -1,4 +1,4 @@
-package com.ww.app.open.respository.impl;
+package com.ww.app.open.service.impl;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
@@ -8,7 +8,7 @@ import com.ww.app.common.constant.Constant;
 import com.ww.app.common.utils.RSAUtil;
 import com.ww.app.open.entity.BusinessClientInfo;
 import com.ww.app.open.infrastructure.BusinessClientInfoMapper;
-import com.ww.app.open.respository.BusinessClientInfoRepository;
+import com.ww.app.open.service.BusinessClientInfoService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -25,7 +25,7 @@ import java.util.HashMap;
  */
 @Slf4j
 @Service
-public class BusinessClientInfoRepositoryImpl extends ServiceImpl<BusinessClientInfoMapper, BusinessClientInfo> implements BusinessClientInfoRepository {
+public class BusinessClientInfoServiceImpl extends ServiceImpl<BusinessClientInfoMapper, BusinessClientInfo> implements BusinessClientInfoService {
 
     /**
      * 保存商户信息

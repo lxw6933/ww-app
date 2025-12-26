@@ -1,5 +1,6 @@
 package com.ww.app.open.aspect;
 
+import cn.hutool.core.exceptions.ExceptionUtil;
 import com.alibaba.fastjson.JSON;
 import com.ww.app.open.common.OpenApiContext;
 import com.ww.app.open.entity.OpenApiCallLog;
@@ -9,14 +10,8 @@ import org.aspectj.lang.ProceedingJoinPoint;
 import org.aspectj.lang.annotation.Around;
 import org.aspectj.lang.annotation.Aspect;
 import org.springframework.stereotype.Component;
-import org.springframework.web.context.request.RequestContextHolder;
-import org.springframework.web.context.request.ServletRequestAttributes;
 
 import javax.annotation.Resource;
-import javax.servlet.http.HttpServletRequest;
-import java.io.IOException;
-import java.io.PrintWriter;
-import java.io.StringWriter;
 
 /**
  * 开放平台API日志切面
@@ -52,14 +47,9 @@ public class OpenApiLogAspect {
         Object result;
 
         try {
-            // 记录请求参数（脱敏处理）
-            ServletRequestAttributes attributes = (ServletRequestAttributes) RequestContextHolder.getRequestAttributes();
-            if (attributes != null) {
-                HttpServletRequest request = attributes.getRequest();
-                Object openRequest = request.getAttribute("openRequest");
-                if (openRequest != null) {
-                    callLog.setRequestParams(JSON.toJSONString(openRequest));
-                }
+            // 记录请求参数（脱敏处理）- 从context中获取
+            if (context.getOpenRequest() != null) {
+                callLog.setRequestParams(JSON.toJSONString(context.getOpenRequest()));
             }
 
             // 执行方法
@@ -75,7 +65,7 @@ public class OpenApiLogAspect {
 
         } catch (Exception e) {
             callLog.setSuccess(0);
-            callLog.setErrorMessage(getStackTrace(e));
+            callLog.setErrorMessage(ExceptionUtil.getRootCauseMessage(e));
             callLog.setResponseStatus(500);
             throw e;
         } finally {
@@ -90,17 +80,5 @@ public class OpenApiLogAspect {
         return result;
     }
 
-    /**
-     * 获取异常堆栈信息
-     */
-    private String getStackTrace(Exception e) {
-        try (StringWriter sw = new StringWriter();
-             PrintWriter pw = new PrintWriter(sw)) {
-            e.printStackTrace(pw);
-            return sw.toString();
-        } catch (IOException ex) {
-            return e.getMessage();
-        }
-    }
 }
 

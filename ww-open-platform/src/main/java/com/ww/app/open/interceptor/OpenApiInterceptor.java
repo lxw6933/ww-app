@@ -7,12 +7,13 @@ import com.alibaba.fastjson.JSON;
 import com.ww.app.common.enums.GlobalResCodeConstants;
 import com.ww.app.common.exception.ApiException;
 import com.ww.app.common.utils.DigitalSignatureUtil;
+import com.ww.app.common.utils.IpUtil;
 import com.ww.app.open.common.BaseOpenRequest;
 import com.ww.app.open.common.OpenApiContext;
 import com.ww.app.open.entity.BusinessClientInfo;
 import com.ww.app.open.entity.OpenApplication;
 import com.ww.app.open.entity.OpenApiInfo;
-import com.ww.app.open.respository.BusinessClientInfoRepository;
+import com.ww.app.open.service.BusinessClientInfoService;
 import com.ww.app.open.service.OpenApiInfoService;
 import com.ww.app.open.service.OpenApiPermissionService;
 import com.ww.app.open.service.OpenApplicationService;
@@ -25,11 +26,11 @@ import com.ww.app.open.utils.StatusValidator;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.codec.binary.Base64;
 import org.jetbrains.annotations.NotNull;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import org.springframework.web.servlet.HandlerInterceptor;
 
 import javax.annotation.PostConstruct;
+import javax.annotation.Resource;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.io.BufferedReader;
@@ -48,17 +49,17 @@ import java.util.concurrent.atomic.AtomicLong;
 @Component
 public class OpenApiInterceptor implements HandlerInterceptor {
 
-    @Autowired
+    @Resource
     private OpenApplicationService openApplicationService;
 
-    @Autowired
+    @Resource
     private OpenApiInfoService openApiInfoService;
 
-    @Autowired
+    @Resource
     private OpenApiPermissionService openApiPermissionService;
 
-    @Autowired
-    private BusinessClientInfoRepository businessClientInfoRepository;
+    @Resource
+    private BusinessClientInfoService businessClientInfoService;
 
 
     /**
@@ -107,7 +108,7 @@ public class OpenApiInterceptor implements HandlerInterceptor {
         // 创建上下文
         OpenApiContext context = new OpenApiContext();
         context.setRequestStartTime(System.currentTimeMillis());
-        context.setRequestIp(getClientIp(request));
+        context.setRequestIp(IpUtil.getRealIp(request));
         OpenApiContext.set(context);
 
         try {
@@ -148,7 +149,7 @@ public class OpenApiInterceptor implements HandlerInterceptor {
             validateRequestTime(openRequest.getReqTime());
 
             // 10. 验证签名（从商户信息获取公钥）
-            BusinessClientInfo businessClient = businessClientInfoRepository.getBySysCode(openRequest.getSysCode());
+            BusinessClientInfo businessClient = businessClientInfoService.getBySysCode(openRequest.getSysCode());
             if (businessClient == null || businessClient.getPublicKey() == null) {
                 throw new ApiException(GlobalResCodeConstants.BAD_REQUEST.getCode(), "商户信息不存在或公钥未配置");
             }
@@ -161,14 +162,12 @@ public class OpenApiInterceptor implements HandlerInterceptor {
             checkRateLimit(openRequest.getAppCode(), apiInfo.getApiCode(), 
                           openApiPermissionService.getQpsLimit(openRequest.getAppCode(), apiInfo.getApiCode()));
 
-            // 13. 更新上下文
+            // 13. 更新上下文，将所有信息存储到context中
             context.setApiCode(apiInfo.getApiCode());
+            context.setOpenRequest(openRequest);
+            context.setOpenApplication(application);
+            context.setOpenApiInfo(apiInfo);
             OpenApiContext.set(context);
-
-            // 将请求信息存储到request attribute中，供后续使用
-            request.setAttribute("openRequest", openRequest);
-            request.setAttribute("openApplication", application);
-            request.setAttribute("openApiInfo", apiInfo);
 
             return true;
         } catch (Exception e) {
@@ -339,22 +338,5 @@ public class OpenApiInterceptor implements HandlerInterceptor {
         return sb.toString();
     }
 
-    /**
-     * 获取客户端IP
-     */
-    private String getClientIp(HttpServletRequest request) {
-        String ip = request.getHeader("X-Forwarded-For");
-        if (StrUtil.isBlank(ip) || "unknown".equalsIgnoreCase(ip)) {
-            ip = request.getHeader("X-Real-IP");
-        }
-        if (StrUtil.isBlank(ip) || "unknown".equalsIgnoreCase(ip)) {
-            ip = request.getRemoteAddr();
-        }
-        // 处理多级代理的情况
-        if (ip != null && ip.contains(",")) {
-            ip = ip.split(",")[0].trim();
-        }
-        return ip;
-    }
 }
 

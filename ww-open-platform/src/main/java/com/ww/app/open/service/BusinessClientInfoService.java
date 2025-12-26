@@ -1,4 +1,4 @@
-package com.ww.app.open.respository;
+package com.ww.app.open.service;
 
 import com.ww.app.open.entity.BusinessClientInfo;
 import com.ww.app.common.common.AppPage;
@@ -9,7 +9,7 @@ import com.ww.app.common.common.AppPageResult;
  * @create 2024-05-25 15:27
  * @description:
  */
-public interface BusinessClientInfoRepository {
+public interface BusinessClientInfoService {
 
     /**
      * 开发平台商户入驻
