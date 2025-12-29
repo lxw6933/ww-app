@@ -1,7 +1,6 @@
 package com.ww.app.member.strategy.sign;
 
 import com.ww.app.member.enums.SignPeriod;
-import org.springframework.data.redis.core.RedisCallback;
 import org.springframework.stereotype.Component;
 
 import java.time.*;
@@ -24,14 +23,11 @@ public class WeeklySignStrategy extends AbstractSignStrategy {
     protected void processSignReward(Long userId, LocalDate date) {
         // 获取签到次数
         String signKey = buildSignKey(userId, date);
-        Long signCount = stringRedisTemplate.execute(
-                (RedisCallback<Long>) con -> con.bitCount(signKey.getBytes())
-        );
+        int signCount = getBitmapSignCount(signKey);
         // 获取当天是周几
         DayOfWeek dayOfWeek = date.getDayOfWeek();
         // 如果是周末且已签到5天以上，发放额外奖励
-        if ((dayOfWeek == DayOfWeek.SATURDAY || dayOfWeek == DayOfWeek.SUNDAY)
-                && signCount != null && signCount >= 5) {
+        if ((dayOfWeek == DayOfWeek.SATURDAY || dayOfWeek == DayOfWeek.SUNDAY) && signCount >= 5) {
             // TODO: 实现周末额外奖励逻辑
         }
     }

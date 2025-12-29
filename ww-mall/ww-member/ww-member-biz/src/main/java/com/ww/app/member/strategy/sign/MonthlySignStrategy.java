@@ -2,7 +2,6 @@ package com.ww.app.member.strategy.sign;
 
 import cn.hutool.core.date.DatePattern;
 import com.ww.app.member.enums.SignPeriod;
-import org.springframework.data.redis.core.RedisCallback;
 import org.springframework.stereotype.Component;
 
 import java.time.*;
@@ -22,16 +21,14 @@ public class MonthlySignStrategy extends AbstractSignStrategy {
     protected void processSignReward(Long userId, LocalDate date) {
         // 获取签到次数
         String signKey = buildSignKey(userId, date);
-        Long signCount = stringRedisTemplate.execute(
-                (RedisCallback<Long>) con -> con.bitCount(signKey.getBytes())
-        );
+        int signCount = getBitmapSignCount(signKey);
         // 半月签到奖励
-        if (signCount != null && signCount == 15) {
+        if (signCount == 15) {
             // TODO: 实现半月签到奖励逻辑
         }
         // 满月签到奖励
         int daysInMonth = getBitCount(date);
-        if (signCount != null && signCount.intValue() == daysInMonth) {
+        if (signCount == daysInMonth) {
             // TODO: 实现满月签到奖励逻辑
         }
     }
