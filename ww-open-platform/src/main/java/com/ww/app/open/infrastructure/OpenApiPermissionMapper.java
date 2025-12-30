@@ -15,3 +15,4 @@ public interface OpenApiPermissionMapper extends BaseMapper<OpenApiPermission> {
 }
 
 
+

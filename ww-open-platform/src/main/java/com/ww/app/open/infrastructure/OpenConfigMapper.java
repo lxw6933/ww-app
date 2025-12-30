@@ -15,3 +15,4 @@ public interface OpenConfigMapper extends BaseMapper<OpenConfig> {
 }
 
 
+

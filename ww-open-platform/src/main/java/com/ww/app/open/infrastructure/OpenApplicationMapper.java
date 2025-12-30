@@ -15,3 +15,4 @@ public interface OpenApplicationMapper extends BaseMapper<OpenApplication> {
 }
 
 
+
