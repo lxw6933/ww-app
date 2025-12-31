@@ -52,11 +52,8 @@ public class SignController {
 
     @Operation(summary = "获取连续签到次数", description = "获取当前连续签到的天数")
     @GetMapping("/continuousSignCount")
-    public int continuousSignCount(@RequestParam(name = "date", required = false) LocalDate date) {
-        if (date == null) {
-            date = LocalDate.now();
-        }
-        return signService.getContinuousSignCount(date, AuthorizationContext.getClientUser());
+    public int continuousSignCount() {
+        return signService.getContinuousSignCount(LocalDate.now(), AuthorizationContext.getClientUser());
     }
 
     @Operation(summary = "获取签到详情", description = "获取当前周期的签到详情列表")
