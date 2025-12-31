@@ -13,17 +13,17 @@ public class ExcelResultVO {
     /**
      * 成功数量
      */
-    private Integer successNum = 0;
+    private int successNum;
 
     /**
      * 失败数量
      */
-    private Integer failNum = 0;
+    private int failNum;
 
     /**
      * 导入总条数
      */
-    private Integer totalNum = 0;
+    private int totalNum;
 
     /**
      * 失败文件下载地址路径,失败条数为0时为空
