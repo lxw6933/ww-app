@@ -38,12 +38,12 @@ public class ValidationUtils {
 
     public static boolean isExcel(MultipartFile file, int fileMaxSize) {
         String suffix = FileUtil.getSuffix(file.getOriginalFilename());
-        String fileType = org.apache.commons.lang3.StringUtils.isBlank(suffix) ? StrUtil.EMPTY : suffix.toLowerCase(Locale.ROOT);
+        String fileType = StrUtil.isBlank(suffix) ? StrUtil.EMPTY : suffix.toLowerCase(Locale.ROOT);
         if (!EXCEL_FLAGS.contains(fileType)) {
             throw new ApiException("仅支持" + EXCEL_FLAGS + "格式的文件");
         }
         long fileSize = file.getSize();
-        if (fileSize > fileMaxSize) {
+        if (fileSize / 1024 / 1024 > fileMaxSize) {
             throw new ApiException("上传文件超过" + fileMaxSize + "M");
         }
         return true;
