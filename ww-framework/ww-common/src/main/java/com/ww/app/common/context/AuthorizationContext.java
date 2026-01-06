@@ -58,7 +58,7 @@ public class AuthorizationContext {
         
         // 解析成功后缓存到 ThreadLocal
         if (clientUser != null) {
-            CLIENT_USER_THREAD_LOCAL.set(clientUser);
+            setClientUser(clientUser);
             log.debug("ClientUser 已缓存到 ThreadLocal: userId={}", clientUser.getId());
         }
         
@@ -81,7 +81,7 @@ public class AuthorizationContext {
         
         // 解析成功后缓存到 ThreadLocal
         if (adminUser != null) {
-            ADMIN_USER_THREAD_LOCAL.set(adminUser);
+            setAdminUser(adminUser);
             log.debug("AdminUser 已缓存到 ThreadLocal: userId={}", adminUser.getId());
         }
         
