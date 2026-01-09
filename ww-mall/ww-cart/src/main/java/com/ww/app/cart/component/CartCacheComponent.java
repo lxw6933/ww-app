@@ -188,7 +188,7 @@ public class CartCacheComponent {
         try {
 
             Cart cart = new Cart();
-            cart.setCartItems(getUserCartItemList());
+            cart.setCartItems(getUserCartItemList(userId));
             cart.recalcTotals();
 
             if (log.isDebugEnabled()) {
@@ -224,6 +224,10 @@ public class CartCacheComponent {
      */
     public RMap<String, CartItem> getUserCart() {
         Long userId = AuthorizationContext.getClientUser().getId();
+        return getUserCart(userId);
+    }
+
+    public RMap<String, CartItem> getUserCart(Long userId) {
         String userCartKey = cartRedisKeyBuilder.buildUserCartKey(userId);
         return redissonClient.getMap(userCartKey);
     }
@@ -231,8 +235,8 @@ public class CartCacheComponent {
     /**
      * 获取用户购物车列表
      */
-    public List<CartItem> getUserCartItemList() {
-        RMap<String, CartItem> userCart = getUserCart();
+    public List<CartItem> getUserCartItemList(Long userId) {
+        RMap<String, CartItem> userCart = getUserCart(userId);
 
         // 性能优化：使用 readAllValues() 批量读取
         Collection<CartItem> values = userCart.readAllValues();
