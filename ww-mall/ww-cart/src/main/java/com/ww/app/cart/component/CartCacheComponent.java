@@ -57,7 +57,7 @@ public class CartCacheComponent {
                 this::loadCartFromRedis // 刷新函数
         );
 
-        log.info("购物车本地缓存初始化完成 - 最大容量: 1000, 过期时间: 4-6分钟, 刷新时间: 3分钟");
+        log.info("购物车本地缓存初始化完成 - 最大容量: 3000, 过期时间: 5-10分钟, 刷新时间: 3分钟");
     }
 
     /**

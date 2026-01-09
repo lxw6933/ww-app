@@ -50,7 +50,6 @@ public class Cart {
 
     /**
      * 重新计算购物车统计信息
-     * 优化：使用并行流提升性能（当商品数量较多时）
      */
     public void recalcTotals() {
         if (cartItems == null || cartItems.isEmpty()) {
@@ -62,39 +61,34 @@ public class Cart {
             return;
         }
 
-        if (cartItems.size() > 10) {
-            this.countNum = cartItems.parallelStream()
-                    .mapToInt(CartItem::getCount)
-                    .sum();
-            this.totalAmount = cartItems.parallelStream()
-                    .filter(CartItem::isChecked)
-                    .filter(item -> !item.isInvalid())
-                    .mapToLong(CartItem::getTotalPrice)
-                    .sum();
-            this.checkedCount = (int) cartItems.parallelStream()
-                    .filter(CartItem::isChecked)
-                    .count();
-            this.invalidCount = (int) cartItems.parallelStream()
-                    .filter(CartItem::isInvalid)
-                    .count();
-        } else {
-            this.countNum = cartItems.stream()
-                    .mapToInt(CartItem::getCount)
-                    .sum();
-            this.totalAmount = cartItems.stream()
-                    .filter(CartItem::isChecked)
-                    .filter(item -> !item.isInvalid())
-                    .mapToLong(CartItem::getTotalPrice)
-                    .sum();
-            this.checkedCount = (int) cartItems.stream()
-                    .filter(CartItem::isChecked)
-                    .count();
-            this.invalidCount = (int) cartItems.stream()
-                    .filter(CartItem::isInvalid)
-                    .count();
+        int countNum = 0;
+        int checkedCount = 0;
+        int invalidCount = 0;
+        long totalAmount = 0L;
+
+        for (CartItem item : cartItems) {
+            if (item == null) {
+                continue;
+            }
+            Integer count = item.getCount();
+            if (count != null) {
+                countNum += count;
+            }
+            if (item.isInvalid()) {
+                invalidCount++;
+                continue;
+            }
+            if (item.isChecked()) {
+                checkedCount++;
+                totalAmount += item.getTotalPrice();
+            }
         }
 
+        this.countNum = countNum;
         this.countType = cartItems.size();
+        this.totalAmount = totalAmount;
+        this.checkedCount = checkedCount;
+        this.invalidCount = invalidCount;
     }
 
     /**

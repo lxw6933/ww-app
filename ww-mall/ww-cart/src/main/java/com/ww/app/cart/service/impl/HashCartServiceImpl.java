@@ -103,6 +103,7 @@ public class HashCartServiceImpl implements HashCartService {
 
         // 设置或重置过期时间
         resetExpireTime(userCart, isNewItem.get());
+        cartCacheComponent.invalidateCache(userId);
 
         log.info("添加购物车成功: userId={}, skuId={}, num={}, isNew={}", 
                 userId, skuId, num, isNewItem.get());
@@ -137,6 +138,7 @@ public class HashCartServiceImpl implements HashCartService {
             log.warn("清空购物车失败或购物车本身为空: userId={}", userId);
         }
 
+        cartCacheComponent.invalidateCache(userId);
         return true;
     }
 
@@ -166,6 +168,7 @@ public class HashCartServiceImpl implements HashCartService {
         });
 
         resetExpireTime(userCart, false);
+        cartCacheComponent.invalidateCache(userId);
 
         log.info("勾选商品成功: userId={}, skuId={}, checked={}", 
                 userId, skuId, updatedItem.isChecked());
@@ -199,6 +202,7 @@ public class HashCartServiceImpl implements HashCartService {
         }
 
         resetExpireTime(userCart, false);
+        cartCacheComponent.invalidateCache(userId);
 
         log.info("修改商品数量成功: userId={}, skuId={}, num={}", userId, skuId, num);
         return true;
@@ -223,6 +227,7 @@ public class HashCartServiceImpl implements HashCartService {
         }
 
         resetExpireTime(userCart, false);
+        cartCacheComponent.invalidateCache(userId);
         return true;
     }
 
@@ -247,6 +252,7 @@ public class HashCartServiceImpl implements HashCartService {
         long removeCount = userCart.fastRemove(keys);
 
         resetExpireTime(userCart, false);
+        cartCacheComponent.invalidateCache(userId);
 
         log.info("批量删除商品成功: userId={}, requestCount={}, actualRemoved={}", 
                 userId, skuIdList.size(), removeCount);
