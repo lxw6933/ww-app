@@ -5,7 +5,7 @@ import com.ww.app.mongodb.common.AbstractMongoPage;
 import com.ww.mall.coupon.constant.CouponConstant;
 import com.ww.mall.coupon.entity.MerchantCouponActivity;
 import com.ww.mall.coupon.entity.base.BaseCouponInfo;
-import com.ww.mall.coupon.eunms.CouponDiscountType;
+import com.ww.mall.coupon.enums.CouponDiscountType;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import org.apache.commons.lang3.StringUtils;

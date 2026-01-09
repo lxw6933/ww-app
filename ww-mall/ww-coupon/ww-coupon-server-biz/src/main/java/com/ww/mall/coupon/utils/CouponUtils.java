@@ -4,7 +4,7 @@ import cn.hutool.core.util.StrUtil;
 import com.ww.app.common.enums.GlobalResCodeConstants;
 import com.ww.app.common.exception.ApiException;
 import com.ww.app.common.utils.IdUtil;
-import com.ww.mall.coupon.eunms.CouponType;
+import com.ww.mall.coupon.enums.CouponType;
 
 /**
  * @author ww

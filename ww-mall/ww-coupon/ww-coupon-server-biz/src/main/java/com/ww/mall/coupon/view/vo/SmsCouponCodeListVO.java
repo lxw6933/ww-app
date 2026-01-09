@@ -2,7 +2,7 @@ package com.ww.mall.coupon.view.vo;
 
 import com.alibaba.excel.annotation.ExcelProperty;
 import com.ww.app.excel.convert.CommonEnumConverter;
-import com.ww.mall.coupon.eunms.CouponStatus;
+import com.ww.mall.coupon.enums.CouponStatus;
 import lombok.Data;
 
 import java.util.Date;

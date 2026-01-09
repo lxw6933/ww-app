@@ -1,4 +1,4 @@
-package com.ww.mall.coupon.eunms;
+package com.ww.mall.coupon.enums;
 
 import lombok.Getter;
 
@@ -6,20 +6,18 @@ import java.util.StringJoiner;
 
 /**
  * @author ww
- * @create 2023-07-25- 09:41
+ * @create 2023-07-25- 09:24
  * @description:
  */
 @Getter
-public enum IssueType {
+public enum CouponType {
 
-    RECEIVE("用户领取"),
-    ADMIN_ISSUE("后台发放"),
-    API_ISSUE("api发放"),
-    EXPORT_ISSUE("导出发放");
+    PLATFORM("平台"),
+    MERCHANT("商家");
 
     private final String text;
 
-    IssueType(String text) {
+    CouponType(String text) {
         this.text = text;
     }
 

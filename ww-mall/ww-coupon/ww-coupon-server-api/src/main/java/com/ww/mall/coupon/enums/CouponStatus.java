@@ -1,4 +1,4 @@
-package com.ww.mall.coupon.eunms;
+package com.ww.mall.coupon.enums;
 
 import com.ww.app.common.enums.BaseEnum;
 import lombok.Getter;

@@ -1,6 +1,6 @@
 package com.ww.mall.coupon.view.vo;
 
-import com.ww.mall.coupon.eunms.CouponDiscountType;
+import com.ww.mall.coupon.enums.CouponDiscountType;
 import lombok.Data;
 
 import java.math.BigDecimal;

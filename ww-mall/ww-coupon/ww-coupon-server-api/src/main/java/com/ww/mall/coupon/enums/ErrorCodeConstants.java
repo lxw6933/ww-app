@@ -1,4 +1,4 @@
-package com.ww.mall.coupon.eunms;
+package com.ww.mall.coupon.enums;
 
 import com.ww.app.common.common.ResCode;
 
@@ -19,12 +19,12 @@ public interface ErrorCodeConstants {
     ResCode COUPON_ACTIVITY_DOWN = new ResCode(9203, "优惠券已下架");
     ResCode COUPON_ACTIVITY_CANT_GET = new ResCode(9204, "优惠券还未到领取时间");
     ResCode EXCEED_RECEIVE_LIMIT = new ResCode(9205, "超出优惠券领取限制");
-    ResCode EXCEED_BATCH_MAX_NUMBER = new ResCode(9207, "超出批次券码最大数量");
     ResCode COUPON_SALE_OUT = new ResCode(9206, "优惠券已被抢空");
-    ResCode COUPON_STOCK_LESS = new ResCode(9207, "优惠券数量不足");
-    ResCode COUPON_STOCK_SUCCESS_BUT_SHOW_DATA_EXCEPTION = new ResCode(9208, "优惠券数量已成功生成，优惠券数量展示数据维护失败");
-    ResCode COUPON_USED_EXCEPTION = new ResCode(9209, "优惠券已被使用");
-    ResCode COUPON_TYPE_EXCEPTION = new ResCode(9210, "优惠券活动类型不匹配");
-    ResCode OUT_OF_ISSUE_STOCK = new ResCode(9211, "优惠券活动批次已全部发放完");
+    ResCode EXCEED_BATCH_MAX_NUMBER = new ResCode(9207, "超出批次券码最大数量");
+    ResCode COUPON_STOCK_LESS = new ResCode(9208, "优惠券数量不足");
+    ResCode COUPON_STOCK_SUCCESS_BUT_SHOW_DATA_EXCEPTION = new ResCode(9209, "优惠券数量已成功生成，优惠券数量展示数据维护失败");
+    ResCode COUPON_USED_EXCEPTION = new ResCode(9210, "优惠券已被使用");
+    ResCode COUPON_TYPE_EXCEPTION = new ResCode(9211, "优惠券活动类型不匹配");
+    ResCode OUT_OF_ISSUE_STOCK = new ResCode(9212, "优惠券活动批次已全部发放完");
 
 }

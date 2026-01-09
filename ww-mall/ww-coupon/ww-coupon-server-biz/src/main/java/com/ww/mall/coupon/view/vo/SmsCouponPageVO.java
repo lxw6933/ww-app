@@ -1,6 +1,6 @@
 package com.ww.mall.coupon.view.vo;
 
-import com.ww.mall.coupon.eunms.IssueType;
+import com.ww.mall.coupon.enums.IssueType;
 import com.ww.mall.coupon.view.vo.base.BaseCouponInfoVO;
 import lombok.Data;
 import lombok.EqualsAndHashCode;

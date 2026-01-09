@@ -1,4 +1,4 @@
-package com.ww.mall.coupon.eunms;
+package com.ww.mall.coupon.enums;
 
 import lombok.Getter;
 
@@ -6,20 +6,18 @@ import java.util.StringJoiner;
 
 /**
  * @author ww
- * @create 2023-07-25- 09:16
+ * @create 2023-07-25- 09:08
  * @description:
  */
 @Getter
-public enum LimitReceiveTimeType {
+public enum EffectTimeType {
 
-    FOREVER("永久"),
-    MONTH("月"),
-    WEEK("周"),
-    DAY("天");
+    FIXED("固定"),
+    AFTER_RECEIVING("领取后");
 
     private final String text;
 
-    LimitReceiveTimeType(String text) {
+    EffectTimeType(String text) {
         this.text = text;
     }
 

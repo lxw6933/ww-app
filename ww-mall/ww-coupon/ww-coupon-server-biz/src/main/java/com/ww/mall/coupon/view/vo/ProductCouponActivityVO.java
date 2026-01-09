@@ -1,7 +1,7 @@
 package com.ww.mall.coupon.view.vo;
 
 import com.ww.mall.coupon.constant.CouponConstant;
-import com.ww.mall.coupon.eunms.EffectTimeType;
+import com.ww.mall.coupon.enums.EffectTimeType;
 import com.ww.mall.coupon.view.vo.base.BaseCouponInfoVO;
 import lombok.Data;
 import lombok.EqualsAndHashCode;

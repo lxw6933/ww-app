@@ -1,7 +1,7 @@
 package com.ww.mall.coupon.view.bo;
 
 import com.ww.mall.coupon.constant.CouponConstant;
-import com.ww.mall.coupon.eunms.CouponType;
+import com.ww.mall.coupon.enums.CouponType;
 import lombok.Data;
 
 /**

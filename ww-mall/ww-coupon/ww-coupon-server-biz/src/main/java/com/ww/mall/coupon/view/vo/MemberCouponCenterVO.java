@@ -1,9 +1,9 @@
 package com.ww.mall.coupon.view.vo;
 
 import com.ww.mall.coupon.entity.SmsCouponRecord;
-import com.ww.mall.coupon.eunms.ApplyProductRangeType;
-import com.ww.mall.coupon.eunms.CouponStatus;
-import com.ww.mall.coupon.eunms.CouponType;
+import com.ww.mall.coupon.enums.ApplyProductRangeType;
+import com.ww.mall.coupon.enums.CouponStatus;
+import com.ww.mall.coupon.enums.CouponType;
 import com.ww.mall.coupon.view.vo.base.BaseCouponInfoVO;
 import lombok.Data;
 import lombok.EqualsAndHashCode;

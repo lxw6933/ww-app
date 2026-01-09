@@ -21,8 +21,8 @@ import com.ww.mall.coupon.constant.CouponConstant;
 import com.ww.mall.coupon.convert.CouponConvert;
 import com.ww.mall.coupon.entity.MerchantCouponActivity;
 import com.ww.mall.coupon.entity.base.BaseCouponInfo;
-import com.ww.mall.coupon.eunms.ErrorCodeConstants;
-import com.ww.mall.coupon.eunms.IssueType;
+import com.ww.mall.coupon.enums.ErrorCodeConstants;
+import com.ww.mall.coupon.enums.IssueType;
 import com.ww.mall.coupon.service.MerchantCouponService;
 import com.ww.mall.coupon.utils.CouponCacheComponent;
 import com.ww.mall.coupon.view.bo.*;
@@ -46,7 +46,7 @@ import java.util.stream.Collectors;
 
 import static com.ww.app.common.utils.CollectionUtils.convertList;
 import static com.ww.mall.coupon.constant.LogRecordConstants.*;
-import static com.ww.mall.coupon.eunms.ErrorCodeConstants.NOT_SUPPORT_ISSUE_TYPE;
+import static com.ww.mall.coupon.enums.ErrorCodeConstants.NOT_SUPPORT_ISSUE_TYPE;
 
 /**
  * @author ww
@@ -143,11 +143,11 @@ public class MerchantCouponServiceImpl implements MerchantCouponService {
         // 判断是否开始
         UpdateResult updateResult;
         if (merchantCouponActivity.getReceiveStartTime().before(new Date())) {
-            // 未开始
-            updateResult = mongoTemplate.updateFirst(BaseCouponInfo.buildMerchantActivityCodeQuery(merchantCouponActivityEditBO.getActivityCode(), merchantCouponActivityEditBO.getMerchantId()), merchantCouponActivityEditBO.buildWaitStartInfoUpdate(), MerchantCouponActivity.class);
-        } else {
             // 已开始
             updateResult = mongoTemplate.updateFirst(BaseCouponInfo.buildMerchantActivityCodeQuery(merchantCouponActivityEditBO.getActivityCode(), merchantCouponActivityEditBO.getMerchantId()), merchantCouponActivityEditBO.buildInfoUpdate(), MerchantCouponActivity.class);
+        } else {
+            // 未开始
+            updateResult = mongoTemplate.updateFirst(BaseCouponInfo.buildMerchantActivityCodeQuery(merchantCouponActivityEditBO.getActivityCode(), merchantCouponActivityEditBO.getMerchantId()), merchantCouponActivityEditBO.buildWaitStartInfoUpdate(), MerchantCouponActivity.class);
         }
         couponCacheComponent.updateMerchantCouponActivityCache(merchantCouponActivityEditBO.getActivityCode());
         // 记录操作日志上下文
@@ -244,8 +244,9 @@ public class MerchantCouponServiceImpl implements MerchantCouponService {
             // 获取当前优惠券领取数量
             int receiveNumber1 = res.getReceiveNumber();
             int receiveNumber2 = smsCouponStatisticsComponent.getStatisticsReceiveMap().getOrDefault(vo.getActivityCode(), new LongAdder()).intValue();
-            // 计算比例
-            BigDecimal ratio = BigDecimal.valueOf((receiveNumber1 + receiveNumber2) / (receiveNumber1 + receiveNumber2 + availableNumber));
+            // 计算比例（避免除零）
+            int totalNumber = receiveNumber1 + receiveNumber2 + availableNumber;
+            BigDecimal ratio = totalNumber > 0 ? BigDecimal.valueOf((double)(receiveNumber1 + receiveNumber2) / totalNumber) : BigDecimal.ZERO;
             vo.setRatio(ratio);
             return vo;
         });

@@ -1,4 +1,4 @@
-package com.ww.mall.coupon.eunms;
+package com.ww.mall.coupon.enums;
 
 import lombok.Getter;
 
@@ -6,20 +6,18 @@ import java.util.StringJoiner;
 
 /**
  * @author ww
- * @create 2023-07-26- 13:45
+ * @create 2023-07-25- 09:37
  * @description:
  */
 @Getter
-public enum CouponActivityStatus {
+public enum ApplyMemberType {
 
-    TO_TAKE_EFFECT("待生效"),
-    IN_EFFECT("生效中"),
-    DUE_SOON("快到期"),
-    EXPIRED("已失效");
+    ALL("全部用户"),
+    SPECIFY("指定用户");
 
     private final String text;
 
-    CouponActivityStatus(String text) {
+    ApplyMemberType(String text) {
         this.text = text;
     }
 

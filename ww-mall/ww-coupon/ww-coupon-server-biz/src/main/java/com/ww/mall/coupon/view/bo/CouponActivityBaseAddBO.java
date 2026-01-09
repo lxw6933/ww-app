@@ -2,7 +2,7 @@ package com.ww.mall.coupon.view.bo;
 
 import com.ww.mall.coupon.constant.CouponConstant;
 import com.ww.mall.coupon.entity.base.BaseCouponInfo;
-import com.ww.mall.coupon.eunms.*;
+import com.ww.mall.coupon.enums.*;
 import com.ww.mall.coupon.utils.CouponUtils;
 import lombok.Data;
 

@@ -2,7 +2,7 @@ package com.ww.mall.coupon.entity;
 
 import com.ww.mall.coupon.constant.CouponConstant;
 import com.ww.mall.coupon.entity.base.BaseCouponInfo;
-import com.ww.mall.coupon.eunms.ApplyProductRangeType;
+import com.ww.mall.coupon.enums.ApplyProductRangeType;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import org.springframework.data.mongodb.core.index.Indexed;

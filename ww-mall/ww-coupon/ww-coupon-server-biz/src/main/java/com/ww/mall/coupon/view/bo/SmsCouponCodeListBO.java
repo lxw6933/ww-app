@@ -4,7 +4,7 @@ import cn.hutool.extra.spring.SpringUtil;
 import com.ww.app.mongodb.common.AbstractMongoPage;
 import com.ww.mall.coupon.entity.SmsCouponCode;
 import com.ww.mall.coupon.entity.SmsCouponRecord;
-import com.ww.mall.coupon.eunms.CouponStatus;
+import com.ww.mall.coupon.enums.CouponStatus;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import org.apache.commons.collections4.CollectionUtils;

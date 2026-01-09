@@ -1,9 +1,9 @@
 package com.ww.mall.coupon.view.bo;
 
 import com.ww.mall.coupon.constant.CouponConstant;
-import com.ww.mall.coupon.eunms.ApplyProductRangeType;
-import com.ww.mall.coupon.eunms.EffectTimeType;
-import com.ww.mall.coupon.eunms.LimitReceiveTimeType;
+import com.ww.mall.coupon.enums.ApplyProductRangeType;
+import com.ww.mall.coupon.enums.EffectTimeType;
+import com.ww.mall.coupon.enums.LimitReceiveTimeType;
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.mongodb.core.query.Update;

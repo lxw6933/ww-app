@@ -37,7 +37,7 @@ import com.ww.mall.coupon.constant.CouponLuaConstant;
 import com.ww.mall.coupon.convert.CouponConvert;
 import com.ww.mall.coupon.entity.*;
 import com.ww.mall.coupon.entity.base.BaseCouponInfo;
-import com.ww.mall.coupon.eunms.*;
+import com.ww.mall.coupon.enums.*;
 import com.ww.mall.coupon.service.SmsCouponService;
 import com.ww.mall.coupon.utils.CouponCacheComponent;
 import com.ww.mall.coupon.utils.CouponCodeGenerator;
@@ -247,11 +247,11 @@ public class SmsCouponServiceImpl implements SmsCouponService {
         // 判断是否开始
         UpdateResult updateResult;
         if (smsCouponActivity.getReceiveStartTime().before(new Date())) {
-            // 未开始
-            updateResult = mongoTemplate.updateFirst(BaseCouponInfo.buildActivityCodeQuery(smsCouponActivityEditBO.getActivityCode(), smsCouponActivityEditBO.getChannelId()), smsCouponActivityEditBO.buildWaitStartInfoUpdate(), SmsCouponActivity.class);
-        } else {
             // 已开始
             updateResult = mongoTemplate.updateFirst(BaseCouponInfo.buildActivityCodeQuery(smsCouponActivityEditBO.getActivityCode(), smsCouponActivityEditBO.getChannelId()), smsCouponActivityEditBO.buildInfoUpdate(), SmsCouponActivity.class);
+        } else {
+            // 未开始
+            updateResult = mongoTemplate.updateFirst(BaseCouponInfo.buildActivityCodeQuery(smsCouponActivityEditBO.getActivityCode(), smsCouponActivityEditBO.getChannelId()), smsCouponActivityEditBO.buildWaitStartInfoUpdate(), SmsCouponActivity.class);
         }
         couponCacheComponent.updateSmsCouponActivityCache(smsCouponActivityEditBO.getActivityCode());
         // 记录操作日志上下文
@@ -425,7 +425,6 @@ public class SmsCouponServiceImpl implements SmsCouponService {
         // 查询是否存在券码
         SmsCouponCode smsCouponCode = mongoTemplate.findOne(SmsCouponCode.buildCodeQuery(couponCode), SmsCouponCode.class, SmsCouponCode.buildCollectionName(clientUser.getChannelId()));
         Assert.notNull(smsCouponCode, () -> new ApiException(ErrorCodeConstants.INVALID_CODE));
-        assert smsCouponCode != null;
         SmsCouponActivity smsCouponActivity = getSmsCouponActivity(smsCouponCode.getActivityCode());
         // 活动校验
         validSmsCouponActivity(smsCouponActivity);
@@ -664,8 +663,9 @@ public class SmsCouponServiceImpl implements SmsCouponService {
             // 获取当前优惠券领取数量
             int receiveNumber1 = res.getReceiveNumber();
             int receiveNumber2 = smsCouponStatisticsComponent.getStatisticsReceiveMap().getOrDefault(vo.getActivityCode(), new LongAdder()).intValue();
-            // 计算比例
-            BigDecimal ratio = BigDecimal.valueOf((receiveNumber1 + receiveNumber2) / (receiveNumber1 + receiveNumber2 + availableNumber));
+            // 计算比例（避免除零）
+            int totalNumber = receiveNumber1 + receiveNumber2 + availableNumber;
+            BigDecimal ratio = totalNumber > 0 ? BigDecimal.valueOf((double)(receiveNumber1 + receiveNumber2) / totalNumber) : BigDecimal.ZERO;
             vo.setRatio(ratio);
             return vo;
         });
