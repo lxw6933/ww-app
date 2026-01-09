@@ -13,6 +13,12 @@ public class CouponConstant {
 
     public static final String DEFAULT_CODE = "end";
 
+    public enum AuditStatus {
+        WAIT_AUDIT,
+        AUDIT_PASS,
+        AUDIT_NOT_PASS,
+    }
+
     public enum Type {
         ALL,
         CASH,

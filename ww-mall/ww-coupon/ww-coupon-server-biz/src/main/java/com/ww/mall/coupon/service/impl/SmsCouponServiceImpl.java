@@ -269,13 +269,13 @@ public class SmsCouponServiceImpl implements SmsCouponService {
 
     @Override
     @Resubmission
-    @LogRecord(type = SYSTEM_COUPON_TYPE, subType = SYSTEM_COUPON_STATUS_SUB_TYPE, bizNo = "{{#smsCouponActivityStatusBO.activityCode}}", success = SYSTEM_COUPON_STATUS_SUCCESS)
-    public boolean status(SmsCouponActivityStatusBO smsCouponActivityStatusBO) {
-        UpdateResult updateResult = mongoTemplate.updateFirst(BaseCouponInfo.buildActivityCodeQuery(smsCouponActivityStatusBO.getActivityCode(), smsCouponActivityStatusBO.getChannelId()), BaseCouponInfo.buildActivityStatusUpdate(smsCouponActivityStatusBO.getStatus()), SmsCouponActivity.class);
-        couponCacheComponent.updateSmsCouponActivityCache(smsCouponActivityStatusBO.getActivityCode());
+    @LogRecord(type = SYSTEM_COUPON_TYPE, subType = SYSTEM_COUPON_STATUS_SUB_TYPE, bizNo = "{{#couponActivityStatusBO.activityCode}}", success = SYSTEM_COUPON_STATUS_SUCCESS)
+    public boolean status(CouponActivityStatusBO couponActivityStatusBO) {
+        UpdateResult updateResult = mongoTemplate.updateFirst(BaseCouponInfo.buildActivityCodeQuery(couponActivityStatusBO.getActivityCode()), BaseCouponInfo.buildActivityStatusUpdate(couponActivityStatusBO.getStatus()), SmsCouponActivity.class);
+        couponCacheComponent.updateSmsCouponActivityCache(couponActivityStatusBO.getActivityCode());
         // 记录操作日志上下文
-        LogRecordContext.putVariable("newStatus", smsCouponActivityStatusBO.getStatus());
-        LogRecordContext.putVariable("activityCode", smsCouponActivityStatusBO.getActivityCode());
+        LogRecordContext.putVariable("newStatus", couponActivityStatusBO.getStatus());
+        LogRecordContext.putVariable("activityCode", couponActivityStatusBO.getActivityCode());
         return updateResult.getModifiedCount() == 1;
     }
 
@@ -541,7 +541,7 @@ public class SmsCouponServiceImpl implements SmsCouponService {
     @Override
     @DistributedLock(operationKey = "#addCouponCodeBO.activityCode")
     @LogRecord(type = SYSTEM_COUPON_TYPE, subType = SYSTEM_COUPON_ADD_CODE_SUB_TYPE, bizNo = "{{#addCouponCodeBO.activityCode}}", success = SYSTEM_COUPON_ADD_CODE_SUCCESS)
-    public boolean addSmsCouponCode(AddCouponCodeBO addCouponCodeBO) {
+    public boolean addSmsCouponCode(SmsAddCouponCodeBO addCouponCodeBO) {
         SmsCouponActivity smsCouponActivity = getSmsCouponActivity(addCouponCodeBO.getActivityCode(), addCouponCodeBO.getChannelId());
         if (addCouponCodeBO.getNumber() + smsCouponActivity.getNumber() > CouponConstant.ACTIVITY_MAX_NUMBER) {
             throw new ApiException(ErrorCodeConstants.EXCEED_BATCH_MAX_NUMBER);
@@ -654,7 +654,7 @@ public class SmsCouponServiceImpl implements SmsCouponService {
     @Override
     public List<CouponActivityCenterVO> smsCouponActivityCenter(CouponActivityCenterBO bo) {
         ClientUser clientUser = AuthorizationContext.getClientUser();
-        List<SmsCouponActivity> targetList = getSmsCouponActivityCursorList(BaseCouponInfo.buildCouponCenterQuery(clientUser.getChannelId(), bo.getType()), bo.getEndIdCursorValue(), 10);
+        List<SmsCouponActivity> targetList = getSmsCouponActivityCursorList(SmsCouponActivity.buildSmsCouponCenterQuery(clientUser.getChannelId(), bo.getType()), bo.getEndIdCursorValue(), 10);
         if (CollectionUtils.isEmpty(targetList)) {
             return null;
         }

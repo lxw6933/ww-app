@@ -64,10 +64,10 @@ public interface SmsCouponService {
     /**
      * 上下架活动
      *
-     * @param smsCouponActivityStatusBO bo
+     * @param couponActivityStatusBO bo
      * @return boolean
      */
-    boolean status(SmsCouponActivityStatusBO smsCouponActivityStatusBO);
+    boolean status(CouponActivityStatusBO couponActivityStatusBO);
 
     /**
      * 用户领取优惠券
@@ -116,7 +116,7 @@ public interface SmsCouponService {
      * @param addCouponCodeBO bo
      * @return boolean
      */
-    boolean addSmsCouponCode(AddCouponCodeBO addCouponCodeBO);
+    boolean addSmsCouponCode(SmsAddCouponCodeBO addCouponCodeBO);
 
     /**
      * 平台领券中心

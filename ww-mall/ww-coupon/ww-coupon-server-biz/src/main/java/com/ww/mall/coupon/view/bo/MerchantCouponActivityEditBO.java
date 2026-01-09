@@ -14,9 +14,9 @@ import javax.validation.constraints.NotNull;
 @Data
 @Slf4j
 @EqualsAndHashCode(callSuper = true)
-public class SmsCouponActivityEditBO extends CouponActivityBaseEditBO {
+public class MerchantCouponActivityEditBO extends CouponActivityBaseEditBO {
 
-    @NotNull(message = "渠道id不能为空")
-    private Long channelId;
+    @NotNull(message = "商户ID不能为空")
+    private Long merchantId;
 
 }

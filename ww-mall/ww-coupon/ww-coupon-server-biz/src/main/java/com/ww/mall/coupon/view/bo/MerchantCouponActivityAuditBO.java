@@ -11,15 +11,12 @@ import javax.validation.constraints.NotNull;
  * @description:
  */
 @Data
-public class SmsCouponActivityStatusBO {
-
-    @NotNull(message = "渠道id不能为空")
-    private Long channelId;
+public class MerchantCouponActivityAuditBO {
 
     @NotBlank(message = "活动编码不能为空")
     private String activityCode;
 
-    @NotNull(message = "状态不能为空")
-    private Boolean status;
+    @NotNull(message = "是否审核通过")
+    private Boolean auditPass;
 
 }

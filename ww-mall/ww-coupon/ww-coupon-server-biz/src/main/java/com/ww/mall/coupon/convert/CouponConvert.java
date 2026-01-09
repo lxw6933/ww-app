@@ -1,5 +1,6 @@
 package com.ww.mall.coupon.convert;
 
+import com.ww.mall.coupon.entity.MerchantCouponActivity;
 import com.ww.mall.coupon.entity.SmsCouponActivity;
 import com.ww.mall.coupon.entity.SmsCouponRecord;
 import com.ww.mall.coupon.view.vo.*;
@@ -18,6 +19,8 @@ public interface CouponConvert {
 
     CouponActivityCenterVO convert(SmsCouponActivity smsCouponActivity);
 
+    CouponActivityCenterVO convert(MerchantCouponActivity merchantCouponActivity);
+
     ProductCouponActivityVO convert2(SmsCouponActivity smsCouponActivity);
 
     SmsCouponDetailVO convert3(SmsCouponActivity smsCouponActivity);
@@ -27,5 +30,9 @@ public interface CouponConvert {
     MemberCouponCenterVO convert(SmsCouponRecord smsCouponRecord);
 
     OrderMemberCouponVO convert(MemberCouponCenterVO memberCouponCenterVO);
+
+    MerchantCouponPageVO convertMerchantCouponActivityToPageVO(MerchantCouponActivity merchantCouponActivity);
+
+    MerchantCouponDetailVO convertMerchantCouponActivityToDetailVO(MerchantCouponActivity merchantCouponActivity);
 
 }

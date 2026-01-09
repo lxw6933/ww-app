@@ -2,19 +2,17 @@ package com.ww.mall.coupon.view.bo;
 
 import lombok.Data;
 import lombok.EqualsAndHashCode;
-import lombok.extern.slf4j.Slf4j;
 
 import javax.validation.constraints.NotNull;
 
 /**
  * @author ww
- * @create 2025-03-05- 15:07
+ * @create 2025-03-07 19:43
  * @description:
  */
 @Data
-@Slf4j
 @EqualsAndHashCode(callSuper = true)
-public class SmsCouponActivityEditBO extends CouponActivityBaseEditBO {
+public class SmsAddCouponCodeBO extends AddCouponCodeBO {
 
     @NotNull(message = "渠道id不能为空")
     private Long channelId;

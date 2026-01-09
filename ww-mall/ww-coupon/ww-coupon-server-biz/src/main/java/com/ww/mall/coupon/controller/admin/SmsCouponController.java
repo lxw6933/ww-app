@@ -75,13 +75,13 @@ public class SmsCouponController {
 
     @Operation(summary = "上下架优惠券活动")
     @PostMapping("/activity/status")
-    public boolean edit(@RequestBody @Validated SmsCouponActivityStatusBO smsCouponActivityStatusBO) {
-        return smsCouponService.status(smsCouponActivityStatusBO);
+    public boolean edit(@RequestBody @Validated CouponActivityStatusBO couponActivityStatusBO) {
+        return smsCouponService.status(couponActivityStatusBO);
     }
 
     @Operation(summary = "新增优惠券数量")
     @PostMapping("/addCouponCoupon")
-    public boolean addCouponCoupon(@RequestBody @Validated AddCouponCodeBO addCouponCodeBO) {
+    public boolean addCouponCoupon(@RequestBody @Validated SmsAddCouponCodeBO addCouponCodeBO) {
         return smsCouponService.addSmsCouponCode(addCouponCodeBO);
     }
 

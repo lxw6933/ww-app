@@ -12,6 +12,7 @@ public interface ErrorCodeConstants {
     // TODO 命名、code、msg 临时想的，后续维护规范
     ResCode DATA_ERROR = new ResCode(500, "数据异常");
     ResCode COUPON_ERROR = new ResCode(500, "券码生成异常");
+    ResCode NOT_SUPPORT_ISSUE_TYPE = new ResCode(500, "目前不支持其他优惠券发放类型");
     ResCode UN_FOUND_ACTIVITY = new ResCode(500, "未能找到有效的优惠券活动");
     ResCode INVALID_CODE = new ResCode(9201, "券码无效");
     ResCode CODE_USED = new ResCode(9202, "券码已使用，请勿重复兑换");

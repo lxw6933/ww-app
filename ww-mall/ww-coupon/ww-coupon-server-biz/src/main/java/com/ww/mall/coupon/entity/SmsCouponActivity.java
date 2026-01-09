@@ -26,8 +26,14 @@ public class SmsCouponActivity extends BaseCouponInfo {
     @Indexed(name = "idx_channelId")
     private Long channelId;
 
+    public static Query buildSmsCouponCenterQuery(Long channelId, CouponConstant.Type type) {
+        Query query = buildCouponCenterQuery(type);
+        query.addCriteria(new Criteria().and("channelId").is(channelId));
+        return query;
+    }
+
     public static Query buildSpuQuery(Long channelId, CouponConstant.Type type, Long smsId) {
-        Query query = buildCouponCenterQuery(channelId, type);
+        Query query = buildSmsCouponCenterQuery(channelId, type);
         Criteria criteria = new Criteria().orOperator(
                 Criteria.where("applyProductRangeType").is(ApplyProductRangeType.ALL),
                 Criteria.where("applyProductRangeType").is(ApplyProductRangeType.SPECIFY_PRODUCT).and("idList").in(smsId),

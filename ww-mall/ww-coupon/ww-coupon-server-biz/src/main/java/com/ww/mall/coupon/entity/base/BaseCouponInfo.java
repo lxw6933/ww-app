@@ -146,10 +146,10 @@ public class BaseCouponInfo extends BaseDoc {
      */
     private Boolean status;
 
-    public static Query buildCouponCenterQuery(Long channelId, CouponConstant.Type type) {
+    public static Query buildCouponCenterQuery(CouponConstant.Type type) {
         Query query = new Query();
         Date now = new Date();
-        Criteria criteria = Criteria.where("channelId").is(channelId)
+        Criteria criteria = new Criteria()
                 .and("receiveStartTime").lte(now)
                 .and("receiveEndTime").gte(now)
                 .and("issueType").is(IssueType.RECEIVE)
@@ -178,6 +178,10 @@ public class BaseCouponInfo extends BaseDoc {
 
     public static Query buildActivityCodeQuery(String activityCode, Long channelId) {
         return buildActivityCodeQuery(activityCode).addCriteria(Criteria.where("channelId").is(channelId));
+    }
+
+    public static Query buildMerchantActivityCodeQuery(String activityCode, Long merchantId) {
+        return buildActivityCodeQuery(activityCode).addCriteria(Criteria.where("merchantId").is(merchantId));
     }
 
     public static Update buildActivityNumberUpdate(int number) {
