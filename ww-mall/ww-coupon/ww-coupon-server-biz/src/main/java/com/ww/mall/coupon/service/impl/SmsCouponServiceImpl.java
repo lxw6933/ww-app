@@ -50,6 +50,7 @@ import org.jetbrains.annotations.NotNull;
 import org.redisson.api.RScript;
 import org.redisson.api.RSet;
 import org.redisson.api.RedissonClient;
+import org.springframework.data.mongodb.core.BulkOperations;
 import org.springframework.data.mongodb.core.MongoTemplate;
 import org.springframework.data.mongodb.core.query.Query;
 import org.springframework.stereotype.Service;
@@ -64,8 +65,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.atomic.LongAdder;
 import java.util.stream.Collectors;
 
-import static com.ww.app.common.utils.CollectionUtils.convertList;
-import static com.ww.app.common.utils.CollectionUtils.filterList;
+import static com.ww.app.common.utils.CollectionUtils.*;
 import static com.ww.mall.coupon.constant.LogRecordConstants.*;
 
 /**
@@ -132,12 +132,11 @@ public class SmsCouponServiceImpl implements SmsCouponService {
                 case API_ISSUE:
                 case EXPORT_ISSUE:
                     Set<String> couponCodeKeys = getCouponCodeKeys(smsCouponActivity.getActivityCode());
-                    // 批量获取
-                    Map<String, Set<Object>> batchCodeMap = redissonComponent.batchGetSetValues(couponCodeKeys);
-                    for (Map.Entry<String, Set<Object>> entry : batchCodeMap.entrySet()) {
-                        Set<Object> codeSet = entry.getValue();
-                        if (!codeSet.contains(CouponConstant.DEFAULT_CODE)) {
-                            availableNumber += codeSet.size();
+                    for (String key : couponCodeKeys) {
+                        RSet<Object> codeSet = redissonClient.getSet(key);
+                        int size = codeSet.size();
+                        if (size > 0 && !codeSet.contains(CouponConstant.DEFAULT_CODE)) {
+                            availableNumber += size;
                         }
                     }
                     break;
@@ -157,11 +156,22 @@ public class SmsCouponServiceImpl implements SmsCouponService {
     public List<SmsCouponCodeListVO> codeList(SmsCouponCodeListBO smsCouponCodeListBO) {
         List<SmsCouponCode> simpleQuerySizeResult = smsCouponCodeListBO.simpleQuerySizeResult(SmsCouponCode.buildCollectionName(smsCouponCodeListBO.getChannelId()));
         String smsCouponRecordCollectionName = SmsCouponRecord.buildCollectionName(smsCouponCodeListBO.getChannelId());
-        return convertList(simpleQuerySizeResult, res -> convertSmsCouponCodeListVO(res, smsCouponCodeListBO.getCouponStatus(), smsCouponRecordCollectionName));
+        if (CollectionUtils.isEmpty(simpleQuerySizeResult)) {
+            return Collections.emptyList();
+        }
+        Map<String, SmsCouponRecord> recordMap = batchQueryCouponRecordMap(simpleQuerySizeResult, smsCouponRecordCollectionName);
+        List<CouponStatusUpdate> statusUpdates = new ArrayList<>();
+        List<SmsCouponCodeListVO> result = convertList(simpleQuerySizeResult,
+                res -> convertSmsCouponCodeListVO(res, smsCouponCodeListBO.getCouponStatus(), recordMap, statusUpdates));
+        // 异步批量更新状态
+        asyncBatchUpdateCouponStatus(smsCouponRecordCollectionName, statusUpdates);
+        return result;
     }
 
     @NotNull
-    private SmsCouponCodeListVO convertSmsCouponCodeListVO(SmsCouponCode res, CouponStatus couponStatus, String smsCouponRecordCollectionName) {
+    private SmsCouponCodeListVO convertSmsCouponCodeListVO(SmsCouponCode res, CouponStatus couponStatus,
+                                                          Map<String, SmsCouponRecord> recordMap,
+                                                          List<CouponStatusUpdate> statusUpdates) {
         SmsCouponCodeListVO vo = new SmsCouponCodeListVO();
         vo.setCode(res.getCode());
         vo.setBatchNo(res.getBatchNo());
@@ -170,22 +180,29 @@ public class SmsCouponServiceImpl implements SmsCouponService {
         vo.setCouponStatus(vo.getMemberId() == null ? CouponStatus.WAIT : couponStatus);
         // 状态更新
         if (vo.getMemberId() != null) {
-            SmsCouponRecord couponRecord = mongoTemplate.findOne(SmsCouponRecord.buildCodeQuery(vo.getCode()), SmsCouponRecord.class, smsCouponRecordCollectionName);
+            SmsCouponRecord couponRecord = recordMap.get(vo.getCode());
+            if (couponRecord == null) {
+                return vo;
+            }
             Date now = new Date();
-            if (CouponStatus.TO_TAKE_EFFECT.equals(couponRecord.getCouponStatus())) {
-                // 是否已生效
+            CouponStatus currentStatus = couponRecord.getCouponStatus();
+            CouponStatus newStatus = currentStatus;
+            if (CouponStatus.TO_TAKE_EFFECT.equals(currentStatus)) {
                 if (couponRecord.getUseStartTime().before(now) && couponRecord.getUseEndTime().after(now)) {
-                    mongoTemplate.updateFirst(SmsCouponRecord.buildCodeAndStatusQuery(vo.getCode(), CouponStatus.TO_TAKE_EFFECT), SmsCouponRecord.buildStatusUpdate(CouponStatus.IN_EFFECT), SmsCouponRecord.class, smsCouponRecordCollectionName);
+                    newStatus = CouponStatus.IN_EFFECT;
+                } else if (couponRecord.getUseEndTime().before(now)) {
+                    newStatus = CouponStatus.EXPIRED;
+                }
+            } else if (CouponStatus.IN_EFFECT.equals(currentStatus)) {
+                if (couponRecord.getUseEndTime().before(now)) {
+                    newStatus = CouponStatus.EXPIRED;
                 }
             }
-            if (CouponStatus.IN_EFFECT.equals(couponRecord.getCouponStatus())) {
-                // 是否已过期
-                if (couponRecord.getUseEndTime().before(now)) {
-                    mongoTemplate.updateFirst(SmsCouponRecord.buildCodeAndStatusQuery(vo.getCode(), CouponStatus.IN_EFFECT), SmsCouponRecord.buildStatusUpdate(CouponStatus.EXPIRED), SmsCouponRecord.class, smsCouponRecordCollectionName);
-                }
+            if (!currentStatus.equals(newStatus)) {
+                statusUpdates.add(new CouponStatusUpdate(vo.getCode(), currentStatus, newStatus));
             }
             vo.setVerificationTime(couponRecord.getUpdateTime());
-            vo.setCouponStatus(couponRecord.getCouponStatus());
+            vo.setCouponStatus(newStatus);
         }
         return vo;
     }
@@ -207,10 +224,61 @@ public class SmsCouponServiceImpl implements SmsCouponService {
         final String smsCouponRecordCollectionName = SmsCouponRecord.buildCollectionName(smsCouponCodeListBO.getChannelId());
         return excelMinioTemplate.exportDataToMinio("coupon-code-export", (int) totalCount, 5000, (pageNum, pageSize) -> {
             List<SmsCouponCode> resultList = smsCouponCodeListBO.getSimpleDataResult(couponCodeCollectionName, pageNum + 1, pageSize);
-            return resultList.stream()
-                    .map(res -> convertSmsCouponCodeListVO(res, smsCouponCodeListBO.getCouponStatus(), smsCouponRecordCollectionName))
+            if (CollectionUtils.isEmpty(resultList)) {
+                return Collections.emptyList();
+            }
+            Map<String, SmsCouponRecord> recordMap = batchQueryCouponRecordMap(resultList, smsCouponRecordCollectionName);
+            List<CouponStatusUpdate> statusUpdates = new ArrayList<>();
+            List<SmsCouponCodeListVO> list = resultList.stream()
+                    .map(res -> convertSmsCouponCodeListVO(res, smsCouponCodeListBO.getCouponStatus(), recordMap, statusUpdates))
                     .collect(Collectors.toList());
+            // 异步批量更新状态
+            asyncBatchUpdateCouponStatus(smsCouponRecordCollectionName, statusUpdates);
+            return list;
         });
+    }
+
+    private Map<String, SmsCouponRecord> batchQueryCouponRecordMap(List<SmsCouponCode> couponCodeList, String collectionName) {
+        List<String> codes = convertList(couponCodeList, SmsCouponCode::getCode);
+        if (CollectionUtils.isEmpty(codes)) {
+            return Collections.emptyMap();
+        }
+        List<SmsCouponRecord> records = mongoTemplate.find(SmsCouponRecord.buildCodeBatchQuery(codes), SmsCouponRecord.class, collectionName);
+        if (CollectionUtils.isEmpty(records)) {
+            return Collections.emptyMap();
+        }
+
+        return convertMap(records, SmsCouponRecord::getCouponCode);
+    }
+
+    private void asyncBatchUpdateCouponStatus(String collectionName, List<CouponStatusUpdate> updates) {
+        if (CollectionUtils.isEmpty(updates)) {
+            return;
+        }
+
+        CompletableFuture.runAsync(() -> {
+            try {
+                BulkOperations bulkOps = mongoTemplate.bulkOps(BulkOperations.BulkMode.UNORDERED, SmsCouponRecord.class, collectionName);
+                for (CouponStatusUpdate update : updates) {
+                    bulkOps.updateOne(SmsCouponRecord.buildCodeAndStatusQuery(update.code, update.oldStatus), SmsCouponRecord.buildStatusUpdate(update.newStatus));
+                }
+                bulkOps.execute();
+            } catch (Exception e) {
+                log.error("批量更新券码状态失败: size={}", updates.size(), e);
+            }
+        }, defaultThreadPoolExecutor);
+    }
+
+    private static class CouponStatusUpdate {
+        private final String code;
+        private final CouponStatus oldStatus;
+        private final CouponStatus newStatus;
+
+        private CouponStatusUpdate(String code, CouponStatus oldStatus, CouponStatus newStatus) {
+            this.code = code;
+            this.oldStatus = oldStatus;
+            this.newStatus = newStatus;
+        }
     }
 
     @Override

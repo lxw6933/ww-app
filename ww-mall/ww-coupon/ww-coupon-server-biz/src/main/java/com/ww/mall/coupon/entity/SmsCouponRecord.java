@@ -18,6 +18,7 @@ import org.springframework.data.mongodb.core.query.Update;
 
 import java.math.BigDecimal;
 import java.util.Date;
+import java.util.List;
 
 /**
  * @author ww
@@ -161,6 +162,10 @@ public class SmsCouponRecord extends BaseDoc {
 
     public static Query buildCodeQuery(String couponCode) {
         return new Query().addCriteria(Criteria.where("couponCode").is(couponCode));
+    }
+
+    public static Query buildCodeBatchQuery(List<String> couponCodes) {
+        return new Query().addCriteria(Criteria.where("couponCode").in(couponCodes));
     }
 
     public static Query buildCodeAndStatusQuery(String couponCode, CouponStatus couponStatus) {
