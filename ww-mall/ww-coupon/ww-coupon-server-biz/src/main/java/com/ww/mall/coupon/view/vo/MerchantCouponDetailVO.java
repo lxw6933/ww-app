@@ -13,7 +13,7 @@ import java.util.List;
  */
 @Data
 @EqualsAndHashCode(callSuper = true)
-public class MerchantCouponDetailVO extends SmsCouponDetailVO {
+public class MerchantCouponDetailVO extends BaseCouponDetailVO {
 
     /**
      * 分发渠道

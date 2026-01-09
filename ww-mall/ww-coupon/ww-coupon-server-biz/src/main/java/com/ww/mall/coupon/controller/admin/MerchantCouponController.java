@@ -3,8 +3,8 @@ package com.ww.mall.coupon.controller.admin;
 import com.ww.app.common.common.AppPageResult;
 import com.ww.mall.coupon.service.MerchantCouponService;
 import com.ww.mall.coupon.view.bo.*;
+import com.ww.mall.coupon.view.vo.MerchantCouponDetailVO;
 import com.ww.mall.coupon.view.vo.MerchantCouponPageVO;
-import com.ww.mall.coupon.view.vo.SmsCouponDetailVO;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.Parameters;
@@ -51,7 +51,7 @@ public class MerchantCouponController {
             @Parameter(name = "id", description = "活动id", required = true, in = ParameterIn.PATH),
     })
     @GetMapping("/activity/info/{id}")
-    public SmsCouponDetailVO info(@PathVariable("id") String id) {
+    public MerchantCouponDetailVO info(@PathVariable("id") String id) {
         return merchantCouponService.info(id);
     }
 
