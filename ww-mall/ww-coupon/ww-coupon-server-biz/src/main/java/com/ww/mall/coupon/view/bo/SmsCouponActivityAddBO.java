@@ -1,6 +1,7 @@
 package com.ww.mall.coupon.view.bo;
 
 import com.ww.mall.coupon.entity.SmsCouponActivity;
+import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 
@@ -13,8 +14,10 @@ import javax.validation.constraints.NotNull;
  */
 @Data
 @EqualsAndHashCode(callSuper = true)
+@Schema(description = "平台优惠券活动新增参数")
 public class SmsCouponActivityAddBO extends CouponActivityBaseAddBO {
 
+    @Schema(description = "渠道ID", example = "1")
     @NotNull(message = "渠道id不能为空")
     private Long channelId;
 

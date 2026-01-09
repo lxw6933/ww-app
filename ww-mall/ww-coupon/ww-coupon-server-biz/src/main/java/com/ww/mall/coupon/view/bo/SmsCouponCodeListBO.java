@@ -5,6 +5,7 @@ import com.ww.app.mongodb.common.AbstractMongoPage;
 import com.ww.mall.coupon.entity.SmsCouponCode;
 import com.ww.mall.coupon.entity.SmsCouponRecord;
 import com.ww.mall.coupon.enums.CouponStatus;
+import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import org.apache.commons.collections4.CollectionUtils;
@@ -27,30 +28,36 @@ import static com.ww.app.common.utils.CollectionUtils.convertList;
  */
 @Data
 @EqualsAndHashCode(callSuper = true)
+@Schema(description = "平台优惠券券码列表查询参数")
 public class SmsCouponCodeListBO extends AbstractMongoPage<SmsCouponCode> {
 
+    @Schema(description = "渠道ID", example = "1")
     @NotNull(message = "渠道不能为空")
     private Long channelId;
 
     /**
      * 活动编码
      */
+    @Schema(description = "活动编码", example = "SC1234567890")
     @NotBlank(message = "活动编码不能为空")
     private String activityCode;
 
     /**
      * 优惠券券码状态
      */
+    @Schema(description = "优惠券券码状态", example = "WAIT", allowableValues = {"WAIT", "TO_TAKE_EFFECT", "IN_EFFECT", "USED", "EXPIRED", "OCCUPIED"})
     private CouponStatus couponStatus;
 
     /**
      * 批次号
      */
+    @Schema(description = "批次号", example = "20250101-1")
     private String batchNo;
 
     /**
      * 优惠券券码
      */
+    @Schema(description = "优惠券券码", example = "ABCD1234EFGH5678")
     private String code;
 
     @Override

@@ -1,5 +1,6 @@
 package com.ww.mall.coupon.view.vo;
 
+import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 
@@ -10,6 +11,7 @@ import lombok.EqualsAndHashCode;
  */
 @Data
 @EqualsAndHashCode(callSuper = true)
+@Schema(description = "平台优惠券活动详情")
 public class SmsCouponDetailVO extends BaseCouponDetailVO {
 
 }

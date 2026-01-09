@@ -6,6 +6,7 @@ import com.ww.mall.coupon.constant.CouponConstant;
 import com.ww.mall.coupon.entity.MerchantCouponActivity;
 import com.ww.mall.coupon.entity.base.BaseCouponInfo;
 import com.ww.mall.coupon.enums.CouponDiscountType;
+import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import org.apache.commons.lang3.StringUtils;
@@ -22,41 +23,49 @@ import static com.ww.app.common.constant.Constant.MONGO_PRIMARY_KEY;
  */
 @Data
 @EqualsAndHashCode(callSuper = true)
+@Schema(description = "商家优惠券分页查询参数")
 public class MerchantCouponPageBO extends AbstractMongoPage<MerchantCouponActivity> {
 
     /**
      * id
      */
+    @Schema(description = "活动ID", example = "507f1f77bcf86cd799439011")
     private String id;
 
     /**
      * 优惠券名称
      */
+    @Schema(description = "优惠券名称（支持模糊查询）", example = "新用户")
     private String name;
 
     /**
      * 活动编码
      */
+    @Schema(description = "活动编码", example = "MC1234567890")
     private String activityCode;
 
     /**
      * 类型【积分/现金】
      */
+    @Schema(description = "类型", example = "CASH", allowableValues = {"ALL", "CASH", "INTEGRAL"})
     private CouponConstant.Type type;
 
     /**
      * 上下架
      */
+    @Schema(description = "上下架状态", example = "true")
     private Boolean status;
 
     /**
      * 优惠券优惠类型
      */
+    @Schema(description = "优惠券优惠类型", example = "DIRECT_REDUCTION")
     private CouponDiscountType couponDiscountType;
 
     /**
      * 活动状态
      */
+    @Schema(description = "活动状态", example = "EFFECTIVE", allowableValues = {"ALL", "WAIT_EFFECTIVE", "EFFECTIVE", "EXPIRED"})
     private CouponConstant.ActivityStatus activityStatus;
 
     @Override

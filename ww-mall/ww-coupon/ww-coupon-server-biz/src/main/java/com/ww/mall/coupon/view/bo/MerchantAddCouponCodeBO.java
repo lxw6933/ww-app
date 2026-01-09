@@ -1,5 +1,6 @@
 package com.ww.mall.coupon.view.bo;
 
+import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 
@@ -10,6 +11,7 @@ import lombok.EqualsAndHashCode;
  */
 @Data
 @EqualsAndHashCode(callSuper = true)
+@Schema(description = "商家优惠券新增券码参数")
 public class MerchantAddCouponCodeBO extends AddCouponCodeBO {
 
 }

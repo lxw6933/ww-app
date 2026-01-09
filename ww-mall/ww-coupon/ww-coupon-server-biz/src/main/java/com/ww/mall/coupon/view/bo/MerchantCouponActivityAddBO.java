@@ -2,6 +2,7 @@ package com.ww.mall.coupon.view.bo;
 
 import com.ww.mall.coupon.constant.CouponConstant;
 import com.ww.mall.coupon.entity.MerchantCouponActivity;
+import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 
@@ -15,11 +16,14 @@ import java.util.List;
  */
 @Data
 @EqualsAndHashCode(callSuper = true)
+@Schema(description = "商家优惠券活动新增参数")
 public class MerchantCouponActivityAddBO extends CouponActivityBaseAddBO {
 
+    @Schema(description = "商户ID", example = "1001")
     @NotNull(message = "商户ID不能为空")
     private Long merchantId;
 
+    @Schema(description = "分发渠道ID列表", example = "[1, 2, 3]")
     @NotNull(message = "分发渠道不能为空")
     private List<Long> channelIds;
 
