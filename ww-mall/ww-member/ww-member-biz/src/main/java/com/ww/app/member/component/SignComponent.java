@@ -2,6 +2,7 @@ package com.ww.app.member.component;
 
 import com.ww.app.common.exception.ApiException;
 import com.ww.app.member.component.key.SignRedisKeyBuilder;
+import com.ww.app.member.config.SignProperties;
 import com.ww.app.member.entity.mongo.MemberSignRecord;
 import com.ww.app.member.enums.SignPeriod;
 import com.ww.app.member.strategy.sign.AbstractSignStrategy;
@@ -34,8 +35,15 @@ public class SignComponent {
     @Resource
     private SignStrategyFactory signStrategyFactory;
 
+    @Resource
+    private SignProperties signProperties;
+
     public AbstractSignStrategy getDefaultStrategy() {
-        return signStrategyFactory.getDefaultStrategy();
+        SignPeriod period = signProperties.getDefaultPeriod();
+        if (period == null) {
+            period = SignPeriod.MONTHLY;
+        }
+        return signStrategyFactory.getStrategy(period);
     }
 
     /**

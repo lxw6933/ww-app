@@ -57,16 +57,23 @@ public class SignJob {
     public void signDataBatchHandle(String lastPeriodKey, Collection<String> signDataKeyList, SignPeriod signPeriod) {
         executorService.execute(() -> {
             List<MemberSignRecord> batchList = new ArrayList<>(BATCH_SIZE);
+            List<String> persistKeyList = new ArrayList<>(BATCH_SIZE);
             try {
                 signDataKeyList.forEach(key -> {
                     MemberSignRecord record = buildRecordFromRedis(key, lastPeriodKey, signPeriod);
-                    batchList.add(record);
+                    if (record != null) {
+                        batchList.add(record);
+                        persistKeyList.add(key);
+                    }
                 });
                 try {
+                    if (batchList.isEmpty()) {
+                        return;
+                    }
                     int success = mongoBulkDataHandler.bulkSave(batchList);
                     log.info("批量落库 {} 条记录, 成功插入 {} 条记录", batchList.size(), success);
                     if (success == batchList.size()) {
-                        appRedisTemplate.batchRemoveKeys(new ArrayList<>(signDataKeyList), true);
+                        appRedisTemplate.batchRemoveKeys(new ArrayList<>(persistKeyList), true);
                     }
                 } catch (Exception e) {
                     log.error("批量落库失败", e);
