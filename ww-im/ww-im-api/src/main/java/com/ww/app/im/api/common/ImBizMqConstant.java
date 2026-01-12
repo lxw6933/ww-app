@@ -15,6 +15,6 @@ public class ImBizMqConstant {
 
     public static final String IM_BIZ_MSG_HANDLE_KEY = "im.biz.msg.handle.key";
 
-    public static final String IM_BIZ_MSG_HANDLE_QUEUE = "im.biz.msg.queue";
+    public static final String IM_BIZ_MSG_HANDLE_QUEUE = "im.biz.msg.batch.queue";
 
 }
