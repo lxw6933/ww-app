@@ -42,7 +42,9 @@ public class ImBizConsumer {
 
     @RabbitListener(queues = {ImBizMqConstant.IM_BIZ_MSG_HANDLE_QUEUE}, containerFactory = "appBatchContainerFactory")
     public void imBizMsgHandle(List<SingleChatMessage> msgList) {
-        log.info("消息持久化批次大小: {}", msgList.size());
+        if (log.isDebugEnabled()) {
+            log.debug("消息持久化批次大小: {}", msgList.size());
+        }
         Map<String, List<SingleChatMessage>> msgMap = msgList.stream()
                 .collect(Collectors.groupingBy(msgKey ->
                         DocShardUtils.getSingleChatDocName(msgKey.getSenderId(), msgKey.getSendTime())));

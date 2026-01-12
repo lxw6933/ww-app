@@ -9,6 +9,7 @@ import com.ww.app.disruptor.processor.BatchEventProcessor;
 import com.ww.app.im.entity.SingleChatMessage;
 import com.ww.app.im.utils.DocShardUtils;
 import lombok.extern.slf4j.Slf4j;
+import org.jetbrains.annotations.NotNull;
 import org.springframework.data.mongodb.core.BulkOperations;
 import org.springframework.data.mongodb.core.MongoTemplate;
 import org.springframework.stereotype.Component;
@@ -51,7 +52,7 @@ public class ImMsgPersistenceProcessor implements BatchEventProcessor<SingleChat
             new ThreadFactory() {
                 private final AtomicInteger counter = new AtomicInteger(0);
                 @Override
-                public Thread newThread(Runnable r) {
+                public Thread newThread(@NotNull Runnable r) {
                     Thread thread = new Thread(r, "mongo-write-" + counter.incrementAndGet());
                     thread.setDaemon(true);
                     return thread;
@@ -76,7 +77,9 @@ public class ImMsgPersistenceProcessor implements BatchEventProcessor<SingleChat
             return ProcessResult.success();
         }
         
-        log.debug("开始批量持久化 {} 条消息", events.size());
+        if (log.isDebugEnabled()) {
+            log.debug("开始批量持久化 {} 条消息", events.size());
+        }
         
         // 按集合名分组
         Map<String, List<SingleChatMessage>> collectionMap = new HashMap<>();
@@ -129,9 +132,11 @@ public class ImMsgPersistenceProcessor implements BatchEventProcessor<SingleChat
             totalMessages.addAndGet(totalInserted);
             failedMessages.addAndGet(failed);
             
-            log.info("批量持久化完成: 总数={}, 成功={}, 失败={}, 集合数={}, 耗时={}ms, TPS={}", 
-                    expectedTotal, totalInserted, failed, collectionMap.size(), 
-                    duration, duration > 0 ? (totalInserted * 1000 / duration) : 0);
+            if (log.isDebugEnabled()) {
+                log.debug("批量持久化完成: 总数={}, 成功={}, 失败={}, 集合数={}, 耗时={}ms, TPS={}", 
+                        expectedTotal, totalInserted, failed, collectionMap.size(), 
+                        duration, duration > 0 ? (totalInserted * 1000L / duration) : 0);
+            }
             
             // 每100批次打印累计统计
             if (totalBatches.get() % 100 == 0) {
@@ -189,8 +194,10 @@ public class ImMsgPersistenceProcessor implements BatchEventProcessor<SingleChat
             }
             
             long duration = System.currentTimeMillis() - startTime;
-            log.debug("集合 {} 写入完成: 总数={}, 成功={}, 耗时={}ms", 
-                    collectionName, messages.size(), insertedCount, duration);
+            if (log.isDebugEnabled()) {
+                log.debug("集合 {} 写入完成: 总数={}, 成功={}, 耗时={}ms", 
+                        collectionName, messages.size(), insertedCount, duration);
+            }
             
             return insertedCount;
             
@@ -206,12 +213,14 @@ public class ImMsgPersistenceProcessor implements BatchEventProcessor<SingleChat
      * 打印性能统计
      */
     private void printStats() {
-        log.info("MongoDB持久化统计: 批次数={}, 总消息数={}, 失败数={}, 成功率={:.2f}%",
-                totalBatches.get(), 
-                totalMessages.get(), 
+        double successRate = totalMessages.get() > 0 ?
+                (double) (totalMessages.get() - failedMessages.get()) / totalMessages.get() * 100 : 0;
+
+        log.info("MongoDB持久化统计: 批次数={}, 总消息数={}, 失败数={}, 成功率={}%",
+                totalBatches.get(),
+                totalMessages.get(),
                 failedMessages.get(),
-                totalMessages.get() > 0 ? 
-                        (double) (totalMessages.get() - failedMessages.get()) / totalMessages.get() * 100 : 0);
+                String.format("%.2f", successRate));
     }
     
     /**

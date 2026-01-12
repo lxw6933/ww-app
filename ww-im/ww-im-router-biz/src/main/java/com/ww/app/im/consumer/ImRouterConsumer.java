@@ -26,7 +26,9 @@ public class ImRouterConsumer {
 
     @RabbitListener(queues = {ImRouterMqConstant.IM_ROUTER_MSG_QUEUE}, containerFactory = "appDirectContainerFactory")
     public void imRouterMsg(Message message, ImMsgBody imMsgBody) {
-        log.info("消费消息[{}]", imMsgBody);
+        if (log.isDebugEnabled()) {
+            log.debug("消费消息[{}]", imMsgBody);
+        }
         imRouterService.sendMsg(imMsgBody);
     }
 

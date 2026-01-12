@@ -35,7 +35,9 @@ public class ChatMsgHandler implements MsgHandler {
         MessageDTO messageDTO = JSON.parseObject(imMsgBody.getBizMsg(), MessageDTO.class);
         SingleChatMessage msg = SingleChatMessage.build(imMsgBody.getUserId(), messageDTO);
         
-        log.info("接收到[{}]发来的消息:{}", imMsgBody.getUserId(), msg);
+        if (log.isDebugEnabled()) {
+            log.debug("接收到[{}]发来的消息:{}", imMsgBody.getUserId(), msg);
+        }
         
         // 优化：使用 Disruptor 异步持久化，提升性能
         String eventId = System.currentTimeMillis() + StrUtil.DASHED + msg.getSenderId() + StrUtil.DASHED + msg.getReceiverId();
