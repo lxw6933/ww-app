@@ -28,12 +28,12 @@ public class DocShardUtils {
     }
 
     public static String getGroupChatDocName(String groupId, Date sendTime) {
-        int docIndex = (HashUtil.apHash(groupId) % GROUP_MSG_SHARD);
+        int docIndex = Math.floorMod(HashUtil.apHash(groupId), GROUP_MSG_SHARD);
         return StrUtil.join(StrUtil.UNDERLINE, GROUP_CHAT_DOC, docIndex, DateUtil.format(sendTime, DatePattern.SIMPLE_MONTH_PATTERN));
     }
 
     public static String getGroupMemberDocName(String groupId) {
-        int docIndex = (HashUtil.apHash(groupId) % GROUP_SHARD);
+        int docIndex = Math.floorMod(HashUtil.apHash(groupId), GROUP_SHARD);
         return StrUtil.join(StrUtil.UNDERLINE, GROUP_MEMBER_DOC, docIndex);
     }
 
