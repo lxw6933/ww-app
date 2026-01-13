@@ -1,6 +1,7 @@
 package com.ww.mall.coupon.view.vo;
 
 import com.ww.mall.coupon.constant.CouponConstant;
+import com.ww.mall.coupon.enums.CouponType;
 import com.ww.mall.coupon.view.vo.base.BaseCouponInfoVO;
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Data;
@@ -19,6 +20,18 @@ import java.util.Map;
 @EqualsAndHashCode(callSuper = true)
 @Schema(description = "确认下单用户优惠券信息")
 public class OrderMemberCouponVO extends BaseCouponInfoVO {
+
+    /**
+     * 优惠券类型
+     */
+    @Schema(description = "优惠券类型：PLATFORM-平台券，MERCHANT-商家券", example = "PLATFORM")
+    private CouponType couponType;
+
+    /**
+     * 商家id【商家券用】
+     */
+    @Schema(description = "商家ID（商家优惠券用）", example = "1001")
+    private Long merchantId;
 
     /**
      * 开始使用时间

@@ -15,6 +15,12 @@ import java.math.BigDecimal;
 public class OrderMemberSmsCouponBO {
 
     /**
+     * 商家id
+     */
+    @Schema(description = "商家id（商家优惠券用）", example = "1001")
+    private Long merchantId;
+
+    /**
      * 运营商品id【平台优惠券用】
      */
     @Schema(description = "运营商品ID（平台优惠券用）", example = "1001")

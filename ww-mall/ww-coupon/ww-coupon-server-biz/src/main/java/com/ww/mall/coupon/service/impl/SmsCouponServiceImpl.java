@@ -769,6 +769,7 @@ public class SmsCouponServiceImpl implements SmsCouponService {
                     vo.setDesc(merchantCouponActivity.getDesc());
                     vo.setApplyProductRangeType(merchantCouponActivity.getApplyProductRangeType());
                     vo.setIdList(merchantCouponActivity.getIdList());
+                    vo.setMerchantId(merchantCouponActivity.getMerchantId());
                     break;
                 default:
             }
@@ -1028,9 +1029,6 @@ public class SmsCouponServiceImpl implements SmsCouponService {
         if (CollectionUtils.isEmpty(memberSmsCouponList)) {
             return null;
         }
-        // 分类有效优惠券
-        List<MemberCouponCenterVO> memberIntegralCouponList = filterList(memberSmsCouponList, res -> res.getCouponDiscountType().equals(CouponDiscountType.INTEGRAL_DISCOUNT));
-        List<MemberCouponCenterVO> memberCashCouponList = filterList(memberSmsCouponList, res -> !res.getCouponDiscountType().equals(CouponDiscountType.INTEGRAL_DISCOUNT));
         // 一：可用优惠券【1.满足使用条件 2.不满足使用条件】
         List<OrderMemberCouponVO> availableIntegralCouponList = new ArrayList<>();
         List<OrderMemberCouponVO> availableCashCouponList = new ArrayList<>();
@@ -1039,13 +1037,58 @@ public class SmsCouponServiceImpl implements SmsCouponService {
         List<OrderMemberCouponVO> unAvailableCashCouponList = new ArrayList<>();
 
         ConfirmOrderCouponVO result = new ConfirmOrderCouponVO();
-        result.setAvailableIntegralCouponList(availableIntegralCouponList);
-        result.setAvailableCashCouponList(availableCashCouponList);
-        result.setUnAvailableIntegralCouponList(unAvailableIntegralCouponList);
-        result.setUnAvailableCashCouponList(unAvailableCashCouponList);
         // 过滤掉参与活动不能使用优惠券的商品
         orderBOList = orderBOList.stream().filter(OrderMemberSmsCouponBO::isActivityUseCoupon).collect(Collectors.toList());
-        // 积分
+        // 平台优先，商家其次
+        List<MemberCouponCenterVO> platformCouponList = filterList(memberSmsCouponList, res -> isPlatformCoupon(res.getCouponType()));
+        List<MemberCouponCenterVO> merchantCouponList = filterList(memberSmsCouponList, res -> isMerchantCoupon(res.getCouponType()));
+
+        CouponBucket platformBucket = buildOrderCouponBucket(platformCouponList, orderBOList);
+        CouponBucket merchantBucket = buildOrderCouponBucket(merchantCouponList, orderBOList);
+
+        result.setPlatformAvailable(buildCouponGroup(platformBucket.availableIntegralList, platformBucket.availableCashList));
+        result.setMerchantAvailable(buildCouponGroup(merchantBucket.availableIntegralList, merchantBucket.availableCashList));
+
+        mergeBucketLists(platformBucket, availableIntegralCouponList, availableCashCouponList,
+                unAvailableIntegralCouponList, unAvailableCashCouponList);
+        mergeBucketLists(merchantBucket, availableIntegralCouponList, availableCashCouponList,
+                unAvailableIntegralCouponList, unAvailableCashCouponList);
+
+        result.setAvailable(buildCouponGroup(availableIntegralCouponList, availableCashCouponList));
+        result.setUnavailable(buildCouponGroup(unAvailableIntegralCouponList, unAvailableCashCouponList));
+        result.setSelectedCouponList(buildDefaultSelectedCoupons(platformBucket, merchantBucket));
+        return result;
+    }
+
+    /**
+     * 构建平台/商家优惠券分桶结果（可用/不可用 + 积分/现金）
+     */
+    private CouponBucket buildOrderCouponBucket(List<MemberCouponCenterVO> memberCouponList,
+                                                List<OrderMemberSmsCouponBO> orderBOList) {
+        CouponBucket bucket = new CouponBucket();
+        buildOrderCouponResult(memberCouponList, orderBOList, bucket.availableIntegralList, bucket.availableCashList,
+                bucket.unAvailableIntegralList, bucket.unAvailableCashList);
+        bucket.availableIntegralList.sort(buildOrderCouponComparator());
+        bucket.availableCashList.sort(buildOrderCouponComparator());
+        return bucket;
+    }
+
+    /**
+     * 根据订单商品计算可用/不可用优惠券列表
+     */
+    private void buildOrderCouponResult(List<MemberCouponCenterVO> memberCouponList,
+                                        List<OrderMemberSmsCouponBO> orderBOList,
+                                        List<OrderMemberCouponVO> availableIntegralCouponList,
+                                        List<OrderMemberCouponVO> availableCashCouponList,
+                                        List<OrderMemberCouponVO> unAvailableIntegralCouponList,
+                                        List<OrderMemberCouponVO> unAvailableCashCouponList) {
+        if (CollectionUtils.isEmpty(memberCouponList)) {
+            return;
+        }
+        List<MemberCouponCenterVO> memberIntegralCouponList = filterList(memberCouponList,
+                res -> res.getCouponDiscountType().equals(CouponDiscountType.INTEGRAL_DISCOUNT));
+        List<MemberCouponCenterVO> memberCashCouponList = filterList(memberCouponList,
+                res -> !res.getCouponDiscountType().equals(CouponDiscountType.INTEGRAL_DISCOUNT));
         for (MemberCouponCenterVO res : memberIntegralCouponList) {
             OrderMemberCouponVO vo = CouponConvert.INSTANCE.convert(res);
             if (orderCouponInfoHandler(res, orderBOList, vo)) {
@@ -1054,7 +1097,6 @@ public class SmsCouponServiceImpl implements SmsCouponService {
                 unAvailableIntegralCouponList.add(vo);
             }
         }
-        // 现金
         for (MemberCouponCenterVO res : memberCashCouponList) {
             OrderMemberCouponVO vo = CouponConvert.INSTANCE.convert(res);
             if (orderCouponInfoHandler(res, orderBOList, vo)) {
@@ -1063,36 +1105,134 @@ public class SmsCouponServiceImpl implements SmsCouponService {
                 unAvailableCashCouponList.add(vo);
             }
         }
-        availableCashCouponList.sort(Comparator.comparing(OrderMemberCouponVO::getDiscountTotalAmount).reversed()
-                .thenComparing(OrderMemberCouponVO::getUseEndTime)
-                .thenComparing(OrderMemberCouponVO::getLackAmount));
-        availableIntegralCouponList.sort(Comparator.comparing(OrderMemberCouponVO::getDiscountTotalAmount).reversed()
-                .thenComparing(OrderMemberCouponVO::getUseEndTime)
-                .thenComparing(OrderMemberCouponVO::getLackAmount));
-        return result;
     }
 
+    /**
+     * 构建优惠券排序规则
+     */
+    private Comparator<OrderMemberCouponVO> buildOrderCouponComparator() {
+        return Comparator.comparing(OrderMemberCouponVO::getDiscountTotalAmount).reversed()
+                .thenComparing(OrderMemberCouponVO::getUseEndTime)
+                .thenComparing(OrderMemberCouponVO::getLackAmount);
+    }
+
+    /**
+     * 构建默认选中优惠券：平台最优 + 各商家最优
+     */
+    private List<OrderMemberCouponVO> buildDefaultSelectedCoupons(CouponBucket platformBucket, CouponBucket merchantBucket) {
+        List<OrderMemberCouponVO> selectedList = new ArrayList<>();
+        OrderMemberCouponVO bestPlatform = pickBestCoupon(buildAllAvailableList(platformBucket));
+        if (bestPlatform != null) {
+            selectedList.add(bestPlatform);
+        }
+        Map<Long, List<OrderMemberCouponVO>> merchantCouponMap = new HashMap<>();
+        addMerchantCouponsToMap(merchantCouponMap, merchantBucket.availableIntegralList);
+        addMerchantCouponsToMap(merchantCouponMap, merchantBucket.availableCashList);
+        for (Map.Entry<Long, List<OrderMemberCouponVO>> entry : merchantCouponMap.entrySet()) {
+            OrderMemberCouponVO bestMerchant = pickBestCoupon(entry.getValue());
+            if (bestMerchant != null) {
+                selectedList.add(bestMerchant);
+            }
+        }
+        return selectedList;
+    }
+
+    /**
+     * 商家券按商家分组
+     */
+    private void addMerchantCouponsToMap(Map<Long, List<OrderMemberCouponVO>> merchantCouponMap,
+                                         List<OrderMemberCouponVO> couponList) {
+        for (OrderMemberCouponVO coupon : couponList) {
+            if (coupon.getMerchantId() == null) {
+                continue;
+            }
+            merchantCouponMap.computeIfAbsent(coupon.getMerchantId(), key -> new ArrayList<>()).add(coupon);
+        }
+    }
+
+    /**
+     * 获取列表中最优优惠券
+     */
+    private OrderMemberCouponVO pickBestCoupon(List<OrderMemberCouponVO> couponList) {
+        if (CollectionUtils.isEmpty(couponList)) {
+            return null;
+        }
+        return couponList.stream().max(buildOrderCouponComparator()).orElse(null);
+    }
+
+    /**
+     * 合并分桶结果到总列表
+     */
+    private void mergeBucketLists(CouponBucket bucket,
+                                  List<OrderMemberCouponVO> availableIntegralCouponList,
+                                  List<OrderMemberCouponVO> availableCashCouponList,
+                                  List<OrderMemberCouponVO> unAvailableIntegralCouponList,
+                                  List<OrderMemberCouponVO> unAvailableCashCouponList) {
+        availableIntegralCouponList.addAll(bucket.availableIntegralList);
+        availableCashCouponList.addAll(bucket.availableCashList);
+        unAvailableIntegralCouponList.addAll(bucket.unAvailableIntegralList);
+        unAvailableCashCouponList.addAll(bucket.unAvailableCashList);
+    }
+
+    /**
+     * 获取分桶中的全部可用优惠券
+     */
+    private List<OrderMemberCouponVO> buildAllAvailableList(CouponBucket bucket) {
+        List<OrderMemberCouponVO> all = new ArrayList<>();
+        all.addAll(bucket.availableIntegralList);
+        all.addAll(bucket.availableCashList);
+        return all;
+    }
+
+    private ConfirmOrderCouponVO.CouponGroupVO buildCouponGroup(List<OrderMemberCouponVO> integralList,
+                                                                List<OrderMemberCouponVO> cashList) {
+        ConfirmOrderCouponVO.CouponGroupVO group = new ConfirmOrderCouponVO.CouponGroupVO();
+        group.setIntegral(integralList);
+        group.setCash(cashList);
+        return group;
+    }
+
+    /**
+     * 优惠券分桶结果
+     */
+    private static class CouponBucket {
+        private final List<OrderMemberCouponVO> availableIntegralList = new ArrayList<>();
+        private final List<OrderMemberCouponVO> availableCashList = new ArrayList<>();
+        private final List<OrderMemberCouponVO> unAvailableIntegralList = new ArrayList<>();
+        private final List<OrderMemberCouponVO> unAvailableCashList = new ArrayList<>();
+    }
+
+    /**
+     * 校验优惠券适用范围并计算优惠信息
+     */
     private boolean orderCouponInfoHandler(MemberCouponCenterVO res, List<OrderMemberSmsCouponBO> orderBOList, OrderMemberCouponVO vo) {
         if (res.getUseStartTime().after(new Date())) {
             vo.setDisabled(CouponConstant.Disabled.UN_REACHED_TIME);
             return false;
         }
         List<OrderMemberSmsCouponBO> targetList = null;
+        List<OrderMemberSmsCouponBO> tempOrderBOList = orderBOList;
+        // 商家券过滤商家商品
+        if (isMerchantCoupon(res.getCouponType()) && res.getMerchantId() != null) {
+            tempOrderBOList = filterList(orderBOList, e -> res.getMerchantId().equals(e.getMerchantId()));
+        }
         switch (res.getApplyProductRangeType()) {
             case ALL:
-                targetList = orderBOList;
+                targetList = tempOrderBOList;
                 break;
             case SPECIFY_PRODUCT:
-                targetList = filterList(orderBOList, e -> res.getIdList().contains(e.getSmsId()));
+                targetList = filterList(tempOrderBOList,
+                        e -> res.getIdList().contains(isMerchantCoupon(res.getCouponType()) ? e.getSpuId() : e.getSmsId()));
                 break;
             case EXCLUDE_PRODUCT:
-                targetList = filterList(orderBOList, e -> !res.getIdList().contains(e.getSmsId()));
+                targetList = filterList(tempOrderBOList, e ->
+                        !res.getIdList().contains(isMerchantCoupon(res.getCouponType()) ? e.getSpuId() : e.getSmsId()));
                 break;
             case SPECIFY_BRAND:
-                targetList = filterList(orderBOList, e -> res.getIdList().contains(e.getBrandId()));
+                targetList = filterList(tempOrderBOList, e -> res.getIdList().contains(e.getBrandId()));
                 break;
             case SPECIFY_CATEGORY:
-                targetList = filterList(orderBOList, e -> res.getIdList().contains(e.getCategoryId()));
+                targetList = filterList(tempOrderBOList, e -> res.getIdList().contains(e.getCategoryId()));
                 break;
             default:
         }
