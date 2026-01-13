@@ -2,6 +2,7 @@ package com.ww.mall.coupon.entity;
 
 import com.ww.mall.coupon.constant.CouponConstant;
 import com.ww.mall.coupon.entity.base.BaseCouponInfo;
+import com.ww.mall.coupon.enums.ApplyProductRangeType;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import org.springframework.data.mongodb.core.index.Indexed;
@@ -10,6 +11,7 @@ import org.springframework.data.mongodb.core.query.Criteria;
 import org.springframework.data.mongodb.core.query.Query;
 import org.springframework.data.mongodb.core.query.Update;
 
+import java.util.Collections;
 import java.util.List;
 
 /**
@@ -50,6 +52,20 @@ public class MerchantCouponActivity extends BaseCouponInfo {
     public static Query buildMerchantCouponAuditQuery(String activityCode) {
         Query query = buildActivityCodeQuery(activityCode);
         query.addCriteria(new Criteria().and("auditStatus").is(CouponConstant.AuditStatus.WAIT_AUDIT));
+        return query;
+    }
+
+    public static Query buildSpuQuery(Long merchantId, Long channelId, CouponConstant.Type type, Long smsId,
+                                      Long categoryId, Long brandId) {
+        Query query = buildMerchantCouponCenterQuery(Collections.singletonList(merchantId), channelId, type);
+        Criteria criteria = new Criteria().orOperator(
+                Criteria.where("applyProductRangeType").is(ApplyProductRangeType.ALL),
+                Criteria.where("applyProductRangeType").is(ApplyProductRangeType.SPECIFY_BRAND).and("idList").in(brandId),
+                Criteria.where("applyProductRangeType").is(ApplyProductRangeType.SPECIFY_CATEGORY).and("idList").in(categoryId),
+                Criteria.where("applyProductRangeType").is(ApplyProductRangeType.SPECIFY_PRODUCT).and("idList").in(smsId),
+                Criteria.where("applyProductRangeType").is(ApplyProductRangeType.EXCLUDE_PRODUCT).and("idList").nin(smsId)
+        );
+        query.addCriteria(criteria);
         return query;
     }
 

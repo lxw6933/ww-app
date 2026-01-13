@@ -21,6 +21,7 @@ import com.ww.mall.coupon.constant.CouponConstant;
 import com.ww.mall.coupon.convert.CouponConvert;
 import com.ww.mall.coupon.entity.MerchantCouponActivity;
 import com.ww.mall.coupon.entity.base.BaseCouponInfo;
+import com.ww.mall.coupon.enums.CouponDiscountType;
 import com.ww.mall.coupon.enums.ErrorCodeConstants;
 import com.ww.mall.coupon.enums.IssueType;
 import com.ww.mall.coupon.service.MerchantCouponService;
@@ -29,6 +30,7 @@ import com.ww.mall.coupon.view.bo.*;
 import com.ww.mall.coupon.view.vo.CouponActivityCenterVO;
 import com.ww.mall.coupon.view.vo.MerchantCouponDetailVO;
 import com.ww.mall.coupon.view.vo.MerchantCouponPageVO;
+import com.ww.mall.coupon.view.vo.ProductCouponActivityVO;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.CollectionUtils;
 import org.springframework.data.mongodb.core.MongoTemplate;
@@ -37,14 +39,15 @@ import org.springframework.stereotype.Service;
 
 import javax.annotation.Resource;
 import java.math.BigDecimal;
-import java.util.ArrayList;
+import java.math.RoundingMode;
+import java.util.Comparator;
 import java.util.Date;
 import java.util.List;
-import java.util.Map;
 import java.util.concurrent.atomic.LongAdder;
 import java.util.stream.Collectors;
 
 import static com.ww.app.common.utils.CollectionUtils.convertList;
+import static com.ww.app.common.utils.CollectionUtils.filterList;
 import static com.ww.mall.coupon.constant.LogRecordConstants.*;
 import static com.ww.mall.coupon.enums.ErrorCodeConstants.NOT_SUPPORT_ISSUE_TYPE;
 
@@ -253,25 +256,52 @@ public class MerchantCouponServiceImpl implements MerchantCouponService {
     }
 
     private List<MerchantCouponActivity> getMerchantCouponActivityCursorList(Query query, String cursorIdValue, int size) {
-        List<MerchantCouponActivity> resultList = MongoUtils.descQueryByIdCursor(query, cursorIdValue, size, MerchantCouponActivity.class);
-        if (CollectionUtils.isEmpty(resultList)) {
+        return MongoUtils.descQueryByIdCursor(query, cursorIdValue, size, MerchantCouponActivity.class);
+    }
+
+    /**
+     * 获取适用spu所有的商家优惠券活动
+     *
+     * @param channelId 渠道id
+     * @param type      是否区分积分现金券
+     * @param smsId     渠道商品id
+     */
+    public List<ProductCouponActivityVO> getSpuMerchantCouponActivityList(Long channelId, CouponConstant.Type type, Long smsId) {
+        // TODO 通过smsId获取商品对应的categoryId merchantId brandId
+        Long categoryId = null;
+        Long merchantId = null;
+        Long brandId = null;
+
+        // 查询前30个适用商品平台优惠券活动【进行排序】
+        List<MerchantCouponActivity> targetList = getMerchantCouponActivityCursorList(MerchantCouponActivity.buildSpuQuery(merchantId, channelId, type, smsId, categoryId, brandId), null, 30);
+        if (CollectionUtils.isEmpty(targetList)) {
             return null;
         }
-        List<String> activityCodeList = resultList.stream().map(BaseCouponInfo::getActivityCode).collect(Collectors.toList());
-        List<MerchantCouponActivity> targetList = new ArrayList<>();
-        Map<String, Integer> resMap = resultList.stream().collect(Collectors.toMap(MerchantCouponActivity::getActivityCode, MerchantCouponActivity::getReceiveNumber));
+        List<MerchantCouponActivity> integralCouponActivityList = filterList(targetList, res -> res.getCouponDiscountType().equals(CouponDiscountType.INTEGRAL_DISCOUNT));
+        List<MerchantCouponActivity> cashCouponActivityList = filterList(targetList, res -> !res.getCouponDiscountType().equals(CouponDiscountType.INTEGRAL_DISCOUNT));
 
-        activityCodeList.forEach(activityCode -> {
-            try {
-                MerchantCouponActivity smsCouponActivity = getMerchantCouponActivity(activityCode);
-                Integer receiveNumber = resMap.get(activityCode);
-                smsCouponActivity.setReceiveNumber(receiveNumber);
-                targetList.add(smsCouponActivity);
-            } catch (Exception e) {
-                log.error("查询平台优惠券活动异常", e);
-            }
-        });
-        return targetList;
+        List<ProductCouponActivityVO> sortedIntegralCouponActivityTagList = integralCouponActivityList.stream()
+                .sorted(Comparator.comparing(MerchantCouponActivity::getDeductionAmount).reversed())
+                .map(CouponConvert.INSTANCE::convertMerchantCouponActivityToSpuCouponVO)
+                .collect(Collectors.toList());
+
+        List<ProductCouponActivityVO> sortedCashCouponActivityTagList = cashCouponActivityList.stream()
+                .sorted((e1, e2) -> {
+                    BigDecimal target1 = e1.getDeductionAmount();
+                    BigDecimal target2 = e2.getDeductionAmount();
+                    if (CouponDiscountType.FULL_DISCOUNT.equals(e1.getCouponDiscountType())) {
+                        BigDecimal minPayAmount = e1.getAchieveAmount().multiply(e1.getDeductionAmount()).setScale(2, RoundingMode.HALF_UP);
+                        target1 = e1.getAchieveAmount().subtract(minPayAmount);
+                    }
+                    if (CouponDiscountType.FULL_DISCOUNT.equals(e2.getCouponDiscountType())) {
+                        BigDecimal minPayAmount = e2.getAchieveAmount().multiply(e2.getDeductionAmount()).setScale(2, RoundingMode.HALF_UP);
+                        target2 = e2.getAchieveAmount().subtract(minPayAmount);
+                    }
+                    return target2.compareTo(target1);
+                }).map(CouponConvert.INSTANCE::convertMerchantCouponActivityToSpuCouponVO)
+                .collect(Collectors.toList());
+        sortedIntegralCouponActivityTagList.addAll(sortedCashCouponActivityTagList);
+        return sortedIntegralCouponActivityTagList;
     }
 
     /**

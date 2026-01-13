@@ -23,6 +23,8 @@ public interface CouponConvert {
 
     ProductCouponActivityVO convert2(SmsCouponActivity smsCouponActivity);
 
+    ProductCouponActivityVO convertMerchantCouponActivityToSpuCouponVO(MerchantCouponActivity merchantCouponActivity);
+
     SmsCouponDetailVO convert3(SmsCouponActivity smsCouponActivity);
 
     SmsCouponPageVO convert4(SmsCouponActivity smsCouponActivity);
