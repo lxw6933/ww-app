@@ -951,16 +951,14 @@ public class SmsCouponServiceImpl implements SmsCouponService {
     }
 
     /**
-     * C端获取优惠券活动信息
+     * C端获取商家优惠券活动信息
      *
      * @param activityCode 优惠券活动编码
      * @return 活动
      */
     private MerchantCouponActivity getMerchantCouponActivity(String activityCode) {
         // 查询优惠券活动
-        MerchantCouponActivity merchantCouponActivity = mongoTemplate.findOne(MerchantCouponActivity.buildActivityCodeQuery(activityCode), MerchantCouponActivity.class);
-        Assert.notNull(merchantCouponActivity, () -> new ApiException(ErrorCodeConstants.UN_FOUND_ACTIVITY));
-        return merchantCouponActivity;
+        return couponCacheComponent.getMerchantCouponActivityCache(activityCode);
     }
 
     /**
