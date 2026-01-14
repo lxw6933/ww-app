@@ -39,6 +39,8 @@ import com.ww.mall.coupon.entity.*;
 import com.ww.mall.coupon.entity.base.BaseCouponInfo;
 import com.ww.mall.coupon.enums.*;
 import com.ww.mall.coupon.service.SmsCouponService;
+import com.ww.mall.coupon.service.strategy.DefaultCouponSelectStrategy;
+import com.ww.mall.coupon.service.strategy.SelectionContext;
 import com.ww.mall.coupon.utils.CouponCacheComponent;
 import com.ww.mall.coupon.utils.CouponCodeGenerator;
 import com.ww.mall.coupon.utils.CouponUtils;
@@ -111,6 +113,9 @@ public class SmsCouponServiceImpl implements SmsCouponService {
 
     @Resource
     private AppRedisTemplate appRedisTemplate;
+
+    @Resource
+    private DefaultCouponSelectStrategy defaultCouponSelectStrategy;
 
     private String convertCouponCodeSha1;
 
@@ -1041,7 +1046,9 @@ public class SmsCouponServiceImpl implements SmsCouponService {
         List<MemberCouponCenterVO> platformCouponList = filterList(memberSmsCouponList, res -> isPlatformCoupon(res.getCouponType()));
         List<MemberCouponCenterVO> merchantCouponList = filterList(memberSmsCouponList, res -> isMerchantCoupon(res.getCouponType()));
 
+        // 基于原始订单金额计算可用/不可用列表
         CouponBucket platformBucket = buildOrderCouponBucket(platformCouponList, orderBOList);
+        // 1.列表展示：基于原始订单判断可用性
         CouponBucket merchantBucket = buildOrderCouponBucket(merchantCouponList, orderBOList);
 
         result.setPlatformAvailable(buildCouponGroup(platformBucket.availableIntegralList, platformBucket.availableCashList));
@@ -1054,7 +1061,15 @@ public class SmsCouponServiceImpl implements SmsCouponService {
 
         result.setAvailable(buildCouponGroup(availableIntegralCouponList, availableCashCouponList));
         result.setUnavailable(buildCouponGroup(unAvailableIntegralCouponList, unAvailableCashCouponList));
-        result.setSelectedCouponList(buildDefaultSelectedCoupons(platformBucket, merchantBucket));
+        // 默认选中：平台最优 + 各商家最优（商家券需基于平台券均摊后的订单重新计算）
+        SelectionContext selectionContext = new SelectionContext(
+                buildAllAvailableList(platformBucket),
+                orderBOList,
+                buildOrderCouponComparator(),
+                // 2.选中平台优惠券后，基于平台券已抵扣后的后商家优惠券真实可用性
+                adjustedOrderBOList -> buildAllAvailableList(buildOrderCouponBucket(merchantCouponList, adjustedOrderBOList))
+        );
+        result.setSelectedCouponList(defaultCouponSelectStrategy.select(selectionContext));
         return result;
     }
 
@@ -1064,45 +1079,34 @@ public class SmsCouponServiceImpl implements SmsCouponService {
     private CouponBucket buildOrderCouponBucket(List<MemberCouponCenterVO> memberCouponList,
                                                 List<OrderMemberSmsCouponBO> orderBOList) {
         CouponBucket bucket = new CouponBucket();
-        buildOrderCouponResult(memberCouponList, orderBOList, bucket.availableIntegralList, bucket.availableCashList,
-                bucket.unAvailableIntegralList, bucket.unAvailableCashList);
-        bucket.availableIntegralList.sort(buildOrderCouponComparator());
-        bucket.availableCashList.sort(buildOrderCouponComparator());
-        return bucket;
-    }
-
-    /**
-     * 根据订单商品计算可用/不可用优惠券列表
-     */
-    private void buildOrderCouponResult(List<MemberCouponCenterVO> memberCouponList,
-                                        List<OrderMemberSmsCouponBO> orderBOList,
-                                        List<OrderMemberCouponVO> availableIntegralCouponList,
-                                        List<OrderMemberCouponVO> availableCashCouponList,
-                                        List<OrderMemberCouponVO> unAvailableIntegralCouponList,
-                                        List<OrderMemberCouponVO> unAvailableCashCouponList) {
         if (CollectionUtils.isEmpty(memberCouponList)) {
-            return;
+            return bucket;
         }
         List<MemberCouponCenterVO> memberIntegralCouponList = filterList(memberCouponList,
                 res -> res.getCouponDiscountType().equals(CouponDiscountType.INTEGRAL_DISCOUNT));
         List<MemberCouponCenterVO> memberCashCouponList = filterList(memberCouponList,
                 res -> !res.getCouponDiscountType().equals(CouponDiscountType.INTEGRAL_DISCOUNT));
+        // 积分券
         for (MemberCouponCenterVO res : memberIntegralCouponList) {
             OrderMemberCouponVO vo = CouponConvert.INSTANCE.convert(res);
             if (orderCouponInfoHandler(res, orderBOList, vo)) {
-                availableIntegralCouponList.add(vo);
+                bucket.availableIntegralList.add(vo);
             } else {
-                unAvailableIntegralCouponList.add(vo);
+                bucket.unAvailableIntegralList.add(vo);
             }
         }
+        // 现金券
         for (MemberCouponCenterVO res : memberCashCouponList) {
             OrderMemberCouponVO vo = CouponConvert.INSTANCE.convert(res);
             if (orderCouponInfoHandler(res, orderBOList, vo)) {
-                availableCashCouponList.add(vo);
+                bucket.availableCashList.add(vo);
             } else {
-                unAvailableCashCouponList.add(vo);
+                bucket.unAvailableCashList.add(vo);
             }
         }
+        bucket.availableIntegralList.sort(buildOrderCouponComparator());
+        bucket.availableCashList.sort(buildOrderCouponComparator());
+        return bucket;
     }
 
     /**
@@ -1112,50 +1116,6 @@ public class SmsCouponServiceImpl implements SmsCouponService {
         return Comparator.comparing(OrderMemberCouponVO::getDiscountTotalAmount).reversed()
                 .thenComparing(OrderMemberCouponVO::getUseEndTime)
                 .thenComparing(OrderMemberCouponVO::getLackAmount);
-    }
-
-    /**
-     * 构建默认选中优惠券：平台最优 + 各商家最优
-     */
-    private List<OrderMemberCouponVO> buildDefaultSelectedCoupons(CouponBucket platformBucket, CouponBucket merchantBucket) {
-        List<OrderMemberCouponVO> selectedList = new ArrayList<>();
-        OrderMemberCouponVO bestPlatform = pickBestCoupon(buildAllAvailableList(platformBucket));
-        if (bestPlatform != null) {
-            selectedList.add(bestPlatform);
-        }
-        Map<Long, List<OrderMemberCouponVO>> merchantCouponMap = new HashMap<>();
-        addMerchantCouponsToMap(merchantCouponMap, merchantBucket.availableIntegralList);
-        addMerchantCouponsToMap(merchantCouponMap, merchantBucket.availableCashList);
-        for (Map.Entry<Long, List<OrderMemberCouponVO>> entry : merchantCouponMap.entrySet()) {
-            OrderMemberCouponVO bestMerchant = pickBestCoupon(entry.getValue());
-            if (bestMerchant != null) {
-                selectedList.add(bestMerchant);
-            }
-        }
-        return selectedList;
-    }
-
-    /**
-     * 商家券按商家分组
-     */
-    private void addMerchantCouponsToMap(Map<Long, List<OrderMemberCouponVO>> merchantCouponMap,
-                                         List<OrderMemberCouponVO> couponList) {
-        for (OrderMemberCouponVO coupon : couponList) {
-            if (coupon.getMerchantId() == null) {
-                continue;
-            }
-            merchantCouponMap.computeIfAbsent(coupon.getMerchantId(), key -> new ArrayList<>()).add(coupon);
-        }
-    }
-
-    /**
-     * 获取列表中最优优惠券
-     */
-    private OrderMemberCouponVO pickBestCoupon(List<OrderMemberCouponVO> couponList) {
-        if (CollectionUtils.isEmpty(couponList)) {
-            return null;
-        }
-        return couponList.stream().max(buildOrderCouponComparator()).orElse(null);
     }
 
     /**
@@ -1204,6 +1164,7 @@ public class SmsCouponServiceImpl implements SmsCouponService {
      * 校验优惠券适用范围并计算优惠信息
      */
     private boolean orderCouponInfoHandler(MemberCouponCenterVO res, List<OrderMemberSmsCouponBO> orderBOList, OrderMemberCouponVO vo) {
+        // 使用期校验（上游已过滤有效券，此处只保留未到期校验）
         if (res.getUseStartTime().after(new Date())) {
             vo.setDisabled(CouponConstant.Disabled.UN_REACHED_TIME);
             return false;
@@ -1238,6 +1199,7 @@ public class SmsCouponServiceImpl implements SmsCouponService {
             vo.setDisabled(CouponConstant.Disabled.NO_PRODUCT);
             return false;
         } else {
+            // 按券类型计算优惠/门槛
             if (res.getCouponDiscountType().equals(CouponDiscountType.INTEGRAL_DISCOUNT)) {
                 return orderIntegralCouponInfoHandler(res, targetList, vo);
             } else {
