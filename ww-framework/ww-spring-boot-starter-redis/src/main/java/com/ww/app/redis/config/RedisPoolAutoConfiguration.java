@@ -1,5 +1,8 @@
 package com.ww.app.redis.config;
 
+import io.lettuce.core.ClientOptions;
+import io.lettuce.core.ReadFrom;
+import io.lettuce.core.SocketOptions;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.pool2.impl.GenericObjectPoolConfig;
 import org.springframework.boot.autoconfigure.data.redis.RedisProperties;
@@ -40,7 +43,7 @@ public class RedisPoolAutoConfiguration {
         LettucePoolingClientConfiguration.LettucePoolingClientConfigurationBuilder builder =
                 LettucePoolingClientConfiguration.builder();
         // 锁只读主库【解决主从情况下，锁失效问题】
-        builder.readFrom(io.lettuce.core.ReadFrom.MASTER_PREFERRED);
+        builder.readFrom(ReadFrom.MASTER_PREFERRED);
         // 配置连接池
         GenericObjectPoolConfig<?> poolConfig = getGenericObjectPoolConfig(redisProperties);
         builder.poolConfig(poolConfig);
@@ -50,10 +53,10 @@ public class RedisPoolAutoConfiguration {
         builder.shutdownTimeout(Duration.ofSeconds(2));
         // 开启TCP保活机制，防止连接因长时间不活动而被中间设备断开
         builder.clientOptions(
-                io.lettuce.core.ClientOptions.builder()
-                        .disconnectedBehavior(io.lettuce.core.ClientOptions.DisconnectedBehavior.REJECT_COMMANDS)
+                ClientOptions.builder()
+                        .disconnectedBehavior(ClientOptions.DisconnectedBehavior.REJECT_COMMANDS)
                         .socketOptions(
-                                io.lettuce.core.SocketOptions.builder()
+                                SocketOptions.builder()
                                         .keepAlive(true)
                                         .tcpNoDelay(true)
                                         .build()
