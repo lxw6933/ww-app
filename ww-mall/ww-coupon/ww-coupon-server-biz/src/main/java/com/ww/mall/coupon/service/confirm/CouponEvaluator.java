@@ -16,7 +16,6 @@ import org.springframework.stereotype.Component;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
-import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.Date;
 import java.util.List;
@@ -70,16 +69,6 @@ public class CouponEvaluator {
         bucket.getAvailableIntegralList().sort(couponComparator);
         bucket.getAvailableCashList().sort(couponComparator);
         return bucket;
-    }
-
-    /**
-     * 汇总所有可用券（积分券 + 现金券）
-     */
-    public List<OrderMemberCouponVO> buildAllAvailableList(CouponBucket bucket) {
-        List<OrderMemberCouponVO> all = new ArrayList<>();
-        all.addAll(bucket.getAvailableIntegralList());
-        all.addAll(bucket.getAvailableCashList());
-        return all;
     }
 
     /**

@@ -1087,7 +1087,7 @@ public class SmsCouponServiceImpl implements SmsCouponService {
         CouponBucket platformBucket = couponEvaluator.buildBucket(platformCouponList, canUseCouponOrderProductList);
         // 默认选券：平台最优 + 商家最优（商家券基于平台券均摊后的订单重新计算）
         SelectionContext selectionContext = SelectionContext.builder()
-                .platformAvailable(couponEvaluator.buildAllAvailableList(platformBucket))
+                .platformAvailable(platformBucket.buildAllAvailableList())
                 .orderBOList(orderBOList)
                 .couponComparator(couponEvaluator.getCouponComparator())
                 .merchantBucketProvider(adjustedOrderBOList -> couponEvaluator.buildBucket(merchantCouponList, adjustedOrderBOList))
