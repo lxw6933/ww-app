@@ -2,11 +2,11 @@ package com.ww.mall.coupon.service.strategy;
 
 import com.ww.mall.coupon.view.bo.OrderMemberSmsCouponBO;
 import com.ww.mall.coupon.view.vo.OrderMemberCouponVO;
+import lombok.Builder;
 import lombok.Getter;
 
 import java.util.Comparator;
 import java.util.List;
-import java.util.Map;
 import java.util.function.Function;
 
 @Getter
@@ -29,38 +29,20 @@ public class SelectionContext {
      */
     private final Function<List<OrderMemberSmsCouponBO>, CouponBucket> merchantBucketProvider;
     /**
-     * 是否使用平台优惠券
+     * 用户选券偏好
      */
-    private final Boolean usePlatformCoupon;
-    /**
-     * 用户指定的平台优惠券活动编码
-     */
-    private final String selectedPlatformActivityCode;
-    /**
-     * 是否使用商家优惠券
-     */
-    private final Boolean useMerchantCoupon;
-    /**
-     * 用户指定的商家优惠券活动编码（merchantId -> activityCode）
-     */
-    private final Map<Long, String> selectedMerchantActivityCodeMap;
+    private final SelectionPreference preference;
 
-    public SelectionContext(List<OrderMemberCouponVO> platformAvailable,
-                            List<OrderMemberSmsCouponBO> orderBOList,
-                            Comparator<OrderMemberCouponVO> couponComparator,
-                            Function<List<OrderMemberSmsCouponBO>, CouponBucket> merchantBucketProvider,
-                            Boolean usePlatformCoupon,
-                            String selectedPlatformActivityCode,
-                            Boolean useMerchantCoupon,
-                            Map<Long, String> selectedMerchantActivityCodeMap) {
+    @Builder
+    private SelectionContext(List<OrderMemberCouponVO> platformAvailable,
+                             List<OrderMemberSmsCouponBO> orderBOList,
+                             Comparator<OrderMemberCouponVO> couponComparator,
+                             Function<List<OrderMemberSmsCouponBO>, CouponBucket> merchantBucketProvider,
+                             SelectionPreference preference) {
         this.platformAvailable = platformAvailable;
         this.orderBOList = orderBOList;
         this.couponComparator = couponComparator;
         this.merchantBucketProvider = merchantBucketProvider;
-        this.usePlatformCoupon = usePlatformCoupon;
-        this.selectedPlatformActivityCode = selectedPlatformActivityCode;
-        this.useMerchantCoupon = useMerchantCoupon;
-        this.selectedMerchantActivityCodeMap = selectedMerchantActivityCodeMap;
+        this.preference = preference;
     }
-
 }

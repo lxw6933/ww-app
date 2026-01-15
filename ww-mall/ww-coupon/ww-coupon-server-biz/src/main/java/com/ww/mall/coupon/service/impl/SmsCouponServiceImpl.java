@@ -41,6 +41,7 @@ import com.ww.mall.coupon.service.SmsCouponService;
 import com.ww.mall.coupon.service.confirm.CouponEvaluator;
 import com.ww.mall.coupon.service.strategy.CouponBucket;
 import com.ww.mall.coupon.service.strategy.DefaultCouponSelectStrategy;
+import com.ww.mall.coupon.service.strategy.SelectionPreference;
 import com.ww.mall.coupon.service.strategy.SelectionContext;
 import com.ww.mall.coupon.service.strategy.SelectionResult;
 import com.ww.mall.coupon.utils.CouponCacheComponent;
@@ -1056,74 +1057,93 @@ public class SmsCouponServiceImpl implements SmsCouponService {
                                                          String selectedPlatformActivityCode,
                                                          Boolean useMerchantCoupon,
                                                          Map<Long, String> selectedMerchantActivityCodeMap) {
-        if (CollectionUtils.isEmpty(memberSmsCouponList)) {
-            return null;
-        }
-        // 一：可用优惠券【1.满足使用条件 2.不满足使用条件】
-        List<OrderMemberCouponVO> availableIntegralCouponList = new ArrayList<>();
-        List<OrderMemberCouponVO> availableCashCouponList = new ArrayList<>();
-        // 二：不可用优惠券【1.未到使用周期范围内 2.下单商品没有适用优惠券】
-        List<OrderMemberCouponVO> unAvailableIntegralCouponList = new ArrayList<>();
-        List<OrderMemberCouponVO> unAvailableCashCouponList = new ArrayList<>();
-
-        ConfirmOrderCouponVO result = new ConfirmOrderCouponVO();
-        // 过滤掉参与活动不能使用优惠券的商品
-        orderBOList = orderBOList.stream().filter(OrderMemberSmsCouponBO::isActivityUseCoupon).collect(Collectors.toList());
-        // 平台优先，商家其次
-        List<MemberCouponCenterVO> platformCouponList = filterList(memberSmsCouponList, res -> isPlatformCoupon(res.getCouponType()));
-        List<MemberCouponCenterVO> merchantCouponList = filterList(memberSmsCouponList, res -> isMerchantCoupon(res.getCouponType()));
-
-        // 基于原始订单金额计算平台可用/不可用列表
-        CouponBucket platformBucket = couponEvaluator.buildBucket(platformCouponList, orderBOList);
-        result.setPlatformAvailable(buildCouponGroup(platformBucket.getAvailableIntegralList(), platformBucket.getAvailableCashList()));
-
-        // 默认选中：平台最优 + 各商家最优（商家券需基于平台券均摊后的订单重新计算）
-        SelectionContext selectionContext = new SelectionContext(
-                couponEvaluator.buildAllAvailableList(platformBucket),
-                orderBOList,
-                couponEvaluator.getCouponComparator(),
-                // 2.选中平台优惠券后，基于平台券已抵扣后的商家优惠券真实可用性
-                adjustedOrderBOList -> couponEvaluator.buildBucket(merchantCouponList, adjustedOrderBOList),
-                usePlatformCoupon,
-                selectedPlatformActivityCode,
-                useMerchantCoupon,
-                selectedMerchantActivityCodeMap
-        );
-        SelectionResult selectionResult = defaultCouponSelectStrategy.select(selectionContext);
-        List<OrderMemberCouponVO> selectedCouponList = selectionResult.getSelectedCoupons();
-        result.setSelectedCouponList(selectedCouponList);
-
-        CouponBucket merchantBucket = selectionResult.getMerchantBucket();
-        if (merchantBucket != null) {
-            result.setMerchantAvailable(buildCouponGroup(merchantBucket.getAvailableIntegralList(), merchantBucket.getAvailableCashList()));
-        } else {
-            result.setMerchantAvailable(buildCouponGroup(Collections.emptyList(), Collections.emptyList()));
-        }
-
-        mergeBucketLists(platformBucket, availableIntegralCouponList, availableCashCouponList,
-                unAvailableIntegralCouponList, unAvailableCashCouponList);
-        if (merchantBucket != null) {
-            mergeBucketLists(merchantBucket, availableIntegralCouponList, availableCashCouponList,
-                    unAvailableIntegralCouponList, unAvailableCashCouponList);
-        }
-
-        result.setAvailable(buildCouponGroup(availableIntegralCouponList, availableCashCouponList));
-        result.setUnavailable(buildCouponGroup(unAvailableIntegralCouponList, unAvailableCashCouponList));
-        return result;
+        SelectionPreference preference = SelectionPreference.builder()
+                .usePlatformCoupon(usePlatformCoupon)
+                .selectedPlatformActivityCode(selectedPlatformActivityCode)
+                .useMerchantCoupon(useMerchantCoupon)
+                .selectedMerchantActivityCodeMap(selectedMerchantActivityCodeMap)
+                .build();
+        return getOrderMemberCouponList(memberSmsCouponList, orderBOList, preference);
     }
 
     /**
-     * 合并分桶结果到总列表
+     * 获取确认下单用户优惠券信息（基于用户选券偏好）
+     *
+     * @param orderBOList         下单商品BO（方法内部可能基于平台券均摊直接修改）
+     * @param memberSmsCouponList 用户有效优惠券集合（含平台券/商家券）
+     * @param preference          用户选券偏好
+     * @return ConfirmOrderCouponVO
      */
-    private void mergeBucketLists(CouponBucket bucket,
-                                  List<OrderMemberCouponVO> availableIntegralCouponList,
-                                  List<OrderMemberCouponVO> availableCashCouponList,
-                                  List<OrderMemberCouponVO> unAvailableIntegralCouponList,
-                                  List<OrderMemberCouponVO> unAvailableCashCouponList) {
-        availableIntegralCouponList.addAll(bucket.getAvailableIntegralList());
-        availableCashCouponList.addAll(bucket.getAvailableCashList());
-        unAvailableIntegralCouponList.addAll(bucket.getUnAvailableIntegralList());
-        unAvailableCashCouponList.addAll(bucket.getUnAvailableCashList());
+    public ConfirmOrderCouponVO getOrderMemberCouponList(List<MemberCouponCenterVO> memberSmsCouponList,
+                                                         List<OrderMemberSmsCouponBO> orderBOList,
+                                                         SelectionPreference preference) {
+        if (CollectionUtils.isEmpty(memberSmsCouponList)) {
+            return null;
+        }
+        // 过滤掉参与活动不能使用优惠券的商品
+        List<OrderMemberSmsCouponBO> canUseCouponOrderProductList = orderBOList.stream()
+                .filter(OrderMemberSmsCouponBO::isActivityUseCoupon)
+                .collect(Collectors.toList());
+        // 平台券/商家券拆分
+        List<MemberCouponCenterVO> platformCouponList = filterList(memberSmsCouponList, res -> isPlatformCoupon(res.getCouponType()));
+        List<MemberCouponCenterVO> merchantCouponList = filterList(memberSmsCouponList, res -> isMerchantCoupon(res.getCouponType()));
+        // 平台可用/不可用分桶
+        CouponBucket platformBucket = couponEvaluator.buildBucket(platformCouponList, canUseCouponOrderProductList);
+        // 默认选券：平台最优 + 商家最优（商家券基于平台券均摊后的订单重新计算）
+        SelectionResult selectionResult = selectDefaultCoupons(platformBucket,
+                canUseCouponOrderProductList,
+                merchantCouponList,
+                preference);
+        // 组装返回结果
+        return buildConfirmOrderCouponResult(platformBucket, selectionResult);
+    }
+
+    /**
+     * 选择默认券（平台最优 + 商家最优）
+     */
+    private SelectionResult selectDefaultCoupons(CouponBucket platformBucket,
+                                                 List<OrderMemberSmsCouponBO> orderBOList,
+                                                 List<MemberCouponCenterVO> merchantCouponList,
+                                                 SelectionPreference preference) {
+        SelectionContext selectionContext = SelectionContext.builder()
+                .platformAvailable(couponEvaluator.buildAllAvailableList(platformBucket))
+                .orderBOList(orderBOList)
+                .couponComparator(couponEvaluator.getCouponComparator())
+                .merchantBucketProvider(adjustedOrderBOList -> couponEvaluator.buildBucket(merchantCouponList, adjustedOrderBOList))
+                .preference(preference)
+                .build();
+        return defaultCouponSelectStrategy.select(selectionContext);
+    }
+
+    /**
+     * 组装确认下单返回结果（可用/不可用/默认选中）
+     */
+    private ConfirmOrderCouponVO buildConfirmOrderCouponResult(CouponBucket platformBucket,
+                                                               SelectionResult selectionResult) {
+        ConfirmOrderCouponVO result = new ConfirmOrderCouponVO();
+        // 使用优惠券集合
+        result.setSelectedCouponList(selectionResult.getSelectedCoupons());
+
+        // 平台优惠券分桶
+        CouponBucket merchantBucket = selectionResult.getMerchantBucket();
+        ConfirmOrderCouponVO.CouponScopeVO platformScope = new ConfirmOrderCouponVO.CouponScopeVO();
+        platformScope.setAvailable(buildCouponGroup(platformBucket.getAvailableIntegralList(), platformBucket.getAvailableCashList()));
+        platformScope.setUnavailable(buildCouponGroup(platformBucket.getUnAvailableIntegralList(), platformBucket.getUnAvailableCashList()));
+        result.setPlatform(platformScope);
+
+        // 商家优惠券分桶
+        ConfirmOrderCouponVO.CouponScopeVO merchantScope = new ConfirmOrderCouponVO.CouponScopeVO();
+        merchantScope.setAvailable(merchantBucket != null ?
+                        buildCouponGroup(merchantBucket.getAvailableIntegralList(), merchantBucket.getAvailableCashList()) :
+                        buildCouponGroup(Collections.emptyList(), Collections.emptyList())
+                );
+        merchantScope.setUnavailable(merchantBucket != null ?
+                        buildCouponGroup(merchantBucket.getUnAvailableIntegralList(), merchantBucket.getUnAvailableCashList()) :
+                        buildCouponGroup(Collections.emptyList(), Collections.emptyList())
+                );
+        result.setMerchant(merchantScope);
+
+        return result;
     }
 
     /**

@@ -38,9 +38,10 @@ public class PlatformFirstMerchantBestStrategy implements DefaultCouponSelectStr
         Comparator<OrderMemberCouponVO> comparator = context.getCouponComparator();
         // 平台券优先，筛掉不可直接用或无优惠收益的券（支持不使用/用户指定平台券）
         OrderMemberCouponVO bestPlatform = null;
-        boolean usePlatformCoupon = context.getUsePlatformCoupon() == null || context.getUsePlatformCoupon();
+        SelectionPreference preference = context.getPreference();
+        boolean usePlatformCoupon = preference == null || preference.getUsePlatformCoupon() == null || preference.getUsePlatformCoupon();
         if (usePlatformCoupon) {
-            String selectedPlatformActivityCode = context.getSelectedPlatformActivityCode();
+            String selectedPlatformActivityCode = preference == null ? null : preference.getSelectedPlatformActivityCode();
             // 用户选择
             if (StrUtil.isNotBlank(selectedPlatformActivityCode)) {
                 OrderMemberCouponVO selected = platformAvailable.stream()
@@ -73,13 +74,15 @@ public class PlatformFirstMerchantBestStrategy implements DefaultCouponSelectStr
         List<OrderMemberCouponVO> merchantAvailable = new ArrayList<>();
         merchantAvailable.addAll(merchantBucket.getAvailableIntegralList());
         merchantAvailable.addAll(merchantBucket.getAvailableCashList());
-        boolean useMerchantCoupon = context.getUseMerchantCoupon() == null || context.getUseMerchantCoupon();
+
+        // 商家优惠券
+        boolean useMerchantCoupon = preference == null || preference.getUseMerchantCoupon() == null || preference.getUseMerchantCoupon();
         if (!useMerchantCoupon || CollectionUtils.isEmpty(merchantAvailable)) {
             return new SelectionResult(selectedList, merchantBucket);
         }
         Map<Long, List<OrderMemberCouponVO>> merchantCouponMap = new HashMap<>();
         addMerchantCouponsToMap(merchantCouponMap, merchantAvailable);
-        Map<Long, String> selectedMerchantActivityCodeMap = context.getSelectedMerchantActivityCodeMap();
+        Map<Long, String> selectedMerchantActivityCodeMap = preference == null ? null : preference.getSelectedMerchantActivityCodeMap();
         boolean hasSelectedMerchantMap = selectedMerchantActivityCodeMap != null && !selectedMerchantActivityCodeMap.isEmpty();
         for (Map.Entry<Long, List<OrderMemberCouponVO>> entry : merchantCouponMap.entrySet()) {
             // 每个商家选一张最优可用券

@@ -14,6 +14,7 @@ import org.junit.jupiter.api.Test;
 
 import java.lang.reflect.Field;
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.util.*;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -110,7 +111,7 @@ class SmsCouponServiceImplTest {
 
         assertNotNull(result);
         assertTrue(result.getSelectedCouponList() == null || result.getSelectedCouponList().isEmpty());
-        assertTrue(containsCoupon(safeGroup(result.getPlatformAvailable()).getCash(), "P_FULL_200"));
+        assertTrue(containsCoupon(safeGroup(safeScope(result.getPlatform()).getAvailable()).getCash(), "P_FULL_200"));
         printScenario("指定的平台券存在但不满足门槛，默认不选券且不抛异常", originOrders, result);
     }
 
@@ -156,7 +157,7 @@ class SmsCouponServiceImplTest {
 
         assertNotNull(result);
         assertTrue(result.getSelectedCouponList() == null || result.getSelectedCouponList().isEmpty());
-        assertTrue(containsCoupon(safeGroup(result.getMerchantAvailable()).getCash(), "M_FULL_200"));
+        assertTrue(containsCoupon(safeGroup(safeScope(result.getMerchant()).getAvailable()).getCash(), "M_FULL_200"));
         printScenario("指定的商家券存在但不满足门槛，默认不选券且不抛异常", originOrders, result);
     }
 
@@ -312,8 +313,8 @@ class SmsCouponServiceImplTest {
 
         assertNotNull(result);
         assertTrue(result.getSelectedCouponList() == null || result.getSelectedCouponList().isEmpty());
-        assertTrue(containsCoupon(safeGroup(result.getPlatformAvailable()).getCash(), "P_CASH_10"));
-        assertTrue(containsCoupon(safeGroup(result.getMerchantAvailable()).getCash(), "M10_DIR_5"));
+        assertTrue(containsCoupon(safeGroup(safeScope(result.getPlatform()).getAvailable()).getCash(), "P_CASH_10"));
+        assertTrue(containsCoupon(safeGroup(safeScope(result.getMerchant()).getAvailable()).getCash(), "M10_DIR_5"));
         printScenario("用户明确不使用平台券和商家券，默认选中列表应为空[原价计算可用性]", originOrders, result);
     }
 
@@ -339,8 +340,8 @@ class SmsCouponServiceImplTest {
         );
 
         assertNotNull(result);
-        assertTrue(containsCoupon(safeGroup(result.getUnavailable()).getCash(), "P_FUTURE"));
-        assertTrue(containsCoupon(safeGroup(result.getUnavailable()).getCash(), "P_EMPTY_RANGE"));
+        assertTrue(containsCoupon(safeGroup(safeScope(result.getPlatform()).getUnavailable()).getCash(), "P_FUTURE"));
+        assertTrue(containsCoupon(safeGroup(safeScope(result.getPlatform()).getUnavailable()).getCash(), "P_EMPTY_RANGE"));
         printScenario("不可用展示校验（未到使用时间/适用范围为空）应进入不可用列表", originOrders, result);
     }
 
@@ -470,12 +471,14 @@ class SmsCouponServiceImplTest {
     private void printScenario(String label, List<OrderMemberSmsCouponBO> orderBOList, ConfirmOrderCouponVO result) {
         System.out.println("=== Scenario 场景: " + label + " ===");
         printOrders(orderBOList);
-        printCouponGroup("平台可用积分券", safeGroup(result.getPlatformAvailable()).getIntegral());
-        printCouponGroup("平台可用现金券", safeGroup(result.getPlatformAvailable()).getCash());
-        printCouponGroup("商家可用积分券", safeGroup(result.getMerchantAvailable()).getIntegral());
-        printCouponGroup("商家可用现金券", safeGroup(result.getMerchantAvailable()).getCash());
-        printCouponGroup("不可用积分券", safeGroup(result.getUnavailable()).getIntegral());
-        printCouponGroup("不可用现金券", safeGroup(result.getUnavailable()).getCash());
+        printCouponGroup("平台可用积分券", safeGroup(safeScope(result.getPlatform()).getAvailable()).getIntegral());
+        printCouponGroup("平台可用现金券", safeGroup(safeScope(result.getPlatform()).getAvailable()).getCash());
+        printCouponGroup("商家可用积分券", safeGroup(safeScope(result.getMerchant()).getAvailable()).getIntegral());
+        printCouponGroup("商家可用现金券", safeGroup(safeScope(result.getMerchant()).getAvailable()).getCash());
+        printCouponGroup("平台不可用积分券", safeGroup(safeScope(result.getPlatform()).getUnavailable()).getIntegral());
+        printCouponGroup("平台不可用现金券", safeGroup(safeScope(result.getPlatform()).getUnavailable()).getCash());
+        printCouponGroup("商家不可用积分券", safeGroup(safeScope(result.getMerchant()).getUnavailable()).getIntegral());
+        printCouponGroup("商家不可用现金券", safeGroup(safeScope(result.getMerchant()).getUnavailable()).getCash());
         printCouponGroup("选中使用优惠券", result.getSelectedCouponList());
         printFinalOrders(orderBOList, result.getSelectedCouponList());
         System.out.println();
@@ -483,6 +486,10 @@ class SmsCouponServiceImplTest {
 
     private ConfirmOrderCouponVO.CouponGroupVO safeGroup(ConfirmOrderCouponVO.CouponGroupVO group) {
         return group == null ? new ConfirmOrderCouponVO.CouponGroupVO() : group;
+    }
+
+    private ConfirmOrderCouponVO.CouponScopeVO safeScope(ConfirmOrderCouponVO.CouponScopeVO scope) {
+        return scope == null ? new ConfirmOrderCouponVO.CouponScopeVO() : scope;
     }
 
     private void printOrders(List<OrderMemberSmsCouponBO> orderBOList) {
@@ -611,7 +618,7 @@ class SmsCouponServiceImplTest {
                     adjustedTotal = BigDecimal.ZERO;
                 }
                 orderBO.setRealAmount(number > 0
-                        ? adjustedTotal.divide(BigDecimal.valueOf(number), 2, BigDecimal.ROUND_HALF_UP)
+                        ? adjustedTotal.divide(BigDecimal.valueOf(number), 2, RoundingMode.HALF_UP)
                         : BigDecimal.ZERO);
             }
         }
