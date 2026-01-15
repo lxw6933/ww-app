@@ -1081,8 +1081,8 @@ public class SmsCouponServiceImpl implements SmsCouponService {
                 .filter(OrderMemberSmsCouponBO::isActivityUseCoupon)
                 .collect(Collectors.toList());
         // 平台券/商家券拆分
-        List<MemberCouponCenterVO> platformCouponList = filterList(memberSmsCouponList, res -> isPlatformCoupon(res.getCouponType()));
-        List<MemberCouponCenterVO> merchantCouponList = filterList(memberSmsCouponList, res -> isMerchantCoupon(res.getCouponType()));
+        List<MemberCouponCenterVO> platformCouponList = filterList(memberSmsCouponList, res -> CouponUtils.isPlatformCoupon(res.getCouponType()));
+        List<MemberCouponCenterVO> merchantCouponList = filterList(memberSmsCouponList, res -> CouponUtils.isMerchantCoupon(res.getCouponType()));
         // 平台可用/不可用分桶
         CouponBucket platformBucket = couponEvaluator.buildBucket(platformCouponList, canUseCouponOrderProductList);
         // 默认选券：平台最优 + 商家最优（商家券基于平台券均摊后的订单重新计算）

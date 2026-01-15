@@ -161,7 +161,7 @@ public class CouponActivityBaseAddBO {
     @NotBlank(message = "活动说明不能为空")
     private String desc;
 
-    protected <T extends BaseCouponInfo> void initCouponActivity(T activity) {
+    protected <T extends BaseCouponInfo> void initCouponActivity(T activity, CouponType couponType) {
         activity.setName(this.getName());
         activity.setDesc(this.getDesc());
         activity.setCouponDiscountType(this.getCouponDiscountType());
@@ -184,7 +184,7 @@ public class CouponActivityBaseAddBO {
         activity.setNumber(this.getNumber());
 
         // 设置默认值
-        activity.setActivityCode(CouponUtils.getSmsCouponCode());
+        activity.setActivityCode(CouponUtils.getCouponActivityCode(couponType));
         activity.setStatus(false);
         activity.setReceiveNumber(0);
         activity.setUseNumber(0);

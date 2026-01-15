@@ -1,6 +1,7 @@
 package com.ww.mall.coupon.view.bo;
 
 import com.ww.mall.coupon.entity.SmsCouponActivity;
+import com.ww.mall.coupon.enums.CouponType;
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
@@ -28,7 +29,7 @@ public class SmsCouponActivityAddBO extends CouponActivityBaseAddBO {
      */
     public SmsCouponActivity convertSmsCouponActivity() {
         SmsCouponActivity activity = new SmsCouponActivity();
-        initCouponActivity(activity);
+        initCouponActivity(activity, CouponType.PLATFORM);
         activity.setChannelId(this.getChannelId());
         return activity;
     }

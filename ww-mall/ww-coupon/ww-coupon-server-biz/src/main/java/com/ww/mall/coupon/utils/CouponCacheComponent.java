@@ -6,7 +6,6 @@ import com.ww.app.common.exception.ApiException;
 import com.ww.app.common.utils.CaffeineUtil;
 import com.ww.mall.coupon.entity.MerchantCouponActivity;
 import com.ww.mall.coupon.entity.SmsCouponActivity;
-import com.ww.mall.coupon.enums.CouponType;
 import com.ww.mall.coupon.enums.ErrorCodeConstants;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.mongodb.core.MongoTemplate;
@@ -44,7 +43,7 @@ public class CouponCacheComponent {
     private static final Cache<String, Boolean> NULL_CACHE = CaffeineUtil.createCache(500, 1000, 5, TimeUnit.MINUTES);
 
     public SmsCouponActivity getSmsCouponActivityCache(String activityCode) {
-        Assert.isTrue(CouponType.PLATFORM.equals(CouponUtils.getCouponType(activityCode)), () -> new ApiException(ErrorCodeConstants.DATA_ERROR));
+        Assert.isTrue(CouponUtils.isPlatformCoupon(CouponUtils.getCouponType(activityCode)), () -> new ApiException(ErrorCodeConstants.DATA_ERROR));
         // 1. 检查空值缓存
         checkNullCache(activityCode);
         SmsCouponActivity smsCouponActivity = smsCouponActivityCache.get(activityCode, code -> {
@@ -73,7 +72,7 @@ public class CouponCacheComponent {
     }
 
     public MerchantCouponActivity getMerchantCouponActivityCache(String activityCode) {
-        Assert.isTrue(CouponType.MERCHANT.equals(CouponUtils.getCouponType(activityCode)), () -> new ApiException(ErrorCodeConstants.DATA_ERROR));
+        Assert.isTrue(CouponUtils.isMerchantCoupon(CouponUtils.getCouponType(activityCode)), () -> new ApiException(ErrorCodeConstants.DATA_ERROR));
         // 1. 检查空值缓存
         checkNullCache(activityCode);
         MerchantCouponActivity merchantCouponActivity = merchantCouponActivityCache.get(activityCode, code -> {

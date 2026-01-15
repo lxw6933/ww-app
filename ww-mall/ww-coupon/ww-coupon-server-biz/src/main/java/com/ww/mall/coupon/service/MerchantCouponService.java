@@ -1,9 +1,10 @@
 package com.ww.mall.coupon.service;
 
 import com.ww.app.common.common.AppPageResult;
-import com.ww.mall.coupon.service.base.CouponService;
 import com.ww.mall.coupon.view.bo.*;
-import com.ww.mall.coupon.view.vo.*;
+import com.ww.mall.coupon.view.vo.CouponActivityCenterVO;
+import com.ww.mall.coupon.view.vo.MerchantCouponDetailVO;
+import com.ww.mall.coupon.view.vo.MerchantCouponPageVO;
 
 import java.util.List;
 
@@ -12,7 +13,7 @@ import java.util.List;
  * @create 2023-07-25- 10:19
  * @description:
  */
-public interface MerchantCouponService extends CouponService {
+public interface MerchantCouponService {
 
     /**
      * 商家优惠券分页列表

@@ -2,6 +2,7 @@ package com.ww.mall.coupon.view.bo;
 
 import com.ww.mall.coupon.constant.CouponConstant;
 import com.ww.mall.coupon.entity.MerchantCouponActivity;
+import com.ww.mall.coupon.enums.CouponType;
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
@@ -29,7 +30,7 @@ public class MerchantCouponActivityAddBO extends CouponActivityBaseAddBO {
 
     public MerchantCouponActivity convertMerchantCouponActivity() {
         MerchantCouponActivity activity = new MerchantCouponActivity();
-        initCouponActivity(activity);
+        initCouponActivity(activity, CouponType.MERCHANT);
         activity.setMerchantId(this.getMerchantId());
         activity.setChannelIds(this.getChannelIds());
         activity.setAuditStatus(CouponConstant.AuditStatus.WAIT_AUDIT);

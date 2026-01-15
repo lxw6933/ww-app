@@ -1,7 +1,6 @@
 package com.ww.mall.coupon.service;
 
 import com.ww.app.common.common.AppPageResult;
-import com.ww.mall.coupon.service.base.CouponService;
 import com.ww.mall.coupon.view.bo.*;
 import com.ww.mall.coupon.view.vo.*;
 
@@ -12,7 +11,7 @@ import java.util.List;
  * @create 2023-07-25- 10:19
  * @description:
  */
-public interface SmsCouponService extends CouponService {
+public interface SmsCouponService {
 
     /**
      * 优惠券分页列表

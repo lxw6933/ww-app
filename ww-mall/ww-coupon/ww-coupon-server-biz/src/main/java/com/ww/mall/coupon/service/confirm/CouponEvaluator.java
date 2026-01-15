@@ -5,8 +5,8 @@ import com.ww.mall.coupon.constant.CouponConstant;
 import com.ww.mall.coupon.convert.CouponConvert;
 import com.ww.mall.coupon.enums.ApplyProductRangeType;
 import com.ww.mall.coupon.enums.CouponDiscountType;
-import com.ww.mall.coupon.enums.CouponType;
 import com.ww.mall.coupon.service.strategy.CouponBucket;
+import com.ww.mall.coupon.utils.CouponUtils;
 import com.ww.mall.coupon.view.bo.OrderMemberSmsCouponBO;
 import com.ww.mall.coupon.view.vo.MemberCouponCenterVO;
 import com.ww.mall.coupon.view.vo.OrderMemberCouponVO;
@@ -82,7 +82,7 @@ public class CouponEvaluator {
         List<OrderMemberSmsCouponBO> targetList = null;
         List<OrderMemberSmsCouponBO> tempOrderBOList = orderBOList;
         // 商家券过滤商家商品
-        if (isMerchantCoupon(res.getCouponType()) && res.getMerchantId() != null) {
+        if (CouponUtils.isMerchantCoupon(res.getCouponType()) && res.getMerchantId() != null) {
             tempOrderBOList = filterList(orderBOList, e -> res.getMerchantId().equals(e.getMerchantId()));
         }
         if (res.getApplyProductRangeType() != null
@@ -101,11 +101,11 @@ public class CouponEvaluator {
                     break;
                 case SPECIFY_PRODUCT:
                     targetList = filterList(tempOrderBOList,
-                            e -> res.getIdList().contains(isMerchantCoupon(res.getCouponType()) ? e.getSpuId() : e.getSmsId()));
+                            e -> res.getIdList().contains(CouponUtils.isMerchantCoupon(res.getCouponType()) ? e.getSpuId() : e.getSmsId()));
                     break;
                 case EXCLUDE_PRODUCT:
                     targetList = filterList(tempOrderBOList, e ->
-                            !res.getIdList().contains(isMerchantCoupon(res.getCouponType()) ? e.getSpuId() : e.getSmsId()));
+                            !res.getIdList().contains(CouponUtils.isMerchantCoupon(res.getCouponType()) ? e.getSpuId() : e.getSmsId()));
                     break;
                 case SPECIFY_BRAND:
                     targetList = filterList(tempOrderBOList, e -> res.getIdList().contains(e.getBrandId()));
@@ -207,10 +207,4 @@ public class CouponEvaluator {
                 MoneyUtils.allocateBigDecimalDiscount(moneyBOList, discountAmount);
     }
 
-    /**
-     * 判断是否为商家券
-     */
-    private boolean isMerchantCoupon(CouponType couponType) {
-        return CouponType.MERCHANT.equals(couponType);
-    }
 }

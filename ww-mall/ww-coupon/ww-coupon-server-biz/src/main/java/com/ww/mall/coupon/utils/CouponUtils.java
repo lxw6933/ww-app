@@ -5,6 +5,7 @@ import com.ww.app.common.enums.GlobalResCodeConstants;
 import com.ww.app.common.exception.ApiException;
 import com.ww.app.common.utils.IdUtil;
 import com.ww.mall.coupon.enums.CouponType;
+import com.ww.mall.coupon.enums.ErrorCodeConstants;
 
 /**
  * @author ww
@@ -26,6 +27,17 @@ public class CouponUtils {
         return StrUtil.join(StrUtil.EMPTY, MERCHANT_COUPON_PREFIX, IdUtil.nextIdStr());
     }
 
+    public static String getCouponActivityCode(CouponType couponType) {
+        switch (couponType) {
+            case MERCHANT:
+                return getMerchantCouponCode();
+            case PLATFORM:
+                return getSmsCouponCode();
+            default:
+                throw new ApiException(ErrorCodeConstants.DATA_ERROR);
+        }
+    }
+
     private static final String SMS_COUPON_CODE_DOC = "sms_coupon_code";
     private static final String SMS_COUPON_RECORD_DOC = "sms_coupon_record";
 
@@ -45,6 +57,14 @@ public class CouponUtils {
         } else {
             throw new ApiException(GlobalResCodeConstants.ILLEGAL_REQUEST);
         }
+    }
+
+    public static boolean isPlatformCoupon(CouponType couponType) {
+        return CouponType.PLATFORM.equals(couponType);
+    }
+
+    public static boolean isMerchantCoupon(CouponType couponType) {
+        return CouponType.MERCHANT.equals(couponType);
     }
 
 }
