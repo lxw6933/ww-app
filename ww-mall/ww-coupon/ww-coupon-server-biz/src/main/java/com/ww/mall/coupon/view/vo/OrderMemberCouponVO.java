@@ -68,5 +68,4 @@ public class OrderMemberCouponVO extends BaseCouponInfoVO {
      */
     @Schema(description = "商品均摊金额（SKU ID -> 均摊金额）", example = "{\"1001\": 10.00, \"1002\": 10.00}")
     private Map<Long, BigDecimal> allocateResultMap;
-    
 }

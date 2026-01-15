@@ -1,9 +1,11 @@
 package com.ww.mall.coupon.service.strategy;
 
-import cn.hutool.core.map.MapUtil;
+import cn.hutool.core.util.StrUtil;
 import com.ww.mall.coupon.enums.CouponDiscountType;
+import com.ww.mall.coupon.enums.ErrorCodeConstants;
 import com.ww.mall.coupon.view.bo.OrderMemberSmsCouponBO;
 import com.ww.mall.coupon.view.vo.OrderMemberCouponVO;
+import com.ww.app.common.exception.ApiException;
 import org.apache.commons.collections4.CollectionUtils;
 import org.springframework.stereotype.Component;
 
@@ -24,39 +26,88 @@ import java.util.stream.Collectors;
 public class PlatformFirstMerchantBestStrategy implements DefaultCouponSelectStrategy {
 
     @Override
-    public List<OrderMemberCouponVO> select(SelectionContext context) {
+    public SelectionResult select(SelectionContext context) {
         if (context == null) {
-            return Collections.emptyList();
+            return new SelectionResult(Collections.emptyList(), null);
         }
         List<OrderMemberCouponVO> selectedList = new ArrayList<>();
         List<OrderMemberCouponVO> platformAvailable = context.getPlatformAvailable();
         Comparator<OrderMemberCouponVO> comparator = context.getCouponComparator();
-        // 平台券优先，筛掉不可直接用或无优惠收益的券
-        OrderMemberCouponVO bestPlatform = pickBestCoupon(filterSelectableCoupons(platformAvailable), comparator);
+        // 平台券优先，筛掉不可直接用或无优惠收益的券（支持不使用/用户指定平台券）
+        OrderMemberCouponVO bestPlatform = null;
+        boolean usePlatformCoupon = context.getUsePlatformCoupon() == null || context.getUsePlatformCoupon();
+        if (usePlatformCoupon) {
+            String selectedPlatformActivityCode = context.getSelectedPlatformActivityCode();
+            // 用户选择
+            if (StrUtil.isNotBlank(selectedPlatformActivityCode)) {
+                bestPlatform = platformAvailable.stream()
+                        .filter(coupon -> selectedPlatformActivityCode.equals(coupon.getActivityCode()))
+                        .filter(this::isSelectableCoupon)
+                        .findFirst()
+                        .orElse(null);
+                if (bestPlatform == null) {
+                    throw new ApiException(ErrorCodeConstants.PLATFORM_COUPON_SELECTED_INVALID);
+                }
+            } else {
+                // 默认最优
+                bestPlatform = pickBestCoupon(filterSelectableCoupons(platformAvailable), comparator);
+            }
+        }
         List<OrderMemberSmsCouponBO> effectiveOrderBOList = context.getOrderBOList();
         if (bestPlatform != null) {
             selectedList.add(bestPlatform);
             // 平台券均摊后，商家券需基于调整后的订单重新计算
-            effectiveOrderBOList = applyPlatformCouponToOrder(effectiveOrderBOList, bestPlatform);
+            applyPlatformCouponToOrder(effectiveOrderBOList, bestPlatform);
         }
-        if (context.getMerchantAvailableProvider() == null) {
-            return selectedList;
+        CouponBucket merchantBucket = null;
+        if (context.getMerchantBucketProvider() != null) {
+            merchantBucket = context.getMerchantBucketProvider()
+                    .apply(effectiveOrderBOList == null ? Collections.emptyList() : effectiveOrderBOList);
         }
-        List<OrderMemberCouponVO> merchantAvailable = context.getMerchantAvailableProvider()
-                .apply(effectiveOrderBOList == null ? Collections.emptyList() : effectiveOrderBOList);
-        if (CollectionUtils.isEmpty(merchantAvailable)) {
-            return selectedList;
+        if (merchantBucket == null) {
+            return new SelectionResult(selectedList, null);
+        }
+        List<OrderMemberCouponVO> merchantAvailable = new ArrayList<>();
+        merchantAvailable.addAll(merchantBucket.getAvailableIntegralList());
+        merchantAvailable.addAll(merchantBucket.getAvailableCashList());
+        boolean useMerchantCoupon = context.getUseMerchantCoupon() == null || context.getUseMerchantCoupon();
+        if (!useMerchantCoupon || CollectionUtils.isEmpty(merchantAvailable)) {
+            return new SelectionResult(selectedList, merchantBucket);
         }
         Map<Long, List<OrderMemberCouponVO>> merchantCouponMap = new HashMap<>();
         addMerchantCouponsToMap(merchantCouponMap, merchantAvailable);
+        Map<Long, String> selectedMerchantActivityCodeMap = context.getSelectedMerchantActivityCodeMap();
+        boolean hasSelectedMerchantMap = selectedMerchantActivityCodeMap != null && !selectedMerchantActivityCodeMap.isEmpty();
         for (Map.Entry<Long, List<OrderMemberCouponVO>> entry : merchantCouponMap.entrySet()) {
             // 每个商家选一张最优可用券
-            OrderMemberCouponVO bestMerchant = pickBestCoupon(filterSelectableCoupons(entry.getValue()), comparator);
+            OrderMemberCouponVO bestMerchant;
+            Long merchantId = entry.getKey();
+            List<OrderMemberCouponVO> merchantCoupons = entry.getValue();
+            if (hasSelectedMerchantMap && !selectedMerchantActivityCodeMap.containsKey(merchantId)) {
+                continue;
+            }
+            if (selectedMerchantActivityCodeMap != null && selectedMerchantActivityCodeMap.containsKey(merchantId)) {
+                String selectedActivityCode = selectedMerchantActivityCodeMap.get(merchantId);
+                if (selectedActivityCode != null && !selectedActivityCode.trim().isEmpty()) {
+                    bestMerchant = merchantCoupons.stream()
+                            .filter(coupon -> selectedActivityCode.equals(coupon.getActivityCode()))
+                            .filter(this::isSelectableCoupon)
+                            .findFirst()
+                            .orElse(null);
+                    if (bestMerchant == null) {
+                        throw new ApiException(ErrorCodeConstants.MERCHANT_COUPON_SELECTED_INVALID);
+                    }
+                } else {
+                    continue;
+                }
+            } else {
+                bestMerchant = pickBestCoupon(filterSelectableCoupons(merchantCoupons), comparator);
+            }
             if (bestMerchant != null) {
                 selectedList.add(bestMerchant);
             }
         }
-        return selectedList;
+        return new SelectionResult(selectedList, merchantBucket);
     }
 
     /**
@@ -125,59 +176,38 @@ public class PlatformFirstMerchantBestStrategy implements DefaultCouponSelectStr
 
     /**
      * 按平台券均摊结果重算订单行的实付金额/积分（用于商家券门槛判断）
+     * 注意：该方法会直接修改传入的 orderBOList
      */
-    private List<OrderMemberSmsCouponBO> applyPlatformCouponToOrder(List<OrderMemberSmsCouponBO> orderBOList,
-                                                                    OrderMemberCouponVO platformCoupon) {
+    private void applyPlatformCouponToOrder(List<OrderMemberSmsCouponBO> orderBOList, OrderMemberCouponVO platformCoupon) {
         if (CollectionUtils.isEmpty(orderBOList) || platformCoupon == null) {
-            return orderBOList == null ? Collections.emptyList() : orderBOList;
+            return;
         }
         Map<Long, BigDecimal> allocateMap = platformCoupon.getAllocateResultMap();
-        if (MapUtil.isEmpty(allocateMap)) {
-            return orderBOList;
+        if (allocateMap == null || allocateMap.isEmpty()) {
+            return;
         }
         boolean integralType = CouponDiscountType.INTEGRAL_DISCOUNT.equals(platformCoupon.getCouponDiscountType());
-        List<OrderMemberSmsCouponBO> adjustedList = new ArrayList<>(orderBOList.size());
         for (OrderMemberSmsCouponBO orderBO : orderBOList) {
-            OrderMemberSmsCouponBO copy = copyOrderMemberSmsCouponBO(orderBO);
             BigDecimal allocated = allocateMap.get(orderBO.getSkuId());
             if (allocated != null) {
-                int number = copy.getNumber() == null ? 0 : copy.getNumber();
+                int number = orderBO.getNumber() == null ? 0 : orderBO.getNumber();
                 if (integralType) {
-                    int lineTotal = (copy.getRealIntegral() == null ? 0 : copy.getRealIntegral()) * number;
+                    int lineTotal = (orderBO.getRealIntegral() == null ? 0 : orderBO.getRealIntegral()) * number;
                     int adjustedTotal = Math.max(0, lineTotal - allocated.intValue());
-                    copy.setRealIntegral(number > 0 ? adjustedTotal / number : 0);
+                    orderBO.setRealIntegral(number > 0 ? adjustedTotal / number : 0);
                 } else {
-                    BigDecimal realAmount = copy.getRealAmount() == null ? BigDecimal.ZERO : copy.getRealAmount();
+                    BigDecimal realAmount = orderBO.getRealAmount() == null ? BigDecimal.ZERO : orderBO.getRealAmount();
                     BigDecimal lineTotal = realAmount.multiply(BigDecimal.valueOf(number));
                     BigDecimal adjustedTotal = lineTotal.subtract(allocated);
                     if (adjustedTotal.compareTo(BigDecimal.ZERO) < 0) {
                         adjustedTotal = BigDecimal.ZERO;
                     }
-                    copy.setRealAmount(number > 0
+                    orderBO.setRealAmount(number > 0
                             ? adjustedTotal.divide(BigDecimal.valueOf(number), 2, RoundingMode.HALF_UP)
                             : BigDecimal.ZERO);
                 }
             }
-            adjustedList.add(copy);
         }
-        return adjustedList;
     }
 
-    /**
-     * 复制订单行数据，避免改写原始参数
-     */
-    private OrderMemberSmsCouponBO copyOrderMemberSmsCouponBO(OrderMemberSmsCouponBO source) {
-        OrderMemberSmsCouponBO copy = new OrderMemberSmsCouponBO();
-        copy.setMerchantId(source.getMerchantId());
-        copy.setSmsId(source.getSmsId());
-        copy.setSpuId(source.getSpuId());
-        copy.setSkuId(source.getSkuId());
-        copy.setCategoryId(source.getCategoryId());
-        copy.setBrandId(source.getBrandId());
-        copy.setNumber(source.getNumber());
-        copy.setRealAmount(source.getRealAmount());
-        copy.setRealIntegral(source.getRealIntegral());
-        copy.setActivityUseCoupon(source.isActivityUseCoupon());
-        return copy;
-    }
 }

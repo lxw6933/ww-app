@@ -26,5 +26,7 @@ public interface ErrorCodeConstants {
     ResCode COUPON_USED_EXCEPTION = new ResCode(9210, "优惠券已被使用");
     ResCode COUPON_TYPE_EXCEPTION = new ResCode(9211, "优惠券活动类型不匹配");
     ResCode OUT_OF_ISSUE_STOCK = new ResCode(9212, "优惠券活动批次已全部发放完");
+    ResCode PLATFORM_COUPON_SELECTED_INVALID = new ResCode(9213, "指定平台优惠券不可用");
+    ResCode MERCHANT_COUPON_SELECTED_INVALID = new ResCode(9214, "指定商家优惠券不可用");
 
 }
