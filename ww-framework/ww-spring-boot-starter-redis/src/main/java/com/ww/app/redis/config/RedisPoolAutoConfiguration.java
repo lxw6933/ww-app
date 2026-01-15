@@ -39,6 +39,8 @@ public class RedisPoolAutoConfiguration {
     private LettuceClientConfiguration createLettuceClientConfiguration(RedisProperties redisProperties) {
         LettucePoolingClientConfiguration.LettucePoolingClientConfigurationBuilder builder =
                 LettucePoolingClientConfiguration.builder();
+        // 锁只读主库【解决主从情况下，锁失效问题】
+        builder.readFrom(io.lettuce.core.ReadFrom.MASTER_PREFERRED);
         // 配置连接池
         GenericObjectPoolConfig<?> poolConfig = getGenericObjectPoolConfig(redisProperties);
         builder.poolConfig(poolConfig);
