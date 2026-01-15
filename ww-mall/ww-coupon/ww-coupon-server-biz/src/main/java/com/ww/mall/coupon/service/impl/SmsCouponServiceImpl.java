@@ -39,11 +39,7 @@ import com.ww.mall.coupon.entity.base.BaseCouponInfo;
 import com.ww.mall.coupon.enums.*;
 import com.ww.mall.coupon.service.SmsCouponService;
 import com.ww.mall.coupon.service.confirm.CouponEvaluator;
-import com.ww.mall.coupon.service.strategy.CouponBucket;
-import com.ww.mall.coupon.service.strategy.DefaultCouponSelectStrategy;
-import com.ww.mall.coupon.service.strategy.SelectionPreference;
-import com.ww.mall.coupon.service.strategy.SelectionContext;
-import com.ww.mall.coupon.service.strategy.SelectionResult;
+import com.ww.mall.coupon.service.strategy.*;
 import com.ww.mall.coupon.utils.CouponCacheComponent;
 import com.ww.mall.coupon.utils.CouponCodeGenerator;
 import com.ww.mall.coupon.utils.CouponUtils;
@@ -1090,21 +1086,6 @@ public class SmsCouponServiceImpl implements SmsCouponService {
         // 平台可用/不可用分桶
         CouponBucket platformBucket = couponEvaluator.buildBucket(platformCouponList, canUseCouponOrderProductList);
         // 默认选券：平台最优 + 商家最优（商家券基于平台券均摊后的订单重新计算）
-        SelectionResult selectionResult = selectDefaultCoupons(platformBucket,
-                canUseCouponOrderProductList,
-                merchantCouponList,
-                preference);
-        // 组装返回结果
-        return buildConfirmOrderCouponResult(platformBucket, selectionResult);
-    }
-
-    /**
-     * 选择默认券（平台最优 + 商家最优）
-     */
-    private SelectionResult selectDefaultCoupons(CouponBucket platformBucket,
-                                                 List<OrderMemberSmsCouponBO> orderBOList,
-                                                 List<MemberCouponCenterVO> merchantCouponList,
-                                                 SelectionPreference preference) {
         SelectionContext selectionContext = SelectionContext.builder()
                 .platformAvailable(couponEvaluator.buildAllAvailableList(platformBucket))
                 .orderBOList(orderBOList)
@@ -1112,7 +1093,9 @@ public class SmsCouponServiceImpl implements SmsCouponService {
                 .merchantBucketProvider(adjustedOrderBOList -> couponEvaluator.buildBucket(merchantCouponList, adjustedOrderBOList))
                 .preference(preference)
                 .build();
-        return defaultCouponSelectStrategy.select(selectionContext);
+        SelectionResult selectionResult = defaultCouponSelectStrategy.select(selectionContext);
+        // 组装返回结果
+        return buildConfirmOrderCouponResult(platformBucket, selectionResult);
     }
 
     /**
