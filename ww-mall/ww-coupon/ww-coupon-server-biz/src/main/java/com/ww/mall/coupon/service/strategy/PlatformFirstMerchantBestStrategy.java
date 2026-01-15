@@ -25,6 +25,9 @@ import java.util.stream.Collectors;
 @Component
 public class PlatformFirstMerchantBestStrategy implements DefaultCouponSelectStrategy {
 
+    /**
+     * 按“平台最优 -> 商家最优”的顺序选择默认券，支持用户指定或明确不使用
+     */
     @Override
     public SelectionResult select(SelectionContext context) {
         if (context == null) {
@@ -40,14 +43,14 @@ public class PlatformFirstMerchantBestStrategy implements DefaultCouponSelectStr
             String selectedPlatformActivityCode = context.getSelectedPlatformActivityCode();
             // 用户选择
             if (StrUtil.isNotBlank(selectedPlatformActivityCode)) {
-                bestPlatform = platformAvailable.stream()
+                OrderMemberCouponVO selected = platformAvailable.stream()
                         .filter(coupon -> selectedPlatformActivityCode.equals(coupon.getActivityCode()))
-                        .filter(this::isSelectableCoupon)
                         .findFirst()
                         .orElse(null);
-                if (bestPlatform == null) {
+                if (selected == null) {
                     throw new ApiException(ErrorCodeConstants.PLATFORM_COUPON_SELECTED_INVALID);
                 }
+                bestPlatform = isSelectableCoupon(selected) ? selected : null;
             } else {
                 // 默认最优
                 bestPlatform = pickBestCoupon(filterSelectableCoupons(platformAvailable), comparator);
@@ -89,14 +92,14 @@ public class PlatformFirstMerchantBestStrategy implements DefaultCouponSelectStr
             if (selectedMerchantActivityCodeMap != null && selectedMerchantActivityCodeMap.containsKey(merchantId)) {
                 String selectedActivityCode = selectedMerchantActivityCodeMap.get(merchantId);
                 if (selectedActivityCode != null && !selectedActivityCode.trim().isEmpty()) {
-                    bestMerchant = merchantCoupons.stream()
+                    OrderMemberCouponVO selected = merchantCoupons.stream()
                             .filter(coupon -> selectedActivityCode.equals(coupon.getActivityCode()))
-                            .filter(this::isSelectableCoupon)
                             .findFirst()
                             .orElse(null);
-                    if (bestMerchant == null) {
+                    if (selected == null) {
                         throw new ApiException(ErrorCodeConstants.MERCHANT_COUPON_SELECTED_INVALID);
                     }
+                    bestMerchant = isSelectableCoupon(selected) ? selected : null;
                 } else {
                     continue;
                 }
@@ -125,6 +128,7 @@ public class PlatformFirstMerchantBestStrategy implements DefaultCouponSelectStr
 
     /**
      * 获取列表中最优优惠券
+     * 若积分券与现金券同时存在，则优先使用积分券
      */
     private OrderMemberCouponVO pickBestCoupon(List<OrderMemberCouponVO> couponList,
                                                Comparator<OrderMemberCouponVO> comparator) {
@@ -141,7 +145,8 @@ public class PlatformFirstMerchantBestStrategy implements DefaultCouponSelectStr
                     .filter(coupon -> CouponDiscountType.INTEGRAL_DISCOUNT.equals(coupon.getCouponDiscountType()))
                     .collect(Collectors.toList());
         }
-        return targetList.stream().max(comparator).orElse(null);
+        // comparator 为降序规则，取 min 才是“最优”
+        return targetList.stream().min(comparator).orElse(null);
     }
 
     /**
