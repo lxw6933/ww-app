@@ -8,8 +8,10 @@ import org.springframework.data.redis.core.DefaultTypedTuple;
 import org.springframework.data.redis.core.RedisCallback;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.data.redis.core.ZSetOperations;
+import org.springframework.data.redis.core.script.DefaultRedisScript;
 import org.springframework.stereotype.Component;
 
+import javax.annotation.PostConstruct;
 import javax.annotation.Resource;
 import java.util.*;
 import java.util.concurrent.TimeUnit;
@@ -42,11 +44,6 @@ public class RankingRedisComponent {
     private static final int DEFAULT_TOP_SIZE = 50;
 
     /**
-     * 默认分页大小
-     */
-    private static final int DEFAULT_PAGE_SIZE = 20;
-
-    /**
      * 最大分页大小
      */
     private static final int MAX_PAGE_SIZE = 1000;
@@ -60,6 +57,8 @@ public class RankingRedisComponent {
      * 分数倍数，用于将原始分数和时间戳组合
      * 使用1e8可以支持最大99,999,999的分数范围（约1亿）
      * 满足充值金额等业务场景（100万 * 100倍 = 1亿）
+     * <p>
+     * 注意：当前实现按整数分数设计（如分/积分），小数分数会被截断
      */
     private static final double SCORE_MULTIPLIER = 1e8;
 
@@ -81,11 +80,79 @@ public class RankingRedisComponent {
      */
     private static final long SHARD_THRESHOLD = 10000;
 
+    /**
+     * 分片状态：未启用
+     */
+    private static final int SHARD_STATUS_DISABLED = 0;
+
+    /**
+     * 分片状态：迁移中（双写）
+     */
+    private static final int SHARD_STATUS_MIGRATING = 2;
+
+    /**
+     * 分片状态：已启用（读写分片）
+     */
+    private static final int SHARD_STATUS_ENABLED = 1;
+
+    /**
+     * 分片迁移锁定时间（防止异常导致一直处于迁移中）
+     */
+    private static final long SHARD_MIGRATING_TTL_MINUTES = 5;
+
     @Resource
     private StringRedisTemplate stringRedisTemplate;
 
     @Resource
     private RankingRedisKeyBuilder rankingRedisKeyBuilder;
+
+    /**
+     * Lua脚本：原子化增加分数并刷新时间后缀
+     */
+    private static final String INCREMENT_SCORE_LUA =
+            "local key = KEYS[1] \n" +
+                    "local member = ARGV[1] \n" +
+                    "local increment = tonumber(ARGV[2]) \n" +
+                    "local multiplier = tonumber(ARGV[3]) \n" +
+                    "local timeAdjust = tonumber(ARGV[4]) \n" +
+                    "local current = redis.call('ZSCORE', key, member) \n" +
+                    "local currentOriginal = 0 \n" +
+                    "if current then \n" +
+                    "  currentOriginal = math.floor(tonumber(current) / multiplier) \n" +
+                    "end \n" +
+                    "local newOriginal = currentOriginal + increment \n" +
+                    "local newFinal = newOriginal * multiplier + timeAdjust \n" +
+                    "redis.call('ZADD', key, newFinal, member) \n" +
+                    "return newFinal";
+
+    /**
+     * Lua脚本：原子化设置分数并刷新时间后缀
+     */
+    private static final String SET_SCORE_LUA =
+            "local key = KEYS[1] \n" +
+                    "local member = ARGV[1] \n" +
+                    "local score = tonumber(ARGV[2]) \n" +
+                    "local multiplier = tonumber(ARGV[3]) \n" +
+                    "local timeAdjust = tonumber(ARGV[4]) \n" +
+                    "local finalScore = score * multiplier + timeAdjust \n" +
+                    "redis.call('ZADD', key, finalScore, member) \n" +
+                    "return finalScore";
+
+    /**
+     * Lua脚本：原子化增量更新
+     */
+    private DefaultRedisScript<Double> incrementScoreScript;
+
+    /**
+     * Lua脚本：原子化设置分数
+     */
+    private DefaultRedisScript<Double> setScoreScript;
+
+    @PostConstruct
+    public void init() {
+        incrementScoreScript = new DefaultRedisScript<>(INCREMENT_SCORE_LUA, Double.class);
+        setScoreScript = new DefaultRedisScript<>(SET_SCORE_LUA, Double.class);
+    }
 
     /**
      * 计算最终分数
@@ -121,7 +188,8 @@ public class RankingRedisComponent {
      * @return 分片索引（0到SHARD_COUNT-1）
      */
     private int getShardIndex(String memberId) {
-        return Math.abs(memberId.hashCode()) % SHARD_COUNT;
+        // 使用floorMod避免hash为Integer.MIN_VALUE时出现负数
+        return Math.floorMod(memberId.hashCode(), SHARD_COUNT);
     }
 
     /**
@@ -179,13 +247,124 @@ public class RankingRedisComponent {
      * @return 是否已启用分片
      */
     private boolean isShardingEnabled(String baseKey) {
+        return getShardingStatus(baseKey) == SHARD_STATUS_ENABLED;
+    }
+
+    /**
+     * 判断是否走分片写入
+     *
+     * @param shardingStatus 分片状态
+     * @return 是否走分片写入
+     */
+    private boolean isShardWritable(int shardingStatus) {
+        return shardingStatus == SHARD_STATUS_ENABLED || shardingStatus == SHARD_STATUS_MIGRATING;
+    }
+
+    /**
+     * 遍历所有分片并执行处理逻辑
+     *
+     * @param baseKey 基础key
+     * @param shardConsumer 分片处理逻辑
+     */
+    private void forEachShard(String baseKey, java.util.function.BiConsumer<Integer, String> shardConsumer) {
+        for (int i = 0; i < SHARD_COUNT; i++) {
+            String shardKey = buildShardKey(baseKey, i);
+            shardConsumer.accept(i, shardKey);
+        }
+    }
+
+    /**
+     * 判断是否从分片读取
+     *
+     * @param shardingStatus 分片状态
+     * @return 是否走分片读取
+     */
+    private boolean isShardReadable(int shardingStatus) {
+        // 迁移阶段仍从主key读取，避免历史数据未完全迁移导致读缺失
+        return shardingStatus == SHARD_STATUS_ENABLED;
+    }
+
+    /**
+     * 构建排行条目
+     *
+     * @param memberId 成员ID
+     * @param finalScore Redis中存储的最终分数
+     * @param rank 排名（从1开始）
+     * @return 排名条目
+     */
+    private RankingItem buildRankingItem(String memberId, double finalScore, long rank) {
+        double originalScore = restoreOriginalScore(finalScore);
+        return RankingItem.builder()
+                .memberId(memberId)
+                .score(originalScore)
+                .rank(rank)
+                .updateTime(System.currentTimeMillis())
+                .build();
+    }
+
+    /**
+     * 从有序集合结果构建排行榜列表
+     *
+     * @param tuples ZSet成员列表
+     * @param startRank 起始排名（从1开始）
+     * @return 排行榜列表
+     */
+    private List<RankingItem> buildRankingListFromTuples(Set<ZSetOperations.TypedTuple<String>> tuples, long startRank) {
+        if (CollUtil.isEmpty(tuples)) {
+            return Collections.emptyList();
+        }
+        List<RankingItem> rankingList = new ArrayList<>(tuples.size());
+        long rank = startRank;
+        for (ZSetOperations.TypedTuple<String> tuple : tuples) {
+            if (tuple != null && tuple.getValue() != null) {
+                double finalScore = tuple.getScore() != null ? tuple.getScore() : 0;
+                rankingList.add(buildRankingItem(tuple.getValue(), finalScore, rank++));
+            }
+        }
+        return rankingList;
+    }
+
+    /**
+     * 根据分片状态获取排行数据
+     *
+     * @param baseKey 排行榜key
+     * @param start 起始索引（从0开始）
+     * @param end 结束索引（包含）
+     * @param desc 是否降序
+     * @return 排行榜列表
+     */
+    private List<RankingItem> getRankingInternal(String baseKey, long start, long end, boolean desc) {
+        int shardingStatus = getShardingStatus(baseKey);
+        if (isShardReadable(shardingStatus)) {
+            return getRankingFromShards(baseKey, start, end, desc);
+        }
+
+        Set<ZSetOperations.TypedTuple<String>> tuples;
+        if (desc) {
+            tuples = stringRedisTemplate.opsForZSet().reverseRangeWithScores(baseKey, start, end);
+        } else {
+            tuples = stringRedisTemplate.opsForZSet().rangeWithScores(baseKey, start, end);
+        }
+        return buildRankingListFromTuples(tuples, start + 1);
+    }
+
+    /**
+     * 获取分片状态
+     */
+    private int getShardingStatus(String baseKey) {
         try {
             String flagKey = getShardingFlagKey(baseKey);
             String flag = stringRedisTemplate.opsForValue().get(flagKey);
-            return "1".equals(flag);
+            if (String.valueOf(SHARD_STATUS_ENABLED).equals(flag)) {
+                return SHARD_STATUS_ENABLED;
+            }
+            if (String.valueOf(SHARD_STATUS_MIGRATING).equals(flag)) {
+                return SHARD_STATUS_MIGRATING;
+            }
+            return SHARD_STATUS_DISABLED;
         } catch (Exception e) {
             log.error("检查分片标记异常: baseKey={}", baseKey, e);
-            return false;
+            return SHARD_STATUS_DISABLED;
         }
     }
 
@@ -197,7 +376,19 @@ public class RankingRedisComponent {
     private void enableSharding(String baseKey) {
         try {
             // 检查是否已经启用分片
-            if (isShardingEnabled(baseKey)) {
+            int status = getShardingStatus(baseKey);
+            if (status == SHARD_STATUS_ENABLED) {
+                return;
+            }
+            if (status == SHARD_STATUS_MIGRATING) {
+                return;
+            }
+
+            // 标记迁移中（双写）
+            String flagKey = getShardingFlagKey(baseKey);
+            Boolean locked = stringRedisTemplate.opsForValue()
+                    .setIfAbsent(flagKey, String.valueOf(SHARD_STATUS_MIGRATING), SHARD_MIGRATING_TTL_MINUTES, TimeUnit.MINUTES);
+            if (locked == null || !locked) {
                 return;
             }
 
@@ -225,8 +416,7 @@ public class RankingRedisComponent {
             }
 
             // 设置分片标记
-            String flagKey = getShardingFlagKey(baseKey);
-            stringRedisTemplate.opsForValue().set(flagKey, "1");
+            stringRedisTemplate.opsForValue().set(flagKey, String.valueOf(SHARD_STATUS_ENABLED));
 
             // 删除原始key（可选，根据业务需求决定）
             // stringRedisTemplate.delete(baseKey);
@@ -255,20 +445,32 @@ public class RankingRedisComponent {
 
         try {
             String baseKey = rankingRedisKeyBuilder.buildRankingKey(bizType, bizId);
-            double finalScore = calculateFinalScore(score);
-            
+            // 仅使用时间后缀参与排序，分数仍按原始值计算
+            double timeAdjust = calculateFinalScore(0);
+            Double finalScore;
+            int shardingStatus = getShardingStatus(baseKey);
+
             // 检查是否已启用分片
-            if (isShardingEnabled(baseKey)) {
+            if (shardingStatus == SHARD_STATUS_ENABLED) {
                 // 已启用分片，直接写入分片
                 int shardIndex = getShardIndex(memberId);
                 String shardKey = buildShardKey(baseKey, shardIndex);
-                Boolean result = stringRedisTemplate.opsForZSet().add(shardKey, memberId, finalScore);
+                finalScore = executeSetScoreScript(shardKey, memberId, score, timeAdjust);
                 log.debug("添加排行榜分数(分片): bizType={}, bizId={}, memberId={}, score={}, shardIndex={}, result={}", 
-                        bizType, bizId, memberId, score, shardIndex, result);
-                return Boolean.TRUE.equals(result);
+                        bizType, bizId, memberId, score, shardIndex, finalScore);
+                return finalScore != null;
+            } else if (shardingStatus == SHARD_STATUS_MIGRATING) {
+                // 迁移中，双写主key与分片
+                int shardIndex = getShardIndex(memberId);
+                String shardKey = buildShardKey(baseKey, shardIndex);
+                Double shardScore = executeSetScoreScript(shardKey, memberId, score, timeAdjust);
+                Double mainScore = executeSetScoreScript(baseKey, memberId, score, timeAdjust);
+                log.debug("添加排行榜分数(迁移双写): bizType={}, bizId={}, memberId={}, score={}, shardIndex={}, result={}",
+                        bizType, bizId, memberId, score, shardIndex, shardScore);
+                return shardScore != null || mainScore != null;
             } else {
                 // 未启用分片，写入主key
-                Boolean result = stringRedisTemplate.opsForZSet().add(baseKey, memberId, finalScore);
+                finalScore = executeSetScoreScript(baseKey, memberId, score, timeAdjust);
                 
                 // 检查是否需要启用分片
                 if (needSharding(baseKey)) {
@@ -277,8 +479,8 @@ public class RankingRedisComponent {
                 }
                 
                 log.debug("添加排行榜分数: bizType={}, bizId={}, memberId={}, score={}, result={}", 
-                        bizType, bizId, memberId, score, result);
-                return Boolean.TRUE.equals(result);
+                        bizType, bizId, memberId, score, finalScore);
+                return finalScore != null;
             }
         } catch (Exception e) {
             log.error("添加排行榜分数异常: bizType={}, bizId={}, memberId={}, score={}", 
@@ -304,30 +506,26 @@ public class RankingRedisComponent {
 
         try {
             String baseKey = rankingRedisKeyBuilder.buildRankingKey(bizType, bizId);
-            
+            int shardingStatus = getShardingStatus(baseKey);
+            // 仅使用时间后缀参与排序，分数仍按原始值计算
+            double timeAdjust = calculateFinalScore(0);
+
             // 检查是否已启用分片
-            if (isShardingEnabled(baseKey)) {
+            if (shardingStatus == SHARD_STATUS_ENABLED) {
                 // 已启用分片，操作分片
                 int shardIndex = getShardIndex(memberId);
                 String shardKey = buildShardKey(baseKey, shardIndex);
-                // 注意：incrementScore会直接增加分数，但我们需要保持时间戳后缀
-                // 所以先获取当前分数，然后重新计算
-                Double currentFinalScore = stringRedisTemplate.opsForZSet().score(shardKey, memberId);
-                if (currentFinalScore != null) {
-                    double currentOriginalScore = restoreOriginalScore(currentFinalScore);
-                    double newOriginalScore = currentOriginalScore + increment;
-                    double newFinalScore = calculateFinalScore(newOriginalScore);
-                    stringRedisTemplate.opsForZSet().add(shardKey, memberId, newFinalScore);
-                    return newFinalScore;
-                } else {
-                    // 成员不存在，直接添加
-                    double newFinalScore = calculateFinalScore(increment);
-                    stringRedisTemplate.opsForZSet().add(shardKey, memberId, newFinalScore);
-                    return newFinalScore;
-                }
+                return executeIncrementScript(shardKey, memberId, increment, timeAdjust);
+            } else if (shardingStatus == SHARD_STATUS_MIGRATING) {
+                // 迁移中，双写主key与分片
+                int shardIndex = getShardIndex(memberId);
+                String shardKey = buildShardKey(baseKey, shardIndex);
+                Double shardScore = executeIncrementScript(shardKey, memberId, increment, timeAdjust);
+                Double mainScore = executeIncrementScript(baseKey, memberId, increment, timeAdjust);
+                return shardScore != null ? shardScore : mainScore;
             } else {
-                // 未启用分片，操作主key
-                Double newScore = stringRedisTemplate.opsForZSet().incrementScore(baseKey, memberId, increment);
+                // 未启用分片，原子化增量更新
+                Double newScore = executeIncrementScript(baseKey, memberId, increment, timeAdjust);
                 log.debug("增加排行榜分数: bizType={}, bizId={}, memberId={}, increment={}, newScore={}", 
                         bizType, bizId, memberId, increment, newScore);
                 return newScore;
@@ -337,6 +535,34 @@ public class RankingRedisComponent {
                     bizType, bizId, memberId, increment, e);
             return null;
         }
+    }
+
+    /**
+     * 使用Lua脚本原子化更新分数
+     */
+    private Double executeIncrementScript(String key, String memberId, double increment, double timeAdjust) {
+        return stringRedisTemplate.execute(
+                incrementScoreScript,
+                Collections.singletonList(key),
+                memberId,
+                String.valueOf(increment),
+                String.valueOf(SCORE_MULTIPLIER),
+                String.valueOf(timeAdjust)
+        );
+    }
+
+    /**
+     * 使用Lua脚本原子化设置分数
+     */
+    private Double executeSetScoreScript(String key, String memberId, double score, double timeAdjust) {
+        return stringRedisTemplate.execute(
+                setScoreScript,
+                Collections.singletonList(key),
+                memberId,
+                String.valueOf(score),
+                String.valueOf(SCORE_MULTIPLIER),
+                String.valueOf(timeAdjust)
+        );
     }
 
     /**
@@ -356,7 +582,9 @@ public class RankingRedisComponent {
 
         try {
             String baseKey = rankingRedisKeyBuilder.buildRankingKey(bizType, bizId);
-            boolean shardingEnabled = isShardingEnabled(baseKey);
+            int shardingStatus = getShardingStatus(baseKey);
+            boolean shardingEnabled = shardingStatus == SHARD_STATUS_ENABLED;
+            boolean migrating = shardingStatus == SHARD_STATUS_MIGRATING;
             
             // 按分片分组
             Map<Integer, Set<ZSetOperations.TypedTuple<String>>> shardMap = new HashMap<>();
@@ -396,6 +624,32 @@ public class RankingRedisComponent {
                         }
                     }
                 }
+            } else if (migrating) {
+                // 迁移中，双写主key与分片
+                for (Map.Entry<Integer, Set<ZSetOperations.TypedTuple<String>>> entry : shardMap.entrySet()) {
+                    String shardKey = buildShardKey(baseKey, entry.getKey());
+                    Set<ZSetOperations.TypedTuple<String>> tuples = entry.getValue();
+                    List<ZSetOperations.TypedTuple<String>> tupleList = new ArrayList<>(tuples);
+                    for (int i = 0; i < tupleList.size(); i += BATCH_SIZE) {
+                        int end = Math.min(i + BATCH_SIZE, tupleList.size());
+                        Set<ZSetOperations.TypedTuple<String>> batch = new HashSet<>(tupleList.subList(i, end));
+                        Long added = stringRedisTemplate.opsForZSet().add(shardKey, batch);
+                        if (added != null) {
+                            totalAdded += added;
+                        }
+                    }
+                }
+                if (!mainTuples.isEmpty()) {
+                    List<ZSetOperations.TypedTuple<String>> tupleList = new ArrayList<>(mainTuples);
+                    for (int i = 0; i < tupleList.size(); i += BATCH_SIZE) {
+                        int end = Math.min(i + BATCH_SIZE, tupleList.size());
+                        Set<ZSetOperations.TypedTuple<String>> batch = new HashSet<>(tupleList.subList(i, end));
+                        Long added = stringRedisTemplate.opsForZSet().add(baseKey, batch);
+                        if (added != null) {
+                            totalAdded += added;
+                        }
+                    }
+                }
             } else {
                 // 未启用分片，添加到主key
                 if (!mainTuples.isEmpty()) {
@@ -416,8 +670,8 @@ public class RankingRedisComponent {
                 }
             }
 
-            log.debug("批量添加排行榜分数: bizType={}, bizId={}, size={}, added={}, sharding={}", 
-                    bizType, bizId, memberScores.size(), totalAdded, shardingEnabled);
+            log.debug("批量添加排行榜分数: bizType={}, bizId={}, size={}, added={}, sharding={}, migrating={}", 
+                    bizType, bizId, memberScores.size(), totalAdded, shardingEnabled, migrating);
             return totalAdded;
         } catch (Exception e) {
             log.error("批量添加排行榜分数异常: bizType={}, bizId={}, size={}", 
@@ -436,22 +690,20 @@ public class RankingRedisComponent {
      * @return 排行榜列表
      */
     private List<RankingItem> getRankingFromShards(String baseKey, long start, long end, boolean desc) {
-        // 从所有分片中获取数据
+        // 从所有分片中获取当前页所需的最大范围，避免全量拉取
+        long rangeEnd = Math.max(end, 0);
         List<ZSetOperations.TypedTuple<String>> allTuples = new ArrayList<>();
-        
-        for (int i = 0; i < SHARD_COUNT; i++) {
-            String shardKey = buildShardKey(baseKey, i);
+        forEachShard(baseKey, (index, shardKey) -> {
             Set<ZSetOperations.TypedTuple<String>> tuples;
             if (desc) {
-                tuples = stringRedisTemplate.opsForZSet().reverseRangeWithScores(shardKey, 0, -1);
+                tuples = stringRedisTemplate.opsForZSet().reverseRangeWithScores(shardKey, 0, rangeEnd);
             } else {
-                tuples = stringRedisTemplate.opsForZSet().rangeWithScores(shardKey, 0, -1);
+                tuples = stringRedisTemplate.opsForZSet().rangeWithScores(shardKey, 0, rangeEnd);
             }
-            
             if (CollUtil.isNotEmpty(tuples)) {
                 allTuples.addAll(tuples);
             }
-        }
+        });
         
         // 按分数排序
         allTuples.sort((a, b) -> {
@@ -473,15 +725,7 @@ public class RankingRedisComponent {
             ZSetOperations.TypedTuple<String> tuple = allTuples.get(i);
             if (tuple != null && tuple.getValue() != null) {
                 double finalScore = tuple.getScore() != null ? tuple.getScore() : 0;
-                double originalScore = restoreOriginalScore(finalScore);
-                
-                RankingItem item = RankingItem.builder()
-                        .memberId(tuple.getValue())
-                        .score(originalScore)
-                        .rank(rank++)
-                        .updateTime(System.currentTimeMillis())
-                        .build();
-                rankingList.add(item);
+                rankingList.add(buildRankingItem(tuple.getValue(), finalScore, rank++));
             }
         }
         
@@ -523,50 +767,10 @@ public class RankingRedisComponent {
             long start = (long) (page - 1) * size;
             long end = start + size - 1;
 
-            // 检查是否已启用分片
-            if (isShardingEnabled(baseKey)) {
-                // 从分片中获取并合并
-                List<RankingItem> rankingList = getRankingFromShards(baseKey, start, end, desc);
-                log.debug("获取排行榜(分片): bizType={}, bizId={}, page={}, size={}, desc={}, resultSize={}", 
-                        bizType, bizId, page, size, desc, rankingList.size());
-                return rankingList;
-            } else {
-                // 从未分片的key中获取
-                Set<ZSetOperations.TypedTuple<String>> tuples;
-                if (desc) {
-                    // 降序：从高到低
-                    tuples = stringRedisTemplate.opsForZSet().reverseRangeWithScores(baseKey, start, end);
-                } else {
-                    // 升序：从低到高
-                    tuples = stringRedisTemplate.opsForZSet().rangeWithScores(baseKey, start, end);
-                }
-
-                if (CollUtil.isEmpty(tuples)) {
-                    return Collections.emptyList();
-                }
-
-                List<RankingItem> rankingList = new ArrayList<>(tuples.size());
-                long rank = start + 1;
-                for (ZSetOperations.TypedTuple<String> tuple : tuples) {
-                    if (tuple != null && tuple.getValue() != null) {
-                        double finalScore = tuple.getScore() != null ? tuple.getScore() : 0;
-                        // 还原原始分数
-                        double originalScore = restoreOriginalScore(finalScore);
-                        
-                        RankingItem item = RankingItem.builder()
-                                .memberId(tuple.getValue())
-                                .score(originalScore)
-                                .rank(rank++)
-                                .updateTime(System.currentTimeMillis())
-                                .build();
-                        rankingList.add(item);
-                    }
-                }
-
-                log.debug("获取排行榜: bizType={}, bizId={}, page={}, size={}, desc={}, resultSize={}", 
-                        bizType, bizId, page, size, desc, rankingList.size());
-                return rankingList;
-            }
+            List<RankingItem> rankingList = getRankingInternal(baseKey, start, end, desc);
+            log.debug("获取排行榜: bizType={}, bizId={}, page={}, size={}, desc={}, resultSize={}", 
+                    bizType, bizId, page, size, desc, rankingList.size());
+            return rankingList;
         } catch (Exception e) {
             log.error("获取排行榜异常: bizType={}, bizId={}, page={}, size={}, desc={}", 
                     bizType, bizId, page, size, desc, e);
@@ -753,6 +957,27 @@ public class RankingRedisComponent {
 
         try {
             String key = rankingRedisKeyBuilder.buildRankingKey(bizType, bizId);
+
+            if (isShardingEnabled(key)) {
+                // 分片情况下，从分片中获取分数与排名
+                int shardIndex = getShardIndex(memberId);
+                String shardKey = buildShardKey(key, shardIndex);
+                Double finalScore = stringRedisTemplate.opsForZSet().score(shardKey, memberId);
+                if (finalScore == null) {
+                    return null;
+                }
+                double originalScore = restoreOriginalScore(finalScore);
+                long rank = getMemberRankFromShards(key, memberId, desc);
+                RankingItem item = RankingItem.builder()
+                        .memberId(memberId)
+                        .score(originalScore)
+                        .rank(rank)
+                        .updateTime(System.currentTimeMillis())
+                        .build();
+                log.debug("获取成员排名信息(分片): bizType={}, bizId={}, memberId={}, desc={}, rank={}, score={}", 
+                        bizType, bizId, memberId, desc, item.getRank(), item.getScore());
+                return item;
+            }
             
             // 使用Pipeline批量获取排名和分数
             List<Object> results = stringRedisTemplate.executePipelined((RedisCallback<Object>) connection -> {
@@ -815,16 +1040,15 @@ public class RankingRedisComponent {
             // 检查是否已启用分片
             if (isShardingEnabled(baseKey)) {
                 // 统计所有分片的总数
-                long totalCount = 0;
-                for (int i = 0; i < SHARD_COUNT; i++) {
-                    String shardKey = buildShardKey(baseKey, i);
+                long[] totalCount = new long[] {0};
+                forEachShard(baseKey, (index, shardKey) -> {
                     Long count = stringRedisTemplate.opsForZSet().zCard(shardKey);
                     if (count != null) {
-                        totalCount += count;
+                        totalCount[0] += count;
                     }
-                }
-                log.debug("获取排行榜总数(分片): bizType={}, bizId={}, count={}", bizType, bizId, totalCount);
-                return totalCount;
+                });
+                log.debug("获取排行榜总数(分片): bizType={}, bizId={}, count={}", bizType, bizId, totalCount[0]);
+                return totalCount[0];
             } else {
                 // 从未分片的key中获取
                 Long count = stringRedisTemplate.opsForZSet().zCard(baseKey);
@@ -854,6 +1078,26 @@ public class RankingRedisComponent {
 
         try {
             String key = rankingRedisKeyBuilder.buildRankingKey(bizType, bizId);
+            int shardingStatus = getShardingStatus(key);
+            if (shardingStatus == SHARD_STATUS_ENABLED) {
+                int shardIndex = getShardIndex(memberId);
+                String shardKey = buildShardKey(key, shardIndex);
+                Long removed = stringRedisTemplate.opsForZSet().remove(shardKey, memberId);
+                boolean result = removed != null && removed > 0;
+                log.debug("删除排行榜成员(分片): bizType={}, bizId={}, memberId={}, result={}", 
+                        bizType, bizId, memberId, result);
+                return result;
+            }
+            if (shardingStatus == SHARD_STATUS_MIGRATING) {
+                int shardIndex = getShardIndex(memberId);
+                String shardKey = buildShardKey(key, shardIndex);
+                Long removedShard = stringRedisTemplate.opsForZSet().remove(shardKey, memberId);
+                Long removedMain = stringRedisTemplate.opsForZSet().remove(key, memberId);
+                boolean result = (removedShard != null && removedShard > 0) || (removedMain != null && removedMain > 0);
+                log.debug("删除排行榜成员(迁移双删): bizType={}, bizId={}, memberId={}, result={}", 
+                        bizType, bizId, memberId, result);
+                return result;
+            }
             Long removed = stringRedisTemplate.opsForZSet().remove(key, memberId);
             boolean result = removed != null && removed > 0;
             log.debug("删除排行榜成员: bizType={}, bizId={}, memberId={}, result={}", 
@@ -883,6 +1127,33 @@ public class RankingRedisComponent {
 
         try {
             String key = rankingRedisKeyBuilder.buildRankingKey(bizType, bizId);
+            int shardingStatus = getShardingStatus(key);
+            if (isShardWritable(shardingStatus)) {
+                long totalRemoved = 0;
+                Map<Integer, List<String>> shardMembers = new HashMap<>();
+                for (String memberId : memberIds) {
+                    int shardIndex = getShardIndex(memberId);
+                    shardMembers.computeIfAbsent(shardIndex, k -> new ArrayList<>()).add(memberId);
+                }
+                for (Map.Entry<Integer, List<String>> entry : shardMembers.entrySet()) {
+                    String shardKey = buildShardKey(key, entry.getKey());
+                    Long removed = stringRedisTemplate.opsForZSet().remove(shardKey,
+                            entry.getValue().toArray(new String[0]));
+                    if (removed != null) {
+                        totalRemoved += removed;
+                    }
+                }
+                if (shardingStatus == SHARD_STATUS_MIGRATING) {
+                    Long removedMain = stringRedisTemplate.opsForZSet().remove(key,
+                            memberIds.toArray(new String[0]));
+                    if (removedMain != null) {
+                        totalRemoved += removedMain;
+                    }
+                }
+                log.debug("批量删除排行榜成员(分片): bizType={}, bizId={}, size={}, removed={}", 
+                        bizType, bizId, memberIds.size(), totalRemoved);
+                return totalRemoved;
+            }
             Long removed = stringRedisTemplate.opsForZSet().remove(key, 
                     memberIds.toArray(new String[0]));
             long result = removed != null ? removed : 0;
@@ -911,9 +1182,16 @@ public class RankingRedisComponent {
 
         try {
             String key = rankingRedisKeyBuilder.buildRankingKey(bizType, bizId);
+            int shardingStatus = getShardingStatus(key);
+            if (shardingStatus != SHARD_STATUS_DISABLED) {
+                for (int i = 0; i < SHARD_COUNT; i++) {
+                    stringRedisTemplate.delete(buildShardKey(key, i));
+                }
+                stringRedisTemplate.delete(getShardingFlagKey(key));
+            }
             Boolean result = stringRedisTemplate.delete(key);
             log.debug("删除排行榜: bizType={}, bizId={}, result={}", bizType, bizId, result);
-            return result;
+            return Boolean.TRUE.equals(result);
         } catch (Exception e) {
             log.error("删除排行榜异常: bizType={}, bizId={}", bizType, bizId, e);
             return false;
@@ -936,6 +1214,13 @@ public class RankingRedisComponent {
 
         try {
             String key = rankingRedisKeyBuilder.buildRankingKey(bizType, bizId);
+            int shardingStatus = getShardingStatus(key);
+            if (shardingStatus != SHARD_STATUS_DISABLED) {
+                for (int i = 0; i < SHARD_COUNT; i++) {
+                    stringRedisTemplate.expire(buildShardKey(key, i), expireSeconds, TimeUnit.SECONDS);
+                }
+                stringRedisTemplate.expire(getShardingFlagKey(key), expireSeconds, TimeUnit.SECONDS);
+            }
             Boolean result = stringRedisTemplate.expire(key, expireSeconds, TimeUnit.SECONDS);
             log.debug("设置排行榜过期时间: bizType={}, bizId={}, expireSeconds={}, result={}", 
                     bizType, bizId, expireSeconds, result);
@@ -969,9 +1254,22 @@ public class RankingRedisComponent {
             // 为了准确统计，我们需要考虑时间戳后缀的范围
             double finalMinScore = minScore * SCORE_MULTIPLIER;
             double finalMaxScore = (maxScore + 1) * SCORE_MULTIPLIER - 1;
-            
-            Long count = stringRedisTemplate.opsForZSet().count(key, finalMinScore, finalMaxScore);
-            long result = count != null ? count : 0;
+
+            long result = 0;
+            if (isShardingEnabled(key)) {
+                long[] totalCount = new long[] {0};
+                forEachShard(key, (index, shardKey) -> {
+                    Long count = stringRedisTemplate.opsForZSet()
+                            .count(shardKey, finalMinScore, finalMaxScore);
+                    if (count != null) {
+                        totalCount[0] += count;
+                    }
+                });
+                result = totalCount[0];
+            } else {
+                Long count = stringRedisTemplate.opsForZSet().count(key, finalMinScore, finalMaxScore);
+                result = count != null ? count : 0;
+            }
             log.debug("按分数区间统计: bizType={}, bizId={}, minScore={}, maxScore={}, count={}", 
                     bizType, bizId, minScore, maxScore, result);
             return result;
@@ -1006,34 +1304,7 @@ public class RankingRedisComponent {
             long start = startRank - 1;
             long end = endRank - 1;
 
-            Set<ZSetOperations.TypedTuple<String>> tuples;
-            if (desc) {
-                tuples = stringRedisTemplate.opsForZSet().reverseRangeWithScores(key, start, end);
-            } else {
-                tuples = stringRedisTemplate.opsForZSet().rangeWithScores(key, start, end);
-            }
-
-            if (CollUtil.isEmpty(tuples)) {
-                return Collections.emptyList();
-            }
-
-            List<RankingItem> rankingList = new ArrayList<>(tuples.size());
-            long rank = startRank;
-            for (ZSetOperations.TypedTuple<String> tuple : tuples) {
-                if (tuple != null && tuple.getValue() != null) {
-                    double finalScore = tuple.getScore() != null ? tuple.getScore() : 0;
-                    double originalScore = restoreOriginalScore(finalScore);
-                    
-                    RankingItem item = RankingItem.builder()
-                            .memberId(tuple.getValue())
-                            .score(originalScore)
-                            .rank(rank++)
-                            .updateTime(System.currentTimeMillis())
-                            .build();
-                    rankingList.add(item);
-                }
-            }
-
+            List<RankingItem> rankingList = getRankingInternal(key, start, end, desc);
             log.debug("按排名区间获取: bizType={}, bizId={}, startRank={}, endRank={}, desc={}, resultSize={}", 
                     bizType, bizId, startRank, endRank, desc, rankingList.size());
             return rankingList;
