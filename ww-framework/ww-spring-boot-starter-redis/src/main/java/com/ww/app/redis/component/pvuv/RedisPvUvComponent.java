@@ -358,8 +358,8 @@ public class RedisPvUvComponent {
      * 定时任务：将本地缓存同步到Redis
      */
     public void scheduledSyncToRedis() {
-        // 只有当缓存中有数据时才同步
-        if (localCache.getPvCacheSize() > 0 || localCache.getUvCacheSize() > 0) {
+        // 只有当缓存中有待同步数据时才同步
+        if (localCache.hasPendingPv() || localCache.hasPendingUv()) {
             syncToRedisNow();
         }
     }
@@ -380,6 +380,10 @@ public class RedisPvUvComponent {
             log.debug("成功同步{}个PV数据到Redis", pvData.size());
         } catch (Exception e) {
             log.error("同步PV数据到Redis失败: {}", e.getMessage(), e);
+            // 回补PV数据，等待下次重试
+            for (Map.Entry<String, Long> entry : pvData.entrySet()) {
+                localCache.addPv(entry.getKey(), entry.getValue());
+            }
         }
     }
 
@@ -397,8 +401,10 @@ public class RedisPvUvComponent {
             // 批量更新Redis中的UV
             redisStorage.batchAddUsersToUv(uvData);
             log.debug("成功同步{}个UV数据到Redis", uvData.size());
+            localCache.onSyncUvSuccess(uvData);
         } catch (Exception e) {
             log.error("同步UV数据到Redis失败: {}", e.getMessage(), e);
+            localCache.onSyncUvFailure(uvData);
         }
     }
 

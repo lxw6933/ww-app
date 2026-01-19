@@ -60,6 +60,20 @@ public class LocalPvUvCache {
     }
 
     /**
+     * 批量回补PV数据（用于同步失败回滚）
+     *
+     * @param key PV key
+     * @param count PV数量
+     */
+    public void addPv(String key, long count) {
+        if (count <= 0) {
+            return;
+        }
+        LongAdder adder = pvCache.computeIfAbsent(key, k -> new LongAdder());
+        adder.add(count);
+    }
+
+    /**
      * 添加用户到UV
      *
      * @param key    键
@@ -78,18 +92,6 @@ public class LocalPvUvCache {
         
         // 添加用户并返回是否是新用户
         userSet.add(userId);
-    }
-
-    /**
-     * 获取UV计数
-     *
-     * @param key 键
-     * @return UV计数
-     */
-    public long getUvCount(String key) {
-        // 直接从用户集合获取大小
-        Set<String> userSet = currentUvBuffer.get(key);
-        return userSet != null ? userSet.size() : 0;
     }
 
     /**
@@ -129,6 +131,11 @@ public class LocalPvUvCache {
         }
         
         try {
+            // 优先同步上次失败的数据，避免长期滞留
+            if (!syncUvBuffer.isEmpty()) {
+                return syncUvBuffer;
+            }
+
             // 快速检查：如果当前缓冲区为空，直接返回空结果
             if (currentUvBuffer.isEmpty()) {
                 return Collections.emptyMap();
@@ -150,20 +157,57 @@ public class LocalPvUvCache {
     }
 
     /**
-     * 获取PV缓存大小
+     * UV同步成功后清理同步缓冲
      *
-     * @return 缓存大小
+     * @param syncedData 同步的数据
      */
-    public int getPvCacheSize() {
-        return pvCache.size();
+    public void onSyncUvSuccess(Map<String, Set<String>> syncedData) {
+        if (syncedData == null || syncedData.isEmpty()) {
+            return;
+        }
+        if (syncedData == syncUvBuffer) {
+            syncUvBuffer.clear();
+        }
     }
 
     /**
-     * 获取UV缓存大小
+     * UV同步失败时回滚到当前缓冲区，等待下次重试
      *
-     * @return 缓存大小
+     * @param failedData 同步失败的数据
      */
-    public int getUvCacheSize() {
-        return currentUvBuffer.size() + syncUvBuffer.size();
+    public void onSyncUvFailure(Map<String, Set<String>> failedData) {
+        if (failedData == null || failedData.isEmpty()) {
+            return;
+        }
+        for (Map.Entry<String, Set<String>> entry : failedData.entrySet()) {
+            if (entry.getValue() == null || entry.getValue().isEmpty()) {
+                continue;
+            }
+            Set<String> userSet = currentUvBuffer.computeIfAbsent(entry.getKey(),
+                    k -> Collections.newSetFromMap(new ConcurrentHashMap<>()));
+            userSet.addAll(entry.getValue());
+        }
+        if (failedData == syncUvBuffer) {
+            syncUvBuffer.clear();
+        }
     }
-} 
+
+    /**
+     * 是否存在待同步的PV数据
+     */
+    public boolean hasPendingPv() {
+        for (LongAdder adder : pvCache.values()) {
+            if (adder.sum() > 0) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    /**
+     * 是否存在待同步的UV数据
+     */
+    public boolean hasPendingUv() {
+        return !currentUvBuffer.isEmpty() || !syncUvBuffer.isEmpty();
+    }
+}
