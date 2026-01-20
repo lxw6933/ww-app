@@ -123,7 +123,7 @@ public class RankingRedisComponent {
                     "local newOriginal = currentOriginal + increment \n" +
                     "local newFinal = newOriginal * multiplier + timeAdjust \n" +
                     "redis.call('ZADD', key, newFinal, member) \n" +
-                    "return newFinal";
+                    "return tostring(newFinal)";
 
     /**
      * Lua脚本：原子化设置分数并刷新时间后缀
@@ -136,22 +136,22 @@ public class RankingRedisComponent {
                     "local timeAdjust = tonumber(ARGV[4]) \n" +
                     "local finalScore = score * multiplier + timeAdjust \n" +
                     "redis.call('ZADD', key, finalScore, member) \n" +
-                    "return finalScore";
+                    "return tostring(finalScore)";
 
     /**
      * Lua脚本：原子化增量更新
      */
-    private DefaultRedisScript<Double> incrementScoreScript;
+    private DefaultRedisScript<String> incrementScoreScript;
 
     /**
      * Lua脚本：原子化设置分数
      */
-    private DefaultRedisScript<Double> setScoreScript;
+    private DefaultRedisScript<String> setScoreScript;
 
     @PostConstruct
     public void init() {
-        incrementScoreScript = new DefaultRedisScript<>(INCREMENT_SCORE_LUA, Double.class);
-        setScoreScript = new DefaultRedisScript<>(SET_SCORE_LUA, Double.class);
+        incrementScoreScript = new DefaultRedisScript<>(INCREMENT_SCORE_LUA, String.class);
+        setScoreScript = new DefaultRedisScript<>(SET_SCORE_LUA, String.class);
     }
 
     /**
@@ -541,7 +541,7 @@ public class RankingRedisComponent {
      * 使用Lua脚本原子化更新分数
      */
     private Double executeIncrementScript(String key, String memberId, double increment, double timeAdjust) {
-        return stringRedisTemplate.execute(
+        String result = stringRedisTemplate.execute(
                 incrementScoreScript,
                 Collections.singletonList(key),
                 memberId,
@@ -549,13 +549,14 @@ public class RankingRedisComponent {
                 String.valueOf(SCORE_MULTIPLIER),
                 String.valueOf(timeAdjust)
         );
+        return result != null ? Double.valueOf(result) : null;
     }
 
     /**
      * 使用Lua脚本原子化设置分数
      */
     private Double executeSetScoreScript(String key, String memberId, double score, double timeAdjust) {
-        return stringRedisTemplate.execute(
+        String result = stringRedisTemplate.execute(
                 setScoreScript,
                 Collections.singletonList(key),
                 memberId,
@@ -563,6 +564,7 @@ public class RankingRedisComponent {
                 String.valueOf(SCORE_MULTIPLIER),
                 String.valueOf(timeAdjust)
         );
+        return result != null ? Double.valueOf(result) : null;
     }
 
     /**
