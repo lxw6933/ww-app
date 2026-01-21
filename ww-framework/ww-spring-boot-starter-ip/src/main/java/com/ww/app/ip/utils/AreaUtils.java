@@ -34,25 +34,39 @@ public class AreaUtils {
      */
     private static Map<Integer, Area> areas;
 
+    /**
+     * 按名称索引，提升 parseArea 查找性能（不处理重名冲突）
+     */
+    private static Map<String, Area> areaNameIndex;
+
     private AreaUtils() {
         long now = System.currentTimeMillis();
         areas = new HashMap<>();
+        areaNameIndex = new HashMap<>();
         areas.put(Area.ID_GLOBAL, new Area(Area.ID_GLOBAL, "全球", 0, null, new ArrayList<>()));
         // 从 csv 中加载数据
         List<CsvRow> rows = CsvUtil.getReader().read(ResourceUtil.getUtf8Reader("area.csv")).getRows();
+
         // 删除 header
-        rows.remove(0);
+        if (!rows.isEmpty()) {
+            rows.remove(0);
+        }
         for (CsvRow row : rows) {
             // 创建 Area 对象
             Area area = new Area(Integer.valueOf(row.get(0)), row.get(1), Integer.valueOf(row.get(2)), null, new ArrayList<>());
-            // 添加到 areas 中
             areas.put(area.getId(), area);
+            // 仅存首个命名，避免重名覆盖导致不可控
+            areaNameIndex.putIfAbsent(area.getName(), area);
         }
 
-        // 构建父子关系：因为 Area 中没有 parentId 字段，所以需要重复读取
+        // 构建父子关系：因为 Area 中没有parentId 字段，所以需要重复读取
         for (CsvRow row : rows) {
             Area area = areas.get(Integer.valueOf(row.get(0)));
             Area parent = areas.get(Integer.valueOf(row.get(3)));
+            if (area == null || parent == null) {
+                log.warn("构建区域关系失败，节点缺失: areaId={}, parentId={}", row.get(0), row.get(3));
+                continue;
+            }
             Assert.isTrue(area != parent, "{}:父子节点相同", area.getName());
             area.setParent(parent);
             parent.getChildren().add(area);
@@ -73,15 +87,18 @@ public class AreaUtils {
     /**
      * 获得指定区域对应的编号
      *
-     * @param pathStr 区域路径，例如说：河南省/石家庄市/新华区
+     * @param pathStr 区域路径，例如：河南省/石家庄市/新华区
      * @return 区域
      */
     public static Area parseArea(String pathStr) {
+        if (StrUtil.isBlank(pathStr)) {
+            return null;
+        }
         String[] paths = pathStr.split(StrUtil.SLASH);
         Area area = null;
         for (String path : paths) {
             if (area == null) {
-                area = findFirst(areas.values(), item -> item.getName().equals(path));
+                area = areaNameIndex.get(path);
             } else {
                 area = findFirst(area.getChildren(), item -> item.getName().equals(path));
             }
@@ -134,7 +151,7 @@ public class AreaUtils {
     /**
      * 格式化区域
      * <p>
-     * 例如说：
+     * 例如：
      * 1. id = “静安区”时：上海 上海市 静安区
      * 2. id = “上海市”时：上海 上海市
      * 3. id = “上海”时：上海
@@ -178,7 +195,7 @@ public class AreaUtils {
     }
 
     /**
-     * 根据区域编号、上级区域类型，获取上级区域编号
+     * 根据区域编号、上级区域类型，获得上级区域编号
      *
      * @param id   区域编号
      * @param type 区域类型
