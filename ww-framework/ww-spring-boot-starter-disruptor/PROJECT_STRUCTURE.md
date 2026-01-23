@@ -10,7 +10,7 @@
 ww-spring-boot-starter-disruptor/
 ├── src/
 │   ├── main/
-│   │   ├── java/com/ww/framework/disruptor/
+│   │   ├── java/com/ww/app/disruptor/
 │   │   │   ├── model/                          # 数据模型层
 │   │   │   │   ├── Event.java                  # 事件基类（支持泛型）
 │   │   │   │   ├── EventStatus.java            # 事件状态枚举
@@ -31,20 +31,16 @@ ww-spring-boot-starter-disruptor/
 │   │   │   ├── api/                            # API层（对外接口）
 │   │   │   │   └── DisruptorTemplate.java      # 模板类（类似RestTemplate）
 │   │   │   │
-│   │   │   └── config/                         # Spring Boot配置层
+│   │   │   └── config/                         # 配置层
 │   │   │       ├── DisruptorProperties.java    # 配置属性
-│   │   │       └── DisruptorAutoConfiguration.java # 自动配置类
 │   │   │
 │   │   └── resources/
 │   │       ├── META-INF/
-│   │       │   ├── spring.factories            # Spring Boot 2.x 自动配置
 │   │       │   └── spring/
-│   │       │       └── org.springframework.boot.autoconfigure.AutoConfiguration.imports
-│   │       │                                   # Spring Boot 3.x 自动配置
 │   │       └── application-example.yml         # 示例配置文件
 │   │
 │   └── test/
-│       └── java/com/ww/framework/disruptor/
+│       └── java/com/ww/app/disruptor/
 │           └── DisruptorTemplateTest.java      # 单元测试
 │
 ├── pom.xml                                     # Maven依赖配置
@@ -143,16 +139,10 @@ ww-spring-boot-starter-disruptor/
 
 #### 5. 配置层 (config/)
 
-**职责**: Spring Boot集成
+**职责**: 配置属性定义（业务自建时可选使用）
 
 - **DisruptorProperties**: 配置属性绑定
-- **DisruptorAutoConfiguration**: 自动配置类
 
-**设计亮点**:
-- @ConfigurationProperties 自动绑定
-- 条件装配（@ConditionalOnProperty）
-- 自动发现EventProcessor Bean
-- 优雅关闭（@PreDestroy）
 
 ## 🚀 核心特性
 
@@ -166,12 +156,8 @@ ww-spring-boot-starter-disruptor/
 ### 2. 易用性
 
 ```java
-// 方式1: 自动配置
-@Autowired
-private DisruptorTemplate<Object> template;
-
-// 方式2: Builder构建
-DisruptorTemplate<String> template = DisruptorTemplate.<String>builder()
+// Builder构建
+com.ww.app.disruptor.api.DisruptorTemplate<String> template = com.ww.app.disruptor.api.DisruptorTemplate.<String>builder()
     .ringBufferSize(1024)
     .eventProcessor(event -> ProcessResult.success())
     .build();
@@ -190,13 +176,13 @@ DisruptorTemplate<String> template = DisruptorTemplate.<String>builder()
 - Processor层：只依赖Model层
 - Core层：核心实现，依赖Processor和Model
 - API层：封装Core层，提供易用接口
-- Config层：Spring Boot集成
+- Config层：配置属性定义（业务自建可选）
 
 ## 📊 与旧版本对比
 
 | 特性 | 旧版本 | 新版本 |
 |------|--------|--------|
-| 包路径 | com.ww.app.disruptor | com.ww.framework.disruptor |
+| 包路径 | com.ww.app.disruptor | com.ww.app.disruptor |
 | 模块化 | 较弱 | 强（5层架构） |
 | 扩展性 | 中等 | 高（SPI + 插件化） |
 | 易用性 | 一般 | 优秀（Template + Builder） |
@@ -259,7 +245,6 @@ ww:
 - ✅ 核心引擎重构
 - ✅ 模块化架构
 - ✅ Builder模式API
-- ✅ Spring Boot自动配置
 - ✅ 完善文档
 
 ### 中期（计划中）
@@ -280,7 +265,7 @@ ww:
 
 1. 实现EventProcessor或BatchEventProcessor接口
 2. 添加@Component注解
-3. Spring Boot会自动发现并注册
+3. 业务自建时自行注册或注入
 
 ### 扩展持久化
 

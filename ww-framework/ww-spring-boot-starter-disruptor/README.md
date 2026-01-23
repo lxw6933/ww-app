@@ -15,7 +15,6 @@
 - **批量处理优化**: 减少上下文切换，提升吞吐量
 
 ### 易用性
-- **开箱即用**: 自动配置，零代码启动
 - **Builder模式**: 流式API，简单直观
 - **模板类设计**: 类似RestTemplate，降低学习成本
 - **注解驱动**: 支持@EventHandler注解（计划中）
@@ -46,15 +45,13 @@
 
 ### 2. 配置属性
 
-在 `application.yml` 中添加配置：
+业务自建时可选配置（已移除自动配置，需自行读取使用）：
 
 ```yaml
 ww:
   disruptor:
-    enabled: true                    # 是否启用
     ring-buffer-size: 1024          # RingBuffer大小（必须是2的幂）
     consumer-threads: 4              # 消费者线程数
-    producer-threads: 2              # 生产者线程数
     batch-size: 100                  # 批处理大小
     batch-timeout: 1000              # 批处理超时（毫秒）
     wait-strategy: BLOCKING          # 等待策略
@@ -78,9 +75,9 @@ ww:
 **方式一：实现EventProcessor接口**
 
 ```java
-import processor.com.ww.app.disruptor.EventProcessor;
-import model.com.ww.app.disruptor.Event;
-import model.com.ww.app.disruptor.ProcessResult;
+import com.ww.app.disruptor.processor.EventProcessor;
+import com.ww.app.disruptor.model.Event;
+import com.ww.app.disruptor.model.ProcessResult;
 import org.springframework.stereotype.Component;
 
 @Component
@@ -106,9 +103,9 @@ public class OrderEventProcessor implements EventProcessor<OrderData> {
 **方式二：实现BatchEventProcessor接口（批量处理）**
 
 ```java
-import processor.com.ww.app.disruptor.BatchEventProcessor;
-import model.com.ww.app.disruptor.EventBatch;
-import model.com.ww.app.disruptor.ProcessResult;
+import com.ww.app.disruptor.processor.BatchEventProcessor;
+import com.ww.app.disruptor.model.EventBatch;
+import com.ww.app.disruptor.model.ProcessResult;
 import org.springframework.stereotype.Component;
 
 @Component
@@ -136,48 +133,10 @@ public class OrderBatchProcessor implements BatchEventProcessor<OrderData> {
 
 ### 4. 发布事件
 
-**方式一：使用DisruptorTemplate**
+**方式一：使用Builder构建自定义Template（推荐）**
 
 ```java
-import api.com.ww.app.disruptor.DisruptorTemplate;
-import model.com.ww.app.disruptor.Event;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.web.bind.annotation.*;
-
-@RestController
-@RequestMapping("/orders")
-public class OrderController {
-
-    @Autowired
-    private DisruptorTemplate<Object> disruptorTemplate;
-
-    @PostMapping
-    public String createOrder(@RequestBody OrderData order) {
-        // 创建事件
-        Event<Object> event = new Event<>("order", order);
-
-        // 发布事件
-        boolean success = disruptorTemplate.publish(event);
-
-        return success ? "订单提交成功" : "订单提交失败";
-    }
-
-    @PostMapping("/batch")
-    public String createOrderBatch(@RequestBody List<OrderData> orders) {
-        // 批量发布
-        orders.forEach(order ->
-                disruptorTemplate.publish("order", order)
-        );
-
-        return "批量订单提交成功";
-    }
-}
-```
-
-**方式二：使用Builder构建自定义Template**
-
-```java
-import api.com.ww.app.disruptor.DisruptorTemplate;
+import com.ww.app.disruptor.api.DisruptorTemplate;
 
 DisruptorTemplate<OrderData> template = DisruptorTemplate.<OrderData>builder()
         .businessName("order-processor")  // 指定业务名称，用于区分线程
@@ -203,14 +162,12 @@ template.stop();
 
 ## 📖 配置说明
 
-### 核心配置
+### 核心配置（业务自建时可选）
 
 | 配置项 | 类型 | 默认值 | 说明 |
 |--------|------|--------|------|
-| `ww.disruptor.enabled` | boolean | true | 是否启用Disruptor |
 | `ww.disruptor.ring-buffer-size` | int | 1024 | RingBuffer大小，必须是2的幂 |
 | `ww.disruptor.consumer-threads` | int | 4 | 消费者线程数 |
-| `ww.disruptor.producer-threads` | int | 2 | 生产者线程数 |
 | `ww.disruptor.batch-size` | int | 100 | 批处理大小 |
 | `ww.disruptor.batch-timeout` | long | 1000 | 批处理超时时间（毫秒） |
 | `ww.disruptor.wait-strategy` | String | BLOCKING | 等待策略 |

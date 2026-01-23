@@ -1,2 +1,1 @@
-org.springframework.boot.autoconfigure.EnableAutoConfiguration=\
-com.ww.app.disruptor.config.DisruptorAutoConfiguration
+org.springframework.boot.autoconfigure.EnableAutoConfiguration=
