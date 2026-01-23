@@ -96,9 +96,6 @@ public class OrderEventProcessor implements EventProcessor<OrderData> {
     }
 
     @Override
-    public boolean supports(String eventType) {
-        return "order".equals(eventType);
-    }
 }
 ```
 

@@ -108,8 +108,6 @@ ww-spring-boot-starter-disruptor/
 
 **设计亮点**:
 - 函数式接口，支持Lambda表达式
-- 支持事件类型过滤（supports方法）
-- 支持处理器优先级
 - 批量处理器可自定义批量大小和超时
 
 #### 3. 核心层 (core/)
