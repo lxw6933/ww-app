@@ -67,12 +67,12 @@ class DisruptorEngineTest {
         testPublishEvent(1);
 
         // 等待处理完成
-        Thread.sleep(500);
+        awaitPendingEvents(2);
 
         // 验证处理结果
         assertEquals(1, eventProcessor.getProcessedCount().get(), "应该处理1个事件");
         assertEquals(1, template.getProcessCount(), "引擎计数应该为1");
-        assertTrue(eventProcessor.getProcessedEvents().contains("Hello Disruptor"));
+        assertTrue(eventProcessor.getProcessedEvents().contains("Data-0"));
 
         log.info("✅ 测试1通过：单个事件处理成功");
     }
@@ -102,7 +102,7 @@ class DisruptorEngineTest {
         testPublishEvent(eventCount);
 
         // 等待批量处理完成
-        Thread.sleep(1000);
+        awaitPendingEvents(3);
 
         // 验证结果
         assertTrue(batchEventProcessor.getProcessedCount().get() >= eventCount,
@@ -148,7 +148,7 @@ class DisruptorEngineTest {
             assertTrue(future.get(), "异步发布应该成功");
         }
 
-        Thread.sleep(500);
+        awaitPendingEvents(2);
 
         assertEquals(10, eventProcessor.getProcessedCount().get(), "应该处理10个异步事件");
 
@@ -183,18 +183,62 @@ class DisruptorEngineTest {
         log.info("成功发布 {} 个事件（缓冲区大小16）", successCount);
         assertTrue(successCount > 0, "应该至少成功发布一些事件");
 
-        Thread.sleep(1000);
+        awaitPendingEvents(3);
 
         log.info("✅ 测试4通过：超时发布机制正常工作");
+    }
+
+    @Test
+    @Order(5)
+    @DisplayName("测试5：未启动时发布事件")
+    void testPublishBeforeStart() {
+        log.info("========== 测试5：未启动发布 ==========");
+
+        eventProcessor = new TestEventProcessor();
+
+        template = DisruptorTemplate.<String>builder()
+                .businessName("test-not-started")
+                .ringBufferSize(1024)
+                .consumerThreads(1)
+                .eventProcessor(eventProcessor)
+                .build();
+
+        boolean published = template.publish(new Event<>("not-started", "data"));
+        assertFalse(published, "未启动时应返回false");
+
+        log.info("✅ 测试5通过：未启动时发布返回false");
+    }
+
+    @Test
+    @Order(6)
+    @DisplayName("测试6：非法超时参数")
+    void testTryPublishInvalidTimeout() {
+        log.info("========== 测试6：非法超时 ==========");
+
+        eventProcessor = new TestEventProcessor();
+
+        template = DisruptorTemplate.<String>builder()
+                .businessName("test-invalid-timeout")
+                .ringBufferSize(1024)
+                .consumerThreads(1)
+                .eventProcessor(eventProcessor)
+                .build();
+
+        template.start();
+
+        boolean published = template.tryPublish(new Event<>("invalid-timeout", "data"), 0, TimeUnit.MILLISECONDS);
+        assertFalse(published, "非法超时时应返回false");
+
+        log.info("✅ 测试6通过：非法超时返回false");
     }
 
     // ==================== 2. 并发压力测试 ====================
 
     @Test
-    @Order(5)
-    @DisplayName("测试5：并发压力测试 - 10线程发布10000事件")
+    @Order(7)
+    @DisplayName("测试7：并发压力测试 - 10线程发布10000事件")
     void testConcurrentStressTest() throws InterruptedException {
-        log.info("========== 测试5：并发压力测试 ==========");
+        log.info("========== 测试7：并发压力测试 ==========");
 
         eventProcessor = new TestEventProcessor();
 
@@ -211,10 +255,10 @@ class DisruptorEngineTest {
     }
 
     @Test
-    @Order(6)
-    @DisplayName("测试6：高并发批量处理压力测试")
+    @Order(8)
+    @DisplayName("测试8：高并发批量处理压力测试")
     void testConcurrentBatchStressTest() throws InterruptedException {
-        log.info("========== 测试6：高并发批量处理压力测试 ==========");
+        log.info("========== 测试8：高并发批量处理压力测试 ==========");
         batchEventProcessor = new TestBatchEventProcessor();
 
         template = DisruptorTemplate.<String>builder()
@@ -234,12 +278,42 @@ class DisruptorEngineTest {
         log.info("  - 批处理次数: {}", batchEventProcessor.getBatchCount());
     }
 
+    @Test
+    @Order(9)
+    @DisplayName("测试9：批量超时触发处理")
+    void testBatchTimeoutFlush() throws InterruptedException {
+        log.info("========== 测试9：批量超时触发 ==========");
+
+        batchEventProcessor = new TestBatchEventProcessor();
+
+        template = DisruptorTemplate.<String>builder()
+                .businessName("test-batch-timeout")
+                .ringBufferSize(1024)
+                .consumerThreads(2)
+                .batchSize(50)
+                .batchTimeout(100)
+                .batchEventProcessor(batchEventProcessor)
+                .build();
+
+        template.start();
+
+        int eventCount = 10;
+        testPublishEvent(eventCount);
+
+        awaitPendingEvents(3);
+
+        assertEquals(eventCount, batchEventProcessor.getProcessedCount().get(), "超时触发应处理全部事件");
+        assertTrue(batchEventProcessor.getBatchCount().get() >= 1, "应至少处理1个批次");
+
+        log.info("✅ 测试9通过：批量超时触发处理成功");
+    }
+
     private long getEventHandleEndTime(int totalEvents) throws InterruptedException {
         // 等待处理完成 - 增加等待时间确保所有事件都被处理
         // 使用轮询方式等待，最多等待10秒
         int maxWaitSeconds = 10;
         for (int i = 0; i < maxWaitSeconds * 100; i++) {
-            Thread.sleep(maxWaitSeconds);
+            Thread.sleep(100);
             if (template.getPendingCount() == 0) {
                 break;
             }
@@ -316,10 +390,10 @@ class DisruptorEngineTest {
     // ==================== 3. 异常处理测试 ====================
 
     @Test
-    @Order(7)
-    @DisplayName("测试7：异常处理 - 处理器抛出异常")
+    @Order(10)
+    @DisplayName("测试10：异常处理 - 处理器抛出异常")
     void testExceptionHandling() throws InterruptedException {
-        log.info("========== 测试7：异常处理测试 ==========");
+        log.info("========== 测试10：异常处理测试 ==========");
 
         eventProcessor = new TestEventProcessor(true); // 启用异常模式
 
@@ -336,7 +410,7 @@ class DisruptorEngineTest {
         int eventCount = 10;
         testPublishEvent(eventCount);
 
-        Thread.sleep(1000);
+        awaitPendingEvents(3);
 
         // 验证异常处理
         assertTrue(template.getFailedCount() > 0, "应该有失败计数");
@@ -346,10 +420,10 @@ class DisruptorEngineTest {
     }
 
     @Test
-    @Order(8)
-    @DisplayName("测试8：批量处理异常")
+    @Order(11)
+    @DisplayName("测试11：批量处理异常")
     void testBatchExceptionHandling() throws InterruptedException {
-        log.info("========== 测试8：批量处理异常测试 ==========");
+        log.info("========== 测试11：批量处理异常测试 ==========");
 
         batchEventProcessor = new TestBatchEventProcessor(true); // 启用异常模式
 
@@ -369,7 +443,7 @@ class DisruptorEngineTest {
         int eventCount = 15;
         testPublishEvent(eventCount);
 
-        Thread.sleep(1000);
+        awaitPendingEvents(3);
 
         // 验证批量异常处理
         assertTrue(template.getFailedCount() > 0, "应该有失败计数");
@@ -381,10 +455,10 @@ class DisruptorEngineTest {
     // ==================== 4. 性能指标测试 ====================
 
     @Test
-    @Order(9)
-    @DisplayName("测试9：性能指标验证")
+    @Order(12)
+    @DisplayName("测试12：性能指标验证")
     void testPerformanceMetrics() throws InterruptedException {
-        log.info("========== 测试9：性能指标验证 ==========");
+        log.info("========== 测试12：性能指标验证 ==========");
 
         eventProcessor = new TestEventProcessor();
 
@@ -411,7 +485,7 @@ class DisruptorEngineTest {
         assertEquals(eventCount, template.getPublishCount(), "发布计数应该准确");
 
         // 等待处理
-        Thread.sleep(2000);
+        awaitPendingEvents(5);
 
         // 验证处理完成
         assertEquals(eventCount, template.getProcessCount(), "处理计数应该准确");
@@ -429,10 +503,10 @@ class DisruptorEngineTest {
     // ==================== 5. 优雅关闭测试 ====================
 
     @Test
-    @Order(10)
-    @DisplayName("测试10：优雅关闭 - 确保事件不丢失")
+    @Order(13)
+    @DisplayName("测试13：优雅关闭 - 确保事件不丢失")
     void testGracefulShutdown() throws InterruptedException {
-        log.info("========== 测试10：优雅关闭测试 ==========");
+        log.info("========== 测试13：优雅关闭测试 ==========");
 
         eventProcessor = new TestEventProcessor(false, true);
 
@@ -475,6 +549,17 @@ class DisruptorEngineTest {
         for (int i = 0; i < eventCount; i++) {
             template.publish(new Event<>("event-" + i, "Data-" + i));
         }
+    }
+
+    private void awaitPendingEvents(long timeout) throws InterruptedException {
+        long deadline = System.nanoTime() + TimeUnit.SECONDS.toNanos(timeout);
+        while (System.nanoTime() < deadline) {
+            if (template.getPendingCount() == (long) 0) {
+                return;
+            }
+            Thread.sleep(50);
+        }
+        assertEquals(0, template.getPendingCount(), "等待超时，待处理数量不匹配");
     }
 
 }
