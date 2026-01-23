@@ -159,6 +159,18 @@ public class MetricsCollector {
         totalFailed.increment();
         pendingCount.decrementAndGet();
     }
+
+    /**
+     * 记录批量失败
+     */
+    public void recordBatchFailure(int batchSize) {
+        if (!enabled || failureCounter == null) {
+            return;
+        }
+        failureCounter.increment(batchSize);
+        totalFailed.add(batchSize);
+        pendingCount.addAndGet(-batchSize);
+    }
     
     /**
      * 更新待处理数量

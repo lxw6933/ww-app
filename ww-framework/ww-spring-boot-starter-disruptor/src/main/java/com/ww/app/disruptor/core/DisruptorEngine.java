@@ -462,7 +462,9 @@ public class DisruptorEngine<T> {
      * 修复：使用AtomicInteger计数器避免频繁调用size()并解决竞态条件
      */
     private void handleBatchEvent(Event<T> event) {
-        batchBuffer.offer(event);
+        if (!enqueueBatchEvent(event)) {
+            return;
+        }
         int currentSize = batchBufferSize.incrementAndGet();
 
         // 达到批量大小时刷新
@@ -544,6 +546,37 @@ public class DisruptorEngine<T> {
         if (metricsCollector != null) {
             metricsCollector.recordFailure();
         }
+    }
+
+    private void recordBatchFailure(int batchSize) {
+        if (metricsCollector != null) {
+            metricsCollector.recordBatchFailure(batchSize);
+        }
+    }
+
+    private boolean enqueueBatchEvent(Event<T> event) {
+        int capacity = config.getBatchBufferCapacity();
+        int size = batchBufferSize.get();
+        if (size >= capacity) {
+            if ("BLOCK".equalsIgnoreCase(config.getBatchBufferOverflow())) {
+                while (batchBufferSize.get() >= capacity && started.get()) {
+                    try {
+                        TimeUnit.MILLISECONDS.sleep(1);
+                    } catch (InterruptedException e) {
+                        Thread.currentThread().interrupt();
+                        return false;
+                    }
+                }
+            } else {
+                failedCount.incrementAndGet();
+                if (metricsCollector != null) {
+                    metricsCollector.recordFailure();
+                }
+                return false;
+            }
+        }
+        batchBuffer.offer(event);
+        return true;
     }
 
     /**
@@ -631,7 +664,7 @@ public class DisruptorEngine<T> {
         // 失败时持久化事件，以便后续重试
         persistFailedEvents(events);
 
-        recordProcessingFailure();
+        recordBatchFailure(events.size());
     }
 
     /**
@@ -646,7 +679,7 @@ public class DisruptorEngine<T> {
 
         failedCount.addAndGet(events.size());
 
-        recordProcessingFailure();
+        recordBatchFailure(events.size());
     }
 
     /**

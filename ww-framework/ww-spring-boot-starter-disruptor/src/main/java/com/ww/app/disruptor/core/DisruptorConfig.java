@@ -27,6 +27,16 @@ public class DisruptorConfig {
     private int batchSize = 100;
 
     /**
+     * 批量缓冲区最大容量
+     */
+    private int batchBufferCapacity = 10000;
+
+    /**
+     * 批量缓冲区溢出策略: DROP, BLOCK
+     */
+    private String batchBufferOverflow = "DROP";
+
+    /**
      * 批处理超时时间（毫秒）
      */
     private long batchTimeout = 1000L;
@@ -69,6 +79,10 @@ public class DisruptorConfig {
 
         if (batchTimeout <= 0) {
             throw new IllegalArgumentException("批处理超时必须大于0，当前值: " + batchTimeout);
+        }
+
+        if (batchBufferCapacity <= 0) {
+            throw new IllegalArgumentException("批量缓冲区容量必须大于0，当前值: " + batchBufferCapacity);
         }
     }
 

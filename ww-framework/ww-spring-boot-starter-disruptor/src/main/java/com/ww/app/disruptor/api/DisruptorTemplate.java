@@ -147,6 +147,16 @@ public class DisruptorTemplate<T> {
             return this;
         }
 
+        public Builder<T> batchBufferCapacity(int capacity) {
+            config.setBatchBufferCapacity(capacity);
+            return this;
+        }
+
+        public Builder<T> batchBufferOverflow(String overflow) {
+            config.setBatchBufferOverflow(overflow);
+            return this;
+        }
+
         public Builder<T> batchTimeout(long timeout) {
             config.setBatchTimeout(timeout);
             return this;

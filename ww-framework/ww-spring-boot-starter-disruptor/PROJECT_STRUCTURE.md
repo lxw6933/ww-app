@@ -161,6 +161,8 @@ import com.ww.app.common.utils.ThreadUtil;
 // Builder构建
 com.ww.app.disruptor.api.DisruptorTemplate<String> template = com.ww.app.disruptor.api.DisruptorTemplate.<String>builder()
         .ringBufferSize(1024)
+        .batchBufferCapacity(10000)
+        .batchBufferOverflow("DROP")
         .executor(ThreadUtil.initFixedThreadPoolExecutor("xxx", 8))
         .eventProcessor(event -> ProcessResult.success())
         .build();
