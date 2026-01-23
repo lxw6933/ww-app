@@ -159,8 +159,6 @@ import com.ww.app.common.utils.ThreadUtil;
 // Builder构建
 com.ww.app.disruptor.api.DisruptorTemplate<String> template = com.ww.app.disruptor.api.DisruptorTemplate.<String>builder()
         .ringBufferSize(1024)
-        .batchBufferCapacity(10000)
-        .batchBufferOverflow("DROP")
         .executor(ThreadUtil.initFixedThreadPoolExecutor("xxx", 8))
         .eventProcessor(event -> ProcessResult.success())
         .build();
@@ -233,8 +231,6 @@ ww:
     ring-buffer-size: 1024      # RingBuffer大小（2的幂）
     consumer-threads: 4          # 消费者线程数
     batch-size: 100              # 批处理大小
-    batch-buffer-capacity: 10000 # 批量缓冲区最大容量
-    batch-buffer-overflow: DROP  # 批量缓冲区溢出策略（DROP/BLOCK）
     wait-strategy: BLOCKING      # 等待策略
 ```
 

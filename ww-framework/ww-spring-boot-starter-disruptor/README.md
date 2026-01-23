@@ -53,8 +53,6 @@ ww:
     ring-buffer-size: 1024          # RingBuffer大小（必须是2的幂）
     consumer-threads: 4              # 消费者线程数
     batch-size: 100                  # 批处理大小
-    batch-buffer-capacity: 10000     # 批量缓冲区最大容量
-    batch-buffer-overflow: DROP      # 批量缓冲区溢出策略（DROP/BLOCK）
     batch-timeout: 1000              # 批处理超时（毫秒）
     wait-strategy: BLOCKING          # 等待策略
     batch-enabled: true              # 是否启用批量处理
@@ -142,8 +140,6 @@ DisruptorTemplate<OrderData> template = DisruptorTemplate.<OrderData>builder()
         .ringBufferSize(2048)
         .consumerThreads(8)
         .batchSize(200)
-        .batchBufferCapacity(10000)
-        .batchBufferOverflow("DROP")
         .waitStrategy("YIELDING")
         .executor(ThreadUtil.initFixedThreadPoolExecutor("xxx", 8))
         .eventProcessor(event -> {
@@ -171,8 +167,6 @@ template.stop();
 | `ww.disruptor.ring-buffer-size` | int | 1024 | RingBuffer大小，必须是2的幂 |
 | `ww.disruptor.consumer-threads` | int | 4 | 消费者线程数 |
 | `ww.disruptor.batch-size` | int | 100 | 批处理大小 |
-| `ww.disruptor.batch-buffer-capacity` | int | 10000 | 批量缓冲区最大容量 |
-| `ww.disruptor.batch-buffer-overflow` | String | DROP | 批量缓冲区溢出策略（DROP/BLOCK） |
 | `ww.disruptor.batch-timeout` | long | 1000 | 批处理超时时间（毫秒） |
 | `ww.disruptor.wait-strategy` | String | BLOCKING | 等待策略 |
 | `ww.disruptor.batch-enabled` | boolean | true | 是否启用批量处理 |
@@ -210,9 +204,12 @@ template.stop();
 ### 核心指标
 
 - `ww.disruptor.events.published` - 发布事件总数
+- `ww.disruptor.events.publish.failed` - 发布失败事件总数
 - `ww.disruptor.events.processed` - 处理事件总数
 - `ww.disruptor.queue.utilization` - 队列利用率（%）
 - `ww.disruptor.events.pending` - 待处理事件数
+
+说明: failed 仅表示处理失败; publish.failed 表示发布阶段失败。
 
 ### 性能指标
 

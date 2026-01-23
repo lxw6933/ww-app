@@ -42,16 +42,6 @@ public class DisruptorProperties {
     private int batchSize = 100;
 
     /**
-     * 批量缓冲区最大容量
-     */
-    private int batchBufferCapacity = 10000;
-
-    /**
-     * 批量缓冲区溢出策略: DROP, BLOCK
-     */
-    private String batchBufferOverflow = "DROP";
-
-    /**
      * 批处理超时时间（毫秒）
      */
     private long batchTimeout = 1000L;

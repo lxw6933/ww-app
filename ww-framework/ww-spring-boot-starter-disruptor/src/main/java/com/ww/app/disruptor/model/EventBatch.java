@@ -58,6 +58,9 @@ public class EventBatch<T> implements Serializable {
      * 添加事件到批次
      */
     public void addEvent(Event<T> event) {
+        if (event == null) {
+            return;
+        }
         this.events.add(event);
         this.size = this.events.size();
     }
@@ -66,7 +69,10 @@ public class EventBatch<T> implements Serializable {
      * 批量添加事件
      */
     public void addEvents(List<Event<T>> events) {
-        this.events.addAll(events);
+        if (events == null || events.isEmpty()) {
+            return;
+        }
+        this.events.addAll(new ArrayList<>(events));
         this.size = this.events.size();
     }
 
@@ -107,8 +113,13 @@ public class EventBatch<T> implements Serializable {
     }
 
     public void setEvents(List<Event<T>> events) {
-        this.events = events;
-        this.size = events.size();
+        if (events == null) {
+            this.events = new ArrayList<>();
+            this.size = 0;
+            return;
+        }
+        this.events = new ArrayList<>(events);
+        this.size = this.events.size();
     }
 
 }

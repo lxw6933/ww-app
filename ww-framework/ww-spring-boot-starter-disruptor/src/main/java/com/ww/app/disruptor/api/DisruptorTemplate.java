@@ -147,16 +147,6 @@ public class DisruptorTemplate<T> {
             return this;
         }
 
-        public Builder<T> batchBufferCapacity(int capacity) {
-            config.setBatchBufferCapacity(capacity);
-            return this;
-        }
-
-        public Builder<T> batchBufferOverflow(String overflow) {
-            config.setBatchBufferOverflow(overflow);
-            return this;
-        }
-
         public Builder<T> batchTimeout(long timeout) {
             config.setBatchTimeout(timeout);
             return this;
@@ -202,6 +192,10 @@ public class DisruptorTemplate<T> {
 
             // 设置业务名
             config.setBusinessName(businessName);
+
+            if (batchEventProcessor != null && !config.isBatchEnabled()) {
+                config.setBatchEnabled(true);
+            }
 
             // 创建引擎
             DisruptorEngine<T> engine = new DisruptorEngine<>(config);

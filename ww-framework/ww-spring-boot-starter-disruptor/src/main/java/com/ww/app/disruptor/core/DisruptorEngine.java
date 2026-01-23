@@ -25,6 +25,7 @@ import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.concurrent.locks.LockSupport;
 
 /**
  * Disruptor引擎核心类 - 管理RingBuffer和事件处理
@@ -344,8 +345,13 @@ public class DisruptorEngine<T> {
      */
     private boolean tryPublishToRingBuffer(Event<T> event, long timeout, TimeUnit unit) {
         long deadlineNanos = System.nanoTime() + unit.toNanos(timeout);
+        long backoffNanos = TimeUnit.MICROSECONDS.toNanos(100);
+        long maxBackoffNanos = TimeUnit.MILLISECONDS.toNanos(5);
 
         while (System.nanoTime() < deadlineNanos) {
+            if (Thread.currentThread().isInterrupted()) {
+                return false;
+            }
             try {
                 boolean success = ringBuffer.tryPublishEvent((wrapper, sequence) ->
                         wrapper.setEvent(event)
@@ -355,11 +361,8 @@ public class DisruptorEngine<T> {
                     return true;
                 }
 
-                // 短暂休眠后重试
-                TimeUnit.MILLISECONDS.sleep(1);
-            } catch (InterruptedException e) {
-                Thread.currentThread().interrupt();
-                return false;
+                LockSupport.parkNanos(backoffNanos);
+                backoffNanos = Math.min(backoffNanos * 2, maxBackoffNanos);
             } catch (Exception e) {
                 // RingBuffer满，继续重试
             }
@@ -384,7 +387,7 @@ public class DisruptorEngine<T> {
     private void recordPublishFailure() {
         failedCount.incrementAndGet();
         if (metricsCollector != null) {
-            metricsCollector.recordFailure();
+            metricsCollector.recordPublishFailure();
         }
     }
 
@@ -544,7 +547,7 @@ public class DisruptorEngine<T> {
      */
     private void recordProcessingFailure() {
         if (metricsCollector != null) {
-            metricsCollector.recordFailure();
+            metricsCollector.recordProcessingFailure();
         }
     }
 
@@ -555,26 +558,6 @@ public class DisruptorEngine<T> {
     }
 
     private boolean enqueueBatchEvent(Event<T> event) {
-        int capacity = config.getBatchBufferCapacity();
-        int size = batchBufferSize.get();
-        if (size >= capacity) {
-            if ("BLOCK".equalsIgnoreCase(config.getBatchBufferOverflow())) {
-                while (batchBufferSize.get() >= capacity && started.get()) {
-                    try {
-                        TimeUnit.MILLISECONDS.sleep(1);
-                    } catch (InterruptedException e) {
-                        Thread.currentThread().interrupt();
-                        return false;
-                    }
-                }
-            } else {
-                failedCount.incrementAndGet();
-                if (metricsCollector != null) {
-                    metricsCollector.recordFailure();
-                }
-                return false;
-            }
-        }
         batchBuffer.offer(event);
         return true;
     }
@@ -629,6 +612,7 @@ public class DisruptorEngine<T> {
     private EventBatch<T> createBatch(List<Event<T>> events) {
         EventBatch<T> batch = new EventBatch<>();
         batch.addEvents(events);
+        markEventsAsProcessing(events);
         batch.markProcessing();
         return batch;
     }
@@ -638,6 +622,7 @@ public class DisruptorEngine<T> {
      */
     private void handleBatchSuccess(EventBatch<T> batch, List<Event<T>> events, long startTime) {
         batch.markCompleted();
+        markEventsAsCompleted(events);
         processCount.addAndGet(events.size());
 
         // 成功后删除持久化数据
@@ -688,6 +673,24 @@ public class DisruptorEngine<T> {
     private void markEventsAsFailed(List<Event<T>> events) {
         for (Event<T> event : events) {
             event.markFailed();
+        }
+    }
+
+    /**
+     * 标记所有事件为处理中
+     */
+    private void markEventsAsProcessing(List<Event<T>> events) {
+        for (Event<T> event : events) {
+            event.markProcessing();
+        }
+    }
+
+    /**
+     * 标记所有事件为已完成
+     */
+    private void markEventsAsCompleted(List<Event<T>> events) {
+        for (Event<T> event : events) {
+            event.markCompleted();
         }
     }
 
@@ -980,7 +983,7 @@ public class DisruptorEngine<T> {
             log.error("处理事件异常, sequence: {}, event: {}", sequence, event.getEvent(), ex);
             failedCount.incrementAndGet();
             if (metricsCollector != null) {
-                metricsCollector.recordFailure();
+            metricsCollector.recordProcessingFailure();
             }
         }
 

@@ -24,6 +24,7 @@ public class MetricsCollector {
     
     // 计数器
     private Counter publishCounter;
+    private Counter publishFailureCounter;
     private Counter processCounter;
     private Counter failureCounter;
     private Counter batchCounter;
@@ -52,7 +53,11 @@ public class MetricsCollector {
             publishCounter = Counter.builder(metricsPrefix + ".events.published")
                     .description("发布事件总数")
                     .register(meterRegistry);
-            
+
+            publishFailureCounter = Counter.builder(metricsPrefix + ".events.publish.failed")
+                    .description("发布失败事件总数")
+                    .register(meterRegistry);
+
             processCounter = Counter.builder(metricsPrefix + ".events.processed")
                     .description("处理事件总数")
                     .register(meterRegistry);
@@ -64,6 +69,7 @@ public class MetricsCollector {
             batchCounter = Counter.builder(metricsPrefix + ".batches.processed")
                     .description("批处理次数")
                     .register(meterRegistry);
+
             
             // 初始化计时器
             processingTimer = Timer.builder(metricsPrefix + ".event.processing.time")
@@ -152,12 +158,29 @@ public class MetricsCollector {
      * 记录失败
      */
     public void recordFailure() {
+        recordProcessingFailure();
+    }
+
+    /**
+     * 记录处理失败
+     */
+    public void recordProcessingFailure() {
         if (!enabled || failureCounter == null) {
             return;
         }
         failureCounter.increment();
         totalFailed.increment();
         pendingCount.decrementAndGet();
+    }
+
+    /**
+     * 记录发布失败（不会影响待处理数）
+     */
+    public void recordPublishFailure() {
+        if (!enabled || publishFailureCounter == null) {
+            return;
+        }
+        publishFailureCounter.increment();
     }
 
     /**
@@ -171,6 +194,7 @@ public class MetricsCollector {
         totalFailed.add(batchSize);
         pendingCount.addAndGet(-batchSize);
     }
+
     
     /**
      * 更新待处理数量
@@ -183,13 +207,16 @@ public class MetricsCollector {
      * 获取统计信息
      */
     public MetricsSnapshot getSnapshot() {
+        if (!enabled) {
+            return new MetricsSnapshot(0, 0, 0, 0, 0.0, 0.0);
+        }
         return new MetricsSnapshot(
                 totalPublished.sum(),
                 totalProcessed.sum(),
                 totalFailed.sum(),
                 pendingCount.get(),
-                processingTimer.mean(java.util.concurrent.TimeUnit.MILLISECONDS),
-                batchProcessingTimer.mean(java.util.concurrent.TimeUnit.MILLISECONDS)
+                processingTimer == null ? 0.0 : processingTimer.mean(java.util.concurrent.TimeUnit.MILLISECONDS),
+                batchProcessingTimer == null ? 0.0 : batchProcessingTimer.mean(java.util.concurrent.TimeUnit.MILLISECONDS)
         );
     }
     
