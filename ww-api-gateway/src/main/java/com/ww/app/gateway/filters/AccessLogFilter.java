@@ -7,6 +7,7 @@ import com.alibaba.nacos.common.utils.StringUtils;
 import com.ww.app.common.constant.Constant;
 import com.ww.app.common.utils.TracerUtils;
 import com.ww.app.gateway.log.AccessLog;
+import com.ww.app.gateway.properties.AppGatewayProperties;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import org.reactivestreams.Publisher;
@@ -42,6 +43,7 @@ import java.nio.charset.StandardCharsets;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ThreadLocalRandom;
 
 import static cn.hutool.core.date.DatePattern.NORM_DATETIME_MS_FORMATTER;
 
@@ -54,10 +56,19 @@ import static cn.hutool.core.date.DatePattern.NORM_DATETIME_MS_FORMATTER;
 @Component
 public class AccessLogFilter implements GlobalFilter, Ordered {
 
+    private static final String LOG_OMITTED = "[omitted]";
+    private static final String LOG_STREAMING = "[Streaming response]";
+    private static final String LOG_READ_ERROR = "[Error reading response body]";
+    private static final String NON_JSON_PREFIX = "[Non-JSON response: ";
+    private static final String TRUNCATED_SUFFIX = "...[truncated]";
+
     private final DefaultDataBufferFactory dataBufferFactory = new DefaultDataBufferFactory(true);
 
     @Resource
     private CodecConfigurer codecConfigurer;
+
+    @Resource
+    private AppGatewayProperties appGatewayProperties;
 
     /**
      * 打印日志
@@ -106,30 +117,33 @@ public class AccessLogFilter implements GlobalFilter, Ordered {
 
     @Override
     public Mono<Void> filter(ServerWebExchange exchange, GatewayFilterChain chain) {
+        if (!Boolean.TRUE.equals(appGatewayProperties.getAccessLogEnabled())) {
+            return chain.filter(exchange);
+        }
         ServerHttpRequest request = exchange.getRequest();
-        // 记录请求数据
-        AccessLog gatewayLog = new AccessLog();
-        gatewayLog.setRoute(exchange.getAttribute(ServerWebExchangeUtils.GATEWAY_ROUTE_ATTR));
-        gatewayLog.setSchema(request.getURI().getScheme());
-        gatewayLog.setRequestMethod(request.getMethodValue());
-        gatewayLog.setRequestUrl(request.getURI().getRawPath());
-        gatewayLog.setQueryParams(request.getQueryParams());
-        gatewayLog.setRequestHeaders(request.getHeaders());
-        gatewayLog.setStartTime(LocalDateTime.now());
-        gatewayLog.setUserIp(request.getHeaders().getFirst(Constant.USER_REAL_IP));
-        gatewayLog.setTraceId(TracerUtils.getTraceId());
+        AccessLog gatewayLog = buildAccessLog(exchange, request);
+
+        // 网关日志采样比例
+        boolean sampleLog = shouldSample();
+        // 是否打印请求体
+        boolean logRequestBody = sampleLog && Boolean.TRUE.equals(appGatewayProperties.getAccessLogLogRequestBody());
+        // 是否打印响应体
+        boolean logResponseBody = sampleLog && Boolean.TRUE.equals(appGatewayProperties.getAccessLogLogResponseBody());
+        if (!logRequestBody) {
+            gatewayLog.setRequestBody(LOG_OMITTED);
+        }
 
         MediaType mediaType = request.getHeaders().getContentType();
-        if (MediaType.APPLICATION_FORM_URLENCODED.isCompatibleWith(mediaType)
-                || MediaType.APPLICATION_JSON.isCompatibleWith(mediaType)) {
-            return filterWithRequestBody(exchange, chain, gatewayLog);
+        if (logRequestBody && (MediaType.APPLICATION_FORM_URLENCODED.isCompatibleWith(mediaType)
+                || MediaType.APPLICATION_JSON.isCompatibleWith(mediaType))) {
+            return filterWithRequestBody(exchange, chain, gatewayLog, logResponseBody);
         }
-        return filterWithoutRequestBody(exchange, chain, gatewayLog);
+        return filterWithoutRequestBody(exchange, chain, gatewayLog, logResponseBody);
     }
 
-    private Mono<Void> filterWithoutRequestBody(ServerWebExchange exchange, GatewayFilterChain chain, AccessLog accessLog) {
+    private Mono<Void> filterWithoutRequestBody(ServerWebExchange exchange, GatewayFilterChain chain, AccessLog accessLog, boolean logResponseBody) {
         // 包装 Response，用于记录 Response Body
-        ServerHttpResponseDecorator decoratedResponse = recordResponseLog(exchange, accessLog);
+        ServerHttpResponseDecorator decoratedResponse = recordResponseLog(exchange, accessLog, logResponseBody);
         return chain.filter(exchange.mutate().response(decoratedResponse).build())
                 // 工作线程打印日志
                 .then(Mono.fromRunnable(() -> writeAccessLog(accessLog)));
@@ -139,12 +153,12 @@ public class AccessLogFilter implements GlobalFilter, Ordered {
      * 参考 {@link ModifyRequestBodyGatewayFilterFactory} 实现
      * 差别主要在于使用 modifiedBody 来读取 Request Body 数据
      */
-    private Mono<Void> filterWithRequestBody(ServerWebExchange exchange, GatewayFilterChain chain, AccessLog gatewayLog) {
+    private Mono<Void> filterWithRequestBody(ServerWebExchange exchange, GatewayFilterChain chain, AccessLog gatewayLog, boolean logResponseBody) {
         // 设置 Request Body 读取时，设置到网关日志
         // 此处 codecConfigurer.getReaders() 的目的，是解决 spring.codec.max-in-memory-size 不生效
         ServerRequest serverRequest = ServerRequest.create(exchange, codecConfigurer.getReaders());
         Mono<String> modifiedBody = serverRequest.bodyToMono(String.class).flatMap(body -> {
-            gatewayLog.setRequestBody(body);
+            gatewayLog.setRequestBody(limitBody(body, appGatewayProperties.getAccessLogMaxBodySizeBytes()));
             return Mono.just(body);
         });
 
@@ -162,7 +176,7 @@ public class AccessLogFilter implements GlobalFilter, Ordered {
             // 包装 Request，用于缓存 Request Body
             ServerHttpRequest decoratedRequest = requestDecorate(exchange, headers, outputMessage);
             // 包装 Response，用于记录 Response Body
-            ServerHttpResponseDecorator decoratedResponse = recordResponseLog(exchange, gatewayLog);
+            ServerHttpResponseDecorator decoratedResponse = recordResponseLog(exchange, gatewayLog, logResponseBody);
             // 记录普通的
             return chain.filter(exchange.mutate().request(decoratedRequest).response(decoratedResponse).build())
                     // 工作线程打印日志
@@ -175,7 +189,7 @@ public class AccessLogFilter implements GlobalFilter, Ordered {
      * 记录响应日志
      * 通过 DataBufferFactory 解决响应体分段传输问题。
      */
-    private ServerHttpResponseDecorator recordResponseLog(ServerWebExchange exchange, AccessLog gatewayLog) {
+    private ServerHttpResponseDecorator recordResponseLog(ServerWebExchange exchange, AccessLog gatewayLog, boolean logResponseBody) {
         ServerHttpResponse response = exchange.getResponse();
         return new ServerHttpResponseDecorator(response) {
 
@@ -185,11 +199,12 @@ public class AccessLogFilter implements GlobalFilter, Ordered {
                 if (body instanceof Flux) {
                     DataBufferFactory bufferFactory = response.bufferFactory();
                     // 计算执行时间
-                    gatewayLog.setEndTime(LocalDateTime.now());
-                    gatewayLog.setDuration((int) (LocalDateTimeUtil.between(gatewayLog.getStartTime(), gatewayLog.getEndTime()).toMillis()));
-                    // 设置其它字段
-                    gatewayLog.setResponseHeaders(response.getHeaders());
-                    gatewayLog.setHttpStatus(response.getStatusCode());
+                    setResponseMeta(gatewayLog, response);
+
+                    if (!logResponseBody) {
+                        gatewayLog.setResponseBody(LOG_OMITTED);
+                        return super.writeWith(body);
+                    }
 
                     // 获取响应类型，如果是 json 就打印
                     String originalResponseContentType = exchange.getAttribute(ServerWebExchangeUtils.ORIGINAL_RESPONSE_CONTENT_TYPE_ATTR);
@@ -200,21 +215,20 @@ public class AccessLogFilter implements GlobalFilter, Ordered {
                                 // 设置 response body 到网关日志
                                 byte[] content = readContent(dataBuffers);
                                 // 限制响应体大小，防止内存溢出
-                                String responseResult = content.length > 1024 * 1024 ? 
-                                    "[Response body too large to log]" : new String(content, StandardCharsets.UTF_8);
-                                gatewayLog.setResponseBody(responseResult);
+                                gatewayLog.setResponseBody(limitBody(new String(content, StandardCharsets.UTF_8),
+                                        appGatewayProperties.getAccessLogMaxBodySizeBytes()));
                                 // 响应
                                 return bufferFactory.wrap(content);
                             } catch (Exception e) {
                                 log.error("Failed to read response body", e);
-                                gatewayLog.setResponseBody("[Error reading response body]");
+                                gatewayLog.setResponseBody(LOG_READ_ERROR);
                                 // 确保即使处理失败，也能返回原始内容
                                 return dataBufferFactory.join(dataBuffers);
                             }
                         }));
                     } else {
                         // 对于非JSON响应，记录响应类型但不记录内容
-                        gatewayLog.setResponseBody("[Non-JSON response: " + originalResponseContentType + "]");
+                        gatewayLog.setResponseBody(NON_JSON_PREFIX + originalResponseContentType + "]");
                     }
                 }
                 // if body is not a flux. never got there.
@@ -225,7 +239,7 @@ public class AccessLogFilter implements GlobalFilter, Ordered {
             @Override
             public Mono<Void> writeAndFlushWith(@NonNull Publisher<? extends Publisher<? extends DataBuffer>> body) {
                 // 对于流式响应，简单记录类型
-                gatewayLog.setResponseBody("[Streaming response]");
+                gatewayLog.setResponseBody(logResponseBody ? LOG_STREAMING : LOG_OMITTED);
                 return super.writeAndFlushWith(body);
             }
         };
@@ -277,6 +291,54 @@ public class AccessLogFilter implements GlobalFilter, Ordered {
         // 释放掉内存
         DataBufferUtils.release(join);
         return content;
+    }
+
+    private AccessLog buildAccessLog(ServerWebExchange exchange, ServerHttpRequest request) {
+        AccessLog gatewayLog = new AccessLog();
+        gatewayLog.setRoute(exchange.getAttribute(ServerWebExchangeUtils.GATEWAY_ROUTE_ATTR));
+        gatewayLog.setSchema(request.getURI().getScheme());
+        gatewayLog.setRequestMethod(request.getMethodValue());
+        gatewayLog.setRequestUrl(request.getURI().getRawPath());
+        gatewayLog.setQueryParams(request.getQueryParams());
+        gatewayLog.setRequestHeaders(request.getHeaders());
+        gatewayLog.setStartTime(LocalDateTime.now());
+        gatewayLog.setUserIp(request.getHeaders().getFirst(Constant.USER_REAL_IP));
+        gatewayLog.setTraceId(TracerUtils.getTraceId());
+        return gatewayLog;
+    }
+
+    private void setResponseMeta(AccessLog gatewayLog, ServerHttpResponse response) {
+        gatewayLog.setEndTime(LocalDateTime.now());
+        gatewayLog.setDuration((int) (LocalDateTimeUtil.between(gatewayLog.getStartTime(), gatewayLog.getEndTime()).toMillis()));
+        gatewayLog.setResponseHeaders(response.getHeaders());
+        gatewayLog.setHttpStatus(response.getStatusCode());
+    }
+
+    private boolean shouldSample() {
+        Double sampleRate = appGatewayProperties.getAccessLogSampleRate();
+        if (sampleRate == null || sampleRate <= 0) {
+            return false;
+        }
+        if (sampleRate >= 1) {
+            return true;
+        }
+        return ThreadLocalRandom.current().nextDouble() < sampleRate;
+    }
+
+    private String limitBody(String body, Integer maxSizeBytes) {
+        if (body == null) {
+            return null;
+        }
+        int max = maxSizeBytes == null || maxSizeBytes <= 0 ? 0 : maxSizeBytes;
+        if (max == 0) {
+            return LOG_OMITTED;
+        }
+        byte[] bytes = body.getBytes(StandardCharsets.UTF_8);
+        if (bytes.length <= max) {
+            return body;
+        }
+        int maxChars = Math.min(body.length(), max);
+        return body.substring(0, maxChars) + TRUNCATED_SUFFIX;
     }
 
 }

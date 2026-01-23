@@ -335,6 +335,28 @@ public class CaffeineUtil {
                 .build();
     }
 
+    /**
+     * 创建自定义过期策略缓存
+     *
+     * @param initialCapacity 初始容量
+     * @param maximumSize     最大容量
+     * @param expiry          过期策略
+     * @param <K>             键类型
+     * @param <V>             值类型
+     * @return Cache实例
+     */
+    public static <K, V> Cache<K, V> createCacheWithExpiry(Integer initialCapacity,
+                                                           Integer maximumSize,
+                                                           Expiry<K, V> expiry) {
+        validateCapacity(initialCapacity, maximumSize);
+        Objects.requireNonNull(expiry, "expiry不能为null");
+        return Caffeine.newBuilder()
+                .initialCapacity(initialCapacity)
+                .maximumSize(maximumSize)
+                .expireAfter(expiry)
+                .build();
+    }
+
     // ==================== 缓存操作方法 ====================
 
     /**
@@ -644,7 +666,7 @@ public class CaffeineUtil {
     private static <K, V> CacheLoader<K, V> createCacheLoader(Function<K, V> refreshFactory, String loaderType) {
         return new CacheLoader<K, V>() {
             @Override
-            public @Nullable V load(@NonNull K key) throws Exception {
+            public @Nullable V load(@NonNull K key) {
                 try {
                     V value = refreshFactory.apply(key);
                     if (log.isDebugEnabled()) {
@@ -658,7 +680,7 @@ public class CaffeineUtil {
             }
 
             @Override
-            public @Nullable V reload(@NonNull K key, @NonNull V oldValue) throws Exception {
+            public @Nullable V reload(@NonNull K key, @NonNull V oldValue) {
                 try {
                     V value = refreshFactory.apply(key);
                     if (log.isDebugEnabled()) {
@@ -756,6 +778,18 @@ public class CaffeineUtil {
         }
         if (timeUnit == null) {
             throw new IllegalArgumentException("时间单位不能为null");
+        }
+    }
+
+    private static void validateCapacity(Integer initialCapacity, Integer maximumSize) {
+        if (initialCapacity == null || initialCapacity < MIN_CAPACITY) {
+            throw new IllegalArgumentException("初始容量必须 >= " + MIN_CAPACITY);
+        }
+        if (maximumSize == null || maximumSize < MIN_CAPACITY) {
+            throw new IllegalArgumentException("最大容量必须 >= " + MIN_CAPACITY);
+        }
+        if (initialCapacity > maximumSize) {
+            throw new IllegalArgumentException("初始容量不能大于最大容量");
         }
     }
 
