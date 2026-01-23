@@ -26,20 +26,4 @@ public interface EventProcessor<T> {
         return this.getClass().getSimpleName();
     }
 
-    /**
-     * 处理器是否支持该事件类型
-     *
-     * @param eventType 事件类型
-     * @return true表示支持
-     */
-    default boolean supports(String eventType) {
-        return true;
-    }
-
-    /**
-     * 处理器优先级（数值越大优先级越高）
-     */
-    default int getPriority() {
-        return 0;
-    }
 }
