@@ -8,6 +8,7 @@ import com.ww.app.disruptor.processor.EventProcessor;
 import lombok.extern.slf4j.Slf4j;
 
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.Executor;
 import java.util.concurrent.TimeUnit;
 
 /**
@@ -20,9 +21,11 @@ import java.util.concurrent.TimeUnit;
 public class DisruptorTemplate<T> {
 
     private final DisruptorEngine<T> engine;
+    private final Executor executor;
 
-    private DisruptorTemplate(DisruptorEngine<T> engine) {
+    private DisruptorTemplate(DisruptorEngine<T> engine, Executor executor) {
         this.engine = engine;
+        this.executor = executor;
     }
 
     /**
@@ -44,6 +47,9 @@ public class DisruptorTemplate<T> {
      * 异步发布事件
      */
     public CompletableFuture<Boolean> publishAsync(Event<T> event) {
+        if (executor != null) {
+            return CompletableFuture.supplyAsync(() -> engine.publishEvent(event), executor);
+        }
         return CompletableFuture.supplyAsync(() -> engine.publishEvent(event));
     }
 
@@ -124,6 +130,7 @@ public class DisruptorTemplate<T> {
         private final DisruptorConfig config = new DisruptorConfig();
         private EventProcessor<T> eventProcessor;
         private BatchEventProcessor<T> batchEventProcessor;
+        private Executor executor;
 
         public Builder<T> ringBufferSize(int size) {
             config.setRingBufferSize(size);
@@ -170,6 +177,11 @@ public class DisruptorTemplate<T> {
             return this;
         }
 
+        public Builder<T> executor(Executor executor) {
+            this.executor = executor;
+            return this;
+        }
+
         public DisruptorTemplate<T> build() {
             return build(config.getBusinessName());
         }
@@ -193,7 +205,7 @@ public class DisruptorTemplate<T> {
                 throw new IllegalStateException("必须设置至少一个事件处理器");
             }
 
-            return new DisruptorTemplate<>(engine);
+            return new DisruptorTemplate<>(engine, executor);
         }
     }
 }

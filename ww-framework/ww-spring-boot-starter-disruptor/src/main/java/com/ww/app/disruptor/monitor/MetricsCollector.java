@@ -20,6 +20,7 @@ public class MetricsCollector {
     
     private final MeterRegistry meterRegistry;
     private final String metricsPrefix;
+    private volatile boolean enabled = true;
     
     // 计数器
     private Counter publishCounter;
@@ -87,9 +88,10 @@ public class MetricsCollector {
             Gauge.builder(metricsPrefix + ".throughput.processed", totalProcessed, LongAdder::sum)
                     .description("处理吞吐量")
                     .register(meterRegistry);
-            
+
             log.info("监控指标收集器启动成功，指标前缀: {}", metricsPrefix);
         } catch (Exception e) {
+            enabled = false;
             log.error("监控指标收集器启动失败", e);
         }
     }
@@ -111,6 +113,9 @@ public class MetricsCollector {
      * 记录事件发布
      */
     public void recordPublish() {
+        if (!enabled || publishCounter == null) {
+            return;
+        }
         publishCounter.increment();
         totalPublished.increment();
         pendingCount.incrementAndGet();
@@ -120,6 +125,9 @@ public class MetricsCollector {
      * 记录事件处理
      */
     public void recordProcessing(long durationMillis) {
+        if (!enabled || processCounter == null || processingTimer == null) {
+            return;
+        }
         processCounter.increment();
         totalProcessed.increment();
         pendingCount.decrementAndGet();
@@ -130,6 +138,9 @@ public class MetricsCollector {
      * 记录批量处理
      */
     public void recordBatchProcessing(int batchSize, long durationMillis) {
+        if (!enabled || batchCounter == null || processCounter == null || batchProcessingTimer == null) {
+            return;
+        }
         batchCounter.increment();
         processCounter.increment(batchSize);
         totalProcessed.add(batchSize);
@@ -141,6 +152,9 @@ public class MetricsCollector {
      * 记录失败
      */
     public void recordFailure() {
+        if (!enabled || failureCounter == null) {
+            return;
+        }
         failureCounter.increment();
         totalFailed.increment();
         pendingCount.decrementAndGet();

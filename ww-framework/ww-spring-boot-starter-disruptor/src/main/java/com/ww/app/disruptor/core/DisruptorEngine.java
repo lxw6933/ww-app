@@ -357,6 +357,9 @@ public class DisruptorEngine<T> {
 
                 // 短暂休眠后重试
                 TimeUnit.MILLISECONDS.sleep(1);
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+                return false;
             } catch (Exception e) {
                 // RingBuffer满，继续重试
             }
