@@ -12,7 +12,6 @@ import org.springframework.amqp.core.MessageProperties;
 
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
@@ -64,7 +63,7 @@ public abstract class BatchMsgConsumerTemplate<T> extends AbstractMsgConsumerTem
             
             // 根据处理结果分组
             List<Long> successTags = new ArrayList<>();
-            Map<Long, Exception> failedTags = new HashMap<>();
+            List<BatchMessageContext<T>> failedMessages = new ArrayList<>();
             
             validMessages.forEach(context -> {
                 long deliveryTag = context.getMessage().getMessageProperties().getDeliveryTag();
@@ -73,7 +72,7 @@ public abstract class BatchMsgConsumerTemplate<T> extends AbstractMsgConsumerTem
                 if (Boolean.TRUE.equals(success)) {
                     successTags.add(deliveryTag);
                 } else {
-                    failedTags.put(deliveryTag, new RuntimeException("业务处理失败"));
+                    failedMessages.add(context);
                 }
             });
             
@@ -81,7 +80,7 @@ public abstract class BatchMsgConsumerTemplate<T> extends AbstractMsgConsumerTem
             handleSuccessMessages(channel, successTags);
             
             // 处理失败的消息
-            handleFailedMessages(channel, failedTags);
+            handleFailedMessages(channel, failedMessages);
             
         } catch (Exception e) {
             log.error("批量消息处理过程中发生异常 [批次ID: {}]", batchId, e);
@@ -180,23 +179,25 @@ public abstract class BatchMsgConsumerTemplate<T> extends AbstractMsgConsumerTem
     /**
      * 处理失败的消息
      */
-    protected void handleFailedMessages(Channel channel, Map<Long, Exception> failedMessages) throws IOException {
+    protected void handleFailedMessages(Channel channel, List<BatchMessageContext<T>> failedMessages) throws IOException {
         if (CollUtil.isEmpty(failedMessages)) {
             return;
         }
         
-        for (Map.Entry<Long, Exception> entry : failedMessages.entrySet()) {
-            long tag = entry.getKey();
-            Exception e = entry.getValue();
+        for (BatchMessageContext<T> context : failedMessages) {
+            long tag = context.getDeliveryTag();
+            Exception e = new RuntimeException("业务处理失败");
+            MessageProperties properties = context.getMessage().getMessageProperties();
             
             // 判断是否应该重试
-            boolean shouldRequeue = shouldRetryOnFailure(e);
+            int currentRetry = incrementRetryCount(properties);
+            boolean shouldRequeue = shouldRetryOnFailure(e) && currentRetry <= getMaxRetryCount();
             nackMessage(channel, tag, shouldRequeue);
             
             if (shouldRequeue) {
-                log.warn("消息处理失败，将重新入队 [投递标签: {}]", tag);
+                log.warn("消息处理失败，将重新入队 [投递标签: {}] [重试次数: {}]", tag, currentRetry);
             } else {
-                log.error("消息处理失败，不再重试 [投递标签: {}]", tag);
+                log.error("消息处理失败，不再重试 [投递标签: {}] [重试次数: {}]", tag, currentRetry);
                 // 处理死信消息
                 handleDeadLetterMessage(tag, e);
             }
@@ -207,16 +208,16 @@ public abstract class BatchMsgConsumerTemplate<T> extends AbstractMsgConsumerTem
      * 处理批量异常情况
      */
     protected void handleBatchException(Channel channel, List<Message> messages, Exception e) throws IOException {
-        // 默认实现：拒绝所有消息并重新入队
-        boolean shouldRequeue = shouldRetryOnBatchFailure(e);
-        
+        // 默认实现：按消息计算重试次数并决定是否重新入队
         for (Message message : messages) {
-            long deliveryTag = message.getMessageProperties().getDeliveryTag();
+            MessageProperties properties = message.getMessageProperties();
+            long deliveryTag = properties.getDeliveryTag();
+            int currentRetry = incrementRetryCount(properties);
+            boolean shouldRequeue = shouldRetryOnBatchFailure(e) && currentRetry <= getMaxRetryCount();
             nackMessage(channel, deliveryTag, shouldRequeue);
         }
         
-        log.error("批量处理异常，已拒绝所有消息 [数量: {}] [重新入队: {}]", 
-                messages.size(), shouldRequeue);
+        log.error("批量处理异常，已拒绝所有消息 [数量: {}]", messages.size());
     }
     
     /**

@@ -67,7 +67,7 @@ public abstract class BatchOperationConsumerTemplate<T, R> extends AbstractMsgCo
                 // 处理无效消息 - 直接确认
                 confirmInvalidMessages(channel, processContext.getInvalidMessageTags());
                 // 逐条处理少量消息
-                processSingleMessages(channel, processContext.getValidMessages());
+                processSingleMessages(channel, processContext);
                 return;
             }
             // 执行批量业务处理
@@ -108,6 +108,7 @@ public abstract class BatchOperationConsumerTemplate<T, R> extends AbstractMsgCo
         List<Long> validMessageTags = new ArrayList<>();
         List<Long> invalidMessageTags = new ArrayList<>();
         Map<Long, T> msgMap = new HashMap<>();
+        Map<Long, Message> messageMap = new HashMap<>();
         
         for (int i = 0; i < messages.size(); i++) {
             if (i >= msgList.size()) {
@@ -124,6 +125,7 @@ public abstract class BatchOperationConsumerTemplate<T, R> extends AbstractMsgCo
                 validMsgList.add(msg);
                 validMessageTags.add(deliveryTag);
                 msgMap.put(deliveryTag, msg);
+                messageMap.put(deliveryTag, message);
             } else {
                 invalidMessageTags.add(deliveryTag);
             }
@@ -133,6 +135,7 @@ public abstract class BatchOperationConsumerTemplate<T, R> extends AbstractMsgCo
         context.setValidMessageTags(validMessageTags);
         context.setInvalidMessageTags(invalidMessageTags);
         context.setMsgMap(msgMap);
+        context.setMessageMap(messageMap);
         context.setValid(!validMsgList.isEmpty());
         return context;
     }
@@ -140,7 +143,8 @@ public abstract class BatchOperationConsumerTemplate<T, R> extends AbstractMsgCo
     /**
      * 逐条处理少量消息（低于阈值的情况）
      */
-    protected void processSingleMessages(Channel channel, Map<Long, T> messages) throws IOException {
+    protected void processSingleMessages(Channel channel, BatchProcessContext<T> context) throws IOException {
+        Map<Long, T> messages = context.getValidMessages();
         if (CollUtil.isEmpty(messages)) {
             return;
         }
@@ -173,7 +177,14 @@ public abstract class BatchOperationConsumerTemplate<T, R> extends AbstractMsgCo
         // 处理失败的消息
         for (Map.Entry<Long, String> entry : failedTags.entrySet()) {
             long tag = entry.getKey();
-            nackMessage(channel, tag, shouldRequeueOnSingleFailure());
+            Message message = context.getMessageMap().get(tag);
+            MessageProperties properties = message != null ? message.getMessageProperties() : null;
+            int currentRetry = incrementRetryCount(properties);
+            boolean shouldRequeue = shouldRequeueOnSingleFailure() && currentRetry <= getMaxRetryCount();
+            nackMessage(channel, tag, shouldRequeue);
+            if (!shouldRequeue) {
+                handleDeadLetterMessage(tag, context.getMsgMap().get(tag), new RuntimeException(entry.getValue()));
+            }
         }
     }
 
@@ -200,7 +211,6 @@ public abstract class BatchOperationConsumerTemplate<T, R> extends AbstractMsgCo
         if (CollUtil.isEmpty(deliveryTags)) {
             return;
         }
-        
         batchAckMessages(channel, deliveryTags);
     }
 
@@ -221,20 +231,18 @@ public abstract class BatchOperationConsumerTemplate<T, R> extends AbstractMsgCo
      * 处理批处理失败的情况
      */
     protected void handleBatchFailure(Channel channel, BatchProcessContext<T> context, BatchProcessResult<R> result) throws IOException {
-        if (shouldRetryOnBatchFailure(result.getError())) {
-            // 重试策略 - 拒绝所有消息并重新入队
-            for (Long tag : context.getValidMessageTags()) {
-                nackMessage(channel, tag, true);
+        Exception error = result.getError() != null ? result.getError() : new RuntimeException(result.getErrorMessage());
+        for (Long tag : context.getValidMessageTags()) {
+            Message message = context.getMessageMap().get(tag);
+            MessageProperties properties = message != null ? message.getMessageProperties() : null;
+            int currentRetry = incrementRetryCount(properties);
+            boolean shouldRequeue = shouldRetryOnBatchFailure(error) && currentRetry <= getMaxRetryCount();
+            nackMessage(channel, tag, shouldRequeue);
+            if (!shouldRequeue) {
+                handleDeadLetterMessage(tag, context.getMsgMap().get(tag), error);
             }
-            log.info("批处理失败，所有消息重新入队 [数量: {}]", context.getValidMessageTags().size());
-        } else {
-            // 不再重试 - 发送到死信队列
-            for (Long tag : context.getValidMessageTags()) {
-                nackMessage(channel, tag, false);
-                handleDeadLetterMessage(tag, context.getMsgMap().get(tag), result.getError());
-            }
-            log.error("批处理失败且不再重试，消息进入死信队列 [数量: {}]", context.getValidMessageTags().size());
         }
+        log.info("批处理失败处理完成 [数量: {}]", context.getValidMessageTags().size());
         
         // 确认无效消息
         confirmInvalidMessages(channel, context.getInvalidMessageTags());
@@ -244,16 +252,15 @@ public abstract class BatchOperationConsumerTemplate<T, R> extends AbstractMsgCo
      * 处理处理过程中发生异常的情况
      */
     protected void handleProcessException(Channel channel, List<Message> messages, Exception e) throws IOException {
-        // 默认实现：所有消息重新入队
-        boolean shouldRequeue = shouldRetryOnException(e);
-        
         for (Message message : messages) {
-            long deliveryTag = message.getMessageProperties().getDeliveryTag();
+            MessageProperties properties = message.getMessageProperties();
+            long deliveryTag = properties.getDeliveryTag();
+            int currentRetry = incrementRetryCount(properties);
+            boolean shouldRequeue = shouldRetryOnException(e) && currentRetry <= getMaxRetryCount();
             nackMessage(channel, deliveryTag, shouldRequeue);
         }
         
-        log.error("批处理过程异常，已拒绝所有消息 [数量: {}] [重新入队: {}]", 
-                messages.size(), shouldRequeue);
+        log.error("批处理过程异常，已拒绝所有消息 [数量: {}]", messages.size());
     }
 
     /**
@@ -305,6 +312,11 @@ public abstract class BatchOperationConsumerTemplate<T, R> extends AbstractMsgCo
     protected boolean shouldRetryOnException(Exception e) {
         return true;
     }
+
+    @Override
+    protected boolean supportsBulkAcknowledgment() {
+        return true;
+    }
     
     /**
      * 处理单条消息
@@ -338,6 +350,8 @@ public abstract class BatchOperationConsumerTemplate<T, R> extends AbstractMsgCo
         private List<Long> invalidMessageTags;
         // deliveryTag到消息的映射
         private Map<Long, T> msgMap;
+        // deliveryTag到原始Message的映射
+        private Map<Long, Message> messageMap;
         // 上下文是否有效
         private boolean valid;
         

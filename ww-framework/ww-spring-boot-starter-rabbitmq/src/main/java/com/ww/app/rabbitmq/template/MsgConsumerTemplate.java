@@ -8,7 +8,6 @@ import org.springframework.amqp.core.MessageProperties;
 import java.io.IOException;
 import java.time.LocalDateTime;
 import java.util.Optional;
-import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  * @author: ww
@@ -17,12 +16,7 @@ import java.util.concurrent.atomic.AtomicInteger;
  **/
 @Slf4j
 public abstract class MsgConsumerTemplate<T> extends AbstractMsgConsumerTemplate<T> {
-    
-    /**
-     * 当前重试次数记录
-     */
-    private final ThreadLocal<AtomicInteger> retryCount = ThreadLocal.withInitial(AtomicInteger::new);
-    
+
     /**
      * 消息消费入口方法
      * 
@@ -66,10 +60,7 @@ public abstract class MsgConsumerTemplate<T> extends AbstractMsgConsumerTemplate
             // 异常消费处理
             exceptionMsgHandler(properties, channel, e);
             // 处理消息拒绝逻辑
-            handleMessageException(channel, deliveryTag, e);
-        } finally {
-            // 清理ThreadLocal
-            retryCount.remove();
+            handleMessageException(properties, channel, deliveryTag, e);
         }
     }
 
@@ -77,17 +68,21 @@ public abstract class MsgConsumerTemplate<T> extends AbstractMsgConsumerTemplate
      * 处理业务逻辑返回失败的情况
      */
     protected void handleBusinessFailure(MessageProperties properties, Channel channel, long deliveryTag) throws IOException {
-        // 默认拒绝消息并重新入队
-        nackMessage(channel, deliveryTag, shouldRequeueOnBusinessFailure());
-        log.warn("业务处理失败，消息已拒绝 [消息ID: {}] [投递标签: {}] [重新入队: {}]", 
-                properties.getCorrelationId(), deliveryTag, shouldRequeueOnBusinessFailure());
+        int currentRetry = incrementRetryCount(properties);
+        boolean requeue = shouldRequeueOnBusinessFailure() && currentRetry <= getMaxRetryCount();
+        nackMessage(channel, deliveryTag, requeue);
+        log.warn("业务处理失败，消息已拒绝 [消息ID: {}] [投递标签: {}] [重新入队: {}] [重试次数: {}]", 
+                properties.getCorrelationId(), deliveryTag, requeue, currentRetry);
+        if (!requeue) {
+            handleDeadLetterMessage(deliveryTag, new RuntimeException("业务处理失败"));
+        }
     }
     
     /**
      * 处理消息异常情况
      */
-    protected void handleMessageException(Channel channel, long deliveryTag, Exception e) throws IOException {
-        int currentRetry = retryCount.get().incrementAndGet();
+    protected void handleMessageException(MessageProperties properties, Channel channel, long deliveryTag, Exception e) throws IOException {
+        int currentRetry = incrementRetryCount(properties);
         
         if (currentRetry <= getMaxRetryCount() && shouldRetryOnException(e)) {
             // 拒绝消息并重新入队尝试重试

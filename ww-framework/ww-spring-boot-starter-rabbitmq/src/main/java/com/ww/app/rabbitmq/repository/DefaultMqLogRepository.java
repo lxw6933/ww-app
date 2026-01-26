@@ -27,6 +27,6 @@ public class DefaultMqLogRepository implements MqLogRepository<String, BaseMqLog
 
     @Override
     public BaseMqLog get(String correlationId) {
-        return null;
+        throw new UnsupportedOperationException("DefaultMqLogRepository 未实现 get，请提供自定义实现");
     }
 }

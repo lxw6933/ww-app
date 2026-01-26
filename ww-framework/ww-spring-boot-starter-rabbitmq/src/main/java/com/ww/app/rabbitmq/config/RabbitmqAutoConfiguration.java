@@ -1,9 +1,6 @@
 package com.ww.app.rabbitmq.config;
 
-import cn.hutool.extra.spring.SpringUtil;
-import com.ww.app.common.constant.Constant;
 import com.ww.app.common.enums.MqMsgStatus;
-import com.ww.app.common.exception.ApiException;
 import com.ww.app.common.utils.json.JacksonUtils;
 import com.ww.app.rabbitmq.RabbitMqPublisher;
 import com.ww.app.rabbitmq.common.BaseMqLog;
@@ -31,8 +28,6 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 
-import javax.annotation.PostConstruct;
-
 /**
  * @description:
  * @author: ww
@@ -43,15 +38,6 @@ import javax.annotation.PostConstruct;
 @ConditionalOnClass({RabbitTemplate.class})
 @EnableConfigurationProperties(RabbitProperties.class)
 public class RabbitmqAutoConfiguration {
-
-    private MqLogRepository<String, BaseMqLog> mqLogRepository;
-
-    @PostConstruct
-    @SuppressWarnings("unchecked")
-    public void init() {
-        mqLogRepository = SpringUtil.getBean(MqLogRepository.class);
-        log.info("消息日志持久化处理器初始化完成：{}", mqLogRepository);
-    }
 
     /**
      * 自定义Jackson消息转换器 用于对象消息的转换
@@ -66,7 +52,8 @@ public class RabbitmqAutoConfiguration {
      * 自定义 RabbitTemplate
      */
     @Bean
-    public RabbitTemplate rabbitTemplate(ConnectionFactory connectionFactory, MessageConverter converter) {
+    public RabbitTemplate rabbitTemplate(ConnectionFactory connectionFactory, MessageConverter converter,
+                                         MqLogRepository<String, ? extends BaseMqLog> mqLogRepository) {
         RabbitTemplate rabbitTemplate = new RabbitTemplate(connectionFactory);
         // 设置对象消息转换器
         rabbitTemplate.setMessageConverter(converter);
@@ -79,7 +66,8 @@ public class RabbitmqAutoConfiguration {
          */
         rabbitTemplate.setConfirmCallback((correlationData, ack, cause) -> {
             if (!(correlationData instanceof MyCorrelationData)) {
-                throw new ApiException("发送失败，请按照规范发送消息");
+                log.warn("收到非规范消息确认回调: {}", correlationData);
+                return;
             }
             MyCorrelationData<?> myCorrelationData = (MyCorrelationData<?>) correlationData;
             if (!ack) {
@@ -119,7 +107,12 @@ public class RabbitmqAutoConfiguration {
                     returned.getRoutingKey());
 
             MyCorrelationData<Object> correlationData = new MyCorrelationData<>(false);
-            correlationData.setMessage(JacksonUtils.parseObject(returned.getMessage().getBody(), Object.class));
+            try {
+                correlationData.setMessage(JacksonUtils.parseObject(returned.getMessage().getBody(), Object.class));
+            } catch (Exception e) {
+                log.warn("消息反序列化失败，使用空消息体记录回执", e);
+                correlationData.setMessage(null);
+            }
             correlationData.setExchange(returned.getExchange());
             correlationData.setRoutingKey(returned.getRoutingKey());
             correlationData.setFailCause(returned.getReplyText());
@@ -146,10 +139,13 @@ public class RabbitmqAutoConfiguration {
                     MyCorrelationData<?> myCorrelationData = (MyCorrelationData<?>) correlation;
                     messageProperties.setHeader(RabbitmqConstant.EXCHANGE_HEADER, myCorrelationData.getExchange());
                     messageProperties.setHeader(RabbitmqConstant.ROUTING_KEY_HEADER, myCorrelationData.getRoutingKey());
-                    messageProperties.setHeader(RabbitmqConstant.MESSAGE_HEADER, myCorrelationData.getMessage());
                     messageProperties.setHeader(RabbitmqConstant.DELAY_HEADER, myCorrelationData.getDelayTime());
                     // 延时消息
-                    messageProperties.setDelay(myCorrelationData.getDelayTime() * 1000);
+                    long delayMillis = Math.max(0L, (long) myCorrelationData.getDelayTime() * 1000L);
+                    if (delayMillis > Integer.MAX_VALUE) {
+                        delayMillis = Integer.MAX_VALUE;
+                    }
+                    messageProperties.setDelay((int) delayMillis);
                 }
                 return this.postProcessMessage(message);
             }
@@ -162,6 +158,7 @@ public class RabbitmqAutoConfiguration {
     }
 
     @Bean
+    @ConditionalOnMissingBean(RabbitMqPublisher.class)
     public RabbitMqPublisher mallPublisher() {
         return new RabbitMqPublisher();
     }
