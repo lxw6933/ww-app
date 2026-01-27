@@ -12,7 +12,6 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.amqp.AmqpException;
 import org.springframework.amqp.core.*;
 import org.springframework.amqp.rabbit.annotation.EnableRabbit;
-import org.springframework.amqp.rabbit.config.DirectRabbitListenerContainerFactory;
 import org.springframework.amqp.rabbit.config.SimpleRabbitListenerContainerFactory;
 import org.springframework.amqp.rabbit.connection.ConnectionFactory;
 import org.springframework.amqp.rabbit.connection.CorrelationData;
@@ -24,6 +23,7 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
+
 import java.nio.charset.StandardCharsets;
 
 /**
@@ -114,12 +114,6 @@ public class RabbitmqAutoConfiguration {
         return new DefaultMqLogRepository();
     }
 
-    @Bean
-    @Deprecated
-    public SimpleRabbitListenerContainerFactory appBatchContainerFactory(ConnectionFactory connectionFactory, MessageConverter converter) {
-        return buildBatchContainerFactory(connectionFactory, converter);
-    }
-
     /**
      * 单条消息消费模板使用的容器工厂
      */
@@ -143,21 +137,6 @@ public class RabbitmqAutoConfiguration {
     public SimpleRabbitListenerContainerFactory batchOperationConsumerContainerFactory(ConnectionFactory connectionFactory, MessageConverter converter) {
         SimpleRabbitListenerContainerFactory factory = buildSingleContainerFactory(connectionFactory, converter);
         factory.setPrefetchCount(50);
-        return factory;
-    }
-
-    @Bean
-    @Deprecated
-    public DirectRabbitListenerContainerFactory appDirectContainerFactory(ConnectionFactory connectionFactory, MessageConverter converter) {
-        DirectRabbitListenerContainerFactory factory = new DirectRabbitListenerContainerFactory();
-        // 设置连接工厂
-        factory.setConnectionFactory(connectionFactory);
-        // 设置每个队列的消费者数量
-        factory.setConsumersPerQueue(20);
-        // 设置每个消费者的预取消息数量
-        factory.setPrefetchCount(10);
-        // 设置消息转换器
-        factory.setMessageConverter(converter);
         return factory;
     }
 

@@ -35,12 +35,12 @@ public class ImBizConsumer {
 
     private static final int BATCH_SIZE = 500;
 
-    @RabbitListener(queues = {ImBizMqConstant.IM_BIZ_MSG_QUEUE}, containerFactory = "appDirectContainerFactory")
+    @RabbitListener(queues = {ImBizMqConstant.IM_BIZ_MSG_QUEUE}, containerFactory = "msgConsumerContainerFactory")
     public void imBizMsg(ImMsgBody imMsgBody) {
         msgService.handleImMsg(imMsgBody);
     }
 
-    @RabbitListener(queues = {ImBizMqConstant.IM_BIZ_MSG_HANDLE_QUEUE}, containerFactory = "appBatchContainerFactory")
+    @RabbitListener(queues = {ImBizMqConstant.IM_BIZ_MSG_HANDLE_QUEUE}, containerFactory = "batchMsgConsumerContainerFactory")
     public void imBizMsgHandle(List<SingleChatMessage> msgList) {
         if (log.isDebugEnabled()) {
             log.debug("消息持久化批次大小: {}", msgList.size());
