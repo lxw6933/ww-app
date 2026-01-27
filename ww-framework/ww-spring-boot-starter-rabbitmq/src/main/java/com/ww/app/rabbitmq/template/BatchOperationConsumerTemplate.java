@@ -1,23 +1,28 @@
 package com.ww.app.rabbitmq.template;
 
 import cn.hutool.core.collection.CollUtil;
-import cn.hutool.core.lang.UUID;
 import com.rabbitmq.client.Channel;
+import com.ww.app.disruptor.api.DisruptorTemplate;
+import com.ww.app.disruptor.constans.DisruptorWaitStrategy;
+import com.ww.app.disruptor.model.Event;
+import com.ww.app.disruptor.model.EventBatch;
+import com.ww.app.disruptor.model.ProcessResult;
+import com.ww.app.disruptor.processor.BatchEventProcessor;
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.amqp.core.Message;
 import org.springframework.amqp.core.MessageProperties;
-import org.springframework.util.CollectionUtils;
 
 import java.io.IOException;
-import java.util.*;
-import java.util.function.Function;
-import java.util.stream.Collectors;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
+import java.util.concurrent.*;
 
 /**
  * @author: ww
  * @create: 2023/7/22 22:32
- * @description: 专门用于批量入库等真正的批量操作场景，将多条消息作为一个整体进行处理【 批量操作消费者模板】
+ * @description: 批量操作消费者模板 - 单条交付，使用Disruptor进行聚合后批量处理
  **/
 @Slf4j
 public abstract class BatchOperationConsumerTemplate<T, R> extends AbstractMsgConsumerTemplate<T> {
@@ -28,239 +33,34 @@ public abstract class BatchOperationConsumerTemplate<T, R> extends AbstractMsgCo
     private static final int DEFAULT_MIN_BATCH_SIZE = 10;
 
     /**
-     * 批量消费入口方法
-     * 所有消息作为一个整体进行批量处理
-     *
-     * @param messages 原始消息列表
-     * @param msgList  转换后的业务消息体列表
-     * @param channel  RabbitMQ通道
-     * @throws IOException 处理过程中可能的IO异常
+     * Ack队列执行器（每个Channel一个单线程）
      */
-    public final void batchConsumer(List<Message> messages, List<T> msgList, Channel channel) throws IOException {
-        if (CollUtil.isEmpty(messages) || CollUtil.isEmpty(msgList)) {
-            log.warn("批量消息为空，消息数: {}, 业务消息数: {}", 
-                     messages != null ? messages.size() : 0, 
-                     msgList != null ? msgList.size() : 0);
-            return;
-        }
+    private final Map<Channel, ExecutorService> ackExecutors = new ConcurrentHashMap<>();
 
-        // 设置批次ID用于日志跟踪
-        String batchId = UUID.randomUUID(true).toString();
+    /**
+     * Disruptor聚合模板
+     */
+    private volatile DisruptorTemplate<BatchAckContext<T>> disruptorTemplate;
 
-        int batchSize = messages.size();
-        log.info("开始批量处理 [批次ID: {}] [批次大小: {}]", batchId, batchSize);
+    /**
+     * 单条消息消费入口（单条交付 + Disruptor 聚合）
+     */
+    public final void consumer(Message message, T msg, Channel channel) throws IOException {
+        MessageProperties properties = message.getMessageProperties();
+        long deliveryTag = properties.getDeliveryTag();
+
         try {
-            // 对消息进行预处理和校验
-            BatchProcessContext<T> processContext = preProcessBatch(messages, msgList);
-            // 检查批处理上下文是否有效
-            if (!processContext.isValid() || CollectionUtils.isEmpty(processContext.getValidMessages())) {
-                log.info("批量消息预处理后无有效数据 [批次ID: {}]", batchId);
-                // 确认所有消息，因为无需处理
-                confirmAllMessages(channel, messages);
+            if (!isValidMessage(message, msg)) {
+                log.error("无效消息[{}][{}]直接确认消费[tag: {}]", message, msg, deliveryTag);
+                enqueueAck(channel, deliveryTag);
                 return;
             }
-            
-            // 如果有效消息数量低于阈值，可以选择拒绝批处理
-            if (processContext.getValidMessages().size() < getMinBatchSize()) {
-                log.info("有效消息数量({})低于批处理阈值({}), 将逐条处理 [批次ID: {}]",
-                        processContext.getValidMessages().size(), getMinBatchSize(), batchId);
-                // 处理无效消息 - 直接确认
-                confirmInvalidMessages(channel, processContext.getInvalidMessageTags());
-                // 逐条处理少量消息
-                processSingleMessages(channel, processContext);
-                return;
-            }
-            // 执行批量业务处理
-            BatchProcessResult<R> batchResult = processBatch(processContext.getValidMsgList());
-            
-            if (batchResult.isSuccess()) {
-                // 批量处理成功，确认所有消息
-                log.info("批量处理成功 [批次ID: {}] [处理数量: {}]", batchId, processContext.getValidMsgList().size());
-                // 确认所有有效消息
-                confirmMessages(channel, processContext.getValidMessageTags());
-                // 确认所有无效消息
-                confirmInvalidMessages(channel, processContext.getInvalidMessageTags());
-                // 后置处理
-                postProcessBatchSuccess(batchResult.getResult(), processContext);
-            } else {
-                // 批量处理失败，根据错误处理策略决定如何处理
-                log.error("批量处理失败 [批次ID: {}] [错误: {}]", batchId, batchResult.getErrorMessage());
-                // 根据失败处理策略处理消息
-                handleBatchFailure(channel, processContext, batchResult);
-            }
+
+            BatchAckContext<T> context = new BatchAckContext<>(message, msg, channel, deliveryTag);
+            publishToDisruptor(context, properties, msg, deliveryTag);
         } catch (Exception e) {
-            log.error("批量处理过程中发生异常 [批次ID: {}]", batchId, e);
-            // 处理异常情况
-            handleProcessException(channel, messages, e);
+            handleConsumeException(properties, channel, deliveryTag, msg, e);
         }
-    }
-
-    /**
-     * 预处理批量消息
-     * 将消息分为有效和无效两组
-     */
-    protected BatchProcessContext<T> preProcessBatch(List<Message> messages, List<T> msgList) {
-        BatchProcessContext<T> context = new BatchProcessContext<>();
-        context.setOriginalMessages(messages);
-        context.setOriginalMsgList(msgList);
-        
-        List<T> validMsgList = new ArrayList<>();
-        List<Long> validMessageTags = new ArrayList<>();
-        List<Long> invalidMessageTags = new ArrayList<>();
-        Map<Long, T> msgMap = new HashMap<>();
-        Map<Long, Message> messageMap = new HashMap<>();
-        
-        for (int i = 0; i < messages.size(); i++) {
-            if (i >= msgList.size()) {
-                break;
-            }
-            
-            Message message = messages.get(i);
-            T msg = msgList.get(i);
-            MessageProperties properties = message.getMessageProperties();
-            long deliveryTag = properties.getDeliveryTag();
-            
-            // 检查消息是否有效
-            if (isValidMessage(message, msg)) {
-                validMsgList.add(msg);
-                validMessageTags.add(deliveryTag);
-                msgMap.put(deliveryTag, msg);
-                messageMap.put(deliveryTag, message);
-            } else {
-                invalidMessageTags.add(deliveryTag);
-            }
-        }
-        
-        context.setValidMsgList(validMsgList);
-        context.setValidMessageTags(validMessageTags);
-        context.setInvalidMessageTags(invalidMessageTags);
-        context.setMsgMap(msgMap);
-        context.setMessageMap(messageMap);
-        context.setValid(!validMsgList.isEmpty());
-        return context;
-    }
-
-    /**
-     * 逐条处理少量消息（低于阈值的情况）
-     */
-    protected void processSingleMessages(Channel channel, BatchProcessContext<T> context) throws IOException {
-        Map<Long, T> messages = context.getValidMessages();
-        if (CollUtil.isEmpty(messages)) {
-            return;
-        }
-        
-        List<Long> successTags = new ArrayList<>();
-        Map<Long, String> failedTags = new HashMap<>();
-        
-        for (Map.Entry<Long, T> entry : messages.entrySet()) {
-            long tag = entry.getKey();
-            T msg = entry.getValue();
-            
-            try {
-                boolean success = doProcess(msg);
-                if (success) {
-                    successTags.add(tag);
-                } else {
-                    failedTags.put(tag, "处理返回失败");
-                }
-            } catch (Exception e) {
-                log.error("单条消息处理异常 [投递标签: {}]", tag, e);
-                failedTags.put(tag, e.getMessage());
-            }
-        }
-        
-        // 确认成功的消息
-        for (Long tag : successTags) {
-            ackMessage(channel, tag);
-        }
-        
-        // 处理失败的消息
-        for (Map.Entry<Long, String> entry : failedTags.entrySet()) {
-            long tag = entry.getKey();
-            Message message = context.getMessageMap().get(tag);
-            MessageProperties properties = message != null ? message.getMessageProperties() : null;
-            int currentRetry = incrementRetryCount(properties);
-            boolean shouldRequeue = shouldRequeueOnSingleFailure() && currentRetry <= getMaxRetryCount();
-            nackMessage(channel, tag, shouldRequeue);
-            if (!shouldRequeue) {
-                handleDeadLetterMessage(tag, context.getMsgMap().get(tag), new RuntimeException(entry.getValue()));
-            }
-        }
-    }
-
-    /**
-     * 确认所有消息
-     */
-    protected void confirmAllMessages(Channel channel, List<Message> messages) throws IOException {
-        if (CollUtil.isEmpty(messages)) {
-            return;
-        }
-        
-        // 收集所有deliveryTag
-        List<Long> tags = messages.stream()
-                .map(msg -> msg.getMessageProperties().getDeliveryTag())
-                .collect(Collectors.toList());
-        
-        confirmMessages(channel, tags);
-    }
-    
-    /**
-     * 确认消息列表
-     */
-    protected void confirmMessages(Channel channel, List<Long> deliveryTags) throws IOException {
-        if (CollUtil.isEmpty(deliveryTags)) {
-            return;
-        }
-        batchAckMessages(channel, deliveryTags);
-    }
-
-    /**
-     * 确认无效消息（预处理阶段被过滤掉的消息）
-     */
-    protected void confirmInvalidMessages(Channel channel, List<Long> invalidTags) throws IOException {
-        if (CollUtil.isEmpty(invalidTags)) {
-            return;
-        }
-        
-        // 默认直接确认无效消息
-        confirmMessages(channel, invalidTags);
-        log.info("确认无效消息 [数量: {}]", invalidTags.size());
-    }
-
-    /**
-     * 处理批处理失败的情况
-     */
-    protected void handleBatchFailure(Channel channel, BatchProcessContext<T> context, BatchProcessResult<R> result) throws IOException {
-        Exception error = result.getError() != null ? result.getError() : new RuntimeException(result.getErrorMessage());
-        for (Long tag : context.getValidMessageTags()) {
-            Message message = context.getMessageMap().get(tag);
-            MessageProperties properties = message != null ? message.getMessageProperties() : null;
-            int currentRetry = incrementRetryCount(properties);
-            boolean shouldRequeue = shouldRetryOnBatchFailure(error) && currentRetry <= getMaxRetryCount();
-            nackMessage(channel, tag, shouldRequeue);
-            if (!shouldRequeue) {
-                handleDeadLetterMessage(tag, context.getMsgMap().get(tag), error);
-            }
-        }
-        log.info("批处理失败处理完成 [数量: {}]", context.getValidMessageTags().size());
-        
-        // 确认无效消息
-        confirmInvalidMessages(channel, context.getInvalidMessageTags());
-    }
-
-    /**
-     * 处理处理过程中发生异常的情况
-     */
-    protected void handleProcessException(Channel channel, List<Message> messages, Exception e) throws IOException {
-        for (Message message : messages) {
-            MessageProperties properties = message.getMessageProperties();
-            long deliveryTag = properties.getDeliveryTag();
-            int currentRetry = incrementRetryCount(properties);
-            boolean shouldRequeue = shouldRetryOnException(e) && currentRetry <= getMaxRetryCount();
-            nackMessage(channel, deliveryTag, shouldRequeue);
-        }
-        
-        log.error("批处理过程异常，已拒绝所有消息 [数量: {}]", messages.size());
     }
 
     /**
@@ -270,13 +70,6 @@ public abstract class BatchOperationConsumerTemplate<T, R> extends AbstractMsgCo
         log.error("消息进入死信队列 [投递标签: {}] [异常: {}]", deliveryTag, exception.getMessage());
     }
 
-    /**
-     * 批处理成功后的后置处理
-     */
-    protected void postProcessBatchSuccess(R result, BatchProcessContext<T> context) {
-        // 默认不执行任何后置处理
-    }
-    
     /**
      * 判断消息是否有效
      * 子类可以重写此方法进行自定义的消息有效性验证
@@ -293,36 +86,209 @@ public abstract class BatchOperationConsumerTemplate<T, R> extends AbstractMsgCo
     }
     
     /**
-     * 单条消息处理失败时是否应该重试
-     */
-    protected boolean shouldRequeueOnSingleFailure() {
-        return true;
-    }
-    
-    /**
      * 批量处理失败时是否应该重试
      */
     protected boolean shouldRetryOnBatchFailure(Exception e) {
         return true;
     }
-    
-    /**
-     * 处理过程异常时是否应该重试
-     */
-    protected boolean shouldRetryOnException(Exception e) {
-        return true;
+
+    protected String getDisruptorEventType() {
+        return "rabbitmq-batch";
     }
 
-    @Override
-    protected boolean supportsBulkAcknowledgment() {
-        return true;
+    protected String getDisruptorBusinessName() {
+        return this.getClass().getSimpleName();
     }
-    
-    /**
-     * 处理单条消息
-     * 当消息数量低于阈值时使用
-     */
-    protected abstract boolean doProcess(T msg);
+
+    protected int getDisruptorRingBufferSize() {
+        return 8192;
+    }
+
+    protected int getDisruptorConsumerThreads() {
+        return 1;
+    }
+
+    protected int getDisruptorBatchSize() {
+        return Math.max(getMinBatchSize(), 10);
+    }
+
+    protected long getDisruptorBatchTimeoutMillis() {
+        return 200L;
+    }
+
+    protected String getDisruptorWaitStrategy() {
+        return DisruptorWaitStrategy.BLOCKING;
+    }
+
+    protected DisruptorTemplate<BatchAckContext<T>> getOrCreateDisruptorTemplate() {
+        if (disruptorTemplate != null) {
+            return disruptorTemplate;
+        }
+        synchronized (this) {
+            if (disruptorTemplate == null) {
+                DisruptorTemplate<BatchAckContext<T>> template = DisruptorTemplate.<BatchAckContext<T>>builder()
+                        .businessName(getDisruptorBusinessName())
+                        .ringBufferSize(getDisruptorRingBufferSize())
+                        .consumerThreads(getDisruptorConsumerThreads())
+                        .waitStrategy(getDisruptorWaitStrategy())
+                        .batchEnabled(true)
+                        .batchSize(getDisruptorBatchSize())
+                        .batchTimeout(getDisruptorBatchTimeoutMillis())
+                        .batchEventProcessor(new RabbitmqBatchEventProcessor())
+                        .build();
+                template.start();
+                disruptorTemplate = template;
+            }
+        }
+        return disruptorTemplate;
+    }
+
+    private void publishToDisruptor(BatchAckContext<T> context, MessageProperties properties, T msg, long deliveryTag) {
+        boolean published = getOrCreateDisruptorTemplate().publish(getDisruptorEventType(), context);
+        if (published) {
+            return;
+        }
+        int currentRetry = incrementRetryCount(properties);
+        boolean requeue = shouldRetryOnException(new RuntimeException("Disruptor publish failed"))
+                && currentRetry <= getMaxRetryCount();
+        enqueueNack(context.getChannel(), deliveryTag, requeue);
+        if (!requeue) {
+            handleDeadLetterMessage(deliveryTag, msg, new RuntimeException("Disruptor publish failed"));
+        }
+    }
+
+    private void handleConsumeException(MessageProperties properties, Channel channel, long deliveryTag, T msg, Exception e) {
+        int currentRetry = incrementRetryCount(properties);
+        boolean requeue = shouldRetryOnException(e) && currentRetry <= getMaxRetryCount();
+        enqueueNack(channel, deliveryTag, requeue);
+        if (!requeue) {
+            handleDeadLetterMessage(deliveryTag, msg, e);
+        }
+    }
+
+    protected void enqueueAck(Channel channel, long deliveryTag) {
+        ensureAckExecutor(channel).execute(() -> {
+            try {
+                ackMessage(channel, deliveryTag);
+            } catch (IOException e) {
+                log.error("Ack失败 [投递标签: {}]", deliveryTag, e);
+            }
+        });
+    }
+
+    protected void enqueueNack(Channel channel, long deliveryTag, boolean requeue) {
+        ensureAckExecutor(channel).execute(() -> {
+            try {
+                nackMessage(channel, deliveryTag, requeue);
+            } catch (IOException e) {
+                log.error("Nack失败 [投递标签: {}] [重新入队: {}]", deliveryTag, requeue, e);
+            }
+        });
+    }
+
+    protected ExecutorService ensureAckExecutor(Channel channel) {
+        return ackExecutors.computeIfAbsent(channel, ch -> {
+            ThreadFactory factory = runnable -> {
+                Thread thread = new Thread(runnable, getDisruptorBusinessName() + "-rabbitmq-ack-" + ch.hashCode());
+                thread.setDaemon(true);
+                return thread;
+            };
+            ExecutorService executor = new ThreadPoolExecutor(
+                    1,
+                    1,
+                    0L,
+                    TimeUnit.MILLISECONDS,
+                    new LinkedBlockingQueue<>(),
+                    factory
+            );
+            ch.addShutdownListener(cause -> shutdownAckExecutor(ch));
+            return executor;
+        });
+    }
+
+    protected void shutdownAckExecutor(Channel channel) {
+        ExecutorService executor = ackExecutors.remove(channel);
+        if (executor != null) {
+            executor.shutdown();
+        }
+    }
+
+    private class RabbitmqBatchEventProcessor implements BatchEventProcessor<BatchAckContext<T>> {
+        @Override
+        public ProcessResult processBatch(EventBatch<BatchAckContext<T>> batch) {
+            List<Event<BatchAckContext<T>>> events = batch.getEvents();
+            if (CollUtil.isEmpty(events)) {
+                return ProcessResult.success("empty");
+            }
+
+            BatchAggregation<T> aggregation = buildAggregation(events);
+
+            try {
+                BatchProcessResult<R> result = BatchOperationConsumerTemplate.this.processBatch(aggregation.payloads);
+                if (result.isSuccess()) {
+                    for (BatchAckContext<T> ctx : aggregation.contexts) {
+                        enqueueAck(ctx.getChannel(), ctx.getDeliveryTag());
+                    }
+                    return ProcessResult.success("batch success");
+                }
+
+                Exception error = result.getError() != null
+                        ? result.getError()
+                        : new RuntimeException(result.getErrorMessage());
+                try {
+                    handleBatchFailure(aggregation.contexts, error);
+                } catch (IOException ioException) {
+                    log.error("批量失败处理异常", ioException);
+                }
+                return ProcessResult.failure(result.getErrorMessage(), error);
+            } catch (Exception e) {
+                try {
+                    handleBatchException(aggregation.contexts, e);
+                } catch (IOException ioException) {
+                    log.error("批量异常处理失败", ioException);
+                }
+                return ProcessResult.failure("batch exception", e);
+            }
+        }
+    }
+
+    private void handleBatchFailure(List<BatchAckContext<T>> contexts, Exception error) throws IOException {
+        for (BatchAckContext<T> ctx : contexts) {
+            MessageProperties properties = ctx.getMessage().getMessageProperties();
+            int currentRetry = incrementRetryCount(properties);
+            boolean shouldRequeue = shouldRetryOnBatchFailure(error) && currentRetry <= getMaxRetryCount();
+            enqueueNack(ctx.getChannel(), ctx.getDeliveryTag(), shouldRequeue);
+            if (!shouldRequeue) {
+                handleDeadLetterMessage(ctx.getDeliveryTag(), ctx.getMsg(), error);
+            }
+        }
+    }
+
+    private void handleBatchException(List<BatchAckContext<T>> contexts, Exception error) throws IOException {
+        for (BatchAckContext<T> ctx : contexts) {
+            MessageProperties properties = ctx.getMessage().getMessageProperties();
+            int currentRetry = incrementRetryCount(properties);
+            boolean shouldRequeue = shouldRetryOnException(error) && currentRetry <= getMaxRetryCount();
+            enqueueNack(ctx.getChannel(), ctx.getDeliveryTag(), shouldRequeue);
+            if (!shouldRequeue) {
+                handleDeadLetterMessage(ctx.getDeliveryTag(), ctx.getMsg(), error);
+            }
+        }
+    }
+
+    private BatchAggregation<T> buildAggregation(List<Event<BatchAckContext<T>>> events) {
+        List<BatchAckContext<T>> contexts = new ArrayList<>(events.size());
+        List<T> payloads = new ArrayList<>(events.size());
+        for (Event<BatchAckContext<T>> event : events) {
+            BatchAckContext<T> ctx = event.getPayload();
+            if (ctx == null) {
+                continue;
+            }
+            contexts.add(ctx);
+            payloads.add(ctx.getMsg());
+        }
+        return new BatchAggregation<>(contexts, payloads);
+    }
     
     /**
      * 批量处理消息
@@ -333,37 +299,22 @@ public abstract class BatchOperationConsumerTemplate<T, R> extends AbstractMsgCo
      */
     protected abstract BatchProcessResult<R> processBatch(List<T> validMsgList);
     
-    /**
-     * 批量处理上下文
-     */
-    @Data
-    protected static class BatchProcessContext<T> {
-        // 原始消息列表
-        private List<Message> originalMessages;
-        // 原始业务消息列表
-        private List<T> originalMsgList;
-        // 有效业务消息列表
-        private List<T> validMsgList;
-        // 有效消息的deliveryTag列表
-        private List<Long> validMessageTags;
-        // 无效消息的deliveryTag列表
-        private List<Long> invalidMessageTags;
-        // deliveryTag到消息的映射
-        private Map<Long, T> msgMap;
-        // deliveryTag到原始Message的映射
-        private Map<Long, Message> messageMap;
-        // 上下文是否有效
-        private boolean valid;
-        
-        public Map<Long, T> getValidMessages() {
-            if (CollUtil.isEmpty(validMessageTags) || CollUtil.isEmpty(msgMap)) {
-                return Collections.emptyMap();
-            }
-            
-            return validMessageTags.stream()
-                    .filter(msgMap::containsKey)
-                    .collect(Collectors.toMap(Function.identity(), msgMap::get));
+    private static class BatchAggregation<T> {
+        private final List<BatchAckContext<T>> contexts;
+        private final List<T> payloads;
+
+        private BatchAggregation(List<BatchAckContext<T>> contexts, List<T> payloads) {
+            this.contexts = contexts;
+            this.payloads = payloads;
         }
+    }
+
+    @Data
+    protected static class BatchAckContext<T> {
+        private final Message message;
+        private final T msg;
+        private final Channel channel;
+        private final long deliveryTag;
     }
     
     /**

@@ -10,10 +10,7 @@ import com.ww.app.rabbitmq.repository.DefaultMqLogRepository;
 import com.ww.app.rabbitmq.repository.MqLogRepository;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.amqp.AmqpException;
-import org.springframework.amqp.core.Correlation;
-import org.springframework.amqp.core.Message;
-import org.springframework.amqp.core.MessagePostProcessor;
-import org.springframework.amqp.core.MessageProperties;
+import org.springframework.amqp.core.*;
 import org.springframework.amqp.rabbit.annotation.EnableRabbit;
 import org.springframework.amqp.rabbit.config.DirectRabbitListenerContainerFactory;
 import org.springframework.amqp.rabbit.config.SimpleRabbitListenerContainerFactory;
@@ -27,6 +24,7 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
+import java.nio.charset.StandardCharsets;
 
 /**
  * @description:
@@ -57,67 +55,13 @@ public class RabbitmqAutoConfiguration {
         RabbitTemplate rabbitTemplate = new RabbitTemplate(connectionFactory);
         // 设置对象消息转换器
         rabbitTemplate.setMessageConverter(converter);
-        /**
-         * 设置消息发送到Broker确认回调
-         *
-         * @param correlationData 当前消息的唯一关联数据（消息唯一id）
-         * @param ack 消息是否成功被broker收到
-         * @param cause 失败的原因
-         */
-        rabbitTemplate.setConfirmCallback((correlationData, ack, cause) -> {
-            if (!(correlationData instanceof MyCorrelationData)) {
-                log.warn("收到非规范消息确认回调: {}", correlationData);
-                return;
-            }
-            MyCorrelationData<?> myCorrelationData = (MyCorrelationData<?>) correlationData;
-            if (!ack) {
-                log.error("消息发送到Exchange失败, {}, cause: {}", correlationData, cause);
-                myCorrelationData.setFailCause(cause);
-                mqLogRepository.save(myCorrelationData, MqMsgStatus.DELIVER_FAIL);
-            }
-        });
+        // 设置消息发送到Broker确认回调
+        rabbitTemplate.setConfirmCallback((correlationData, ack, cause) ->
+                handleConfirmCallback(correlationData, ack, cause, mqLogRepository));
         // 是否到达队列回调
         rabbitTemplate.setMandatory(true);
-        /**
-         * 只要消息没有投递到指定的queue，就会触发回调，成功投递不会触发
-         *
-         * @param message   投递失败的消息内容
-         * @param replyCode 回复的状态码
-         * @param replyText 回复的文本内容
-         * @param exchange  哪个交换机发送的
-         * @param routingKey 交换机通过哪个路由键发送到queue
-         */
-        rabbitTemplate.setReturnsCallback(returned -> {
-            Integer delay = returned.getMessage().getMessageProperties().getHeader(RabbitmqConstant.DELAY_HEADER);
-            if (delay > 0) {
-                // 解决延时消息会触发的bug
-                return;
-            }
-            // 消息到达queue失败
-            log.error("消息发送到Queue失败\n" +
-                            "[消息]  >>>  {}\n" +
-                            "[replyCode]  >>>  {}\n" +
-                            "[replyText]  >>>  {}\n" +
-                            "[交换机]  >>>  {}\n" +
-                            "[路由key]  >>>  {}\n",
-                    new String(returned.getMessage().getBody()),
-                    returned.getReplyCode(),
-                    returned.getReplyText(),
-                    returned.getExchange(),
-                    returned.getRoutingKey());
-
-            MyCorrelationData<Object> correlationData = new MyCorrelationData<>(false);
-            try {
-                correlationData.setMessage(JacksonUtils.parseObject(returned.getMessage().getBody(), Object.class));
-            } catch (Exception e) {
-                log.warn("消息反序列化失败，使用空消息体记录回执", e);
-                correlationData.setMessage(null);
-            }
-            correlationData.setExchange(returned.getExchange());
-            correlationData.setRoutingKey(returned.getRoutingKey());
-            correlationData.setFailCause(returned.getReplyText());
-            mqLogRepository.save(correlationData, MqMsgStatus.DELIVER_FAIL);
-        });
+        // 只要消息没有投递到指定的queue，就会触发回调，成功投递不会触发
+        rabbitTemplate.setReturnsCallback(returned -> handleReturnsCallback(returned, mqLogRepository));
         return rabbitTemplate;
     }
 
@@ -171,7 +115,123 @@ public class RabbitmqAutoConfiguration {
     }
 
     @Bean
+    @Deprecated
     public SimpleRabbitListenerContainerFactory appBatchContainerFactory(ConnectionFactory connectionFactory, MessageConverter converter) {
+        return buildBatchContainerFactory(connectionFactory, converter);
+    }
+
+    /**
+     * 单条消息消费模板使用的容器工厂
+     */
+    @Bean
+    public SimpleRabbitListenerContainerFactory msgConsumerContainerFactory(ConnectionFactory connectionFactory, MessageConverter converter) {
+        return buildSingleContainerFactory(connectionFactory, converter);
+    }
+
+    /**
+     * 批量交付消费模板使用的容器工厂
+     */
+    @Bean
+    public SimpleRabbitListenerContainerFactory batchMsgConsumerContainerFactory(ConnectionFactory connectionFactory, MessageConverter converter) {
+        return buildBatchContainerFactory(connectionFactory, converter);
+    }
+
+    /**
+     * 单条交付 + Disruptor 聚合模板使用的容器工厂
+     */
+    @Bean
+    public SimpleRabbitListenerContainerFactory batchOperationConsumerContainerFactory(ConnectionFactory connectionFactory, MessageConverter converter) {
+        SimpleRabbitListenerContainerFactory factory = buildSingleContainerFactory(connectionFactory, converter);
+        factory.setPrefetchCount(50);
+        return factory;
+    }
+
+    @Bean
+    @Deprecated
+    public DirectRabbitListenerContainerFactory appDirectContainerFactory(ConnectionFactory connectionFactory, MessageConverter converter) {
+        DirectRabbitListenerContainerFactory factory = new DirectRabbitListenerContainerFactory();
+        // 设置连接工厂
+        factory.setConnectionFactory(connectionFactory);
+        // 设置每个队列的消费者数量
+        factory.setConsumersPerQueue(20);
+        // 设置每个消费者的预取消息数量
+        factory.setPrefetchCount(10);
+        // 设置消息转换器
+        factory.setMessageConverter(converter);
+        return factory;
+    }
+
+    private void handleConfirmCallback(CorrelationData correlationData, boolean ack, String cause,
+                                       MqLogRepository<String, ? extends BaseMqLog> mqLogRepository) {
+        if (!(correlationData instanceof MyCorrelationData)) {
+            log.warn("收到非规范消息确认回调: {}", correlationData);
+            return;
+        }
+        MyCorrelationData<?> myCorrelationData = (MyCorrelationData<?>) correlationData;
+        if (!ack) {
+            log.error("消息发送到Exchange失败, {}, cause: {}", correlationData, cause);
+            myCorrelationData.setFailCause(cause);
+            mqLogRepository.save(myCorrelationData, MqMsgStatus.DELIVER_FAIL);
+        }
+    }
+
+    private void handleReturnsCallback(ReturnedMessage returned,
+                                       MqLogRepository<String, ? extends BaseMqLog> mqLogRepository) {
+        int delay = parseDelayHeader(returned.getMessage().getMessageProperties().getHeader(RabbitmqConstant.DELAY_HEADER));
+        if (delay > 0) {
+            // 解决延时消息会触发的bug
+            return;
+        }
+        log.error("消息发送到Queue失败\n" +
+                        "[消息]  >>>  {}\n" +
+                        "[replyCode]  >>>  {}\n" +
+                        "[replyText]  >>>  {}\n" +
+                        "[交换机]  >>>  {}\n" +
+                        "[路由key]  >>>  {}\n",
+                new String(returned.getMessage().getBody(), StandardCharsets.UTF_8),
+                returned.getReplyCode(),
+                returned.getReplyText(),
+                returned.getExchange(),
+                returned.getRoutingKey());
+
+        MyCorrelationData<Object> correlationData = new MyCorrelationData<>(false);
+        try {
+            correlationData.setMessage(JacksonUtils.parseObject(returned.getMessage().getBody(), Object.class));
+        } catch (Exception e) {
+            log.warn("消息反序列化失败，使用空消息体记录回执", e);
+            correlationData.setMessage(null);
+        }
+        correlationData.setExchange(returned.getExchange());
+        correlationData.setRoutingKey(returned.getRoutingKey());
+        correlationData.setFailCause(returned.getReplyText());
+        mqLogRepository.save(correlationData, MqMsgStatus.DELIVER_FAIL);
+    }
+
+    private int parseDelayHeader(Object delayHeader) {
+        if (delayHeader instanceof Number) {
+            return ((Number) delayHeader).intValue();
+        }
+        if (delayHeader instanceof String) {
+            try {
+                return Integer.parseInt((String) delayHeader);
+            } catch (NumberFormatException ignored) {
+                return 0;
+            }
+        }
+        return 0;
+    }
+
+    private SimpleRabbitListenerContainerFactory buildSingleContainerFactory(ConnectionFactory connectionFactory, MessageConverter converter) {
+        SimpleRabbitListenerContainerFactory factory = new SimpleRabbitListenerContainerFactory();
+        factory.setConnectionFactory(connectionFactory);
+        factory.setMessageConverter(converter);
+        factory.setConcurrentConsumers(10);
+        factory.setMaxConcurrentConsumers(20);
+        factory.setPrefetchCount(10);
+        return factory;
+    }
+
+    private SimpleRabbitListenerContainerFactory buildBatchContainerFactory(ConnectionFactory connectionFactory, MessageConverter converter) {
         SimpleRabbitListenerContainerFactory factory = new SimpleRabbitListenerContainerFactory();
         factory.setConnectionFactory(connectionFactory);
         factory.setMessageConverter(converter);
@@ -187,20 +247,6 @@ public class RabbitmqAutoConfiguration {
         factory.setConcurrentConsumers(10);
         // 最大并发消费者线程数
         factory.setMaxConcurrentConsumers(20);
-        return factory;
-    }
-
-    @Bean
-    public DirectRabbitListenerContainerFactory appDirectContainerFactory(ConnectionFactory connectionFactory, MessageConverter converter) {
-        DirectRabbitListenerContainerFactory factory = new DirectRabbitListenerContainerFactory();
-        // 设置连接工厂
-        factory.setConnectionFactory(connectionFactory);
-        // 设置每个队列的消费者数量
-        factory.setConsumersPerQueue(20);
-        // 设置每个消费者的预取消息数量
-        factory.setPrefetchCount(10);
-        // 设置消息转换器
-        factory.setMessageConverter(converter);
         return factory;
     }
 

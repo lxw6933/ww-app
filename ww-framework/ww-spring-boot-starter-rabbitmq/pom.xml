@@ -22,6 +22,11 @@
             <artifactId>ww-common</artifactId>
             <version>${revision}</version>
         </dependency>
+        <dependency>
+            <groupId>com.ww.app</groupId>
+            <artifactId>ww-spring-boot-starter-disruptor</artifactId>
+            <version>${revision}</version>
+        </dependency>
         <!-- mq -->
         <dependency>
             <groupId>org.springframework.boot</groupId>
