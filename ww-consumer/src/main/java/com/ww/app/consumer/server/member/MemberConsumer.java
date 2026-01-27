@@ -19,9 +19,15 @@ import java.io.IOException;
 @Component
 public class MemberConsumer {
 
-    @RabbitListener(queues = {QueueConstant.MEMBER_REGISTER_QUEUE})
+    private final MsgConsumerTemplate<Long> memberRegisterMsgConsumer;
+
+    public MemberConsumer(MemberRegisterMsgConsumerTemplate memberRegisterMsgConsumer) {
+        this.memberRegisterMsgConsumer = memberRegisterMsgConsumer;
+    }
+
+    @RabbitListener(queues = {QueueConstant.MEMBER_REGISTER_QUEUE}, containerFactory = "msgConsumerContainerFactory")
     public void memberRegisterMessage(Message message, Long memberId, Channel channel) throws IOException {
-        MsgConsumerTemplate<Long> memberRegisterMsgConsumer = new MemberRegisterMsgConsumerTemplate();
+        log.info("MQ消费[queue={}] payload={}", QueueConstant.MEMBER_REGISTER_QUEUE, memberId);
         memberRegisterMsgConsumer.consumer(message, memberId, channel);
     }
 

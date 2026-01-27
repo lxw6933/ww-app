@@ -20,15 +20,20 @@ import java.io.IOException;
 @Component
 public class CouponConsumer {
 
+    private final MsgConsumerTemplate<Integer> couponTraceIdTestMsgConsumer;
+
+    public CouponConsumer(CouponTraceIdTestMsgConsumerTemplate couponTraceIdTestMsgConsumer) {
+        this.couponTraceIdTestMsgConsumer = couponTraceIdTestMsgConsumer;
+    }
+
     @PostConstruct
     public void init() {
         System.out.println("初始化CouponConsumer消费者");
     }
 
-    @RabbitListener(queues = {QueueConstant.COUPON_TEST_QUEUE})
+    @RabbitListener(queues = {QueueConstant.COUPON_TEST_QUEUE}, containerFactory = "msgConsumerContainerFactory")
     public void memberRegisterMessage(Message message, Integer msg, Channel channel) throws IOException {
-        log.info("收到mall_coupon服务发送traceId测试的消息：{}", msg);
-        MsgConsumerTemplate<Integer> couponTraceIdTestMsgConsumer = new CouponTraceIdTestMsgConsumerTemplate();
+        log.info("MQ消费[queue={}] payload={}", QueueConstant.COUPON_TEST_QUEUE, msg);
         couponTraceIdTestMsgConsumer.consumer(message, msg, channel);
     }
 

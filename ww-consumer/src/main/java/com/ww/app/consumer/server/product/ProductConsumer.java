@@ -19,10 +19,15 @@ import java.io.IOException;
 @Component
 public class ProductConsumer {
 
-    @RabbitListener(queues = {QueueConstant.PRODUCT_TIMER_UP_QUEUE})
+    private final MsgConsumerTemplate<Long> productTimerUpMsgConsumer;
+
+    public ProductConsumer(ProductTimerUpMsgConsumerTemplate productTimerUpMsgConsumer) {
+        this.productTimerUpMsgConsumer = productTimerUpMsgConsumer;
+    }
+
+    @RabbitListener(queues = {QueueConstant.PRODUCT_TIMER_UP_QUEUE}, containerFactory = "msgConsumerContainerFactory")
     public void memberRegisterMessage(Message message, Long productId, Channel channel) throws IOException {
-        log.info("收到mall_product服务发送商品定时上架的消息：{}", productId);
-        MsgConsumerTemplate<Long> productTimerUpMsgConsumer = new ProductTimerUpMsgConsumerTemplate();
+        log.info("MQ消费[queue={}] payload={}", QueueConstant.PRODUCT_TIMER_UP_QUEUE, productId);
         productTimerUpMsgConsumer.consumer(message, productId, channel);
     }
 

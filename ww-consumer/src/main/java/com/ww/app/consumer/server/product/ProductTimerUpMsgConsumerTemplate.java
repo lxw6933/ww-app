@@ -2,6 +2,7 @@ package com.ww.app.consumer.server.product;
 
 import com.ww.app.rabbitmq.template.MsgConsumerTemplate;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.stereotype.Component;
 
 /**
  * @author ww
@@ -9,6 +10,7 @@ import lombok.extern.slf4j.Slf4j;
  * @description:
  */
 @Slf4j
+@Component
 public class ProductTimerUpMsgConsumerTemplate extends MsgConsumerTemplate<Long> {
     @Override
     public boolean doProcess(Long msg) {

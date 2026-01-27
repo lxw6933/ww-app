@@ -24,16 +24,20 @@ import java.nio.charset.StandardCharsets;
 @ConditionalOnBean(QueueConfiguration.class)
 public class CanalConsumer {
 
-    @RabbitListener(queues = {QueueConstant.CANAL_QUEUE})
+    private final MsgConsumerTemplate<CanalMessage<?>> canalMsgConsumerTemplate;
+
+    public CanalConsumer(CanalMsgConsumerTemplate canalMsgConsumerTemplate) {
+        this.canalMsgConsumerTemplate = canalMsgConsumerTemplate;
+    }
+
+    @RabbitListener(queues = {QueueConstant.CANAL_QUEUE}, containerFactory = "msgConsumerContainerFactory")
     public void memberRegisterMessage(Message message, Channel channel) throws IOException {
         // 注意此处MQ传来的是Byte[]
         byte[] bodyByte = message.getBody();
         String bodyStr = new String(bodyByte, StandardCharsets.UTF_8);
-        String bodyJsonStr = JSONUtil.toJsonStr(bodyStr);
-        CanalMessage<?> canalMessage = JSONUtil.toBean(bodyJsonStr, CanalMessage.class);
-        log.info("收到canal消息,数据库:[{}]表名:[{}]操作类型:[{}]数据：[{}]", canalMessage.getDatabase(), canalMessage.getTable(), canalMessage.getType(), canalMessage.getData());
-        MsgConsumerTemplate<CanalMessage<?>> canalMsgConsumer = new CanalMsgConsumerTemplate();
-        canalMsgConsumer.consumer(message, canalMessage, channel);
+        CanalMessage<?> canalMessage = JSONUtil.toBean(bodyStr, CanalMessage.class);
+        log.info("MQ消费[queue={}] payload={}", QueueConstant.CANAL_QUEUE, canalMessage);
+        canalMsgConsumerTemplate.consumer(message, canalMessage, channel);
     }
 
 }

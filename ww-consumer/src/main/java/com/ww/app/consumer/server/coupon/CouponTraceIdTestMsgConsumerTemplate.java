@@ -2,6 +2,7 @@ package com.ww.app.consumer.server.coupon;
 
 import com.ww.app.rabbitmq.template.MsgConsumerTemplate;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.stereotype.Component;
 
 /**
  * @author ww
@@ -9,11 +10,13 @@ import lombok.extern.slf4j.Slf4j;
  * @description:
  */
 @Slf4j
+@Component
 public class CouponTraceIdTestMsgConsumerTemplate extends MsgConsumerTemplate<Integer>  {
     @Override
     public boolean doProcess(Integer msg) {
         log.info("traceId 测试 消息[{}]消费处理逻辑", msg);
         int a = 1 / msg;
+        log.info("traceId 测试 测试结果[{}]", a);
         return true;
     }
 }
