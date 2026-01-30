@@ -65,6 +65,23 @@ java -jar ww-api-gateway/target/ww-api-gateway.jar
 ```
 
 ## 模块说明（精选）
+## 模块清单（服务视角）
+| 模块 | 主要职责 | 示例子模块/说明 |
+| --- | --- | --- |
+| ww-api-gateway | 统一入口、路由、鉴权、限流 | Spring Cloud Gateway + Sentinel |
+| ww-auth | 认证授权中心 | OAuth2/JWT、统一登录 |
+| ww-admin-manage | 后台管理系统 | 用户/权限/配置/运营 |
+| ww-open-platform | 开放平台能力 | 开发者管理、应用管理、开放接口 |
+| ww-im | 即时通讯 | 私聊/群聊/在线状态/历史消息 |
+| ww-mall | 电商业务主线 | `ww-product`、`ww-order`、`ww-pay`、`ww-cart`、`ww-coupon`、`ww-search`、`ww-seckill`、`ww-lottery` |
+| ww-consumer | 消费者服务 | 消息消费与异步任务处理 |
+| ww-flink | 实时数据处理 | 实时分析、推荐/画像 |
+| ww-grpc | 高性能服务调用 | gRPC 接口定义与服务实现 |
+| ww-framework | 通用基础能力 | Web/Security/Redis/MQ/监控等 Starter |
+| ww-dependencies | 依赖版本管理 | 统一 BOM 与版本对齐 |
+| ww-third-server | 第三方集成 | 支付/短信/外部平台对接 |
+| ww-task | 任务调度 | 定时/延时/分布式任务 |
+
 ### ww-framework
 统一的基础能力与 Starter 集合，涵盖：
 - Redis / MQ / 搜索 / Web / 安全 / 监控 / WebSocket
