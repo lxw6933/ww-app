@@ -8,6 +8,7 @@ import org.springframework.data.mongodb.core.query.Query;
 
 import java.io.Serializable;
 import java.util.Date;
+import java.util.List;
 
 /**
  * @author ww
@@ -26,6 +27,10 @@ public class BaseDoc implements Serializable {
 
     public static Query buildIdQuery(String id) {
         return new Query().addCriteria(Criteria.where(Constant.MONGO_PRIMARY_KEY).is(id));
+    }
+
+    public static Query buildIdListQuery(List<String> idList) {
+        return new Query().addCriteria(Criteria.where(Constant.MONGO_PRIMARY_KEY).in(idList));
     }
 
 }
