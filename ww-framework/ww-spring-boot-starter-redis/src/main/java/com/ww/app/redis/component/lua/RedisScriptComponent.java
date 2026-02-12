@@ -1,4 +1,4 @@
-﻿package com.ww.app.redis.component.lua;
+package com.ww.app.redis.component.lua;
 
 import cn.hutool.core.collection.CollectionUtil;
 import cn.hutool.core.lang.Assert;

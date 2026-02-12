@@ -1,4 +1,4 @@
-﻿package com.ww.app.redis.component.stock;
+package com.ww.app.redis.component.stock;
 
 import cn.hutool.core.map.MapUtil;
 import cn.hutool.core.util.StrUtil;

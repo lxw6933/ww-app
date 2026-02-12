@@ -30,7 +30,13 @@
             <artifactId>ww-spring-boot-starter-rabbitmq</artifactId>
             <version>${revision}</version>
         </dependency>
-        <!-- mongodb -->
+        <!-- disruptor starter -->
+        <dependency>
+            <groupId>com.ww.app</groupId>
+            <artifactId>ww-spring-boot-starter-disruptor</artifactId>
+            <version>${revision}</version>
+        </dependency>
+        <!-- mongodb starter -->
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-data-mongodb</artifactId>
