@@ -18,6 +18,10 @@ export class LogView {
         this.state = state;
         this.maxLines = maxLines;
         this.highlightKeywords = [];
+        this.levelFilter = 'ALL';
+        this.searchKeyword = '';
+        this.searchMatches = [];
+        this.searchCursor = -1;
     }
 
     /**
@@ -54,7 +58,7 @@ export class LogView {
     togglePause() {
         this.state.paused = !this.state.paused;
         const pauseBtn = el('btnPause');
-        pauseBtn.textContent = this.state.paused ? '继续接收' : '暂停接收';
+        pauseBtn.textContent = this.state.paused ? '继续' : '暂停';
         if (!this.state.paused && this.state.buffer.length > 0) {
             this.appendLines(this.state.buffer.join(''));
             this.state.buffer = [];
@@ -67,7 +71,7 @@ export class LogView {
     resetPause() {
         this.state.paused = false;
         this.state.buffer = [];
-        el('btnPause').textContent = '暂停接收';
+        el('btnPause').textContent = '暂停';
     }
 
     /**
@@ -95,6 +99,8 @@ export class LogView {
         });
 
         this.trimLines(logEl);
+        this.refreshLevelVisibility();
+        this.refreshSearchMatches(true, false);
         this.state.lineCount = logEl.children.length;
         this.renderLineCount();
         if (checked('autoScroll')) {
@@ -114,6 +120,9 @@ export class LogView {
             ? '日志窗口已清空，等待新日志推送...'
             : '日志已清空。请点击“开始查看”重新监听。');
         this.state.buffer = [];
+        this.searchMatches = [];
+        this.searchCursor = -1;
+        this.updateSearchCounter();
         this.state.lineCount = 0;
         this.renderLineCount();
         this.updateBottomButton();
@@ -128,6 +137,8 @@ export class LogView {
         lineEl.classList.add('line-system');
         logEl.appendChild(lineEl);
         this.trimLines(logEl);
+        this.refreshLevelVisibility();
+        this.refreshSearchMatches(true, false);
         this.state.lineCount = logEl.children.length;
         this.renderLineCount();
         if (checked('autoScroll')) {
@@ -149,6 +160,8 @@ export class LogView {
                 lineEl.classList.add('hidden');
             }
         });
+        this.refreshSearchMatches(true, false);
+        this.renderLineCount();
     }
 
     /**
@@ -182,14 +195,18 @@ export class LogView {
      */
     applyLineClass(lineEl, line) {
         const isSystem = line.indexOf('[系统提示]') >= 0;
+        const level = this.detectLineLevel(line, isSystem);
+        lineEl.dataset.level = level;
         if (isSystem) {
             lineEl.classList.add('line-system', 'line-system-msg');
             if (!checked('showSystem')) {
                 lineEl.classList.add('hidden');
             }
         }
-        if (line.indexOf('ERROR') >= 0 || line.indexOf('Exception') >= 0 || line.indexOf('异常') >= 0) {
+        if (level === 'ERROR') {
             lineEl.classList.add('line-error');
+        } else if (level === 'WARN') {
+            lineEl.classList.add('line-warn');
         }
         if (line.indexOf('连接') >= 0 && line.indexOf('失败') < 0) {
             lineEl.classList.add('line-ok');
@@ -307,7 +324,15 @@ export class LogView {
      * 刷新行数显示。
      */
     renderLineCount() {
-        el('lineCount').textContent = `${this.state.lineCount} 行`;
+        const logEl = el('log');
+        const total = logEl ? logEl.children.length : this.state.lineCount;
+        const visible = logEl ? Array.from(logEl.children).filter(lineEl => this.isLineVisible(lineEl)).length : total;
+        this.state.lineCount = total;
+        if (visible === total) {
+            el('lineCount').textContent = `${visible} 行`;
+            return;
+        }
+        el('lineCount').textContent = `${visible}/${total} 行`;
     }
 
     /**
@@ -358,6 +383,7 @@ export class LogView {
             const rawText = lineEl.dataset && lineEl.dataset.rawText ? lineEl.dataset.rawText : '';
             this.renderLineText(textEl, rawText);
         });
+        this.refreshSearchMatches(true, false);
     }
 
     /**
@@ -446,6 +472,132 @@ export class LogView {
     }
 
     /**
+     * 设置窗口内搜索关键词。
+     *
+     * @param {string} keyword 搜索关键词
+     */
+    setSearchKeyword(keyword) {
+        this.searchKeyword = String(keyword || '').trim().toLowerCase();
+        this.refreshSearchMatches(false, true);
+    }
+
+    /**
+     * 设置日志级别过滤条件。
+     *
+     * @param {string} level 级别：ALL/INFO/WARN/ERROR
+     */
+    setLevelFilter(level) {
+        const normalized = normalizeLevel(level);
+        if (this.levelFilter === normalized) {
+            return;
+        }
+        this.levelFilter = normalized;
+        this.refreshLevelVisibility();
+        this.refreshSearchMatches(true, false);
+        this.renderLineCount();
+    }
+
+    /**
+     * 跳转到下一个/上一个搜索命中。
+     *
+     * @param {boolean} reverse true 表示向上，false 表示向下
+     */
+    jumpSearch(reverse) {
+        if (!this.searchMatches.length) {
+            return;
+        }
+        if (this.searchCursor < 0) {
+            this.searchCursor = reverse ? this.searchMatches.length - 1 : 0;
+        } else {
+            this.searchCursor = reverse ? this.searchCursor - 1 : this.searchCursor + 1;
+            if (this.searchCursor < 0) {
+                this.searchCursor = this.searchMatches.length - 1;
+            }
+            if (this.searchCursor >= this.searchMatches.length) {
+                this.searchCursor = 0;
+            }
+        }
+        this.paintSearchCurrent(true);
+    }
+
+    /**
+     * 刷新搜索命中集合与样式。
+     *
+     * @param {boolean} keepCursor 是否尽量保留当前命中游标
+     * @param {boolean} shouldScroll 是否滚动到当前命中
+     */
+    refreshSearchMatches(keepCursor, shouldScroll) {
+        const logEl = el('log');
+        if (!logEl) {
+            return;
+        }
+        const lines = Array.from(logEl.querySelectorAll('.log-line'));
+        const keyword = this.searchKeyword;
+        const previousMatch = keepCursor && this.searchCursor >= 0 ? this.searchMatches[this.searchCursor] : null;
+        this.searchMatches = [];
+
+        lines.forEach(lineEl => {
+            const raw = lineEl.dataset && lineEl.dataset.rawText ? lineEl.dataset.rawText : '';
+            const hit = this.isLineVisible(lineEl) && keyword && raw.toLowerCase().indexOf(keyword) >= 0;
+            lineEl.classList.toggle('line-search-hit', !!hit);
+            lineEl.classList.remove('line-search-current');
+            if (hit) {
+                this.searchMatches.push(lineEl);
+            }
+        });
+
+        if (!this.searchMatches.length) {
+            this.searchCursor = -1;
+            this.updateSearchCounter();
+            return;
+        }
+
+        if (previousMatch) {
+            const index = this.searchMatches.indexOf(previousMatch);
+            this.searchCursor = index >= 0 ? index : 0;
+        } else if (this.searchCursor >= this.searchMatches.length || this.searchCursor < 0) {
+            this.searchCursor = 0;
+        }
+        this.paintSearchCurrent(shouldScroll);
+    }
+
+    /**
+     * 渲染当前命中态并滚动到可视区。
+     */
+    paintSearchCurrent(shouldScroll) {
+        this.searchMatches.forEach(lineEl => lineEl.classList.remove('line-search-current'));
+        if (!this.searchMatches.length || this.searchCursor < 0 || this.searchCursor >= this.searchMatches.length) {
+            this.updateSearchCounter();
+            return;
+        }
+        const current = this.searchMatches[this.searchCursor];
+        current.classList.add('line-search-current');
+        if (shouldScroll) {
+            current.scrollIntoView({block: 'center', behavior: 'smooth'});
+        }
+        this.updateSearchCounter();
+    }
+
+    /**
+     * 更新搜索计数文本。
+     */
+    updateSearchCounter() {
+        const counterEl = el('logSearchCount');
+        if (!counterEl) {
+            return;
+        }
+        if (!this.searchKeyword) {
+            counterEl.textContent = '未搜索';
+            return;
+        }
+        if (!this.searchMatches.length) {
+            counterEl.textContent = '0 条';
+            return;
+        }
+        counterEl.textContent = `${this.searchCursor + 1}/${this.searchMatches.length}`;
+    }
+
+    /**
      * 判断当前是否处于连接中/监听中状态。
      *
      * @returns {boolean} true 表示连接活跃
@@ -454,4 +606,93 @@ export class LogView {
         return !!(this.state.ws
             && (this.state.ws.readyState === WebSocket.OPEN || this.state.ws.readyState === WebSocket.CONNECTING));
     }
+
+    /**
+     * 刷新级别过滤下的显示状态。
+     */
+    refreshLevelVisibility() {
+        const filter = this.levelFilter;
+        const rows = document.querySelectorAll('#log .log-line');
+        rows.forEach(row => {
+            const level = row.dataset && row.dataset.level ? row.dataset.level : 'INFO';
+            const visible = matchLevelFilter(filter, level);
+            row.classList.toggle('line-level-hidden', !visible);
+        });
+    }
+
+    /**
+     * 判断日志行当前是否可见（系统开关 + 级别过滤综合结果）。
+     *
+     * @param {HTMLElement} lineEl 日志行
+     * @returns {boolean} true 表示可见
+     */
+    isLineVisible(lineEl) {
+        if (!lineEl) {
+            return false;
+        }
+        if (lineEl.classList.contains('line-level-hidden')) {
+            return false;
+        }
+        return !lineEl.classList.contains('hidden');
+
+    }
+
+    /**
+     * 推断日志级别。
+     *
+     * @param {string} line 日志文本
+     * @param {boolean} isSystem 是否系统消息
+     * @returns {string} 级别值
+     */
+    detectLineLevel(line, isSystem) {
+        if (isSystem) {
+            return 'SYSTEM';
+        }
+        const text = String(line || '');
+        const lower = text.toLowerCase();
+        if (lower.indexOf('error') >= 0
+            || lower.indexOf('exception') >= 0
+            || text.indexOf('异常') >= 0
+            || text.indexOf('失败') >= 0) {
+            return 'ERROR';
+        }
+        if (lower.indexOf('warn') >= 0
+            || lower.indexOf('warning') >= 0
+            || text.indexOf('告警') >= 0
+            || text.indexOf('超时') >= 0) {
+            return 'WARN';
+        }
+        return 'INFO';
+    }
+}
+
+/**
+ * 规范化日志级别值。
+ *
+ * @param {string} level 级别值
+ * @returns {string} 规范化结果
+ */
+function normalizeLevel(level) {
+    const normalized = String(level || '').toUpperCase();
+    if (normalized === 'INFO' || normalized === 'WARN' || normalized === 'ERROR') {
+        return normalized;
+    }
+    return 'ALL';
+}
+
+/**
+ * 判断级别是否满足过滤器。
+ *
+ * @param {string} filter 过滤条件
+ * @param {string} level 行级别
+ * @returns {boolean} true 表示命中
+ */
+function matchLevelFilter(filter, level) {
+    if (filter === 'ALL') {
+        return true;
+    }
+    if (level === 'SYSTEM') {
+        return filter === 'INFO';
+    }
+    return level === filter;
 }

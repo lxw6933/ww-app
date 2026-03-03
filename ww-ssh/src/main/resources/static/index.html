@@ -23,7 +23,10 @@
         <aside class="metrics-panel">
             <div class="metrics-panel-head">
                 <h2>服务器指标</h2>
-                <button id="btnRefreshMetrics" type="button" class="secondary">刷新</button>
+                <div class="metrics-actions">
+                    <button id="btnToggleMetrics" type="button" class="secondary">收起面板</button>
+                    <button id="btnRefreshMetrics" type="button" class="secondary">刷新</button>
+                </div>
             </div>
             <p class="metrics-panel-tip">展示当前环境/服务的 CPU、内存和负载，异常实例优先显示。</p>
             <div id="metricsSummary" class="metrics-summary">等待选择环境后加载...</div>
@@ -41,13 +44,29 @@
                         <label for="service">服务</label>
                         <select id="service" class="control-lg"></select>
                     </div>
-                    <div class="group group-action">
-                        <button id="btnStart">开始查看</button>
-                        <button id="btnStop" disabled>结束查看</button>
-                        <button id="btnPause">暂停接收</button>
-                        <button id="btnBreak" class="secondary">插入分隔线</button>
-                        <button id="btnClear" class="danger">清空窗口</button>
+                    <div class="group group-viewmode">
+                        <label>界面模式</label>
+                        <div class="mode-switch">
+                            <button id="btnModeQuick" type="button" class="mode-btn active">快速模式</button>
+                            <button id="btnModeExpert" type="button" class="mode-btn secondary">专家模式</button>
+                        </div>
                     </div>
+                    <div class="group group-action">
+                        <button id="btnStart" title="开始查看">开始</button>
+                        <button id="btnStop" disabled title="结束查看">结束</button>
+                        <button id="btnPause" class="btn-expert" title="暂停接收">暂停</button>
+                        <button id="btnBreak" class="secondary btn-expert" title="插入分隔线">分隔线</button>
+                        <button id="btnClear" class="danger btn-expert" title="清空窗口">清空</button>
+                    </div>
+                </div>
+
+                <div id="statusWrap" class="status-bar">
+                    <span id="modeTip">当前：单服务查看</span>
+                    <span id="status">未连接</span>
+                    <span id="lineCount">0 行</span>
+                    <span id="lastLogTime">最后日志: --</span>
+                    <span id="reconnectIn">重连: --</span>
+                    <span id="wsLatency">延迟: --</span>
                 </div>
 
                 <details id="settingsFold" class="settings-fold">
@@ -74,8 +93,9 @@
                         <div class="toolbar-row row-filter">
                             <div class="group filter-group">
                                 <label>内容过滤（可选）</label>
-                                <p class="group-tip">支持连续添加“包含/排除”条件，日志会高亮命中关键词。</p>
+                                <p class="group-tip">支持连续添加“包含/排除”条件；支持拖拽调整顺序，日志会高亮命中关键词。</p>
                                 <div id="filterChain" class="filter-chain"></div>
+                                <div id="filterTags" class="filter-tags"></div>
                                 <button id="btnAddFilter" type="button" class="secondary">添加条件</button>
                             </div>
                         </div>
@@ -86,11 +106,6 @@
                                 <label><input id="autoReconnect" type="checkbox" checked> 自动重连</label>
                                 <label><input id="showSystem" type="checkbox" checked> 显示系统消息</label>
                             </div>
-                            <div id="statusWrap">
-                                <span id="modeTip">当前：单服务查看</span>
-                                <span id="lineCount">0 行</span>
-                                <span id="status">未连接</span>
-                            </div>
                         </div>
                     </div>
                 </details>
@@ -98,8 +113,26 @@
 
             <section class="log-shell">
                 <div class="log-header">
-                    <h2>实时日志窗口</h2>
-                    <p>新日志会追加在底部；关闭“自动跟随最新”后可手动滚动查看历史，每行支持一键复制。</p>
+                    <div class="log-header-title">
+                        <h2>实时日志窗口</h2>
+                        <p>新日志会追加在底部；关闭“自动跟随最新”后可手动滚动查看历史，每行支持一键复制。</p>
+                    </div>
+                    <div class="log-tools">
+                        <div class="log-level-box">
+                            <span class="log-level-label">日志级别</span>
+                            <button id="btnLevelAll" data-level="ALL" type="button" class="secondary level-btn active">全部</button>
+                            <button id="btnLevelInfo" data-level="INFO" type="button" class="secondary level-btn">INFO</button>
+                            <button id="btnLevelWarn" data-level="WARN" type="button" class="secondary level-btn">WARN</button>
+                            <button id="btnLevelError" data-level="ERROR" type="button" class="secondary level-btn">ERROR</button>
+                        </div>
+                        <div class="log-search-box">
+                            <label for="logSearch"></label><input id="logSearch" type="text" placeholder="在当前窗口搜索关键词（仅前端）">
+                            <span id="logSearchCount">未搜索</span>
+                            <button id="btnSearchPrev" type="button" class="secondary">上一条</button>
+                            <button id="btnSearchNext" type="button" class="secondary">下一条</button>
+                            <button id="btnSearchClear" type="button" class="secondary">清空</button>
+                        </div>
+                    </div>
                 </div>
                 <div id="log" data-empty-tip="尚未开始查看日志。请先选择环境和服务，然后点击“开始查看”。"></div>
             </section>

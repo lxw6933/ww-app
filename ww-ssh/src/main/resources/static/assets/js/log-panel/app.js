@@ -10,6 +10,9 @@ import {
 } from './utils.js';
 import {LogView} from './log-view.js';
 import {FilterChainManager} from './filter-chain.js';
+import {StatusBarController} from './status-bar.js';
+import {MetricsPanelController} from './metrics-panel.js';
+import {PreferenceStore} from './preferences.js';
 
 /**
  * 页面全局状态。
@@ -22,30 +25,67 @@ const state = createState();
 const logView = new LogView(state, MAX_LINES);
 
 /**
- * 过滤链管理器实例。
+ * 过滤链管理器。
  */
 const filterChainManager = new FilterChainManager();
 
 /**
- * 主机指标刷新间隔（毫秒）。
+ * 状态栏控制器。
  */
-const METRICS_REFRESH_MS = 15000;
+const statusBar = new StatusBarController();
+
+/**
+ * 本地偏好存储器。
+ */
+const preferenceStore = new PreferenceStore();
+
+/**
+ * 指标面板控制器。
+ */
+const metricsPanel = new MetricsPanelController({
+    getEnv: () => value('env'),
+    getService: () => value('service')
+});
+
+/**
+ * 日志级别按钮映射。
+ */
+const LOG_LEVEL_BUTTON_IDS = {
+    ALL: 'btnLevelAll',
+    INFO: 'btnLevelInfo',
+    WARN: 'btnLevelWarn',
+    ERROR: 'btnLevelError'
+};
 
 window.addEventListener('load', init);
 
 /**
- * 页面初始化。
+ * 页面初始化入口。
  */
 function init() {
     filterChainManager.init();
+    restoreLocalPreferences();
     bindEvents();
+    statusBar.start();
+    metricsPanel.init();
     updateControls();
-    initMetricsPanel();
     logView.setHighlightRules(filterChainManager.getRules());
     logView.setEmptyTip('尚未开始查看日志。请先选择环境和服务，然后点击“开始查看”。');
     updateSettingsSummary();
     logView.appendSystem('操作提示：先选择环境和服务，再点击“开始查看”。');
     loadServers();
+    window.addEventListener('beforeunload', beforeUnloadCleanup);
+    onFilterRuleChanged();
+}
+
+/**
+ * 页面卸载前清理资源。
+ */
+function beforeUnloadCleanup() {
+    closeSocket(true);
+    clearReconnectTimer();
+    statusBar.stop();
+    metricsPanel.stopPolling();
 }
 
 /**
@@ -54,32 +94,69 @@ function init() {
 function bindEvents() {
     filterChainManager.bindAddAction();
     filterChainManager.bindEnterAction(connect);
-    el('env').addEventListener('change', loadServices);
-    el('service').addEventListener('change', () => {
-        loadFiles();
-        refreshMetrics();
+
+    el('env').addEventListener('change', () => {
+        preferenceStore.set('env', value('env'));
+        loadServices();
     });
+    el('service').addEventListener('change', () => {
+        preferenceStore.set('service', value('service'));
+        loadFiles();
+        metricsPanel.refresh(false);
+    });
+
     el('fileSearch').addEventListener('input', renderFileOptions);
-    el('file').addEventListener('change', updateSettingsSummary);
-    el('btnRefreshMetrics').addEventListener('click', () => refreshMetrics(true));
+    el('file').addEventListener('change', () => {
+        preferenceStore.set('file', value('file'));
+        updateSettingsSummary();
+    });
+    el('lines').addEventListener('change', () => preferenceStore.set('lines', parseLines(value('lines'))));
+
+    el('autoScroll').addEventListener('change', () => {
+        preferenceStore.set('autoScroll', checked('autoScroll'));
+        if (checked('autoScroll')) {
+            logView.scrollToBottom();
+        }
+        logView.updateBottomButton();
+    });
+    el('autoReconnect').addEventListener('change', () => preferenceStore.set('autoReconnect', checked('autoReconnect')));
+    el('showSystem').addEventListener('change', () => {
+        preferenceStore.set('showSystem', checked('showSystem'));
+        logView.refreshSystemVisibility();
+    });
+
+    el('btnRefreshMetrics').addEventListener('click', () => metricsPanel.refresh(true));
+    el('btnToggleMetrics').addEventListener('click', toggleMetricsPanel);
+    el('btnModeQuick').addEventListener('click', () => setUiMode('quick'));
+    el('btnModeExpert').addEventListener('click', () => setUiMode('expert'));
     el('btnStart').addEventListener('click', connect);
     el('btnStop').addEventListener('click', stop);
     el('btnPause').addEventListener('click', () => logView.togglePause());
     el('btnBreak').addEventListener('click', () => logView.appendManualBreak());
     el('btnClear').addEventListener('click', () => logView.clearLogs());
     el('btnBottom').addEventListener('click', () => logView.scrollToBottom());
-    el('autoScroll').addEventListener('change', () => {
-        if (checked('autoScroll')) {
-            logView.scrollToBottom();
-        }
-        logView.updateBottomButton();
-    });
-    el('showSystem').addEventListener('change', () => logView.refreshSystemVisibility());
+
+    el('settingsFold').addEventListener('toggle', () => preferenceStore.set('settingsOpen', !!el('settingsFold').open));
+
     el('filterChain').addEventListener('input', onFilterRuleChanged);
     el('filterChain').addEventListener('change', onFilterRuleChanged);
-    el('filterChain').addEventListener('click', () => setTimeout(onFilterRuleChanged, 0));
-    el('btnAddFilter').addEventListener('click', () => setTimeout(onFilterRuleChanged, 0));
-    el('log').addEventListener('click', event => onLogAreaClick(event));
+    el('filterChain').addEventListener('click', () => window.setTimeout(onFilterRuleChanged, 0));
+    el('filterChain').addEventListener('chain:changed', onFilterRuleChanged);
+    el('btnAddFilter').addEventListener('click', () => window.setTimeout(onFilterRuleChanged, 0));
+
+    el('logSearch').addEventListener('input', () => {
+        preferenceStore.set('logSearch', value('logSearch'));
+        logView.setSearchKeyword(value('logSearch'));
+    });
+    el('btnSearchNext').addEventListener('click', () => logView.jumpSearch(false));
+    el('btnSearchPrev').addEventListener('click', () => logView.jumpSearch(true));
+    el('btnSearchClear').addEventListener('click', clearLogSearch);
+    Object.keys(LOG_LEVEL_BUTTON_IDS).forEach(level => {
+        const buttonId = LOG_LEVEL_BUTTON_IDS[level];
+        el(buttonId).addEventListener('click', () => setLogLevelFilter(level, true));
+    });
+
+    el('log').addEventListener('click', onLogAreaClick);
     el('log').addEventListener('scroll', () => logView.updateBottomButton());
     document.addEventListener('keydown', onShortcut);
 
@@ -93,7 +170,16 @@ function bindEvents() {
 }
 
 /**
- * 日志区域点击事件处理。
+ * 清空窗口搜索关键词。
+ */
+function clearLogSearch() {
+    el('logSearch').value = '';
+    preferenceStore.set('logSearch', '');
+    logView.setSearchKeyword('');
+}
+
+/**
+ * 日志区域点击事件（复制按钮）。
  *
  * @param {MouseEvent} event 鼠标事件
  */
@@ -108,6 +194,84 @@ function onLogAreaClick(event) {
 }
 
 /**
+ * 从本地恢复可记忆的偏好项。
+ */
+function restoreLocalPreferences() {
+    el('lines').value = String(preferenceStore.getNumber('lines', 200));
+    el('autoScroll').checked = preferenceStore.getBoolean('autoScroll', true);
+    el('autoReconnect').checked = preferenceStore.getBoolean('autoReconnect', true);
+    el('showSystem').checked = preferenceStore.getBoolean('showSystem', true);
+    el('settingsFold').open = preferenceStore.getBoolean('settingsOpen', false);
+    el('logSearch').value = preferenceStore.getString('logSearch', '');
+    applySavedUiMode();
+    applySavedMetricsCollapse();
+    applySavedFilterRules();
+    applySavedLogLevelFilter();
+    logView.setSearchKeyword(value('logSearch'));
+}
+
+/**
+ * 应用保存的界面模式。
+ */
+function applySavedUiMode() {
+    const uiMode = preferenceStore.getString('uiMode', 'quick');
+    setUiMode(uiMode === 'expert' ? 'expert' : 'quick');
+}
+
+/**
+ * 应用保存的指标面板收起状态。
+ */
+function applySavedMetricsCollapse() {
+    const collapsed = preferenceStore.getBoolean('metricsCollapsed', false);
+    document.body.classList.toggle('metrics-collapsed', collapsed);
+    renderMetricsToggleButton();
+}
+
+/**
+ * 应用保存的过滤规则。
+ */
+function applySavedFilterRules() {
+    const raw = preferenceStore.getString('filterRules', '');
+    if (!raw) {
+        return;
+    }
+    try {
+        const parsed = JSON.parse(raw);
+        if (Array.isArray(parsed)) {
+            filterChainManager.setRules(parsed);
+        }
+    } catch (error) {
+        // 无效缓存规则不影响页面正常使用
+    }
+}
+
+/**
+ * 应用保存的日志级别过滤条件。
+ */
+function applySavedLogLevelFilter() {
+    const level = preferenceStore.getString('logLevelFilter', 'ALL');
+    setLogLevelFilter(level, false);
+}
+
+/**
+ * 切换指标面板展开/收起。
+ */
+function toggleMetricsPanel() {
+    const collapsed = !document.body.classList.contains('metrics-collapsed');
+    document.body.classList.toggle('metrics-collapsed', collapsed);
+    preferenceStore.set('metricsCollapsed', collapsed);
+    renderMetricsToggleButton();
+}
+
+/**
+ * 渲染指标面板切换按钮文案。
+ */
+function renderMetricsToggleButton() {
+    const collapsed = document.body.classList.contains('metrics-collapsed');
+    el('btnToggleMetrics').textContent = collapsed ? '展开面板' : '收起面板';
+}
+
+/**
  * 加载环境列表。
  */
 function loadServers() {
@@ -117,12 +281,8 @@ function loadServers() {
             state.config = data || {};
             const envEl = el('env');
             envEl.innerHTML = '';
-            Object.keys(state.config).forEach(env => {
-                envEl.add(new Option(env, env));
-            });
-            if (envEl.options.length > 0) {
-                envEl.selectedIndex = 0;
-            }
+            Object.keys(state.config).forEach(env => envEl.add(new Option(env, env)));
+            applySavedSelectValue(envEl, preferenceStore.getString('env', ''));
             loadServices();
         })
         .catch(() => logView.setStatus('配置加载失败', 'var(--error)'));
@@ -137,15 +297,13 @@ function loadServices() {
     serviceEl.innerHTML = '';
     collectServices(state.config, env).forEach(service => serviceEl.add(new Option(service, service)));
     serviceEl.add(new Option('全部服务', ALL));
-    if (serviceEl.options.length > 0) {
-        serviceEl.selectedIndex = 0;
-    }
+    applySavedSelectValue(serviceEl, preferenceStore.getString('service', ''));
     loadFiles();
-    refreshMetrics();
+    metricsPanel.refresh(false);
 }
 
 /**
- * 加载日志文件列表。
+ * 加载文件列表。
  */
 function loadFiles() {
     const env = value('env');
@@ -153,12 +311,7 @@ function loadFiles() {
     el('fileSearch').value = '';
     state.fileOptions = [];
 
-    if (!env || !service) {
-        renderFileOptions();
-        updateFileMode();
-        return;
-    }
-    if (isAggregateSelected(env, service)) {
+    if (!env || !service || isAggregateSelected(env, service)) {
         renderFileOptions();
         updateFileMode();
         return;
@@ -167,13 +320,7 @@ function loadFiles() {
     fetch(`/api/config/files?env=${encodeURIComponent(env)}&service=${encodeURIComponent(service)}`)
         .then(response => response.ok ? response.json() : [])
         .then(list => {
-            if (!Array.isArray(list)) {
-                state.fileOptions = [];
-                renderFileOptions();
-                updateFileMode();
-                return;
-            }
-            state.fileOptions = sortFileOptions(list);
+            state.fileOptions = Array.isArray(list) ? sortFileOptions(list) : [];
             renderFileOptions();
             updateFileMode();
         })
@@ -186,15 +333,17 @@ function loadFiles() {
 }
 
 /**
- * 渲染日志文件下拉框。
+ * 渲染文件下拉列表（支持模糊筛选）。
  */
 function renderFileOptions() {
     const env = value('env');
     const service = value('service');
     const aggregate = isAggregateSelected(env, service);
     const fileEl = el('file');
-    const currentValue = fileEl.value;
     const keyword = value('fileSearch').trim().toLowerCase();
+    const savedFile = preferenceStore.getString('file', '');
+    const currentValue = fileEl.value;
+
     fileEl.innerHTML = '';
     fileEl.add(new Option('使用后端默认', ''));
 
@@ -208,14 +357,14 @@ function renderFileOptions() {
     const filtered = state.fileOptions.filter(path => matchFileKeyword(path, keyword));
     filtered.forEach(path => fileEl.add(new Option(fileName(path), path)));
 
-    if (currentValue && filtered.indexOf(currentValue) >= 0) {
+    if (savedFile && filtered.indexOf(savedFile) >= 0) {
+        fileEl.value = savedFile;
+    } else if (currentValue && filtered.indexOf(currentValue) >= 0) {
         fileEl.value = currentValue;
-        updateSettingsSummary();
-        return;
-    }
-    if (fileEl.options.length > 1) {
+    } else if (fileEl.options.length > 1) {
         fileEl.selectedIndex = 1;
     }
+    preferenceStore.set('file', fileEl.value || '');
     updateSettingsSummary();
 }
 
@@ -241,6 +390,8 @@ function connect() {
         filterRules: filterRules
     };
 
+    statusBar.resetLastLogTime();
+    statusBar.setReconnectSeconds(null);
     logView.setHighlightRules(filterRules);
     logView.setEmptyTip('连接中，等待日志数据...');
     const settingsFoldEl = el('settingsFold');
@@ -273,6 +424,7 @@ function connect() {
         if (token !== state.wsToken || state.ws !== ws) {
             return;
         }
+        statusBar.markLogReceived();
         logView.onMessage(event.data);
     };
 
@@ -283,6 +435,7 @@ function connect() {
         state.ws = null;
         logView.setStatus('已断开', '#999');
         logView.setEmptyTip('连接已断开。可开启自动重连或手动点击“开始查看”。');
+        statusBar.setReconnectSeconds(null);
         updateControls();
         if (!state.manualStop && checked('autoReconnect')) {
             scheduleReconnect();
@@ -306,19 +459,22 @@ function stop() {
     closeSocket(true);
     logView.resetPause();
     logView.setEmptyTip('已停止监听。点击“开始查看”可重新连接。');
+    statusBar.setReconnectSeconds(null);
     logView.setStatus('已停止', '#999');
     updateControls();
 }
 
 /**
- * 安排自动重连倒计时。
+ * 自动重连调度。
  */
 function scheduleReconnect() {
     clearReconnectTimer();
     let seconds = 3;
+    statusBar.setReconnectSeconds(seconds);
     logView.setStatus(`连接断开，${seconds} 秒后重连`, 'var(--warn)');
-    state.reconnectTimer = setInterval(() => {
+    state.reconnectTimer = window.setInterval(() => {
         seconds -= 1;
+        statusBar.setReconnectSeconds(seconds > 0 ? seconds : null);
         if (seconds <= 0) {
             clearReconnectTimer();
             connect();
@@ -333,15 +489,16 @@ function scheduleReconnect() {
  */
 function clearReconnectTimer() {
     if (state.reconnectTimer) {
-        clearInterval(state.reconnectTimer);
+        window.clearInterval(state.reconnectTimer);
         state.reconnectTimer = null;
     }
+    statusBar.setReconnectSeconds(null);
 }
 
 /**
  * 关闭当前 WebSocket。
  *
- * @param {boolean} manualStop 是否为人工停止
+ * @param {boolean} manualStop 是否人工停止
  */
 function closeSocket(manualStop) {
     state.manualStop = manualStop;
@@ -351,6 +508,24 @@ function closeSocket(manualStop) {
         ws.close();
     }
     updateControls();
+}
+
+/**
+ * 设置页面模式（快速/专家）。
+ *
+ * @param {string} mode 模式值
+ */
+function setUiMode(mode) {
+    const normalized = mode === 'expert' ? 'expert' : 'quick';
+    document.body.setAttribute('data-ui-mode', normalized);
+    el('btnModeQuick').classList.toggle('active', normalized === 'quick');
+    el('btnModeQuick').classList.toggle('secondary', normalized !== 'quick');
+    el('btnModeExpert').classList.toggle('active', normalized === 'expert');
+    el('btnModeExpert').classList.toggle('secondary', normalized !== 'expert');
+    if (normalized === 'expert') {
+        el('settingsFold').open = true;
+    }
+    preferenceStore.set('uiMode', normalized);
 }
 
 /**
@@ -376,16 +551,16 @@ function onShortcut(event) {
 }
 
 /**
- * 判断 WebSocket 是否处于活跃状态。
+ * 判断连接是否活跃。
  *
- * @returns {boolean} true 表示连接中/已连接
+ * @returns {boolean} 是否活跃
  */
 function isSocketActive() {
     return !!(state.ws && (state.ws.readyState === WebSocket.OPEN || state.ws.readyState === WebSocket.CONNECTING));
 }
 
 /**
- * 刷新页面可操作状态。
+ * 刷新控件可用状态。
  */
 function updateControls() {
     const locked = isSocketActive();
@@ -399,7 +574,7 @@ function updateControls() {
 }
 
 /**
- * 刷新文件选择区状态。
+ * 刷新文件区域模式与文案。
  */
 function updateFileMode() {
     const env = value('env');
@@ -409,544 +584,55 @@ function updateFileMode() {
     const fileSearchEl = el('fileSearch');
     el('file').disabled = locked || aggregate;
     fileSearchEl.disabled = locked || aggregate;
-    el('modeTip').textContent = aggregate ? '当前：全部服务查看' : '当前：单服务查看';
+    statusBar.setModeTip(aggregate);
     fileSearchEl.placeholder = aggregate ? '全部服务查看时不支持文件名筛选' : '输入文件名关键字进行筛选';
     updateSettingsSummary();
 }
 
 /**
- * 过滤规则变化时同步高亮和设置摘要。
+ * 设置日志级别过滤并刷新按钮样式。
+ *
+ * @param {string} level 级别值
+ * @param {boolean} save 是否持久化
+ */
+function setLogLevelFilter(level, save) {
+    const normalized = normalizeLogLevel(level);
+    logView.setLevelFilter(normalized);
+    Object.keys(LOG_LEVEL_BUTTON_IDS).forEach(key => {
+        const button = el(LOG_LEVEL_BUTTON_IDS[key]);
+        button.classList.toggle('active', key === normalized);
+    });
+    if (save) {
+        preferenceStore.set('logLevelFilter', normalized);
+    }
+}
+
+/**
+ * 过滤规则变更处理。
  */
 function onFilterRuleChanged() {
     const rules = filterChainManager.getRules();
     logView.setHighlightRules(rules);
+    preferenceStore.set('filterRules', JSON.stringify(rules));
     updateSettingsSummary();
 }
 
 /**
- * 初始化主机指标面板。
- */
-function initMetricsPanel() {
-    renderMetricEmpty('请选择环境与服务后查看服务器指标');
-    startMetricsPolling();
-    window.addEventListener('beforeunload', stopMetricsPolling);
-}
-
-/**
- * 启动指标自动刷新任务。
- */
-function startMetricsPolling() {
-    stopMetricsPolling();
-    state.metricsTimer = setInterval(() => refreshMetrics(false), METRICS_REFRESH_MS);
-}
-
-/**
- * 停止指标自动刷新任务。
- */
-function stopMetricsPolling() {
-    if (state.metricsTimer) {
-        clearInterval(state.metricsTimer);
-        state.metricsTimer = null;
-    }
-}
-
-/**
- * 刷新左侧主机指标。
+ * 规范化日志级别值。
  *
- * @param {boolean} manual 是否为手工刷新
+ * @param {string} level 原级别
+ * @returns {string} 规范化级别
  */
-function refreshMetrics(manual) {
-    const env = value('env');
-    const service = value('service');
-    if (!env || !service) {
-        renderMetricEmpty('请选择环境与服务后查看服务器指标');
-        return;
+function normalizeLogLevel(level) {
+    const normalized = String(level || '').toUpperCase();
+    if (normalized === 'INFO' || normalized === 'WARN' || normalized === 'ERROR') {
+        return normalized;
     }
-
-    if (manual) {
-        renderMetricsSummary({
-            statusText: '刷新中',
-            online: null,
-            total: null,
-            errorCount: null,
-            avgCpu: null,
-            avgMem: null,
-            timeText: formatTime(Date.now())
-        });
-    }
-
-    const token = ++state.metricsToken;
-    fetch(`/api/metrics/hosts?env=${encodeURIComponent(env)}&service=${encodeURIComponent(service)}`)
-        .then(response => {
-            if (!response.ok) {
-                throw new Error(`状态码 ${response.status}`);
-            }
-            return response.json();
-        })
-        .then(list => {
-            if (token !== state.metricsToken) {
-                return;
-            }
-            renderMetrics(Array.isArray(list) ? list : []);
-        })
-        .catch(error => {
-            if (token !== state.metricsToken) {
-                return;
-            }
-            renderMetricError(`指标加载失败：${error.message || '网络异常'}`);
-        });
+    return 'ALL';
 }
 
 /**
- * 渲染指标空态。
- *
- * @param {string} text 提示文本
- */
-function renderMetricEmpty(text) {
-    renderMetricsSummary({
-        statusText: '待选择',
-        online: null,
-        total: null,
-        errorCount: null,
-        avgCpu: null,
-        avgMem: null,
-        timeText: '--'
-    });
-    const listEl = el('metricsList');
-    listEl.innerHTML = '';
-    const emptyEl = document.createElement('div');
-    emptyEl.className = 'metrics-empty';
-    emptyEl.textContent = text;
-    listEl.appendChild(emptyEl);
-}
-
-/**
- * 渲染指标错误态。
- *
- * @param {string} text 错误信息
- */
-function renderMetricError(text) {
-    renderMetricsSummary({
-        statusText: '获取失败',
-        online: null,
-        total: null,
-        errorCount: null,
-        avgCpu: null,
-        avgMem: null,
-        timeText: formatTime(Date.now())
-    });
-    const listEl = el('metricsList');
-    listEl.innerHTML = '';
-    const errorEl = document.createElement('div');
-    errorEl.className = 'metrics-empty';
-    errorEl.textContent = text;
-    listEl.appendChild(errorEl);
-}
-
-/**
- * 渲染主机指标卡片列表。
- *
- * @param {Array<Object>} list 指标列表
- */
-function renderMetrics(list) {
-    const listEl = el('metricsList');
-    listEl.innerHTML = '';
-    if (!list || list.length === 0) {
-        renderMetricEmpty('未查询到实例指标，请检查服务配置');
-        return;
-    }
-
-    const total = list.length;
-    const okList = list.filter(item => item && item.status === 'ok');
-    const errorCount = total - okList.length;
-    const avgCpu = average(okList.map(item => item.cpuUsagePercent));
-    const avgMem = average(okList.map(item => item.memoryUsagePercent));
-    renderMetricsSummary({
-        statusText: '正常',
-        online: okList.length,
-        total: total,
-        errorCount: errorCount,
-        avgCpu: avgCpu,
-        avgMem: avgMem,
-        timeText: formatTime(Date.now())
-    });
-
-    list.forEach(item => {
-        const cardEl = document.createElement('div');
-        const ok = item && item.status === 'ok';
-        cardEl.className = ok ? 'metric-card' : 'metric-card error';
-
-        const headEl = document.createElement('div');
-        headEl.className = 'metric-head';
-
-        const titleEl = document.createElement('p');
-        titleEl.className = 'metric-title';
-        const serviceText = item && item.service ? item.service : '未知服务';
-        const hostText = item && item.host ? item.host : '未知主机';
-        const titleText = `${serviceText} @ ${hostText}`;
-        titleEl.textContent = titleText;
-        titleEl.title = titleText;
-
-        const tagEl = document.createElement('span');
-        tagEl.className = ok ? 'metric-tag' : 'metric-tag error';
-        tagEl.textContent = ok ? '正常' : '异常';
-
-        headEl.appendChild(titleEl);
-        headEl.appendChild(tagEl);
-        cardEl.appendChild(headEl);
-
-        const kpiGridEl = document.createElement('div');
-        kpiGridEl.className = 'metric-kpi-grid';
-        kpiGridEl.appendChild(createUsageVisual(
-            'CPU 使用率',
-            item && item.cpuUsagePercent,
-            formatPercent(item && item.cpuUsagePercent)
-        ));
-        kpiGridEl.appendChild(createUsageVisual(
-            '内存使用率',
-            item && item.memoryUsagePercent,
-            formatPercent(item && item.memoryUsagePercent),
-            formatMemoryRange(item)
-        ));
-        cardEl.appendChild(kpiGridEl);
-        cardEl.appendChild(createLoadBlock(item));
-
-        if (!ok) {
-            const messageEl = document.createElement('p');
-            messageEl.className = 'metric-message';
-            messageEl.textContent = item && item.message ? item.message : '采集失败';
-            cardEl.appendChild(messageEl);
-        }
-        listEl.appendChild(cardEl);
-    });
-}
-
-/**
- * 创建使用率可视化块（大数字 + 进度条）。
- *
- * @param {string} label 指标名称
- * @param {number} percent 百分比值
- * @param {string} valueText 展示值
- * @param {string} extraText 附加信息
- * @returns {HTMLDivElement} 可视化节点
- */
-function createUsageVisual(label, percent, valueText, extraText) {
-    const wrapperEl = document.createElement('div');
-    wrapperEl.className = 'metric-kpi';
-
-    const headEl = document.createElement('div');
-    headEl.className = 'metric-kpi-head';
-
-    const labelEl = document.createElement('span');
-    labelEl.className = 'metric-kpi-label';
-    labelEl.textContent = label;
-
-    const level = levelClass(percent);
-    const valueEl = document.createElement('span');
-    valueEl.className = level ? `metric-kpi-value ${level}` : 'metric-kpi-value';
-    valueEl.textContent = valueText;
-
-    headEl.appendChild(labelEl);
-    headEl.appendChild(valueEl);
-    wrapperEl.appendChild(headEl);
-
-    const barEl = document.createElement('div');
-    barEl.className = 'metric-progress';
-    const fillEl = document.createElement('span');
-    fillEl.className = level ? `metric-progress-fill ${level}` : 'metric-progress-fill';
-    fillEl.style.width = `${clampPercent(percent)}%`;
-    barEl.appendChild(fillEl);
-    wrapperEl.appendChild(barEl);
-
-    const metaEl = document.createElement('div');
-    metaEl.className = 'metric-kpi-meta';
-    if (extraText) {
-        const subEl = document.createElement('p');
-        subEl.className = 'metric-kpi-sub';
-        subEl.textContent = extraText;
-        metaEl.appendChild(subEl);
-    }
-    const levelEl = document.createElement('span');
-    levelEl.className = level ? `metric-level-tip ${level}` : 'metric-level-tip';
-    levelEl.textContent = riskText(level);
-    metaEl.appendChild(levelEl);
-    wrapperEl.appendChild(metaEl);
-    return wrapperEl;
-}
-
-/**
- * 创建负载展示块。
- *
- * @param {Object} item 指标对象
- * @returns {HTMLDivElement} 负载节点
- */
-function createLoadBlock(item) {
-    const loadBlockEl = document.createElement('div');
-    loadBlockEl.className = 'metric-load-block';
-
-    const loadLevel = loadLevelClass(item && item.load1m);
-    const loadTitleEl = document.createElement('span');
-    loadTitleEl.className = 'metric-load-label';
-    loadTitleEl.textContent = '系统负载(1/5/15m)';
-
-    const loadValueEl = document.createElement('span');
-    loadValueEl.className = loadLevel ? `metric-load-value ${loadLevel}` : 'metric-load-value';
-    loadValueEl.textContent = formatLoad(item);
-
-    const timeEl = document.createElement('span');
-    timeEl.className = 'metric-load-time';
-    timeEl.textContent = `采集时间 ${formatTime(item && item.updatedAt ? item.updatedAt : Date.now())}`;
-
-    loadBlockEl.appendChild(loadTitleEl);
-    loadBlockEl.appendChild(loadValueEl);
-    loadBlockEl.appendChild(timeEl);
-    return loadBlockEl;
-}
-
-/**
- * 格式化百分比。
- *
- * @param {number} value 数值
- * @returns {string} 格式化文本
- */
-function formatPercent(value) {
-    if (value === null || value === undefined || Number.isNaN(Number(value))) {
-        return '--';
-    }
-    return `${Number(value).toFixed(1)}%`;
-}
-
-/**
- * 格式化内存展示文本。
- *
- * @param {Object} item 指标对象
- * @returns {string} 文本
- */
-function formatMemoryRange(item) {
-    if (!item) {
-        return '内存 --/--';
-    }
-    const used = formatStorage(item.memoryUsedMb);
-    const total = formatStorage(item.memoryTotalMb);
-    return `内存 ${used}/${total}`;
-}
-
-/**
- * 按容量自动格式化为 MB/GB。
- *
- * @param {number} valueMb 容量（MB）
- * @returns {string} 格式化文本
- */
-function formatStorage(valueMb) {
-    if (valueMb === null || valueMb === undefined || Number.isNaN(Number(valueMb))) {
-        return '--';
-    }
-    const mb = Number(valueMb);
-    if (mb < 1024) {
-        return `${Math.round(mb)}MB`;
-    }
-    const gb = mb / 1024;
-    const precision = gb >= 10 ? 0 : 1;
-    return `${gb.toFixed(precision)}GB`;
-}
-
-/**
- * 格式化负载文本。
- *
- * @param {Object} item 指标对象
- * @returns {string} 负载展示文本
- */
-function formatLoad(item) {
-    if (!item) {
-        return '--';
-    }
-    const load1m = numberOrDash(item.load1m);
-    const load5m = numberOrDash(item.load5m);
-    const load15m = numberOrDash(item.load15m);
-    return `${load1m}/${load5m}/${load15m}`;
-}
-
-/**
- * 计算均值。
- *
- * @param {Array<number>} list 数值列表
- * @returns {number|null} 平均值
- */
-function average(list) {
-    const values = (list || []).filter(value => value !== null && value !== undefined && !Number.isNaN(Number(value)));
-    if (values.length === 0) {
-        return null;
-    }
-    const total = values.reduce((sum, current) => sum + Number(current), 0);
-    return total / values.length;
-}
-
-/**
- * 将数字格式化为固定小数，空值返回 --。
- *
- * @param {number} value 数值
- * @returns {string} 文本
- */
-function numberOrDash(value) {
-    if (value === null || value === undefined || Number.isNaN(Number(value))) {
-        return '--';
-    }
-    return Number(value).toFixed(2);
-}
-
-/**
- * 判断百分比指标值级别。
- *
- * @param {number} value 指标数值
- * @returns {string} 级别样式
- */
-function levelClass(value) {
-    if (value === null || value === undefined || Number.isNaN(Number(value))) {
-        return '';
-    }
-    const number = Number(value);
-    if (number >= 85) {
-        return 'error';
-    }
-    if (number >= 70) {
-        return 'warn';
-    }
-    return '';
-}
-
-/**
- * 判断负载级别。
- *
- * @param {number} value 1 分钟负载
- * @returns {string} 级别样式
- */
-function loadLevelClass(value) {
-    if (value === null || value === undefined || Number.isNaN(Number(value))) {
-        return '';
-    }
-    const number = Number(value);
-    if (number >= 4) {
-        return 'error';
-    }
-    if (number >= 2) {
-        return 'warn';
-    }
-    return '';
-}
-
-/**
- * 百分比收敛到 0~100，用于图形宽度与圆环展示。
- *
- * @param {number} value 原始百分比
- * @returns {number} 收敛后的百分比
- */
-function clampPercent(value) {
-    if (value === null || value === undefined || Number.isNaN(Number(value))) {
-        return 0;
-    }
-    const normalized = Number(value);
-    if (normalized < 0) {
-        return 0;
-    }
-    if (normalized > 100) {
-        return 100;
-    }
-    return normalized;
-}
-
-/**
- * 按指标级别返回风险文案。
- *
- * @param {string} level 风险级别
- * @returns {string} 风险提示
- */
-function riskText(level) {
-    if (level === 'error') {
-        return '风险: 高';
-    }
-    if (level === 'warn') {
-        return '风险: 中';
-    }
-    return '风险: 低';
-}
-
-/**
- * 格式化时间（HH:mm:ss）。
- *
- * @param {number} timestamp 毫秒时间戳
- * @returns {string} 时间字符串
- */
-function formatTime(timestamp) {
-    const date = new Date(timestamp);
-    const hh = String(date.getHours()).padStart(2, '0');
-    const mm = String(date.getMinutes()).padStart(2, '0');
-    const ss = String(date.getSeconds()).padStart(2, '0');
-    return `${hh}:${mm}:${ss}`;
-}
-
-/**
- * 渲染左侧指标摘要（结构化卡片）。
- *
- * @param {Object} options 摘要参数
- * @param {string} options.statusText 状态文本
- * @param {number|null} options.online 在线台数
- * @param {number|null} options.total 总台数
- * @param {number|null} options.errorCount 异常台数
- * @param {number|null} options.avgCpu 平均 CPU
- * @param {number|null} options.avgMem 平均内存
- * @param {string} options.timeText 更新时间文本
- */
-function renderMetricsSummary(options) {
-    const summaryEl = el('metricsSummary');
-    if (!summaryEl) {
-        return;
-    }
-    const data = options || {};
-    summaryEl.innerHTML = '';
-    summaryEl.appendChild(createSummaryItem('状态', data.statusText || '--'));
-    summaryEl.appendChild(createSummaryItem(
-        '在线实例',
-        (data.online === null || data.online === undefined || data.total === null || data.total === undefined)
-            ? '--'
-            : `${data.online}/${data.total} 台`,
-        'strong'
-    ));
-    summaryEl.appendChild(createSummaryItem(
-        '异常实例',
-        (data.errorCount === null || data.errorCount === undefined) ? '--' : `${data.errorCount} 台`
-    ));
-    summaryEl.appendChild(createSummaryItem('平均CPU', formatPercent(data.avgCpu)));
-    summaryEl.appendChild(createSummaryItem('平均内存', formatPercent(data.avgMem)));
-    summaryEl.appendChild(createSummaryItem('更新时间', data.timeText || '--'));
-}
-
-/**
- * 创建摘要项节点。
- *
- * @param {string} label 标签
- * @param {string} value 数值
- * @param {string} valueLevel 数值样式等级
- * @returns {HTMLDivElement} 节点
- */
-function createSummaryItem(label, value, valueLevel) {
-    const itemEl = document.createElement('div');
-    itemEl.className = 'summary-item';
-
-    const labelEl = document.createElement('span');
-    labelEl.className = 'summary-label';
-    labelEl.textContent = label;
-
-    const valueEl = document.createElement('span');
-    valueEl.className = valueLevel ? `summary-value ${valueLevel}` : 'summary-value';
-    valueEl.textContent = value;
-
-    itemEl.appendChild(labelEl);
-    itemEl.appendChild(valueEl);
-    return itemEl;
-}
-
-/**
- * 更新“更多设置”摘要文案。
+ * 更新“更多设置”摘要。
  */
 function updateSettingsSummary() {
     const summaryEl = el('settingsSummary');
@@ -964,11 +650,31 @@ function updateSettingsSummary() {
 }
 
 /**
- * 文本截断，避免摘要过长导致布局撑开。
+ * 下拉框优先应用缓存值，否则选中第一个。
  *
- * @param {string} text 原文本
+ * @param {HTMLSelectElement} selectEl 下拉框
+ * @param {string} savedValue 缓存值
+ */
+function applySavedSelectValue(selectEl, savedValue) {
+    if (!selectEl || !selectEl.options || selectEl.options.length === 0) {
+        return;
+    }
+    if (savedValue) {
+        const hit = Array.from(selectEl.options).some(option => option.value === savedValue);
+        if (hit) {
+            selectEl.value = savedValue;
+            return;
+        }
+    }
+    selectEl.selectedIndex = 0;
+}
+
+/**
+ * 长文本摘要截断。
+ *
+ * @param {string} text 原始文本
  * @param {number} maxLength 最大长度
- * @returns {string} 截断后的文本
+ * @returns {string} 截断文本
  */
 function abbreviateText(text, maxLength) {
     const normalized = String(text || '');
