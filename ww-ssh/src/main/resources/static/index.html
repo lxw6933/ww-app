@@ -6,55 +6,107 @@
     <link rel="stylesheet" href="/assets/css/log-panel.css">
 </head>
 <body>
-<div class="toolbar">
-    <div class="group">
-        <label for="env">环境</label>
-        <select id="env"></select>
-    </div>
-    <div class="group">
-        <label for="service">服务</label>
-        <select id="service"></select>
-    </div>
-    <div class="group">
-        <label for="file">日志文件</label>
-        <select id="file"></select>
-    </div>
-    <div class="group">
-        <label for="fileSearch">文件搜索</label>
-        <input id="fileSearch" type="text" style="width: 180px;" placeholder="模糊匹配文件名">
-    </div>
-    <div class="group">
-        <label for="lines">回看行数</label>
-        <input id="lines" type="number" min="10" max="5000" value="200" style="width: 90px;">
-    </div>
-    <div class="group">
-        <label for="include">包含</label>
-        <input id="include" type="text" placeholder="ERROR" style="width: 120px;">
-    </div>
-    <div class="group">
-        <label for="exclude">排除</label>
-        <input id="exclude" type="text" placeholder="DEBUG" style="width: 120px;">
-    </div>
-    <div class="group">
-        <button id="btnStart">开始</button>
-        <button id="btnStop" disabled>停止</button>
-        <button id="btnPause">暂停</button>
-        <button id="btnBreak" class="secondary">手动换行</button>
-        <button id="btnClear" class="danger">清屏</button>
-    </div>
-    <div class="group">
-        <label><input id="autoScroll" type="checkbox" checked> 自动滚动</label>
-        <label><input id="autoReconnect" type="checkbox" checked> 自动重连</label>
-        <label><input id="showSystem" type="checkbox" checked> 系统消息</label>
-    </div>
-    <div id="statusWrap">
-        <span id="modeTip">单服务模式</span>
-        <span id="lineCount">0 行</span>
-        <span id="status">未连接</span>
+<div class="page-shell">
+    <header class="panel-header">
+        <div class="title-wrap">
+            <h1 class="panel-title">日志查看中心</h1>
+            <p class="panel-subtitle">面向运维、测试、客服的可视化日志面板，不需要命令行</p>
+        </div>
+        <ol class="quick-steps">
+            <li>1. 选择环境和服务</li>
+            <li>2. 选择文件并设置搜索</li>
+            <li>3. 点击“开始查看”</li>
+        </ol>
+    </header>
+
+    <div class="workspace">
+        <aside class="metrics-panel">
+            <div class="metrics-panel-head">
+                <h2>服务器指标</h2>
+                <button id="btnRefreshMetrics" type="button" class="secondary">刷新</button>
+            </div>
+            <p class="metrics-panel-tip">展示当前环境/服务的 CPU、内存和负载，异常实例优先显示。</p>
+            <div id="metricsSummary" class="metrics-summary">等待选择环境后加载...</div>
+            <div id="metricsList" class="metrics-list"></div>
+        </aside>
+
+        <main class="main-panel">
+            <section class="toolbar">
+                <div class="toolbar-row row-primary">
+                    <div class="group group-env">
+                        <label for="env">环境（必选）</label>
+                        <select id="env" class="control-lg"></select>
+                    </div>
+                    <div class="group group-service">
+                        <label for="service">服务</label>
+                        <select id="service" class="control-lg"></select>
+                    </div>
+                    <div class="group group-action">
+                        <button id="btnStart">开始查看</button>
+                        <button id="btnStop" disabled>结束查看</button>
+                        <button id="btnPause">暂停接收</button>
+                        <button id="btnBreak" class="secondary">插入分隔线</button>
+                        <button id="btnClear" class="danger">清空窗口</button>
+                    </div>
+                </div>
+
+                <details id="settingsFold" class="settings-fold">
+                    <summary>
+                        更多设置（文件、过滤、高级）
+                        <span id="settingsSummary" class="settings-summary"></span>
+                    </summary>
+                    <div class="settings-body">
+                        <div class="toolbar-row row-file">
+                            <div class="group group-file-search">
+                                <label for="fileSearch">文件名搜索（可选）</label>
+                                <input id="fileSearch" type="text" class="control-xl" placeholder="输入文件名关键字">
+                            </div>
+                            <div class="group group-file-select">
+                                <label for="file">日志文件（默认即可）</label>
+                                <select id="file" class="control-xl"></select>
+                            </div>
+                            <div class="group group-lines">
+                                <label for="lines">初始加载行数</label>
+                                <input id="lines" type="number" min="10" max="5000" value="200" class="control-sm">
+                            </div>
+                        </div>
+
+                        <div class="toolbar-row row-filter">
+                            <div class="group filter-group">
+                                <label>内容过滤（可选）</label>
+                                <p class="group-tip">支持连续添加“包含/排除”条件，日志会高亮命中关键词。</p>
+                                <div id="filterChain" class="filter-chain"></div>
+                                <button id="btnAddFilter" type="button" class="secondary">添加条件</button>
+                            </div>
+                        </div>
+
+                        <div class="advanced-grid">
+                            <div class="group group-toggle">
+                                <label><input id="autoScroll" type="checkbox" checked> 自动跟随最新</label>
+                                <label><input id="autoReconnect" type="checkbox" checked> 自动重连</label>
+                                <label><input id="showSystem" type="checkbox" checked> 显示系统消息</label>
+                            </div>
+                            <div id="statusWrap">
+                                <span id="modeTip">当前：单服务查看</span>
+                                <span id="lineCount">0 行</span>
+                                <span id="status">未连接</span>
+                            </div>
+                        </div>
+                    </div>
+                </details>
+            </section>
+
+            <section class="log-shell">
+                <div class="log-header">
+                    <h2>实时日志窗口</h2>
+                    <p>新日志会追加在底部；关闭“自动跟随最新”后可手动滚动查看历史，每行支持一键复制。</p>
+                </div>
+                <div id="log" data-empty-tip="尚未开始查看日志。请先选择环境和服务，然后点击“开始查看”。"></div>
+            </section>
+        </main>
     </div>
 </div>
-<div id="log"></div>
-<button id="btnBottom" class="secondary">回到底部</button>
+<button id="btnBottom" class="secondary">查看最新</button>
 
 <script type="module" src="/assets/js/log-panel/app.js"></script>
 </body>

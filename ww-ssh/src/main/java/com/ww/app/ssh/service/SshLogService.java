@@ -5,6 +5,7 @@ import com.jcraft.jsch.JSch;
 import com.jcraft.jsch.JSchException;
 import com.jcraft.jsch.Session;
 import com.ww.app.ssh.config.LogPanelProperties;
+import com.ww.app.ssh.model.HostMetricSnapshot;
 import com.ww.app.ssh.model.LogStreamRequest;
 import com.ww.app.ssh.model.LogTarget;
 import com.ww.app.ssh.service.support.LogLineFilterMatcher;
@@ -91,6 +92,37 @@ public class SshLogService {
     }
 
     /**
+     * 采集目标主机实时指标。
+     * <p>
+     * 该方法会通过 SSH 分别执行 CPU、内存、负载采集命令，
+     * 并将结果转换为统一快照对象返回。
+     * 若任一步骤失败，不抛出异常，而是返回 status=error 的结果，
+     * 避免单个节点失败影响整个页面展示。
+     * </p>
+     *
+     * @param target 目标服务节点
+     * @return 指标快照
+     */
+    public HostMetricSnapshot queryHostMetric(LogTarget target) {
+        HostMetricSnapshot snapshot = initMetricSnapshot(target);
+        try {
+            String cpuLine = firstLine(executeCommandForLines(target, sshCommandBuilder.buildCpuUsageCommand(), 1));
+            String memoryLine = firstLine(executeCommandForLines(target, sshCommandBuilder.buildMemoryUsageCommand(), 1));
+            String loadLine = firstLine(executeCommandForLines(target, sshCommandBuilder.buildLoadAverageCommand(), 1));
+
+            snapshot.setCpuUsagePercent(normalizePercent(parseDouble(cpuLine)));
+            applyMemoryMetrics(snapshot, memoryLine);
+            applyLoadMetrics(snapshot, loadLine);
+            snapshot.setStatus("ok");
+            snapshot.setMessage("采集成功");
+        } catch (Exception ex) {
+            snapshot.setStatus("error");
+            snapshot.setMessage(limitMessage(ex.getMessage()));
+        }
+        return snapshot;
+    }
+
+    /**
      * 启动单个目标的实时日志流。
      *
      * @param target       目标服务节点
@@ -100,8 +132,10 @@ public class SshLogService {
      */
     public StreamHandle startStreaming(LogTarget target, LogStreamRequest request, Consumer<String> lineConsumer) {
         String resolvedFile = resolveLogFilePath(target, request.normalizedFilePath());
-        String includeKeyword = request.normalizedIncludeKeyword();
-        String excludeKeyword = request.normalizedExcludeKeyword();
+        List<LogStreamRequest.FilterRule> filterRules = request.normalizedFilterRules();
+        if (filterRules.isEmpty()) {
+            filterRules = buildFallbackRules(request.normalizedIncludeKeyword(), request.normalizedExcludeKeyword());
+        }
         Session session = null;
         ChannelExec channel = null;
         try {
@@ -115,7 +149,8 @@ public class SshLogService {
 
             Session finalSession = session;
             ChannelExec finalChannel = channel;
-            Future<?> streamTask = streamExecutor.submit(() -> readStreamLoop(inputStream, includeKeyword, excludeKeyword, lineConsumer));
+            List<LogStreamRequest.FilterRule> finalFilterRules = filterRules;
+            Future<?> streamTask = streamExecutor.submit(() -> readStreamLoop(inputStream, finalFilterRules, lineConsumer));
             return new StreamHandle(target, resolvedFile, streamTask, finalChannel, finalSession);
         } catch (Exception ex) {
             disconnectQuietly(channel);
@@ -136,24 +171,46 @@ public class SshLogService {
      * 循环读取远程日志流并转发。
      *
      * @param inputStream 远程输入流
-     * @param includeKeyword 包含关键字
-     * @param excludeKeyword 排除关键字
+     * @param filterRules 过滤规则
      * @param consumer    行消费回调
      */
     private void readStreamLoop(InputStream inputStream,
-                                String includeKeyword,
-                                String excludeKeyword,
+                                List<LogStreamRequest.FilterRule> filterRules,
                                 Consumer<String> consumer) {
         try (BufferedReader reader = new BufferedReader(new InputStreamReader(inputStream, StandardCharsets.UTF_8))) {
             String line;
             while (!Thread.currentThread().isInterrupted() && (line = reader.readLine()) != null) {
-                if (logLineFilterMatcher.matches(line, includeKeyword, excludeKeyword)) {
+                if (logLineFilterMatcher.matches(line, filterRules)) {
                     consumer.accept(line);
                 }
             }
         } catch (IOException ex) {
             consumer.accept("[系统提示] 日志流读取异常: " + ex.getMessage());
         }
+    }
+
+    /**
+     * 构建旧字段兼容过滤规则。
+     *
+     * @param includeKeyword 包含关键字
+     * @param excludeKeyword 排除关键字
+     * @return 规则集合
+     */
+    private List<LogStreamRequest.FilterRule> buildFallbackRules(String includeKeyword, String excludeKeyword) {
+        List<LogStreamRequest.FilterRule> rules = new ArrayList<>();
+        if (!includeKeyword.isEmpty()) {
+            LogStreamRequest.FilterRule include = new LogStreamRequest.FilterRule();
+            include.setType(LogStreamRequest.FILTER_TYPE_INCLUDE);
+            include.setData(includeKeyword);
+            rules.add(include);
+        }
+        if (!excludeKeyword.isEmpty()) {
+            LogStreamRequest.FilterRule exclude = new LogStreamRequest.FilterRule();
+            exclude.setType(LogStreamRequest.FILTER_TYPE_EXCLUDE);
+            exclude.setData(excludeKeyword);
+            rules.add(exclude);
+        }
+        return rules;
     }
 
     /**
@@ -286,6 +343,148 @@ public class SshLogService {
      */
     private String trimToEmpty(String source) {
         return source == null ? "" : source.trim();
+    }
+
+    /**
+     * 初始化主机指标快照基础字段。
+     *
+     * @param target 目标节点
+     * @return 已填充基础信息的快照对象
+     */
+    private HostMetricSnapshot initMetricSnapshot(LogTarget target) {
+        HostMetricSnapshot snapshot = new HostMetricSnapshot();
+        snapshot.setEnv(target.getEnv());
+        snapshot.setService(target.getService());
+        snapshot.setHost(target.getServerNode() == null ? "" : trimToEmpty(target.getServerNode().getHost()));
+        snapshot.setUpdatedAt(System.currentTimeMillis());
+        snapshot.setStatus("error");
+        snapshot.setMessage("采集中");
+        return snapshot;
+    }
+
+    /**
+     * 应用内存指标。
+     *
+     * @param snapshot   目标快照
+     * @param memoryLine 命令输出行，格式：使用率 已用MB 总MB
+     */
+    private void applyMemoryMetrics(HostMetricSnapshot snapshot, String memoryLine) {
+        String[] parts = splitByBlank(memoryLine);
+        if (parts.length < 3) {
+            return;
+        }
+        snapshot.setMemoryUsagePercent(normalizePercent(parseDouble(parts[0])));
+        snapshot.setMemoryUsedMb(parseLong(parts[1]));
+        snapshot.setMemoryTotalMb(parseLong(parts[2]));
+    }
+
+    /**
+     * 应用负载指标。
+     *
+     * @param snapshot 目标快照
+     * @param loadLine 命令输出行，格式：1m 5m 15m
+     */
+    private void applyLoadMetrics(HostMetricSnapshot snapshot, String loadLine) {
+        String[] parts = splitByBlank(loadLine);
+        if (parts.length < 3) {
+            return;
+        }
+        snapshot.setLoad1m(parseDouble(parts[0]));
+        snapshot.setLoad5m(parseDouble(parts[1]));
+        snapshot.setLoad15m(parseDouble(parts[2]));
+    }
+
+    /**
+     * 获取首行文本。
+     *
+     * @param lines 文本行集合
+     * @return 首行内容，若为空则返回空字符串
+     */
+    private String firstLine(List<String> lines) {
+        if (lines == null || lines.isEmpty()) {
+            return "";
+        }
+        return trimToEmpty(lines.get(0));
+    }
+
+    /**
+     * 按空白字符拆分字符串。
+     *
+     * @param text 输入文本
+     * @return 拆分结果
+     */
+    private String[] splitByBlank(String text) {
+        String normalized = trimToEmpty(text);
+        return normalized.isEmpty() ? new String[0] : normalized.split("\\s+");
+    }
+
+    /**
+     * 解析浮点数。
+     *
+     * @param text 输入文本
+     * @return 解析结果，失败返回 null
+     */
+    private Double parseDouble(String text) {
+        try {
+            String normalized = trimToEmpty(text);
+            if (normalized.isEmpty()) {
+                return null;
+            }
+            return Double.parseDouble(normalized);
+        } catch (Exception ignored) {
+            return null;
+        }
+    }
+
+    /**
+     * 解析长整型。
+     *
+     * @param text 输入文本
+     * @return 解析结果，失败返回 null
+     */
+    private Long parseLong(String text) {
+        try {
+            String normalized = trimToEmpty(text);
+            if (normalized.isEmpty()) {
+                return null;
+            }
+            return Long.parseLong(normalized);
+        } catch (Exception ignored) {
+            return null;
+        }
+    }
+
+    /**
+     * 规范化百分比范围。
+     *
+     * @param value 原始值
+     * @return 限制在 0~100 的百分比值
+     */
+    private Double normalizePercent(Double value) {
+        if (value == null) {
+            return null;
+        }
+        if (value < 0D) {
+            return 0D;
+        }
+        if (value > 100D) {
+            return 100D;
+        }
+        return value;
+    }
+
+    /**
+     * 截断错误消息，避免返回过长文本污染前端卡片布局。
+     *
+     * @param message 错误消息
+     * @return 截断后的错误消息
+     */
+    private String limitMessage(String message) {
+        String normalized = trimToEmpty(message);
+        if (normalized.length() <= 120) {
+            return normalized;
+        }
+        return normalized.substring(0, 120);
     }
 
     /**

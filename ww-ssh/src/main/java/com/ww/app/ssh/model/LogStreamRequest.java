@@ -2,6 +2,10 @@ package com.ww.app.ssh.model;
 
 import lombok.Data;
 
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+
 /**
  * 日志流订阅请求。
  * <p>
@@ -15,6 +19,16 @@ public class LogStreamRequest {
      * 全部环境占位值。
      */
     public static final String ALL = "__ALL__";
+
+    /**
+     * 包含规则类型。
+     */
+    public static final String FILTER_TYPE_INCLUDE = "include";
+
+    /**
+     * 排除规则类型。
+     */
+    public static final String FILTER_TYPE_EXCLUDE = "exclude";
 
     /**
      * 目标环境名，支持 {@link #ALL}。
@@ -48,6 +62,15 @@ public class LogStreamRequest {
      * 排除关键字（可选，固定字符串匹配）。
      */
     private String excludeKeyword;
+
+    /**
+     * 链式过滤规则。
+     * <p>
+     * 新版前端会按“类型 + 数据”提交多条规则；
+     * 若为空则回退到 includeKeyword/excludeKeyword 兼容逻辑。
+     * </p>
+     */
+    private List<FilterRule> filterRules;
 
     /**
      * 判断是否选择了全部环境。
@@ -126,6 +149,50 @@ public class LogStreamRequest {
     }
 
     /**
+     * 获取规范化后的过滤规则集合。
+     *
+     * @return 合法规则列表
+     */
+    public List<FilterRule> normalizedFilterRules() {
+        if (filterRules == null || filterRules.isEmpty()) {
+            return Collections.emptyList();
+        }
+        List<FilterRule> normalized = new ArrayList<>();
+        for (FilterRule rule : filterRules) {
+            if (rule == null) {
+                continue;
+            }
+            String type = normalizeFilterType(rule.getType());
+            String data = trimToEmpty(rule.getData());
+            if (type.isEmpty() || data.isEmpty()) {
+                continue;
+            }
+            FilterRule normalizedRule = new FilterRule();
+            normalizedRule.setType(type);
+            normalizedRule.setData(data);
+            normalized.add(normalizedRule);
+        }
+        return normalized;
+    }
+
+    /**
+     * 归一化过滤类型，兼容中英文输入。
+     *
+     * @param type 原始类型
+     * @return 归一化后的类型（include/exclude）
+     */
+    private String normalizeFilterType(String type) {
+        String normalized = trimToEmpty(type).toLowerCase();
+        if (FILTER_TYPE_INCLUDE.equals(normalized) || "包含".equals(normalized)) {
+            return FILTER_TYPE_INCLUDE;
+        }
+        if (FILTER_TYPE_EXCLUDE.equals(normalized) || "排除".equals(normalized)) {
+            return FILTER_TYPE_EXCLUDE;
+        }
+        return "";
+    }
+
+    /**
      * 对字符串进行去空格并处理 null。
      *
      * @param source 原字符串
@@ -133,5 +200,22 @@ public class LogStreamRequest {
      */
     private String trimToEmpty(String source) {
         return source == null ? "" : source.trim();
+    }
+
+    /**
+     * 单条过滤规则。
+     */
+    @Data
+    public static class FilterRule {
+
+        /**
+         * 规则类型：include/exclude。
+         */
+        private String type;
+
+        /**
+         * 规则数据（关键字）。
+         */
+        private String data;
     }
 }

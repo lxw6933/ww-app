@@ -3,6 +3,9 @@ package com.ww.app.ssh.model;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
+import java.util.Arrays;
+import java.util.List;
+
 /**
  * {@link LogStreamRequest} 行数与聚合标识测试。
  */
@@ -38,5 +41,32 @@ class LogStreamRequestTest {
         request.setService("__all__");
         Assertions.assertTrue(request.isAllEnv());
         Assertions.assertTrue(request.isAllService());
+    }
+
+    /**
+     * 校验链式过滤规则规范化。
+     */
+    @Test
+    void shouldNormalizeFilterRules() {
+        LogStreamRequest.FilterRule include = new LogStreamRequest.FilterRule();
+        include.setType("包含");
+        include.setData(" ERROR ");
+
+        LogStreamRequest.FilterRule exclude = new LogStreamRequest.FilterRule();
+        exclude.setType("exclude");
+        exclude.setData("DEBUG");
+
+        LogStreamRequest.FilterRule invalid = new LogStreamRequest.FilterRule();
+        invalid.setType("unknown");
+        invalid.setData("xxx");
+
+        LogStreamRequest request = new LogStreamRequest();
+        request.setFilterRules(Arrays.asList(include, exclude, invalid));
+
+        List<LogStreamRequest.FilterRule> rules = request.normalizedFilterRules();
+        Assertions.assertEquals(2, rules.size());
+        Assertions.assertEquals(LogStreamRequest.FILTER_TYPE_INCLUDE, rules.get(0).getType());
+        Assertions.assertEquals("ERROR", rules.get(0).getData());
+        Assertions.assertEquals(LogStreamRequest.FILTER_TYPE_EXCLUDE, rules.get(1).getType());
     }
 }

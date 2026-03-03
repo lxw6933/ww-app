@@ -56,6 +56,49 @@ public class SshCommandBuilder {
     }
 
     /**
+     * 构建 CPU 使用率采集命令。
+     * <p>
+     * 优先尝试通过 top 输出解析空闲率并换算为使用率；
+     * 若 top 不可用或解析失败，回退到 /proc/stat 的“累计使用率”近似值。
+     * </p>
+     *
+     * @return Shell 命令
+     */
+    public String buildCpuUsageCommand() {
+        return "CPU=$(top -bn1 2>/dev/null | awk -F',' '/Cpu|CPU:/ {"
+                + "for(i=1;i<=NF;i++){if($i ~ /id/){gsub(/[^0-9.]/,\"\",$i);"
+                + "if($i!=\"\"){printf \"%.2f\",100-$i; exit}}}}');"
+                + "if [ -n \"$CPU\" ]; then echo $CPU; "
+                + "else awk '/^cpu / {idle=$5; total=0; for(i=2;i<=NF;i++){total+=$i}; "
+                + "if(total>0){printf \"%.2f\", (total-idle)*100/total} else {print \"0\"}}' /proc/stat; fi";
+    }
+
+    /**
+     * 构建内存指标采集命令。
+     * <p>
+     * 输出格式：使用率(%) 已使用(MB) 总量(MB)。
+     * </p>
+     *
+     * @return Shell 命令
+     */
+    public String buildMemoryUsageCommand() {
+        return "awk '/MemTotal:/ {t=$2} /MemAvailable:/ {a=$2} "
+                + "END {if(t>0){u=t-a; printf \"%.2f %d %d\", (u*100/t), int(u/1024), int(t/1024)}}' /proc/meminfo";
+    }
+
+    /**
+     * 构建负载采集命令。
+     * <p>
+     * 输出格式：1m 5m 15m。
+     * </p>
+     *
+     * @return Shell 命令
+     */
+    public String buildLoadAverageCommand() {
+        return "cat /proc/loadavg 2>/dev/null | awk '{print $1\" \"$2\" \"$3}'";
+    }
+
+    /**
      * Shell 单引号安全转义。
      *
      * @param raw 原始字符串
