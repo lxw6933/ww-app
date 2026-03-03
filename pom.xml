@@ -35,6 +35,8 @@
         <module>ww-im</module>
         <!-- mall -->
         <module>ww-mall</module>
+        <!-- ssh -->
+        <module>ww-ssh</module>
     </modules>
 
     <properties>

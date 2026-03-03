@@ -1,0 +1,83 @@
+package com.ww.app.ssh.config;
+
+import lombok.Data;
+import org.springframework.boot.context.properties.ConfigurationProperties;
+import org.springframework.context.annotation.Configuration;
+
+import java.util.LinkedHashMap;
+import java.util.Map;
+
+/**
+ * 日志面板配置属性。
+ * <p>
+ * 该配置用于描述“环境 -> 服务 -> SSH 节点”的映射关系，
+ * 供日志面板在运行时动态解析目标机器与默认日志目录。
+ * </p>
+ */
+@Data
+@Configuration
+@ConfigurationProperties(prefix = "app")
+public class LogPanelProperties {
+
+    /**
+     * 全部环境下的服务节点配置。
+     * <p>
+     * 第一层 key：环境名（如 TEST-1）；<br>
+     * 第二层 key：服务名（如 mall-basic）；<br>
+     * value：目标 SSH 节点连接信息及日志目录。
+     * </p>
+     */
+    private Map<String, Map<String, ServerNode>> servers = new LinkedHashMap<>();
+
+    /**
+     * 单个服务节点的 SSH 与日志配置。
+     */
+    @Data
+    public static class ServerNode {
+
+        /**
+         * SSH 主机地址。
+         */
+        private String host;
+
+        /**
+         * SSH 端口，默认 22。
+         */
+        private Integer port = 22;
+
+        /**
+         * SSH 登录用户名。
+         */
+        private String username;
+
+        /**
+         * SSH 登录密码。
+         */
+        private String password;
+
+        /**
+         * 私钥文件路径（可选）。
+         */
+        private String privateKeyPath;
+
+        /**
+         * 私钥口令（可选）。
+         */
+        private String privateKeyPassphrase;
+
+        /**
+         * 首选认证方式（可选）。
+         */
+        private String preferredAuthentications;
+
+        /**
+         * 连接超时时间（毫秒），默认 8000。
+         */
+        private Integer connectTimeoutMs = 8000;
+
+        /**
+         * 服务默认日志目录或日志文件路径。
+         */
+        private String logPath;
+    }
+}

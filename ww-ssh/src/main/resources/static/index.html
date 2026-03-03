@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <title>ww-ssh 日志查看台</title>
+    <link rel="stylesheet" href="/assets/css/log-panel.css">
+</head>
+<body>
+<div class="toolbar">
+    <div class="group">
+        <label for="env">环境</label>
+        <select id="env"></select>
+    </div>
+    <div class="group">
+        <label for="service">服务</label>
+        <select id="service"></select>
+    </div>
+    <div class="group">
+        <label for="file">日志文件</label>
+        <select id="file"></select>
+    </div>
+    <div class="group">
+        <label for="fileSearch">文件搜索</label>
+        <input id="fileSearch" type="text" style="width: 180px;" placeholder="模糊匹配文件名">
+    </div>
+    <div class="group">
+        <label for="lines">回看行数</label>
+        <input id="lines" type="number" min="10" max="5000" value="200" style="width: 90px;">
+    </div>
+    <div class="group">
+        <label for="include">包含</label>
+        <input id="include" type="text" placeholder="ERROR" style="width: 120px;">
+    </div>
+    <div class="group">
+        <label for="exclude">排除</label>
+        <input id="exclude" type="text" placeholder="DEBUG" style="width: 120px;">
+    </div>
+    <div class="group">
+        <button id="btnStart">开始</button>
+        <button id="btnStop" disabled>停止</button>
+        <button id="btnPause">暂停</button>
+        <button id="btnBreak" class="secondary">手动换行</button>
+        <button id="btnClear" class="danger">清屏</button>
+    </div>
+    <div class="group">
+        <label><input id="autoScroll" type="checkbox" checked> 自动滚动</label>
+        <label><input id="autoReconnect" type="checkbox" checked> 自动重连</label>
+        <label><input id="showSystem" type="checkbox" checked> 系统消息</label>
+    </div>
+    <div id="statusWrap">
+        <span id="modeTip">单服务模式</span>
+        <span id="lineCount">0 行</span>
+        <span id="status">未连接</span>
+    </div>
+</div>
+<div id="log"></div>
+<button id="btnBottom" class="secondary">回到底部</button>
+
+<script type="module" src="/assets/js/log-panel/app.js"></script>
+</body>
+</html>
