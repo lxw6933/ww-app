@@ -10,8 +10,11 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.server.ResponseStatusException;
 
+import java.util.ArrayList;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 /**
  * 日志面板配置查询接口。
@@ -64,8 +67,21 @@ public class LogPanelConfigController {
     @GetMapping("/files")
     public List<String> listFiles(@RequestParam("env") String env, @RequestParam("service") String service) {
         try {
-            LogTarget target = logPanelQueryService.resolveTarget(env, service);
-            return sshLogService.listLogFiles(target);
+            List<LogTarget> targets = logPanelQueryService.resolveTargets(env, service);
+            Set<String> fileSet = new LinkedHashSet<>();
+            int successCount = 0;
+            for (LogTarget target : targets) {
+                try {
+                    fileSet.addAll(sshLogService.listLogFiles(target));
+                    successCount++;
+                } catch (Exception ignored) {
+                    // 某个实例不可达时跳过，避免影响其他实例文件发现。
+                }
+            }
+            if (successCount == 0) {
+                throw new IllegalStateException("目标实例均不可用，无法获取日志文件列表");
+            }
+            return new ArrayList<>(fileSet);
         } catch (IllegalArgumentException ex) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, ex.getMessage(), ex);
         } catch (Exception ex) {

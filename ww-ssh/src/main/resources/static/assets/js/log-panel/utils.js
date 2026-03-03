@@ -35,12 +35,12 @@ export function fileName(path) {
 /**
  * 判断是否为聚合模式。
  *
- * @param {string} env 环境
+ * @param {string} env 环境（保留参数仅用于兼容现有调用）
  * @param {string} service 服务
  * @returns {boolean} true 表示聚合模式
  */
 export function isAggregateSelected(env, service) {
-    return env === ALL || service === ALL;
+    return service === ALL;
 }
 
 /**

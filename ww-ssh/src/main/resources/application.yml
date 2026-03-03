@@ -3,6 +3,10 @@ server:
 
 app:
   servers:
+    # 多实例服务命名约定：
+    # 同一环境下若一个服务有多个实例，可使用 "服务名@实例标识" 作为 key。
+    # 例如：mall-basic@node1、mall-basic@node2。
+    # 前端会按 "服务名" 聚合展示与订阅。
     TEST-1:
       mall-basic-portal:
         host: "192.168.10.143"

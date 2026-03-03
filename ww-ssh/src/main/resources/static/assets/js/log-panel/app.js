@@ -76,7 +76,6 @@ function loadServers() {
             Object.keys(state.config).forEach(env => {
                 envEl.add(new Option(env, env));
             });
-            envEl.add(new Option('全部环境', ALL));
             if (envEl.options.length > 0) {
                 envEl.selectedIndex = 0;
             }
@@ -184,7 +183,7 @@ function connect() {
     }
 
     const payload = {
-        env: env || ALL,
+        env: env,
         service: service || ALL,
         filePath: value('file'),
         lines: parseLines(value('lines')),

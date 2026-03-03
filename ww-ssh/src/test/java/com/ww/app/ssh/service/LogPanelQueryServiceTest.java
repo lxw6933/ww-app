@@ -16,37 +16,19 @@ import java.util.Map;
 class LogPanelQueryServiceTest {
 
     /**
-     * 校验全部环境+全部服务时会返回完整目标集合。
+     * 校验环境聚合被禁用。
      */
     @Test
-    void shouldResolveAllTargetsWhenAllEnvAndAllService() {
-        LogPanelQueryService service = new LogPanelQueryService(mockProperties());
-        LogStreamRequest request = new LogStreamRequest();
-        request.setEnv(LogStreamRequest.ALL);
-        request.setService(LogStreamRequest.ALL);
-
-        List<LogTarget> targets = service.resolveTargets(request);
-        Assertions.assertEquals(3, targets.size());
-    }
-
-    /**
-     * 校验“全部环境 + 指定服务”时会跨环境聚合同名服务。
-     */
-    @Test
-    void shouldResolveSameServiceAcrossEnvironments() {
+    void shouldRejectWhenAllEnvironmentSelected() {
         LogPanelQueryService service = new LogPanelQueryService(mockProperties());
         LogStreamRequest request = new LogStreamRequest();
         request.setEnv(LogStreamRequest.ALL);
         request.setService("mall-basic");
-
-        List<LogTarget> targets = service.resolveTargets(request);
-        Assertions.assertEquals(2, targets.size());
-        Assertions.assertEquals("mall-basic", targets.get(0).getService());
-        Assertions.assertEquals("mall-basic", targets.get(1).getService());
+        Assertions.assertThrows(IllegalArgumentException.class, () -> service.resolveTargets(request));
     }
 
     /**
-     * 校验“指定环境 + 全部服务”时仅返回该环境下服务集合。
+     * 校验“指定环境 + 全部服务”时仅返回该环境下全部节点。
      */
     @Test
     void shouldResolveAllServicesInOneEnvironment() {
@@ -56,9 +38,24 @@ class LogPanelQueryServiceTest {
         request.setService(LogStreamRequest.ALL);
 
         List<LogTarget> targets = service.resolveTargets(request);
-        Assertions.assertEquals(2, targets.size());
+        Assertions.assertEquals(3, targets.size());
         Assertions.assertEquals("TEST-1", targets.get(0).getEnv());
-        Assertions.assertEquals("TEST-1", targets.get(1).getEnv());
+    }
+
+    /**
+     * 校验“单服务多实例聚合”。
+     */
+    @Test
+    void shouldResolveServiceGroupInstancesInOneEnvironment() {
+        LogPanelQueryService service = new LogPanelQueryService(mockProperties());
+        LogStreamRequest request = new LogStreamRequest();
+        request.setEnv("TEST-1");
+        request.setService("mall-basic");
+
+        List<LogTarget> targets = service.resolveTargets(request);
+        Assertions.assertEquals(2, targets.size());
+        Assertions.assertEquals("mall-basic@node1", targets.get(0).getService());
+        Assertions.assertEquals("mall-basic@node2", targets.get(1).getService());
     }
 
     /**
@@ -75,6 +72,20 @@ class LogPanelQueryServiceTest {
     }
 
     /**
+     * 校验前端服务概览会按服务组去重展示。
+     */
+    @Test
+    void shouldGroupServicesInServerOverview() {
+        LogPanelQueryService service = new LogPanelQueryService(mockProperties());
+        Map<String, Map<String, Map<String, String>>> overview = service.getServerOverview();
+        Map<String, Map<String, String>> test1 = overview.get("TEST-1");
+        Assertions.assertNotNull(test1);
+        Assertions.assertTrue(test1.containsKey("mall-basic"));
+        Assertions.assertTrue(test1.containsKey("mall-auth"));
+        Assertions.assertEquals("2", test1.get("mall-basic").get("instances"));
+    }
+
+    /**
      * 组装测试用配置。
      *
      * @return 配置对象
@@ -85,12 +96,13 @@ class LogPanelQueryServiceTest {
                 new LinkedHashMap<>();
 
         Map<String, LogPanelProperties.ServerNode> test1 = new LinkedHashMap<>();
-        test1.put("mall-basic", node("10.0.0.1", "/data/basic/logs"));
-        test1.put("mall-auth", node("10.0.0.2", "/data/auth/logs"));
+        test1.put("mall-basic@node1", node("10.0.0.1", "/data/basic/logs"));
+        test1.put("mall-basic@node2", node("10.0.0.2", "/data/basic/logs"));
+        test1.put("mall-auth", node("10.0.0.3", "/data/auth/logs"));
         servers.put("TEST-1", test1);
 
         Map<String, LogPanelProperties.ServerNode> test2 = new LinkedHashMap<>();
-        test2.put("mall-basic", node("10.0.0.3", "/data/basic/logs"));
+        test2.put("mall-basic@node1", node("10.0.0.4", "/data/basic/logs"));
         servers.put("TEST-2", test2);
 
         properties.setServers(servers);
