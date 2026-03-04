@@ -679,6 +679,47 @@ body.metrics-collapsed #btnToggleMetrics {
     text-overflow: clip;
 }
 
+.read-mode-switch {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 2px;
+    padding: 2px;
+    border-radius: 999px;
+    border: 1px solid #c8d9ea;
+    background: #e9f2fb;
+    flex: 0 0 auto;
+}
+
+.read-mode-btn {
+    min-width: 30px !important;
+    width: 30px;
+    height: 30px;
+    border-radius: 999px;
+    border-color: transparent !important;
+    background: transparent !important;
+    color: #3e5d79 !important;
+    font-size: 12px;
+    font-weight: 700;
+    padding: 0;
+}
+
+.read-mode-btn:hover:not(:disabled) {
+    background: rgba(66, 109, 145, 0.16) !important;
+}
+
+.read-mode-btn.active {
+    background: linear-gradient(180deg, #2d8ae0 0%, #1f79cb 100%) !important;
+    color: #ffffff !important;
+    box-shadow: 0 3px 8px rgba(31, 121, 203, 0.3);
+}
+
+body[data-read-mode='cat'] #btnStop,
+body[data-read-mode='cat'] #btnPause,
+body[data-read-mode='cat'] #btnBreak,
+body[data-read-mode='cat'] .group-action .action-separator.btn-expert {
+    display: none !important;
+}
+
 .action-separator {
     width: 1px;
     height: 22px;

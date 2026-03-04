@@ -56,6 +56,22 @@ public class SshCommandBuilder {
     }
 
     /**
+     * 构建 cat 快照读取命令（一次性输出并结束）。
+     * <p>
+     * 为了避免读取超大文件造成阻塞，实际采用 {@code tail -n} 截取最新 N 行，
+     * 语义上对应“cat 快照模式”的一次性读取。
+     * </p>
+     *
+     * @param filePath 日志文件路径
+     * @param lines    回看行数
+     * @return Shell 命令
+     */
+    public String buildCatCommand(String filePath, int lines) {
+        String quotedPath = shellQuote(filePath);
+        return "tail -n " + lines + " " + quotedPath + " 2>&1";
+    }
+
+    /**
      * 构建 CPU 使用率采集命令。
      * <p>
      * 优先尝试通过 top 输出解析空闲率并换算为使用率；

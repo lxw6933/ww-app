@@ -58,6 +58,16 @@ const LOG_LEVEL_BUTTON_IDS = {
 };
 
 /**
+ * 读取模式：tail（实时监听）。
+ */
+const READ_MODE_TAIL = 'tail';
+
+/**
+ * 读取模式：cat（一次性快照）。
+ */
+const READ_MODE_CAT = 'cat';
+
+/**
  * 分享链接恢复的状态。
  */
 const sharedState = parseSharedStateFromUrl();
@@ -88,6 +98,7 @@ function init() {
  * 页面卸载前清理资源。
  */
 function beforeUnloadCleanup() {
+    clearTailRefreshTimer();
     closeSocket(true);
     clearReconnectTimer();
     statusBar.stop();
@@ -115,8 +126,12 @@ function bindEvents() {
     el('file').addEventListener('change', () => {
         preferenceStore.set('file', value('file'));
         updateSettingsSummary();
+        scheduleTailSubscriptionRefresh();
     });
-    el('lines').addEventListener('change', () => preferenceStore.set('lines', parseLines(value('lines'))));
+    el('lines').addEventListener('change', () => {
+        preferenceStore.set('lines', parseLines(value('lines')));
+        scheduleTailSubscriptionRefresh();
+    });
 
     el('autoScroll').addEventListener('change', () => {
         preferenceStore.set('autoScroll', checked('autoScroll'));
@@ -135,6 +150,8 @@ function bindEvents() {
     el('btnToggleMetrics').addEventListener('click', toggleMetricsPanel);
     el('btnModeQuick').addEventListener('click', () => setUiMode('quick'));
     el('btnModeExpert').addEventListener('click', () => setUiMode('expert'));
+    el('btnReadTail').addEventListener('click', () => setReadMode(READ_MODE_TAIL, true));
+    el('btnReadCat').addEventListener('click', () => setReadMode(READ_MODE_CAT, true));
     el('btnStart').addEventListener('click', connect);
     el('btnStop').addEventListener('click', stop);
     el('btnPause').addEventListener('click', () => logView.togglePause());
@@ -301,6 +318,7 @@ function buildShareLink() {
     params.set('autoReconnect', checked('autoReconnect') ? '1' : '0');
     params.set('showSystem', checked('showSystem') ? '1' : '0');
     params.set('uiMode', document.body.getAttribute('data-ui-mode') || 'quick');
+    params.set('readMode', getReadMode());
     params.set('logSearch', value('logSearch'));
     params.set('rules', JSON.stringify(getActiveFilterRules()));
     url.search = params.toString();
@@ -367,6 +385,7 @@ function restoreLocalPreferences() {
     setSettingsDrawerOpen(preferenceStore.getBoolean('settingsOpen', false), false);
     setImmersiveMode(preferenceStore.getBoolean('immersiveMode', false), false);
     el('logSearch').value = getSharedString('logSearch', preferenceStore.getString('logSearch', ''));
+    applyReadModeByState();
     applyUiModeByState();
     applySavedMetricsCollapse();
     applyFilterRulesByState();
@@ -380,6 +399,14 @@ function restoreLocalPreferences() {
 function applyUiModeByState() {
     const uiMode = getSharedString('uiMode', preferenceStore.getString('uiMode', 'quick'));
     setUiMode(uiMode === 'expert' ? 'expert' : 'quick');
+}
+
+/**
+ * 应用保存的读取模式（tail/cat）。
+ */
+function applyReadModeByState() {
+    const readMode = getSharedString('readMode', preferenceStore.getString('readMode', READ_MODE_TAIL));
+    setReadMode(readMode, false);
 }
 
 /**
@@ -550,21 +577,38 @@ function connect() {
         logView.appendSystem('请先选择环境和服务');
         return;
     }
+    if (isCatMode()) {
+        requestCatSnapshot();
+        return;
+    }
+    connectTail();
+}
 
-    const filterRules = getActiveFilterRules();
-    const payload = {
-        env: env,
-        service: service || ALL,
+/**
+ * 构建日志读取请求体（WebSocket 与 cat 接口共用）。
+ *
+ * @returns {{env:string,service:string,filePath:string,lines:number,includeKeyword:string,excludeKeyword:string,filterRules:Array}} 请求体
+ */
+function buildLogRequestPayload() {
+    return {
+        env: value('env'),
+        service: value('service') || ALL,
         filePath: value('file'),
         lines: parseLines(value('lines')),
         includeKeyword: '',
         excludeKeyword: '',
-        filterRules: filterRules
+        filterRules: getActiveFilterRules()
     };
+}
 
+/**
+ * 启动 tail 实时监听。
+ */
+function connectTail() {
+    const payload = buildLogRequestPayload();
     statusBar.resetLastLogTime();
     statusBar.setReconnectSeconds(null);
-    logView.setHighlightRules(filterRules);
+    logView.setHighlightRules(payload.filterRules || []);
     logView.setEmptyTip('连接中，等待日志数据...');
     closeSettingsDrawer();
     logView.resetPause();
@@ -606,7 +650,7 @@ function connect() {
         logView.setEmptyTip('连接已断开。可开启自动重连或手动点击“开始查看”。');
         statusBar.setReconnectSeconds(null);
         updateControls();
-        if (!state.manualStop && checked('autoReconnect')) {
+        if (!state.manualStop && checked('autoReconnect') && isTailMode()) {
             scheduleReconnect();
         }
     };
@@ -621,9 +665,145 @@ function connect() {
 }
 
 /**
+ * 通过 cat 模式读取一次性日志快照。
+ */
+function requestCatSnapshot() {
+    if (state.catLoading) {
+        return;
+    }
+    const payload = buildLogRequestPayload();
+    state.catLoading = true;
+    clearReconnectTimer();
+    closeSocket(true);
+    closeSettingsDrawer();
+    logView.resetPause();
+    logView.clearLogs();
+    logView.setEmptyTip('快照读取中，请稍候...');
+    logView.setStatus('快照读取中...', 'var(--warn)');
+    updateControls();
+
+    return fetch('/api/log/cat', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify(payload)
+    })
+        .then(async response => {
+            if (!response.ok) {
+                const text = await response.text();
+                const error = new Error(text || `状态码 ${response.status}`);
+                error.status = response.status;
+                throw error;
+            }
+            return response.json();
+        })
+        .then(lines => {
+            const rows = Array.isArray(lines) ? lines : [];
+            if (rows.length) {
+                logView.appendLines(`${rows.join('\n')}\n`);
+                logView.setStatus('快照完成', 'var(--ok)');
+                logView.setEmptyTip('快照读取完成，可调整条件后再次读取。');
+                return;
+            }
+            logView.setStatus('快照完成', 'var(--ok)');
+            logView.setEmptyTip('未命中日志，可调整条件后再次读取。');
+        })
+        .catch(error => {
+            if (error && (error.status === 404 || error.status === 405)) {
+                return requestCatSnapshotViaWebSocket(payload);
+            }
+            logView.setStatus('快照失败', 'var(--error)');
+            logView.appendSystem(`快照读取失败: ${error.message || '网络异常'}`);
+        })
+        .finally(() => {
+            state.catLoading = false;
+            updateControls();
+        });
+}
+
+/**
+ * 当后端未提供 cat 接口时，降级为短时 tail 快照读取。
+ *
+ * @param {{env:string,service:string,filePath:string,lines:number,includeKeyword:string,excludeKeyword:string,filterRules:Array}} payload 请求体
+ * @returns {Promise<void>} 执行结果
+ */
+function requestCatSnapshotViaWebSocket(payload) {
+    return new Promise(resolve => {
+        logView.appendSystem('后端未提供 cat 接口，已降级为 tail 快照');
+        const protocol = location.protocol === 'https:' ? 'wss' : 'ws';
+        const ws = new WebSocket(`${protocol}://${location.host}/log-stream`);
+        let received = false;
+        let closed = false;
+        let idleTimer = null;
+        let hardTimer = null;
+
+        const finish = () => {
+            if (closed) {
+                return;
+            }
+            closed = true;
+            if (idleTimer) {
+                window.clearTimeout(idleTimer);
+                idleTimer = null;
+            }
+            if (hardTimer) {
+                window.clearTimeout(hardTimer);
+                hardTimer = null;
+            }
+            if (ws.readyState === WebSocket.OPEN || ws.readyState === WebSocket.CONNECTING) {
+                ws.close();
+            }
+            logView.setStatus('快照完成', 'var(--ok)');
+            if (!received) {
+                logView.setEmptyTip('未命中日志，可调整条件后再次读取。');
+            } else {
+                logView.setEmptyTip('快照读取完成，可调整条件后再次读取。');
+            }
+            resolve();
+        };
+
+        const refreshIdleTimer = () => {
+            if (idleTimer) {
+                window.clearTimeout(idleTimer);
+            }
+            idleTimer = window.setTimeout(() => finish(), 420);
+        };
+
+        ws.onopen = () => {
+            try {
+                ws.send(JSON.stringify(payload));
+            } catch (error) {
+                logView.setStatus('快照失败', 'var(--error)');
+                logView.appendSystem('快照请求发送失败');
+                finish();
+                return;
+            }
+            hardTimer = window.setTimeout(() => finish(), 1300);
+            refreshIdleTimer();
+        };
+
+        ws.onmessage = event => {
+            received = true;
+            statusBar.markLogReceived();
+            logView.onMessage(event.data);
+            refreshIdleTimer();
+        };
+
+        ws.onerror = () => {
+            logView.setStatus('快照失败', 'var(--error)');
+            finish();
+        };
+
+        ws.onclose = () => {
+            finish();
+        };
+    });
+}
+
+/**
  * 停止日志监听。
  */
 function stop() {
+    clearTailRefreshTimer();
     clearReconnectTimer();
     closeSocket(true);
     logView.resetPause();
@@ -665,6 +845,54 @@ function clearReconnectTimer() {
 }
 
 /**
+ * 清理 tail 条件热更新定时器。
+ */
+function clearTailRefreshTimer() {
+    if (state.tailRefreshTimer) {
+        window.clearTimeout(state.tailRefreshTimer);
+        state.tailRefreshTimer = null;
+    }
+}
+
+/**
+ * 在 tail 监听中延迟刷新订阅条件。
+ * <p>
+ * 用于“修改过滤/文件/行数后无需停止，自动生效”。
+ * </p>
+ */
+function scheduleTailSubscriptionRefresh() {
+    if (!isTailMode() || !isSocketActive()) {
+        return;
+    }
+    if (state.tailRefreshTimer) {
+        window.clearTimeout(state.tailRefreshTimer);
+    }
+    state.tailRefreshTimer = window.setTimeout(() => {
+        state.tailRefreshTimer = null;
+        refreshTailSubscriptionNow();
+    }, 220);
+}
+
+/**
+ * 立即将当前条件重发给后端，触发 tail 订阅重建。
+ */
+function refreshTailSubscriptionNow() {
+    if (!isTailMode() || !isSocketActive() || !state.ws || state.ws.readyState !== WebSocket.OPEN) {
+        return;
+    }
+    const payload = buildLogRequestPayload();
+    statusBar.resetLastLogTime();
+    statusBar.setReconnectSeconds(null);
+    logView.setHighlightRules(payload.filterRules || []);
+    logView.setStatus('监听中（条件已更新）', 'var(--ok)');
+    try {
+        state.ws.send(JSON.stringify(payload));
+    } catch (error) {
+        logView.appendSystem('条件更新失败，请手动重连');
+    }
+}
+
+/**
  * 关闭当前 WebSocket。
  *
  * @param {boolean} manualStop 是否人工停止
@@ -703,6 +931,81 @@ function setUiMode(mode) {
         setSettingsDrawerOpen(false, true);
     }
     preferenceStore.set('uiMode', normalized);
+}
+
+/**
+ * 获取当前读取模式。
+ *
+ * @returns {string} 模式值（tail/cat）
+ */
+function getReadMode() {
+    const mode = document.body.getAttribute('data-read-mode');
+    return mode === READ_MODE_CAT ? READ_MODE_CAT : READ_MODE_TAIL;
+}
+
+/**
+ * 判断当前是否为 tail 模式。
+ *
+ * @returns {boolean} true 表示 tail
+ */
+function isTailMode() {
+    return getReadMode() === READ_MODE_TAIL;
+}
+
+/**
+ * 判断当前是否为 cat 模式。
+ *
+ * @returns {boolean} true 表示 cat
+ */
+function isCatMode() {
+    return getReadMode() === READ_MODE_CAT;
+}
+
+/**
+ * 设置读取模式并更新界面状态。
+ *
+ * @param {string} mode 目标模式
+ * @param {boolean} persist 是否持久化
+ */
+function setReadMode(mode, persist) {
+    const normalized = mode === READ_MODE_CAT ? READ_MODE_CAT : READ_MODE_TAIL;
+    document.body.setAttribute('data-read-mode', normalized);
+    renderReadModeButtons();
+    if (normalized === READ_MODE_CAT) {
+        clearReconnectTimer();
+        if (isSocketActive()) {
+            stop();
+        }
+    }
+    if (persist) {
+        preferenceStore.set('readMode', normalized);
+    }
+    updateControls();
+}
+
+/**
+ * 刷新读取模式按钮与开始按钮文案。
+ */
+function renderReadModeButtons() {
+    const tailMode = isTailMode();
+    const tailButton = el('btnReadTail');
+    const catButton = el('btnReadCat');
+    const startButton = el('btnStart');
+    const stopButton = el('btnStop');
+    if (tailButton) {
+        tailButton.classList.toggle('active', tailMode);
+    }
+    if (catButton) {
+        catButton.classList.toggle('active', !tailMode);
+    }
+    if (startButton) {
+        startButton.textContent = tailMode ? '▶' : '↺';
+        startButton.title = tailMode ? '开始实时监听（tail）' : '读取一次快照（cat）';
+        startButton.setAttribute('aria-label', tailMode ? '开始实时监听' : '读取一次快照');
+    }
+    if (stopButton) {
+        stopButton.title = tailMode ? '结束查看' : '停止实时监听';
+    }
 }
 
 /**
@@ -842,13 +1145,20 @@ function isSocketActive() {
  * 刷新控件可用状态。
  */
 function updateControls() {
-    const locked = isSocketActive();
-    ['env', 'service', 'lines'].forEach(id => {
-        el(id).disabled = locked;
-    });
-    el('btnStart').disabled = locked;
-    el('btnStop').disabled = !locked;
-    filterChainManager.setDisabled(locked);
+    const wsActive = isSocketActive();
+    const tailMode = isTailMode();
+    const tailLocked = wsActive && tailMode;
+    const catBusy = !!state.catLoading;
+    el('env').disabled = tailLocked || catBusy;
+    el('service').disabled = tailLocked || catBusy;
+    el('lines').disabled = catBusy;
+    el('btnReadTail').disabled = catBusy;
+    el('btnReadCat').disabled = catBusy;
+    el('btnStart').disabled = catBusy || tailLocked;
+    el('btnStop').disabled = !tailLocked;
+    el('btnPause').disabled = !tailLocked;
+    filterChainManager.setDisabled(catBusy);
+    renderReadModeButtons();
     updateFileMode();
 }
 
@@ -859,10 +1169,10 @@ function updateFileMode() {
     const env = value('env');
     const service = value('service');
     const aggregate = isAggregateSelected(env, service);
-    const locked = isSocketActive();
+    const catBusy = !!state.catLoading;
     const fileSearchEl = el('fileSearch');
-    el('file').disabled = locked || aggregate;
-    fileSearchEl.disabled = locked || aggregate;
+    el('file').disabled = catBusy || aggregate;
+    fileSearchEl.disabled = catBusy || aggregate;
     statusBar.setModeTip(aggregate);
     fileSearchEl.placeholder = aggregate ? '全部服务查看时不支持文件名筛选' : '输入文件名关键字进行筛选';
     updateSettingsSummary();
@@ -895,6 +1205,7 @@ function onFilterRuleChanged() {
     preferenceStore.set('filterRules', JSON.stringify(rules));
     updateSettingsSummary();
     renderActiveFilterExpression();
+    scheduleTailSubscriptionRefresh();
 }
 
 /**
@@ -1055,6 +1366,7 @@ function parseSharedStateFromUrl() {
         autoReconnect: params.get('autoReconnect') || '',
         showSystem: params.get('showSystem') || '',
         uiMode: params.get('uiMode') || '',
+        readMode: params.get('readMode') || '',
         logSearch: params.get('logSearch') || '',
         rules: params.get('rules') || ''
     };

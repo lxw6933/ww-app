@@ -132,10 +132,8 @@ public class SshLogService {
      */
     public StreamHandle startStreaming(LogTarget target, LogStreamRequest request, Consumer<String> lineConsumer) {
         String resolvedFile = resolveLogFilePath(target, request.normalizedFilePath());
-        List<LogStreamRequest.FilterRule> filterRules = request.normalizedFilterRules();
-        if (filterRules.isEmpty()) {
-            filterRules = buildFallbackRules(request.normalizedIncludeKeyword(), request.normalizedExcludeKeyword());
-        }
+        List<LogStreamRequest.FilterRule> filterRules = resolveEffectiveRules(request);
+        String command = sshCommandBuilder.buildTailCommand(resolvedFile, request.normalizedLines());
         Session session = null;
         ChannelExec channel = null;
         try {
@@ -143,7 +141,7 @@ public class SshLogService {
             channel = (ChannelExec) session.openChannel("exec");
             channel.setInputStream(null);
             channel.setPty(true);
-            channel.setCommand(sshCommandBuilder.buildTailCommand(resolvedFile, request.normalizedLines()));
+            channel.setCommand(command);
             InputStream inputStream = channel.getInputStream();
             channel.connect(resolveTimeout(target.getServerNode()));
 
@@ -157,6 +155,34 @@ public class SshLogService {
             disconnectQuietly(session);
             throw new IllegalStateException("启动日志流失败: " + target.displayName() + " - " + ex.getMessage(), ex);
         }
+    }
+
+    /**
+     * 通过 cat 快照模式读取日志。
+     * <p>
+     * 该方法会一次性返回最新 N 行并结束，不会保持长连接监听。
+     * </p>
+     *
+     * @param target  目标服务节点
+     * @param request 日志订阅请求
+     * @return 过滤后的日志行
+     */
+    public List<String> readByCat(LogTarget target, LogStreamRequest request) {
+        String resolvedFile = resolveLogFilePath(target, request.normalizedFilePath());
+        int lines = request.normalizedLines();
+        String command = sshCommandBuilder.buildCatCommand(resolvedFile, lines);
+        List<String> rawLines = executeCommandForLines(target, command, lines + 20);
+        List<LogStreamRequest.FilterRule> filterRules = resolveEffectiveRules(request);
+        if (filterRules.isEmpty()) {
+            return trimToWindow(rawLines, lines);
+        }
+        List<String> filtered = new ArrayList<>();
+        for (String line : rawLines) {
+            if (logLineFilterMatcher.matches(line, filterRules)) {
+                filtered.add(line);
+            }
+        }
+        return trimToWindow(filtered, lines);
     }
 
     /**
@@ -211,6 +237,41 @@ public class SshLogService {
             rules.add(exclude);
         }
         return rules;
+    }
+
+    /**
+     * 解析最终生效的过滤规则。
+     * <p>
+     * 优先使用链式规则；若为空则回退到 include/exclude 旧字段，保证向后兼容。
+     * </p>
+     *
+     * @param request 日志请求
+     * @return 生效规则列表
+     */
+    private List<LogStreamRequest.FilterRule> resolveEffectiveRules(LogStreamRequest request) {
+        List<LogStreamRequest.FilterRule> filterRules = request.normalizedFilterRules();
+        if (!filterRules.isEmpty()) {
+            return filterRules;
+        }
+        return buildFallbackRules(request.normalizedIncludeKeyword(), request.normalizedExcludeKeyword());
+    }
+
+    /**
+     * 保留列表尾部窗口，避免返回超量数据。
+     *
+     * @param source 原始列表
+     * @param max    最大保留条数
+     * @return 裁剪后的列表
+     */
+    private List<String> trimToWindow(List<String> source, int max) {
+        if (source == null || source.isEmpty()) {
+            return new ArrayList<>();
+        }
+        if (source.size() <= max) {
+            return new ArrayList<>(source);
+        }
+        int start = source.size() - max;
+        return new ArrayList<>(source.subList(start, source.size()));
     }
 
     /**

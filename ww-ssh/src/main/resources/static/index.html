@@ -67,6 +67,11 @@
                         <select id="service" class="control-lg"></select>
                     </div>
                     <div class="group group-action">
+                        <div class="read-mode-switch" role="group" aria-label="日志读取方式">
+                            <button id="btnReadTail" type="button" class="secondary read-mode-btn active" title="tail 实时监听" aria-label="tail 实时监听">T</button>
+                            <button id="btnReadCat" type="button" class="secondary read-mode-btn" title="cat 快照读取" aria-label="cat 快照读取">C</button>
+                        </div>
+                        <span class="action-separator" aria-hidden="true"></span>
                         <button id="btnStart" class="icon-btn" title="开始查看" aria-label="开始查看">▶</button>
                         <button id="btnStop" class="icon-btn" disabled title="结束查看" aria-label="结束查看">■</button>
                         <span class="action-separator btn-expert" aria-hidden="true"></span>

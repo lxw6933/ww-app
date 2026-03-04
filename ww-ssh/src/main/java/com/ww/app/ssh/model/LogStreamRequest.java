@@ -31,6 +31,16 @@ public class LogStreamRequest {
     public static final String FILTER_TYPE_EXCLUDE = "exclude";
 
     /**
+     * 读取模式：实时 tail。
+     */
+    public static final String READ_MODE_TAIL = "tail";
+
+    /**
+     * 读取模式：一次性 cat。
+     */
+    public static final String READ_MODE_CAT = "cat";
+
+    /**
      * 目标环境名，支持 {@link #ALL}。
      */
     private String env;
@@ -52,6 +62,11 @@ public class LogStreamRequest {
      * 回看行数，默认 200，范围 [10, 5000]。
      */
     private Integer lines = 200;
+
+    /**
+     * 读取模式，支持 tail/cat，默认 tail。
+     */
+    private String readMode = READ_MODE_TAIL;
 
     /**
      * 包含关键字（可选，固定字符串匹配）。
@@ -101,6 +116,28 @@ public class LogStreamRequest {
             return 10;
         }
         return Math.min(resolved, 5000);
+    }
+
+    /**
+     * 获取规范化后的读取模式。
+     *
+     * @return 读取模式（tail/cat）
+     */
+    public String normalizedReadMode() {
+        String normalized = trimToEmpty(readMode).toLowerCase();
+        if (READ_MODE_CAT.equals(normalized)) {
+            return READ_MODE_CAT;
+        }
+        return READ_MODE_TAIL;
+    }
+
+    /**
+     * 判断当前是否为 cat 读取模式。
+     *
+     * @return true 表示 cat
+     */
+    public boolean isCatMode() {
+        return READ_MODE_CAT.equals(normalizedReadMode());
     }
 
     /**
