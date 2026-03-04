@@ -3139,6 +3139,218 @@ button:hover:not(:disabled) {
     }
 }
 
+/* ==================== 科技风精修 v4（色彩/字体/交互/体验） ==================== */
+:root {
+    --ui-ease: cubic-bezier(0.2, 0.68, 0.2, 1);
+    --ui-duration: 0.2s;
+    --ui-radius: 10px;
+}
+
+body {
+    letter-spacing: 0.12px;
+    line-height: 1.45;
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+}
+
+.panel-title {
+    font-size: clamp(22px, 2vw, 30px);
+    font-weight: 700;
+    letter-spacing: 1px;
+}
+
+.panel-subtitle {
+    max-width: 68ch;
+    font-size: 13px;
+    line-height: 1.5;
+    color: #96bcd3 !important;
+}
+
+.workspace {
+    gap: 14px;
+}
+
+.panel-header,
+.toolbar,
+.metrics-panel,
+.log-shell {
+    backdrop-filter: blur(10px) saturate(115%);
+}
+
+.status-bar {
+    gap: 8px;
+}
+
+.status-bar span,
+.summary-value,
+.metric-host-badge-value,
+.metric-progress-left,
+.metric-progress-right,
+.metric-load-value,
+#lineCount,
+#wsLatency {
+    font-variant-numeric: tabular-nums;
+}
+
+button {
+    transition:
+        transform var(--ui-duration) var(--ui-ease),
+        box-shadow var(--ui-duration) var(--ui-ease),
+        border-color var(--ui-duration) var(--ui-ease),
+        background-color var(--ui-duration) var(--ui-ease);
+}
+
+button:hover:not(:disabled) {
+    transform: translateY(-1px);
+}
+
+button:active:not(:disabled) {
+    transform: translateY(0);
+}
+
+button:focus-visible,
+select:focus-visible,
+input:focus-visible,
+textarea:focus-visible {
+    outline: 2px solid rgba(127, 227, 255, 0.7);
+    outline-offset: 1px;
+}
+
+.toolbar .icon-btn,
+.metrics-actions .icon-btn,
+.log-search-box .search-icon-btn {
+    font-size: 13px;
+    font-weight: 700;
+}
+
+.metrics-summary,
+.summary-item,
+.metric-host-group,
+.metric-card,
+.metrics-empty,
+.filter-row,
+.filter-tag {
+    box-shadow:
+        0 8px 20px rgba(1, 10, 17, 0.35),
+        inset 0 1px 0 rgba(133, 220, 255, 0.08);
+}
+
+.metrics-summary {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 8px;
+}
+
+.summary-item {
+    padding: 6px 8px;
+}
+
+.log-header {
+    padding: 9px 12px;
+}
+
+#log {
+    font-size: 13px;
+    line-height: 1.6;
+}
+
+.log-line {
+    padding: 6px 9px;
+    margin-bottom: 3px;
+}
+
+.line-error,
+.line-warn,
+.line-ok {
+    border-left-width: 3px;
+    border-left-style: solid;
+}
+
+.line-error {
+    border-left-color: rgba(255, 121, 138, 0.78);
+}
+
+.line-warn {
+    border-left-color: rgba(255, 193, 111, 0.74);
+}
+
+.line-ok {
+    border-left-color: rgba(87, 225, 176, 0.72);
+}
+
+.line-highlight {
+    border: 1px solid rgba(120, 216, 255, 0.28);
+}
+
+.settings-drawer-head h3 {
+    font-size: 17px;
+    letter-spacing: 0.4px;
+}
+
+.filter-row .filter-data {
+    font-family: "JetBrains Mono", "Consolas", "Courier New", monospace;
+    letter-spacing: 0.08px;
+}
+
+select {
+    font-weight: 600;
+    letter-spacing: 0.22px;
+}
+
+.metrics-list::-webkit-scrollbar-thumb,
+#log::-webkit-scrollbar-thumb,
+.filter-chain::-webkit-scrollbar-thumb,
+.settings-drawer .settings-body::-webkit-scrollbar-thumb {
+    border-radius: 8px;
+}
+
+body::before,
+body::after {
+    opacity: 0.88;
+}
+
+.status-bar-top::before,
+#log::after {
+    opacity: 0.18;
+}
+
+@media (max-width: 1320px) {
+    .workspace {
+        gap: 10px;
+    }
+
+    .panel-subtitle {
+        max-width: none;
+    }
+}
+
+@media (max-width: 980px) {
+    .metrics-summary {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .log-header {
+        padding: 8px 10px;
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+        scroll-behavior: auto !important;
+    }
+
+    body::before,
+    body::after,
+    .status-bar-top::before,
+    #log::after {
+        display: none !important;
+    }
+}
+
 /* ==================== 下拉框科技风专用 ==================== */
 select {
     -webkit-appearance: none !important;
