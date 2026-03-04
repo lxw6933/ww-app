@@ -8,15 +8,37 @@
 <body>
 <div class="page-shell">
     <header class="panel-header">
-        <div class="title-wrap">
-            <h1 class="panel-title">日志查看中心</h1>
-            <p class="panel-subtitle">面向运维、测试、客服的可视化日志面板，不需要命令行</p>
+        <div class="header-main">
+            <div class="title-wrap">
+                <h1 class="panel-title">日志查看中心</h1>
+                <p class="panel-subtitle">面向运维、测试、客服的可视化日志面板，不需要命令行</p>
+            </div>
+            <div class="header-tools">
+                <div class="header-top-controls">
+                    <div class="view-mode-panel">
+                        <span class="mode-panel-label">模式</span>
+                        <div class="mode-switch mode-switch-header">
+                            <button id="btnModeQuick" type="button" class="mode-btn active icon-btn" title="快速模式" aria-label="快速模式">⚡</button>
+                            <button id="btnModeExpert" type="button" class="mode-btn secondary icon-btn" title="专家模式" aria-label="专家模式">✦</button>
+                        </div>
+                        <span class="mode-separator btn-expert" aria-hidden="true"></span>
+                        <button id="btnOpenSettings" type="button" class="secondary btn-expert mode-settings-btn icon-btn" title="更多设置（仅专家模式）" aria-label="更多设置（仅专家模式）">⚙</button>
+                    </div>
+                    <div class="header-tool-actions utility-panel">
+                        <button id="btnShareLink" type="button" class="secondary icon-btn" title="复制排查链接" aria-label="复制排查链接">⧉</button>
+                        <button id="btnImmersive" type="button" class="secondary icon-btn" title="切换沉浸模式" aria-label="切换沉浸模式">⛶</button>
+                    </div>
+                </div>
+            </div>
         </div>
-        <ol class="quick-steps">
-            <li>1. 选择环境和服务</li>
-            <li>2. 选择文件并设置搜索</li>
-            <li>3. 点击“开始查看”</li>
-        </ol>
+        <div id="statusWrap" class="status-bar status-bar-top">
+            <span id="modeTip">当前：单服务查看</span>
+            <span id="status">未连接</span>
+            <span id="lineCount">0 行</span>
+            <span id="lastLogTime">最后日志: --</span>
+            <span id="reconnectIn">重连: --</span>
+            <span id="wsLatency">延迟: --</span>
+        </div>
     </header>
 
     <div class="workspace">
@@ -24,8 +46,8 @@
             <div class="metrics-panel-head">
                 <h2>服务器指标</h2>
                 <div class="metrics-actions">
-                    <button id="btnToggleMetrics" type="button" class="secondary">收起面板</button>
-                    <button id="btnRefreshMetrics" type="button" class="secondary">刷新</button>
+                    <button id="btnToggleMetrics" type="button" class="secondary icon-btn metrics-icon-btn" title="收起面板" aria-label="收起面板">❮</button>
+                    <button id="btnRefreshMetrics" type="button" class="secondary icon-btn metrics-icon-btn" title="刷新指标" aria-label="刷新指标">↻</button>
                 </div>
             </div>
             <p class="metrics-panel-tip">展示当前环境/服务的 CPU、内存和负载，异常实例优先显示。</p>
@@ -37,85 +59,29 @@
             <section class="toolbar">
                 <div class="toolbar-row row-primary">
                     <div class="group group-env">
-                        <label for="env">环境（必选）</label>
+                        <label for="env">环境：</label>
                         <select id="env" class="control-lg"></select>
                     </div>
                     <div class="group group-service">
-                        <label for="service">服务</label>
+                        <label for="service">服务：</label>
                         <select id="service" class="control-lg"></select>
                     </div>
-                    <div class="group group-viewmode">
-                        <label>界面模式</label>
-                        <div class="mode-switch">
-                            <button id="btnModeQuick" type="button" class="mode-btn active">快速模式</button>
-                            <button id="btnModeExpert" type="button" class="mode-btn secondary">专家模式</button>
-                        </div>
-                    </div>
                     <div class="group group-action">
-                        <button id="btnStart" title="开始查看">开始</button>
-                        <button id="btnStop" disabled title="结束查看">结束</button>
-                        <button id="btnPause" class="btn-expert" title="暂停接收">暂停</button>
-                        <button id="btnBreak" class="secondary btn-expert" title="插入分隔线">分隔线</button>
-                        <button id="btnClear" class="danger btn-expert" title="清空窗口">清空</button>
+                        <button id="btnStart" class="icon-btn" title="开始查看" aria-label="开始查看">▶</button>
+                        <button id="btnStop" class="icon-btn" disabled title="结束查看" aria-label="结束查看">■</button>
+                        <span class="action-separator btn-expert" aria-hidden="true"></span>
+                        <button id="btnPause" class="btn-expert icon-btn" title="暂停接收" aria-label="暂停接收">⏸</button>
+                        <button id="btnBreak" class="secondary btn-expert icon-btn" title="插入分隔线" aria-label="插入分隔线">∥</button>
+                        <button id="btnClear" class="danger btn-expert icon-btn" title="清空窗口" aria-label="清空窗口">⌫</button>
                     </div>
                 </div>
 
-                <div id="statusWrap" class="status-bar">
-                    <span id="modeTip">当前：单服务查看</span>
-                    <span id="status">未连接</span>
-                    <span id="lineCount">0 行</span>
-                    <span id="lastLogTime">最后日志: --</span>
-                    <span id="reconnectIn">重连: --</span>
-                    <span id="wsLatency">延迟: --</span>
-                </div>
-
-                <details id="settingsFold" class="settings-fold">
-                    <summary>
-                        更多设置（文件、过滤、高级）
-                        <span id="settingsSummary" class="settings-summary"></span>
-                    </summary>
-                    <div class="settings-body">
-                        <div class="toolbar-row row-file">
-                            <div class="group group-file-search">
-                                <label for="fileSearch">文件名搜索（可选）</label>
-                                <input id="fileSearch" type="text" class="control-xl" placeholder="输入文件名关键字">
-                            </div>
-                            <div class="group group-file-select">
-                                <label for="file">日志文件（默认即可）</label>
-                                <select id="file" class="control-xl"></select>
-                            </div>
-                            <div class="group group-lines">
-                                <label for="lines">初始加载行数</label>
-                                <input id="lines" type="number" min="10" max="5000" value="200" class="control-sm">
-                            </div>
-                        </div>
-
-                        <div class="toolbar-row row-filter">
-                            <div class="group filter-group">
-                                <label>内容过滤（可选）</label>
-                                <p class="group-tip">支持连续添加“包含/排除”条件；支持拖拽调整顺序，日志会高亮命中关键词。</p>
-                                <div id="filterChain" class="filter-chain"></div>
-                                <div id="filterTags" class="filter-tags"></div>
-                                <button id="btnAddFilter" type="button" class="secondary">添加条件</button>
-                            </div>
-                        </div>
-
-                        <div class="advanced-grid">
-                            <div class="group group-toggle">
-                                <label><input id="autoScroll" type="checkbox" checked> 自动跟随最新</label>
-                                <label><input id="autoReconnect" type="checkbox" checked> 自动重连</label>
-                                <label><input id="showSystem" type="checkbox" checked> 显示系统消息</label>
-                            </div>
-                        </div>
-                    </div>
-                </details>
             </section>
 
             <section class="log-shell">
                 <div class="log-header">
                     <div class="log-header-title">
                         <h2>实时日志窗口</h2>
-                        <p>新日志会追加在底部；关闭“自动跟随最新”后可手动滚动查看历史，每行支持一键复制。</p>
                     </div>
                     <div class="log-tools">
                         <div class="log-level-box">
@@ -128,9 +94,9 @@
                         <div class="log-search-box">
                             <label for="logSearch"></label><input id="logSearch" type="text" placeholder="在当前窗口搜索关键词（仅前端）">
                             <span id="logSearchCount">未搜索</span>
-                            <button id="btnSearchPrev" type="button" class="secondary">上一条</button>
-                            <button id="btnSearchNext" type="button" class="secondary">下一条</button>
-                            <button id="btnSearchClear" type="button" class="secondary">清空</button>
+                            <button id="btnSearchPrev" type="button" class="secondary search-icon-btn" title="上一条" aria-label="上一条">↑</button>
+                            <button id="btnSearchNext" type="button" class="secondary search-icon-btn" title="下一条" aria-label="下一条">↓</button>
+                            <button id="btnSearchClear" type="button" class="secondary search-icon-btn" title="清空搜索" aria-label="清空搜索">×</button>
                         </div>
                     </div>
                 </div>
@@ -139,6 +105,47 @@
         </main>
     </div>
 </div>
+<div id="settingsDrawerMask" class="settings-drawer-mask"></div>
+<aside id="settingsDrawer" class="settings-drawer" aria-hidden="true">
+    <div class="settings-drawer-head">
+        <h3>更多设置（文件、过滤、高级）</h3>
+        <button id="btnCloseSettings" type="button" class="secondary">关闭</button>
+    </div>
+    <div class="settings-body">
+        <div class="toolbar-row row-file">
+            <div class="group group-file-search">
+                <label for="fileSearch">文件名搜索（可选）</label>
+                <input id="fileSearch" type="text" class="control-xl" placeholder="输入文件名关键字">
+            </div>
+            <div class="group group-file-select">
+                <label for="file">日志文件（默认即可）</label>
+                <select id="file" class="control-xl"></select>
+            </div>
+            <div class="group group-lines">
+                <label for="lines">初始加载行数</label>
+                <input id="lines" type="number" min="10" max="5000" value="200" class="control-sm">
+            </div>
+        </div>
+
+        <div class="toolbar-row row-filter">
+            <div class="group filter-group">
+                <label>内容过滤（可选）</label>
+                <p class="group-tip">支持连续添加“包含/排除”条件；支持拖拽调整顺序，日志会高亮命中关键词。</p>
+                <div id="filterChain" class="filter-chain"></div>
+                <div id="filterTags" class="filter-tags"></div>
+                <button id="btnAddFilter" type="button" class="secondary">添加条件</button>
+            </div>
+        </div>
+
+        <div class="advanced-grid">
+            <div class="group group-toggle">
+                <label><input id="autoScroll" type="checkbox" checked> 自动跟随最新</label>
+                <label><input id="autoReconnect" type="checkbox" checked> 自动重连</label>
+                <label><input id="showSystem" type="checkbox" checked> 显示系统消息</label>
+            </div>
+        </div>
+    </div>
+</aside>
 <button id="btnBottom" class="secondary">查看最新</button>
 
 <script type="module" src="/assets/js/log-panel/app.js"></script>

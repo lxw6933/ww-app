@@ -7,7 +7,7 @@ app:
     # 同一环境下若一个服务有多个实例，可使用 "服务名@实例标识" 作为 key。
     # 例如：mall-basic@node1、mall-basic@node2。
     # 前端会按 "服务名" 聚合展示与订阅。
-    TEST-1:
+    test:
       mall-basic-portal:
         host: "192.168.10.143"
         port: 22
@@ -37,28 +37,80 @@ app:
         password: "2020pflm@143#"
         logPath: "/data/B2B2C/mall-ext-service/target/logs"
 
-    TEST-2:
+    test2:
       mall-basic-portal:
         host: "192.168.10.185"
         port: 22
         username: "root"
-        password: "2020pflm@143#"
+        password: "2016@pflm"
         logPath: "/data/B2B2C/mall-basic-portal/target/logs"
       mall-basic-service:
         host: "192.168.10.185"
         port: 22
         username: "root"
-        password: "2020pflm@143#"
+        password: "2016@pflm"
         logPath: "/data/B2B2C/mall-basic-service/target/logs"
       mall-auth-service:
         host: "192.168.10.185"
         port: 22
         username: "root"
-        password: "2020pflm@143#"
+        password: "2016@pflm"
         logPath: "/data/B2B2C/mall-auth-service/target/logs"
       mall-ext-service:
         host: "192.168.10.185"
         port: 22
         username: "root"
-        password: "2020pflm@143#"
+        password: "2016@pflm"
+        logPath: "/data/B2B2C/mall-ext-service/target/logs"
+
+    press:
+      mall-basic-portal:
+        host: "192.168.10.177"
+        port: 22
+        username: "root"
+        password: "2016@pflm"
+        logPath: "/data/B2B2C/mall-basic-portal/target/logs"
+      mall-basic-service:
+        host: "192.168.10.177"
+        port: 22
+        username: "root"
+        password: "2016@pflm"
+        logPath: "/data/B2B2C/mall-basic-service/target/logs"
+      mall-auth-service:
+        host: "192.168.10.177"
+        port: 22
+        username: "root"
+        password: "2016@pflm"
+        logPath: "/data/B2B2C/mall-auth-service/target/logs"
+      mall-ext-service:
+        host: "192.168.10.177"
+        port: 22
+        username: "root"
+        password: "2016@pflm"
+        logPath: "/data/B2B2C/mall-ext-service/target/logs"
+
+    bcm:
+      mall-basic-portal:
+        host: "192.168.10.141"
+        port: 22
+        username: "root"
+        password: "2020pflm@141#"
+        logPath: "/data/B2B2C/mall-basic-portal/target/logs"
+      mall-basic-service:
+        host: "192.168.10.141"
+        port: 22
+        username: "root"
+        password: "2020pflm@141#"
+        logPath: "/data/B2B2C/mall-basic-service/target/logs"
+      mall-auth-service:
+        host: "192.168.10.141"
+        port: 22
+        username: "root"
+        password: "2020pflm@141#"
+        logPath: "/data/B2B2C/mall-auth-service/target/logs"
+      mall-ext-service:
+        host: "192.168.10.141"
+        port: 22
+        username: "root"
+        password: "2020pflm@141#"
         logPath: "/data/B2B2C/mall-ext-service/target/logs"

@@ -19,6 +19,11 @@ export class LogView {
         this.maxLines = maxLines;
         this.highlightKeywords = [];
         this.levelFilter = 'ALL';
+        this.deferredSearchTimer = null;
+        this.deferMs = 300;
+        this.pendingChunks = [];
+        this.appendFlushTimer = null;
+        this.appendFlushMs = 80;
         this.searchKeyword = '';
         this.searchMatches = [];
         this.searchCursor = -1;
@@ -49,7 +54,39 @@ export class LogView {
             }
             return;
         }
-        this.appendLines(text);
+        this.enqueueAppend(text);
+    }
+
+    /**
+     * 将日志分块入队，并按短周期合并刷新，减少高频渲染抖动。
+     *
+     * @param {string} text 消息内容
+     */
+    enqueueAppend(text) {
+        const chunk = String(text || '');
+        if (!chunk) {
+            return;
+        }
+        this.pendingChunks.push(chunk);
+        if (this.appendFlushTimer) {
+            return;
+        }
+        this.appendFlushTimer = window.setTimeout(() => {
+            this.appendFlushTimer = null;
+            this.flushPendingChunks();
+        }, this.appendFlushMs);
+    }
+
+    /**
+     * 合并并落地待渲染日志块。
+     */
+    flushPendingChunks() {
+        if (!this.pendingChunks.length) {
+            return;
+        }
+        const merged = this.pendingChunks.join('');
+        this.pendingChunks = [];
+        this.appendLines(merged);
     }
 
     /**
@@ -59,6 +96,20 @@ export class LogView {
         this.state.paused = !this.state.paused;
         const pauseBtn = el('btnPause');
         pauseBtn.textContent = this.state.paused ? '继续' : '暂停';
+        if (this.state.paused) {
+            if (this.appendFlushTimer) {
+                window.clearTimeout(this.appendFlushTimer);
+                this.appendFlushTimer = null;
+            }
+            if (this.pendingChunks.length) {
+                this.state.buffer.push(this.pendingChunks.join(''));
+                this.pendingChunks = [];
+                while (this.state.buffer.length > 300) {
+                    this.state.buffer.shift();
+                }
+            }
+            return;
+        }
         if (!this.state.paused && this.state.buffer.length > 0) {
             this.appendLines(this.state.buffer.join(''));
             this.state.buffer = [];
@@ -90,19 +141,28 @@ export class LogView {
      */
     appendLines(text) {
         const logEl = el('log');
+        const fragment = document.createDocumentFragment();
+        let appendCount = 0;
         String(text || '').split(/\r?\n/).forEach(line => {
             if (!line) {
                 return;
             }
             const lineEl = this.createLogLineElement(line);
-            logEl.appendChild(lineEl);
+            fragment.appendChild(lineEl);
+            appendCount += 1;
         });
+        if (!appendCount) {
+            return;
+        }
+        logEl.appendChild(fragment);
 
         this.trimLines(logEl);
-        this.refreshLevelVisibility();
-        this.refreshSearchMatches(true, false);
+        if (this.searchKeyword) {
+            this.scheduleSearchRefresh();
+        }
         this.state.lineCount = logEl.children.length;
         this.renderLineCount();
+        this.renderLevelStats();
         if (checked('autoScroll')) {
             this.scrollToBottom();
         } else {
@@ -116,6 +176,15 @@ export class LogView {
     clearLogs() {
         const logEl = el('log');
         logEl.textContent = '';
+        this.pendingChunks = [];
+        if (this.appendFlushTimer) {
+            window.clearTimeout(this.appendFlushTimer);
+            this.appendFlushTimer = null;
+        }
+        if (this.deferredSearchTimer) {
+            window.clearTimeout(this.deferredSearchTimer);
+            this.deferredSearchTimer = null;
+        }
         this.setEmptyTip(this.isSocketActive()
             ? '日志窗口已清空，等待新日志推送...'
             : '日志已清空。请点击“开始查看”重新监听。');
@@ -125,6 +194,7 @@ export class LogView {
         this.updateSearchCounter();
         this.state.lineCount = 0;
         this.renderLineCount();
+        this.renderLevelStats();
         this.updateBottomButton();
     }
 
@@ -137,10 +207,12 @@ export class LogView {
         lineEl.classList.add('line-system');
         logEl.appendChild(lineEl);
         this.trimLines(logEl);
-        this.refreshLevelVisibility();
-        this.refreshSearchMatches(true, false);
+        if (this.searchKeyword) {
+            this.scheduleSearchRefresh();
+        }
         this.state.lineCount = logEl.children.length;
         this.renderLineCount();
+        this.renderLevelStats();
         if (checked('autoScroll')) {
             this.scrollToBottom();
         } else {
@@ -162,6 +234,7 @@ export class LogView {
         });
         this.refreshSearchMatches(true, false);
         this.renderLineCount();
+        this.renderLevelStats();
     }
 
     /**
@@ -211,6 +284,7 @@ export class LogView {
         if (line.indexOf('连接') >= 0 && line.indexOf('失败') < 0) {
             lineEl.classList.add('line-ok');
         }
+        this.applyLevelFilterForLine(lineEl);
     }
 
     /**
@@ -608,16 +682,39 @@ export class LogView {
     }
 
     /**
+     * 异步调度搜索刷新，降低高频日志时的全量扫描压力。
+     */
+    scheduleSearchRefresh() {
+        if (this.deferredSearchTimer) {
+            return;
+        }
+        this.deferredSearchTimer = window.setTimeout(() => {
+            this.deferredSearchTimer = null;
+            this.refreshSearchMatches(true, false);
+        }, this.deferMs);
+    }
+
+    /**
      * 刷新级别过滤下的显示状态。
      */
     refreshLevelVisibility() {
         const filter = this.levelFilter;
         const rows = document.querySelectorAll('#log .log-line');
         rows.forEach(row => {
-            const level = row.dataset && row.dataset.level ? row.dataset.level : 'INFO';
-            const visible = matchLevelFilter(filter, level);
-            row.classList.toggle('line-level-hidden', !visible);
+            this.applyLevelFilterForLine(row, filter);
         });
+    }
+
+    /**
+     * 对单行应用级别过滤显示状态。
+     *
+     * @param {HTMLElement} row 行元素
+     * @param {string} filter 过滤级别
+     */
+    applyLevelFilterForLine(row, filter) {
+        const level = row.dataset && row.dataset.level ? row.dataset.level : 'INFO';
+        const visible = matchLevelFilter(filter || this.levelFilter, level);
+        row.classList.toggle('line-level-hidden', !visible);
     }
 
     /**
@@ -663,6 +760,64 @@ export class LogView {
             return 'WARN';
         }
         return 'INFO';
+    }
+
+    /**
+     * 刷新日志级别按钮中的统计数量。
+     */
+    renderLevelStats() {
+        const stats = this.collectLevelStats();
+        this.renderLevelButtonText('btnLevelAll', '全部', stats.ALL);
+        this.renderLevelButtonText('btnLevelInfo', 'INFO', stats.INFO);
+        this.renderLevelButtonText('btnLevelWarn', 'WARN', stats.WARN);
+        this.renderLevelButtonText('btnLevelError', 'ERROR', stats.ERROR);
+    }
+
+    /**
+     * 统计日志级别数量。
+     *
+     * @returns {{ALL:number,INFO:number,WARN:number,ERROR:number}} 统计结果
+     */
+    collectLevelStats() {
+        const stats = {
+            ALL: 0,
+            INFO: 0,
+            WARN: 0,
+            ERROR: 0
+        };
+        const lines = Array.from(document.querySelectorAll('#log .log-line'));
+        lines.forEach(lineEl => {
+            if (lineEl.classList.contains('hidden')) {
+                return;
+            }
+            stats.ALL += 1;
+            const level = lineEl.dataset && lineEl.dataset.level ? lineEl.dataset.level : 'INFO';
+            if (level === 'ERROR') {
+                stats.ERROR += 1;
+                return;
+            }
+            if (level === 'WARN') {
+                stats.WARN += 1;
+                return;
+            }
+            stats.INFO += 1;
+        });
+        return stats;
+    }
+
+    /**
+     * 渲染单个级别按钮文案。
+     *
+     * @param {string} buttonId 按钮 ID
+     * @param {string} label 按钮基础文案
+     * @param {number} count 统计数量
+     */
+    renderLevelButtonText(buttonId, label, count) {
+        const button = el(buttonId);
+        if (!button) {
+            return;
+        }
+        button.textContent = `${label}(${count})`;
     }
 }
 

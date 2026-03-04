@@ -57,6 +57,11 @@ const LOG_LEVEL_BUTTON_IDS = {
     ERROR: 'btnLevelError'
 };
 
+/**
+ * 分享链接恢复的状态。
+ */
+const sharedState = parseSharedStateFromUrl();
+
 window.addEventListener('load', init);
 
 /**
@@ -71,6 +76,7 @@ function init() {
     updateControls();
     logView.setHighlightRules(filterChainManager.getRules());
     logView.setEmptyTip('尚未开始查看日志。请先选择环境和服务，然后点击“开始查看”。');
+    logView.renderLevelStats();
     updateSettingsSummary();
     logView.appendSystem('操作提示：先选择环境和服务，再点击“开始查看”。');
     loadServers();
@@ -134,9 +140,12 @@ function bindEvents() {
     el('btnPause').addEventListener('click', () => logView.togglePause());
     el('btnBreak').addEventListener('click', () => logView.appendManualBreak());
     el('btnClear').addEventListener('click', () => logView.clearLogs());
+    el('btnImmersive').addEventListener('click', toggleImmersiveMode);
     el('btnBottom').addEventListener('click', () => logView.scrollToBottom());
-
-    el('settingsFold').addEventListener('toggle', () => preferenceStore.set('settingsOpen', !!el('settingsFold').open));
+    el('btnShareLink').addEventListener('click', copyShareLink);
+    el('btnOpenSettings').addEventListener('click', openSettingsDrawer);
+    el('btnCloseSettings').addEventListener('click', closeSettingsDrawer);
+    el('settingsDrawerMask').addEventListener('click', closeSettingsDrawer);
 
     el('filterChain').addEventListener('input', onFilterRuleChanged);
     el('filterChain').addEventListener('change', onFilterRuleChanged);
@@ -179,6 +188,160 @@ function clearLogSearch() {
 }
 
 /**
+ * 判断当前是否为专家模式。
+ *
+ * @returns {boolean} 是否专家模式
+ */
+function isExpertMode() {
+    return document.body.getAttribute('data-ui-mode') === 'expert';
+}
+
+/**
+ * 获取当前模式下生效的过滤规则。
+ *
+ * @returns {Array<{type:string,data:string}>} 规则列表
+ */
+function getActiveFilterRules() {
+    if (!isExpertMode()) {
+        return [];
+    }
+    return filterChainManager.getRules();
+}
+
+/**
+ * 暂存专家模式过滤规则，避免切换快速模式后丢失。
+ */
+function stashExpertFilterRules() {
+    const rules = filterChainManager.getRules();
+    preferenceStore.set('expertFilterRules', JSON.stringify(rules));
+}
+
+/**
+ * 恢复专家模式过滤规则。
+ */
+function restoreExpertFilterRules() {
+    const raw = preferenceStore.getString('expertFilterRules', '');
+    if (!raw) {
+        filterChainManager.setRules([]);
+        return;
+    }
+    try {
+        const parsed = JSON.parse(raw);
+        filterChainManager.setRules(Array.isArray(parsed) ? parsed : []);
+    } catch (error) {
+        // 忽略异常缓存，保持页面可用
+        filterChainManager.setRules([]);
+    }
+}
+
+/**
+ * 复制链接按钮反馈。
+ *
+ * @param {string} text 按钮文案
+ * @param {string} tone 反馈类型
+ */
+function flashShareButton(text, tone) {
+    const button = el('btnShareLink');
+    if (!button) {
+        return;
+    }
+    const baseText = button.getAttribute('data-base-text') || button.textContent || '⧉';
+    button.setAttribute('data-base-text', baseText);
+    if (state.shareFeedbackTimer) {
+        window.clearTimeout(state.shareFeedbackTimer);
+        state.shareFeedbackTimer = null;
+    }
+    button.textContent = text;
+    button.classList.toggle('success', tone === 'success');
+    button.classList.toggle('error', tone === 'error');
+    state.shareFeedbackTimer = window.setTimeout(() => {
+        button.textContent = baseText;
+        button.classList.remove('success');
+        button.classList.remove('error');
+        state.shareFeedbackTimer = null;
+    }, 1400);
+}
+
+/**
+ * 复制当前视图对应的分享链接。
+ */
+function copyShareLink() {
+    const link = buildShareLink();
+    copyText(link)
+        .then(() => flashShareButton('✓', 'success'))
+        .catch(() => showManualCopyHint(link));
+}
+
+/**
+ * 复制失败时展示可手动复制的完整链接。
+ *
+ * @param {string} link 分享链接
+ */
+function showManualCopyHint(link) {
+    const text = String(link || '');
+    flashShareButton('!', 'error');
+    window.prompt('自动复制失败，请手动复制链接', text);
+}
+
+/**
+ * 构建分享链接（包含关键筛选参数）。
+ *
+ * @returns {string} 分享链接
+ */
+function buildShareLink() {
+    const url = new URL(window.location.href);
+    const params = url.searchParams;
+    params.set('share', '1');
+    params.set('env', value('env'));
+    params.set('service', value('service'));
+    params.set('file', value('file'));
+    params.set('lines', String(parseLines(value('lines'))));
+    params.set('level', preferenceStore.getString('logLevelFilter', 'ALL'));
+    params.set('autoScroll', checked('autoScroll') ? '1' : '0');
+    params.set('autoReconnect', checked('autoReconnect') ? '1' : '0');
+    params.set('showSystem', checked('showSystem') ? '1' : '0');
+    params.set('uiMode', document.body.getAttribute('data-ui-mode') || 'quick');
+    params.set('logSearch', value('logSearch'));
+    params.set('rules', JSON.stringify(getActiveFilterRules()));
+    url.search = params.toString();
+    return url.toString();
+}
+
+/**
+ * 文本复制（优先 Clipboard API）。
+ *
+ * @param {string} text 文本
+ * @returns {Promise<void>} 执行结果
+ */
+function copyText(text) {
+    const content = String(text || '');
+    if (navigator.clipboard && window.isSecureContext) {
+        return navigator.clipboard.writeText(content);
+    }
+    return new Promise((resolve, reject) => {
+        try {
+            const textarea = document.createElement('textarea');
+            textarea.value = content;
+            textarea.setAttribute('readonly', 'readonly');
+            textarea.style.position = 'fixed';
+            textarea.style.left = '-9999px';
+            document.body.appendChild(textarea);
+            textarea.focus();
+            textarea.select();
+            const success = document.execCommand('copy');
+            document.body.removeChild(textarea);
+            if (success) {
+                resolve();
+                return;
+            }
+            reject(new Error('copy failed'));
+        } catch (error) {
+            reject(error);
+        }
+    });
+}
+
+/**
  * 日志区域点击事件（复制按钮）。
  *
  * @param {MouseEvent} event 鼠标事件
@@ -197,24 +360,25 @@ function onLogAreaClick(event) {
  * 从本地恢复可记忆的偏好项。
  */
 function restoreLocalPreferences() {
-    el('lines').value = String(preferenceStore.getNumber('lines', 200));
-    el('autoScroll').checked = preferenceStore.getBoolean('autoScroll', true);
-    el('autoReconnect').checked = preferenceStore.getBoolean('autoReconnect', true);
-    el('showSystem').checked = preferenceStore.getBoolean('showSystem', true);
-    el('settingsFold').open = preferenceStore.getBoolean('settingsOpen', false);
-    el('logSearch').value = preferenceStore.getString('logSearch', '');
-    applySavedUiMode();
+    el('lines').value = String(getSharedNumber('lines', preferenceStore.getNumber('lines', 200)));
+    el('autoScroll').checked = getSharedBoolean('autoScroll', preferenceStore.getBoolean('autoScroll', true));
+    el('autoReconnect').checked = getSharedBoolean('autoReconnect', preferenceStore.getBoolean('autoReconnect', true));
+    el('showSystem').checked = getSharedBoolean('showSystem', preferenceStore.getBoolean('showSystem', true));
+    setSettingsDrawerOpen(preferenceStore.getBoolean('settingsOpen', false), false);
+    setImmersiveMode(preferenceStore.getBoolean('immersiveMode', false), false);
+    el('logSearch').value = getSharedString('logSearch', preferenceStore.getString('logSearch', ''));
+    applyUiModeByState();
     applySavedMetricsCollapse();
-    applySavedFilterRules();
-    applySavedLogLevelFilter();
+    applyFilterRulesByState();
+    applyLogLevelByState();
     logView.setSearchKeyword(value('logSearch'));
 }
 
 /**
  * 应用保存的界面模式。
  */
-function applySavedUiMode() {
-    const uiMode = preferenceStore.getString('uiMode', 'quick');
+function applyUiModeByState() {
+    const uiMode = getSharedString('uiMode', preferenceStore.getString('uiMode', 'quick'));
     setUiMode(uiMode === 'expert' ? 'expert' : 'quick');
 }
 
@@ -222,7 +386,7 @@ function applySavedUiMode() {
  * 应用保存的指标面板收起状态。
  */
 function applySavedMetricsCollapse() {
-    const collapsed = preferenceStore.getBoolean('metricsCollapsed', false);
+    const collapsed = preferenceStore.getBoolean('metricsCollapsed', true);
     document.body.classList.toggle('metrics-collapsed', collapsed);
     renderMetricsToggleButton();
 }
@@ -230,8 +394,13 @@ function applySavedMetricsCollapse() {
 /**
  * 应用保存的过滤规则。
  */
-function applySavedFilterRules() {
-    const raw = preferenceStore.getString('filterRules', '');
+function applyFilterRulesByState() {
+    if (!isExpertMode()) {
+        filterChainManager.setRules([]);
+        preferenceStore.set('filterRules', '[]');
+        return;
+    }
+    const raw = getSharedString('rules', preferenceStore.getString('filterRules', ''));
     if (!raw) {
         return;
     }
@@ -248,8 +417,8 @@ function applySavedFilterRules() {
 /**
  * 应用保存的日志级别过滤条件。
  */
-function applySavedLogLevelFilter() {
-    const level = preferenceStore.getString('logLevelFilter', 'ALL');
+function applyLogLevelByState() {
+    const level = getSharedString('level', preferenceStore.getString('logLevelFilter', 'ALL'));
     setLogLevelFilter(level, false);
 }
 
@@ -268,7 +437,10 @@ function toggleMetricsPanel() {
  */
 function renderMetricsToggleButton() {
     const collapsed = document.body.classList.contains('metrics-collapsed');
-    el('btnToggleMetrics').textContent = collapsed ? '展开面板' : '收起面板';
+    const toggleButton = el('btnToggleMetrics');
+    toggleButton.textContent = collapsed ? '❯' : '❮';
+    toggleButton.title = collapsed ? '展开面板' : '收起面板';
+    toggleButton.setAttribute('aria-label', collapsed ? '展开面板' : '收起面板');
 }
 
 /**
@@ -282,7 +454,7 @@ function loadServers() {
             const envEl = el('env');
             envEl.innerHTML = '';
             Object.keys(state.config).forEach(env => envEl.add(new Option(env, env)));
-            applySavedSelectValue(envEl, preferenceStore.getString('env', ''));
+            applySavedSelectValue(envEl, consumeSharedString('env', preferenceStore.getString('env', '')));
             loadServices();
         })
         .catch(() => logView.setStatus('配置加载失败', 'var(--error)'));
@@ -297,7 +469,7 @@ function loadServices() {
     serviceEl.innerHTML = '';
     collectServices(state.config, env).forEach(service => serviceEl.add(new Option(service, service)));
     serviceEl.add(new Option('全部服务', ALL));
-    applySavedSelectValue(serviceEl, preferenceStore.getString('service', ''));
+    applySavedSelectValue(serviceEl, consumeSharedString('service', preferenceStore.getString('service', '')));
     loadFiles();
     metricsPanel.refresh(false);
 }
@@ -341,7 +513,7 @@ function renderFileOptions() {
     const aggregate = isAggregateSelected(env, service);
     const fileEl = el('file');
     const keyword = value('fileSearch').trim().toLowerCase();
-    const savedFile = preferenceStore.getString('file', '');
+    const savedFile = consumeSharedString('file', preferenceStore.getString('file', ''));
     const currentValue = fileEl.value;
 
     fileEl.innerHTML = '';
@@ -379,7 +551,7 @@ function connect() {
         return;
     }
 
-    const filterRules = filterChainManager.getRules();
+    const filterRules = getActiveFilterRules();
     const payload = {
         env: env,
         service: service || ALL,
@@ -394,10 +566,7 @@ function connect() {
     statusBar.setReconnectSeconds(null);
     logView.setHighlightRules(filterRules);
     logView.setEmptyTip('连接中，等待日志数据...');
-    const settingsFoldEl = el('settingsFold');
-    if (settingsFoldEl) {
-        settingsFoldEl.open = false;
-    }
+    closeSettingsDrawer();
     logView.resetPause();
     closeSocket(true);
     clearReconnectTimer();
@@ -523,7 +692,15 @@ function setUiMode(mode) {
     el('btnModeExpert').classList.toggle('active', normalized === 'expert');
     el('btnModeExpert').classList.toggle('secondary', normalized !== 'expert');
     if (normalized === 'expert') {
-        el('settingsFold').open = true;
+        restoreExpertFilterRules();
+        logView.setHighlightRules(filterChainManager.getRules());
+        setSettingsDrawerOpen(true, true);
+    } else {
+        stashExpertFilterRules();
+        filterChainManager.setRules([]);
+        logView.setHighlightRules([]);
+        preferenceStore.set('filterRules', '[]');
+        setSettingsDrawerOpen(false, true);
     }
     preferenceStore.set('uiMode', normalized);
 }
@@ -534,6 +711,19 @@ function setUiMode(mode) {
  * @param {KeyboardEvent} event 键盘事件
  */
 function onShortcut(event) {
+    if (event.key === 'F9') {
+        event.preventDefault();
+        toggleImmersiveMode();
+        return;
+    }
+    if (event.key === 'Escape' && isSettingsDrawerOpen()) {
+        event.preventDefault();
+        closeSettingsDrawer();
+        return;
+    }
+    if (shouldIgnoreGlobalShortcut(event)) {
+        return;
+    }
     if (event.ctrlKey && event.key === 'Enter') {
         event.preventDefault();
         connect();
@@ -547,6 +737,95 @@ function onShortcut(event) {
     if (event.key === 'Escape') {
         event.preventDefault();
         stop();
+    }
+}
+
+/**
+ * 输入态下忽略全局快捷键，避免误触发连接控制动作。
+ *
+ * @param {KeyboardEvent} event 键盘事件
+ * @returns {boolean} 是否忽略
+ */
+function shouldIgnoreGlobalShortcut(event) {
+    const target = event && event.target;
+    if (!target || typeof target !== 'object') {
+        return false;
+    }
+    if (target.isContentEditable) {
+        return true;
+    }
+    const tagName = String(target.tagName || '').toLowerCase();
+    return tagName === 'input' || tagName === 'textarea' || tagName === 'select';
+}
+
+/**
+ * 切换沉浸模式，最大化日志窗口可视区域。
+ */
+function toggleImmersiveMode() {
+    setImmersiveMode(!document.body.classList.contains('immersive-mode'), true);
+}
+
+/**
+ * 设置沉浸模式状态。
+ *
+ * @param {boolean} enabled 是否启用
+ * @param {boolean} persist 是否持久化
+ */
+function setImmersiveMode(enabled, persist) {
+    const active = !!enabled;
+    document.body.classList.toggle('immersive-mode', active);
+    const button = el('btnImmersive');
+    if (button) {
+        button.classList.toggle('active', active);
+        button.textContent = active ? '⤡' : '⛶';
+        button.title = active ? '退出沉浸模式' : '进入沉浸模式';
+    }
+    if (active) {
+        closeSettingsDrawer();
+    }
+    if (persist) {
+        preferenceStore.set('immersiveMode', active);
+    }
+}
+
+/**
+ * 打开设置抽屉。
+ */
+function openSettingsDrawer() {
+    setSettingsDrawerOpen(true, true);
+}
+
+/**
+ * 关闭设置抽屉。
+ */
+function closeSettingsDrawer() {
+    setSettingsDrawerOpen(false, true);
+}
+
+/**
+ * 判断设置抽屉是否打开。
+ *
+ * @returns {boolean} 是否打开
+ */
+function isSettingsDrawerOpen() {
+    return document.body.classList.contains('settings-drawer-open');
+}
+
+/**
+ * 设置抽屉开关状态。
+ *
+ * @param {boolean} open 是否打开
+ * @param {boolean} persist 是否持久化
+ */
+function setSettingsDrawerOpen(open, persist) {
+    const visible = !!open;
+    document.body.classList.toggle('settings-drawer-open', visible);
+    const drawer = el('settingsDrawer');
+    if (drawer) {
+        drawer.setAttribute('aria-hidden', visible ? 'false' : 'true');
+    }
+    if (persist) {
+        preferenceStore.set('settingsOpen', visible);
     }
 }
 
@@ -632,6 +911,111 @@ function normalizeLogLevel(level) {
 }
 
 /**
+ * 从分享状态中读取字符串，若不存在则使用回退值。
+ *
+ * @param {string} key 参数名
+ * @param {string} fallback 回退值
+ * @returns {string} 字符串
+ */
+function getSharedString(key, fallback) {
+    if (!sharedState || sharedState[key] === null || sharedState[key] === undefined) {
+        return fallback;
+    }
+    const value = String(sharedState[key]);
+    if (!value.trim()) {
+        return fallback;
+    }
+    return value;
+}
+
+/**
+ * 从分享状态中读取布尔值。
+ *
+ * @param {string} key 参数名
+ * @param {boolean} fallback 回退值
+ * @returns {boolean} 布尔值
+ */
+function getSharedBoolean(key, fallback) {
+    if (!sharedState || sharedState[key] === null || sharedState[key] === undefined) {
+        return fallback;
+    }
+    const raw = String(sharedState[key]).trim().toLowerCase();
+    if (raw === '1' || raw === 'true') {
+        return true;
+    }
+    if (raw === '0' || raw === 'false') {
+        return false;
+    }
+    return fallback;
+}
+
+/**
+ * 从分享状态中读取数字。
+ *
+ * @param {string} key 参数名
+ * @param {number} fallback 回退值
+ * @returns {number} 数值
+ */
+function getSharedNumber(key, fallback) {
+    if (!sharedState || sharedState[key] === null || sharedState[key] === undefined) {
+        return fallback;
+    }
+    const raw = String(sharedState[key]).trim();
+    if (!raw) {
+        return fallback;
+    }
+    const number = Number(raw);
+    if (Number.isNaN(number)) {
+        return fallback;
+    }
+    return number;
+}
+
+/**
+ * 获取并消费一次性分享参数。
+ *
+ * @param {string} key 参数名
+ * @param {string} fallback 回退值
+ * @returns {string} 参数值
+ */
+function consumeSharedString(key, fallback) {
+    if (!sharedState || sharedState[key] === null || sharedState[key] === undefined) {
+        return fallback;
+    }
+    const value = String(sharedState[key]);
+    delete sharedState[key];
+    if (!value.trim()) {
+        return fallback;
+    }
+    return value;
+}
+
+/**
+ * 解析 URL 中的分享状态参数。
+ *
+ * @returns {Object|null} 分享状态
+ */
+function parseSharedStateFromUrl() {
+    const params = new URLSearchParams(window.location.search || '');
+    if (params.get('share') !== '1') {
+        return null;
+    }
+    return {
+        env: params.get('env') || '',
+        service: params.get('service') || '',
+        file: params.get('file') || '',
+        lines: params.get('lines') || '',
+        level: params.get('level') || '',
+        autoScroll: params.get('autoScroll') || '',
+        autoReconnect: params.get('autoReconnect') || '',
+        showSystem: params.get('showSystem') || '',
+        uiMode: params.get('uiMode') || '',
+        logSearch: params.get('logSearch') || '',
+        rules: params.get('rules') || ''
+    };
+}
+
+/**
  * 更新“更多设置”摘要。
  */
 function updateSettingsSummary() {
@@ -644,9 +1028,8 @@ function updateSettingsSummary() {
         ? fileEl.options[fileEl.selectedIndex].text
         : '默认文件';
     const shortFile = abbreviateText(selectedLabel || '默认文件', 16);
-    const filterCount = filterChainManager.getRules().length;
     const mode = isAggregateSelected(value('env'), value('service')) ? '全部服务' : '单服务';
-    summaryEl.textContent = `文件:${shortFile} | 过滤:${filterCount}条 | ${mode}`;
+    summaryEl.textContent = `文件:${shortFile} | ${mode}`;
 }
 
 /**
