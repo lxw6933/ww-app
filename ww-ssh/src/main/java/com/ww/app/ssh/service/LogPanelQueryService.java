@@ -139,6 +139,37 @@ public class LogPanelQueryService {
     }
 
     /**
+     * 按“环境 + 实例服务键”精确解析单目标。
+     * <p>
+     * 该方法不会执行服务组聚合，适用于实例级启停运维场景。
+     * </p>
+     *
+     * @param env           环境名
+     * @param serviceKey    实例服务键（配置中的原始 key）
+     * @return 单实例目标
+     */
+    public LogTarget resolveExactTarget(String env, String serviceKey) {
+        String normalizedEnv = trimToEmpty(env);
+        String normalizedServiceKey = trimToEmpty(serviceKey);
+        if (normalizedEnv.isEmpty()) {
+            throw new IllegalArgumentException("环境不能为空");
+        }
+        if (normalizedServiceKey.isEmpty()) {
+            throw new IllegalArgumentException("实例服务不能为空");
+        }
+        Map<String, Map<String, LogPanelProperties.ServerNode>> all = safeServers();
+        Map<String, LogPanelProperties.ServerNode> serviceMap = safeServiceMap(all.get(normalizedEnv));
+        if (serviceMap.isEmpty()) {
+            throw new IllegalArgumentException("未找到环境: " + normalizedEnv);
+        }
+        LogPanelProperties.ServerNode node = serviceMap.get(normalizedServiceKey);
+        if (node == null) {
+            throw new IllegalArgumentException("未找到实例服务: " + normalizedServiceKey);
+        }
+        return new LogTarget(normalizedEnv, normalizedServiceKey, node);
+    }
+
+    /**
      * 安全获取全部配置，避免空指针。
      *
      * @return 环境服务配置映射

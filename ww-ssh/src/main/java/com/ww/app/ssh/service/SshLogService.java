@@ -6,6 +6,7 @@ import com.jcraft.jsch.JSchException;
 import com.jcraft.jsch.Session;
 import com.ww.app.ssh.config.LogPanelProperties;
 import com.ww.app.ssh.model.HostMetricSnapshot;
+import com.ww.app.ssh.model.InstanceOperationRequest;
 import com.ww.app.ssh.model.LogStreamRequest;
 import com.ww.app.ssh.model.LogTarget;
 import com.ww.app.ssh.service.support.LogLineFilterMatcher;
@@ -41,6 +42,46 @@ import java.util.function.Consumer;
  */
 @Service
 public class SshLogService {
+
+    /**
+     * 实例运维命令退出码回显标记。
+     */
+    private static final String INSTANCE_EXIT_MARKER = "__WW_INSTANCE_EXIT__:";
+
+    /**
+     * 实例状态：运行中。
+     */
+    private static final String INSTANCE_STATUS_RUNNING = "running";
+
+    /**
+     * 实例状态：已停止。
+     */
+    private static final String INSTANCE_STATUS_STOPPED = "stopped";
+
+    /**
+     * 实例状态：未知。
+     */
+    private static final String INSTANCE_STATUS_UNKNOWN = "unknown";
+
+    /**
+     * 实例状态：未配置。
+     */
+    private static final String INSTANCE_STATUS_UNCONFIGURED = "unconfigured";
+
+    /**
+     * 启动/重启动作状态校验最大重试次数。
+     */
+    private static final int OP_VERIFY_RETRY_START = 6;
+
+    /**
+     * 停止动作状态校验最大重试次数。
+     */
+    private static final int OP_VERIFY_RETRY_STOP = 4;
+
+    /**
+     * 状态校验重试间隔（毫秒）。
+     */
+    private static final long OP_VERIFY_SLEEP_MS = 1200L;
 
     /**
      * SSH 命令构建器。
@@ -113,13 +154,66 @@ public class SshLogService {
             snapshot.setCpuUsagePercent(normalizePercent(parseDouble(cpuLine)));
             applyMemoryMetrics(snapshot, memoryLine);
             applyLoadMetrics(snapshot, loadLine);
+            applyInstanceStatus(snapshot, target);
             snapshot.setStatus("ok");
             snapshot.setMessage("采集成功");
         } catch (Exception ex) {
+            applyInstanceStatus(snapshot, target);
             snapshot.setStatus("error");
             snapshot.setMessage(limitMessage(ex.getMessage()));
         }
         return snapshot;
+    }
+
+    /**
+     * 执行实例启停运维动作。
+     * <p>
+     * 动作执行依赖 {@code manageCommandFile} 配置，
+     * 由目标机器本地脚本负责具体启停逻辑。
+     * </p>
+     *
+     * @param target 目标实例
+     * @param action 操作动作（start/restart/stop）
+     * @return 命令输出文本
+     */
+    public String operateInstance(LogTarget target, String action) {
+        String commandFile = resolveManageCommandFile(target);
+        String command = sshCommandBuilder.buildInstanceOperationCommand(commandFile, action);
+        List<String> lines = executeCommandForLines(target, command, 2000);
+        int exitCode = 1;
+        boolean hasExitMarker = false;
+        List<String> userOutput = new ArrayList<>();
+        for (String line : lines) {
+            String normalized = line == null ? "" : line.trim();
+            if (normalized.startsWith(INSTANCE_EXIT_MARKER)) {
+                exitCode = parseExitCode(normalized.substring(INSTANCE_EXIT_MARKER.length()));
+                hasExitMarker = true;
+                continue;
+            }
+            userOutput.add(line);
+        }
+        if (!hasExitMarker) {
+            throw new IllegalStateException("命令执行结果未知：未获取退出码，请检查脚本是否中途 exit 或输出过多");
+        }
+        if (userOutput.isEmpty()) {
+            if (exitCode != 0) {
+                throw new IllegalStateException("命令执行失败，退出码: " + exitCode);
+            }
+            return "命令已执行完成，无输出";
+        }
+        StringBuilder builder = new StringBuilder();
+        for (String line : userOutput) {
+            if (builder.length() > 0) {
+                builder.append('\n');
+            }
+            builder.append(line == null ? "" : line);
+        }
+        if (exitCode != 0) {
+            throw new IllegalStateException("命令执行失败，退出码: " + exitCode + "，输出: " + builder);
+        }
+        String output = builder.toString();
+        verifyOperationEffect(target, action, output);
+        return output;
     }
 
     /**
@@ -306,6 +400,279 @@ public class SshLogService {
     }
 
     /**
+     * 解析实例运维脚本路径。
+     *
+     * @param target 目标实例
+     * @return 脚本路径
+     */
+    private String resolveManageCommandFile(LogTarget target) {
+        if (target == null || target.getServerNode() == null) {
+            throw new IllegalArgumentException("实例配置不存在，无法执行运维操作");
+        }
+        String commandFile = trimToEmpty(target.getServerNode().getManageCommandFile());
+        if (commandFile.isEmpty()) {
+            throw new IllegalArgumentException("未配置 manageCommandFile，无法执行实例运维操作");
+        }
+        return commandFile;
+    }
+
+    /**
+     * 采集实例运行状态。
+     *
+     * @param snapshot 指标快照
+     * @param target   目标实例
+     */
+    private void applyInstanceStatus(HostMetricSnapshot snapshot, LogTarget target) {
+        if (snapshot == null) {
+            return;
+        }
+        if (!hasManageCommandFile(target)) {
+            snapshot.setInstanceStatus(INSTANCE_STATUS_UNCONFIGURED);
+            snapshot.setInstanceStatusDetail("未配置运维脚本");
+            return;
+        }
+        try {
+            InstanceStatusProbe probe = probeInstanceStatus(target);
+            snapshot.setInstanceStatus(probe.status);
+            String detail = trimToEmpty(probe.detail);
+            if (detail.isEmpty()) {
+                if (INSTANCE_STATUS_RUNNING.equals(probe.status)) {
+                    detail = "运行中";
+                } else if (INSTANCE_STATUS_STOPPED.equals(probe.status)) {
+                    detail = "已停止";
+                } else {
+                    detail = "状态未知";
+                }
+            }
+            snapshot.setInstanceStatusDetail(detail);
+        } catch (Exception ex) {
+            snapshot.setInstanceStatus(INSTANCE_STATUS_UNKNOWN);
+            snapshot.setInstanceStatusDetail("状态检测失败: " + limitMessage(ex.getMessage()));
+        }
+    }
+
+    /**
+     * 汇总状态脚本输出，避免前端显示过长文本。
+     *
+     * @param lines 输出行
+     * @return 摘要文本
+     */
+    private String summarizeStatusOutput(List<String> lines) {
+        if (lines == null || lines.isEmpty()) {
+            return "";
+        }
+        StringBuilder builder = new StringBuilder();
+        int count = 0;
+        for (String line : lines) {
+            String normalized = trimToEmpty(line);
+            if (normalized.isEmpty()) {
+                continue;
+            }
+            if (builder.length() > 0) {
+                builder.append(" | ");
+            }
+            builder.append(normalized);
+            count++;
+            if (count >= 2 || builder.length() >= 96) {
+                break;
+            }
+        }
+        String text = builder.toString();
+        if (text.length() <= 96) {
+            return text;
+        }
+        return text.substring(0, 96);
+    }
+
+    /**
+     * 校验实例运维动作是否真正生效。
+     * <p>
+     * 仅对 start/restart/stop 执行状态回读校验：
+     * 1. start/restart 期望状态为运行中；<br>
+     * 2. stop 期望状态为已停止。<br>
+     * 为兼容脚本异步启动/停止场景，按动作做短时重试。
+     * </p>
+     *
+     * @param target          目标实例
+     * @param action          运维动作
+     * @param operationOutput 动作命令输出
+     */
+    private void verifyOperationEffect(LogTarget target, String action, String operationOutput) {
+        String normalizedAction = trimToEmpty(action).toLowerCase();
+        if (!InstanceOperationRequest.ACTION_START.equals(normalizedAction)
+                && !InstanceOperationRequest.ACTION_RESTART.equals(normalizedAction)
+                && !InstanceOperationRequest.ACTION_STOP.equals(normalizedAction)) {
+            return;
+        }
+        boolean expectedRunning = !InstanceOperationRequest.ACTION_STOP.equals(normalizedAction);
+        int retries = expectedRunning ? OP_VERIFY_RETRY_START : OP_VERIFY_RETRY_STOP;
+        InstanceStatusProbe lastProbe = null;
+        for (int i = 0; i < retries; i++) {
+            lastProbe = probeInstanceStatus(target);
+            if (expectedRunning && lastProbe.isRunning()) {
+                return;
+            }
+            if (!expectedRunning && lastProbe.isStopped()) {
+                return;
+            }
+            if (i + 1 < retries) {
+                sleepQuietly(OP_VERIFY_SLEEP_MS);
+            }
+        }
+        if (lastProbe == null) {
+            String message = "命令已执行，但状态校验失败：未获取到状态回读结果";
+            String trimmedOutput = trimToEmpty(operationOutput);
+            if (!trimmedOutput.isEmpty()) {
+                message = message + "，命令输出: " + limitMessage(trimmedOutput);
+            }
+            throw new IllegalStateException(message);
+        }
+        if (expectedRunning && lastProbe.isRunning()) {
+            return;
+        }
+        if (!expectedRunning && !lastProbe.isRunning()) {
+            return;
+        }
+        String expectedText = expectedRunning ? "运行中" : "已停止";
+        String actualText = toStatusText(lastProbe.status);
+        String detail = lastProbe == null ? "状态回读失败" : trimToEmpty(lastProbe.detail);
+        String message = "命令已执行，但状态校验未通过，期望: " + expectedText
+                + "，实际: " + actualText
+                + (detail.isEmpty() ? "" : "，状态详情: " + detail);
+        String trimmedOutput = trimToEmpty(operationOutput);
+        if (!trimmedOutput.isEmpty()) {
+            message = message + "，命令输出: " + limitMessage(trimmedOutput);
+        }
+        throw new IllegalStateException(message);
+    }
+
+    /**
+     * 读取实例状态探测结果。
+     *
+     * @param target 目标实例
+     * @return 状态探测结果
+     */
+    private InstanceStatusProbe probeInstanceStatus(LogTarget target) {
+        String commandFile = resolveManageCommandFile(target);
+        String command = sshCommandBuilder.buildInstanceStatusCommand(commandFile);
+        List<String> lines = executeCommandForLines(target, command, 160);
+        int exitCode = 1;
+        boolean hasExitMarker = false;
+        List<String> output = new ArrayList<>();
+        for (String line : lines) {
+            String normalized = line == null ? "" : line.trim();
+            if (normalized.startsWith(INSTANCE_EXIT_MARKER)) {
+                exitCode = parseExitCode(normalized.substring(INSTANCE_EXIT_MARKER.length()));
+                hasExitMarker = true;
+                continue;
+            }
+            if (!normalized.isEmpty()) {
+                output.add(line);
+            }
+        }
+        String detail = summarizeStatusOutput(output);
+        if (exitCode == 0) {
+            return new InstanceStatusProbe(INSTANCE_STATUS_RUNNING, detail.isEmpty() ? "运行中" : detail);
+        }
+        String normalizedDetail = detail.toLowerCase();
+        if (isStoppedDetail(normalizedDetail)) {
+            return new InstanceStatusProbe(INSTANCE_STATUS_STOPPED, detail.isEmpty()
+                    ? "状态脚本返回退出码: " + exitCode
+                    : detail);
+        }
+        if (isRunningDetail(normalizedDetail)) {
+            return new InstanceStatusProbe(INSTANCE_STATUS_RUNNING, detail);
+        }
+        if (!hasExitMarker) {
+            return new InstanceStatusProbe(INSTANCE_STATUS_UNKNOWN, detail.isEmpty() ? "状态脚本未返回退出码" : detail);
+        }
+        return new InstanceStatusProbe(INSTANCE_STATUS_UNKNOWN, detail.isEmpty()
+                ? "状态脚本返回退出码(未知语义): " + exitCode
+                : detail);
+    }
+
+    /**
+     * 判断状态详情是否表达“已停止/未运行”。
+     *
+     * @param normalizedDetail 小写状态详情
+     * @return true 表示已停止
+     */
+    private boolean isStoppedDetail(String normalizedDetail) {
+        return normalizedDetail.contains("not running")
+                || normalizedDetail.contains("stopped")
+                || normalizedDetail.contains("not started")
+                || normalizedDetail.contains("isn't running")
+                || normalizedDetail.contains("no process")
+                || normalizedDetail.contains("未运行")
+                || normalizedDetail.contains("已停止")
+                || normalizedDetail.contains("未启动")
+                || normalizedDetail.contains("进程不存在")
+                || normalizedDetail.contains("没有运行");
+    }
+
+    /**
+     * 判断状态详情是否表达“运行中”。
+     *
+     * @param normalizedDetail 小写状态详情
+     * @return true 表示运行中
+     */
+    private boolean isRunningDetail(String normalizedDetail) {
+        if (isStoppedDetail(normalizedDetail)) {
+            return false;
+        }
+        return normalizedDetail.contains("running")
+                || normalizedDetail.contains("started")
+                || normalizedDetail.contains("is running")
+                || normalizedDetail.contains("pid=")
+                || normalizedDetail.contains("启动中")
+                || normalizedDetail.contains("已启动")
+                || normalizedDetail.contains("运行中");
+    }
+
+    /**
+     * 将状态值映射为中文文案。
+     *
+     * @param status 状态值
+     * @return 中文文案
+     */
+    private String toStatusText(String status) {
+        if (INSTANCE_STATUS_RUNNING.equals(status)) {
+            return "运行中";
+        }
+        if (INSTANCE_STATUS_STOPPED.equals(status)) {
+            return "已停止";
+        }
+        return "未知";
+    }
+
+    /**
+     * 安静休眠，忽略中断异常并恢复中断标记。
+     *
+     * @param millis 休眠毫秒
+     */
+    private void sleepQuietly(long millis) {
+        try {
+            Thread.sleep(millis);
+        } catch (InterruptedException ignored) {
+            Thread.currentThread().interrupt();
+        }
+    }
+
+    /**
+     * 解析命令退出码文本。
+     *
+     * @param raw 原始退出码文本
+     * @return 退出码，解析失败时按 1 处理
+     */
+    private int parseExitCode(String raw) {
+        try {
+            return Integer.parseInt(trimToEmpty(raw));
+        } catch (Exception ex) {
+            return 1;
+        }
+    }
+
+    /**
      * 执行命令并读取输出行。
      *
      * @param target   目标服务节点
@@ -417,10 +784,26 @@ public class SshLogService {
         snapshot.setEnv(target.getEnv());
         snapshot.setService(target.getService());
         snapshot.setHost(target.getServerNode() == null ? "" : trimToEmpty(target.getServerNode().getHost()));
+        snapshot.setCanManage(hasManageCommandFile(target));
+        snapshot.setInstanceStatus(hasManageCommandFile(target) ? INSTANCE_STATUS_UNKNOWN : INSTANCE_STATUS_UNCONFIGURED);
+        snapshot.setInstanceStatusDetail(hasManageCommandFile(target) ? "检测中" : "未配置运维脚本");
         snapshot.setUpdatedAt(System.currentTimeMillis());
         snapshot.setStatus("error");
         snapshot.setMessage("采集中");
         return snapshot;
+    }
+
+    /**
+     * 判断目标实例是否已配置运维脚本。
+     *
+     * @param target 目标实例
+     * @return true 表示可执行启停操作
+     */
+    private boolean hasManageCommandFile(LogTarget target) {
+        if (target == null || target.getServerNode() == null) {
+            return false;
+        }
+        return !trimToEmpty(target.getServerNode().getManageCommandFile()).isEmpty();
     }
 
     /**
@@ -567,6 +950,60 @@ public class SshLogService {
             }
         } catch (Exception ignored) {
             // ignore
+        }
+    }
+
+    /**
+     * 实例状态探测结果。
+     */
+    private static class InstanceStatusProbe {
+
+        /**
+         * 状态值（running/stopped/unknown）。
+         */
+        private final String status;
+
+        /**
+         * 状态详情文本。
+         */
+        private final String detail;
+
+        /**
+         * 构造方法。
+         *
+         * @param status 状态值
+         * @param detail 状态详情
+         */
+        private InstanceStatusProbe(String status, String detail) {
+            this.status = status;
+            this.detail = detail;
+        }
+
+        /**
+         * 是否运行中。
+         *
+         * @return true 表示运行中
+         */
+        private boolean isRunning() {
+            return INSTANCE_STATUS_RUNNING.equals(status);
+        }
+
+        /**
+         * 是否已停止。
+         *
+         * @return true 表示已停止
+         */
+        private boolean isStopped() {
+            return INSTANCE_STATUS_STOPPED.equals(status);
+        }
+
+        /**
+         * 是否未知状态。
+         *
+         * @return true 表示未知
+         */
+        private boolean isUnknown() {
+            return !isRunning() && !isStopped();
         }
     }
 

@@ -791,9 +791,11 @@ export class LogView {
             return;
         }
         if (!this.searchKeyword) {
-            counterEl.textContent = '未搜索';
+            counterEl.textContent = '';
+            counterEl.style.display = 'none';
             return;
         }
+        counterEl.style.display = 'inline-flex';
         if (!this.searchMatches.length) {
             counterEl.textContent = '0 条';
             return;

@@ -21,8 +21,6 @@
                             <button id="btnModeQuick" type="button" class="mode-btn active icon-btn" title="快速模式" aria-label="快速模式">⚡</button>
                             <button id="btnModeExpert" type="button" class="mode-btn secondary icon-btn" title="专家模式" aria-label="专家模式">✦</button>
                         </div>
-                        <span class="mode-separator btn-expert" aria-hidden="true"></span>
-                        <button id="btnOpenSettings" type="button" class="secondary btn-expert mode-settings-btn icon-btn" title="更多设置（仅专家模式）" aria-label="更多设置（仅专家模式）">⚙</button>
                     </div>
                     <div class="header-tool-actions utility-panel">
                         <button id="btnShareLink" type="button" class="secondary icon-btn" title="复制排查链接" aria-label="复制排查链接">⧉</button>
@@ -78,6 +76,8 @@
                         <button id="btnPause" class="btn-expert icon-btn" title="暂停接收" aria-label="暂停接收">⏸</button>
                         <button id="btnBreak" class="secondary btn-expert icon-btn" title="插入分隔线" aria-label="插入分隔线">∥</button>
                         <button id="btnClear" class="danger btn-expert icon-btn" title="清空窗口" aria-label="清空窗口">⌫</button>
+                        <span class="action-separator btn-expert settings-separator" aria-hidden="true"></span>
+                        <button id="btnOpenSettings" type="button" class="secondary btn-expert toolbar-settings-btn icon-btn" title="更多设置（仅专家模式）" aria-label="更多设置（仅专家模式）">⚙</button>
                     </div>
                 </div>
 
@@ -98,7 +98,7 @@
                         </div>
                         <div class="log-search-box">
                             <input id="logSearch" type="text" placeholder="在当前窗口搜索关键词（仅前端）">
-                            <span id="logSearchCount">未搜索</span>
+                            <span id="logSearchCount"></span>
                             <button id="btnSearchPrev" type="button" class="secondary search-icon-btn" title="上一条" aria-label="上一条">↑</button>
                             <button id="btnSearchNext" type="button" class="secondary search-icon-btn" title="下一条" aria-label="下一条">↓</button>
                             <button id="btnSearchClear" type="button" class="secondary search-icon-btn" title="清空搜索" aria-label="清空搜索">×</button>

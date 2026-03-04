@@ -79,5 +79,17 @@ public class LogPanelProperties {
          * 服务默认日志目录或日志文件路径。
          */
         private String logPath;
+
+        /**
+         * 实例启停管理命令配置（可选）。
+         * <p>
+         * 当配置该字段后，前端可对该实例执行“启动/重启/停止”操作。
+         * 支持两类格式：
+         * 1. 脚本路径：如 {@code /data/app/server.sh}；<br>
+         * 2. 命令前缀：如 {@code sh server.sh} 或 {@code bash /data/app/server.sh}。<br>
+         * 系统会在尾部自动追加动作参数（start/restart/stop/status）执行。
+         * </p>
+         */
+        private String manageCommandFile;
     }
 }

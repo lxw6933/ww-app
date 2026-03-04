@@ -77,4 +77,32 @@ public class HostMetricSnapshot {
      * 快照采集时间（毫秒时间戳）。
      */
     private Long updatedAt;
+
+    /**
+     * 是否已配置实例启停脚本。
+     * <p>
+     * true 表示前端可展示“启动/重启/停止”运维按钮。
+     * </p>
+     */
+    private Boolean canManage;
+
+    /**
+     * 实例运行状态。
+     * <p>
+     * 可选值：
+     * 1. running：运行中；<br>
+     * 2. stopped：已停止；<br>
+     * 3. unknown：状态未知；<br>
+     * 4. unconfigured：未配置运维脚本。
+     * </p>
+     */
+    private String instanceStatus;
+
+    /**
+     * 实例状态详情。
+     * <p>
+     * 通常来自运维脚本 {@code status} 输出的摘要。
+     * </p>
+     */
+    private String instanceStatusDetail;
 }

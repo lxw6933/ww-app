@@ -44,7 +44,8 @@ const preferenceStore = new PreferenceStore();
  */
 const metricsPanel = new MetricsPanelController({
     getEnv: () => value('env'),
-    getService: () => value('service')
+    getService: () => value('service'),
+    operateInstance: (instanceService, action) => operateInstanceLifecycle(instanceService, action)
 });
 
 /**
@@ -66,6 +67,11 @@ const READ_MODE_TAIL = 'tail';
  * 读取模式：cat（一次性快照）。
  */
 const READ_MODE_CAT = 'cat';
+
+/**
+ * URL 分享参数中的文件键名。
+ */
+const SHARED_FILE_KEY = 'file';
 
 /**
  * 分享链接恢复的状态。
@@ -375,6 +381,73 @@ function onLogAreaClick(event) {
 }
 
 /**
+ * 执行实例启停运维动作。
+ *
+ * @param {string} instanceService 实例服务键
+ * @param {string} action 操作动作（start/restart/stop）
+ * @returns {Promise<Object>} 操作结果
+ */
+function operateInstanceLifecycle(instanceService, action) {
+    const env = value('env');
+    const service = String(instanceService || '').trim();
+    const normalizedAction = String(action || '').trim().toLowerCase();
+    if (!env || !service || !normalizedAction) {
+        return Promise.reject(new Error('实例运维参数不完整'));
+    }
+    return fetch('/api/instance/operate', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({
+            env: env,
+            service: service,
+            action: normalizedAction
+        })
+    })
+        .then(async response => {
+            let data = null;
+            try {
+                data = await response.json();
+            } catch (error) {
+                // 忽略 JSON 解析异常，后续走统一错误提示
+            }
+            if (!response.ok) {
+                const message = data && data.message ? data.message : `请求失败(${response.status})`;
+                if (data && data.output) {
+                    appendInstanceOutputToLog(service, normalizedAction, data.output);
+                }
+                throw new Error(message);
+            }
+            if (!data || !data.success) {
+                if (data && data.output) {
+                    appendInstanceOutputToLog(service, normalizedAction, data.output);
+                }
+                throw new Error((data && data.message) ? data.message : '实例操作失败');
+            }
+            logView.appendSystem(`实例操作完成：${service} -> ${normalizedAction}`);
+            appendInstanceOutputToLog(service, normalizedAction, data.output);
+            return data;
+        });
+}
+
+/**
+ * 将实例操作输出回显到日志窗口，便于快速定位执行问题。
+ *
+ * @param {string} service 实例服务键
+ * @param {string} action 操作动作
+ * @param {string} output 输出文本
+ */
+function appendInstanceOutputToLog(service, action, output) {
+    const text = String(output || '').trim();
+    if (!text) {
+        return;
+    }
+    const rows = text.split(/\r?\n/);
+    const keep = rows.slice(0, 20);
+    const suffix = rows.length > keep.length ? `\n...(共 ${rows.length} 行，已截断)` : '';
+    logView.appendSystem(`[实例输出] ${service} ${action}\n${keep.join('\n')}${suffix}`);
+}
+
+/**
  * 从本地恢复可记忆的偏好项。
  */
 function restoreLocalPreferences() {
@@ -382,7 +455,7 @@ function restoreLocalPreferences() {
     el('autoScroll').checked = getSharedBoolean('autoScroll', preferenceStore.getBoolean('autoScroll', true));
     el('autoReconnect').checked = getSharedBoolean('autoReconnect', preferenceStore.getBoolean('autoReconnect', true));
     el('showSystem').checked = getSharedBoolean('showSystem', preferenceStore.getBoolean('showSystem', true));
-    setSettingsDrawerOpen(preferenceStore.getBoolean('settingsOpen', false), false);
+    setSettingsDrawerOpen(false, false);
     setImmersiveMode(preferenceStore.getBoolean('immersiveMode', false), false);
     el('logSearch').value = getSharedString('logSearch', preferenceStore.getString('logSearch', ''));
     applyReadModeByState();
@@ -540,7 +613,7 @@ function renderFileOptions() {
     const aggregate = isAggregateSelected(env, service);
     const fileEl = el('file');
     const keyword = value('fileSearch').trim().toLowerCase();
-    const savedFile = consumeSharedString('file', preferenceStore.getString('file', ''));
+    const sharedFile = consumeSharedString(SHARED_FILE_KEY, '');
     const currentValue = fileEl.value;
 
     fileEl.innerHTML = '';
@@ -556,12 +629,13 @@ function renderFileOptions() {
     const filtered = state.fileOptions.filter(path => matchFileKeyword(path, keyword));
     filtered.forEach(path => fileEl.add(new Option(fileName(path), path)));
 
-    if (savedFile && filtered.indexOf(savedFile) >= 0) {
-        fileEl.value = savedFile;
+    if (sharedFile && filtered.indexOf(sharedFile) >= 0) {
+        fileEl.value = sharedFile;
     } else if (currentValue && filtered.indexOf(currentValue) >= 0) {
         fileEl.value = currentValue;
-    } else if (fileEl.options.length > 1) {
-        fileEl.selectedIndex = 1;
+    } else {
+        // 默认选择“使用后端默认”，由后端每次连接时解析最新日志文件。
+        fileEl.selectedIndex = 0;
     }
     preferenceStore.set('file', fileEl.value || '');
     updateSettingsSummary();
@@ -922,7 +996,6 @@ function setUiMode(mode) {
     if (normalized === 'expert') {
         restoreExpertFilterRules();
         logView.setHighlightRules(filterChainManager.getRules());
-        setSettingsDrawerOpen(true, true);
     } else {
         stashExpertFilterRules();
         filterChainManager.setRules([]);
