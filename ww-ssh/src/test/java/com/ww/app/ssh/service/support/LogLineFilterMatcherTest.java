@@ -71,6 +71,40 @@ class LogLineFilterMatcherTest {
     }
 
     /**
+     * 单条规则支持 AND 表达式（&&）。
+     */
+    @Test
+    void shouldSupportAndExpressionInSingleRule() {
+        LogLineFilterMatcher matcher = new LogLineFilterMatcher();
+        LogStreamRequest.FilterRule include = rule(LogStreamRequest.FILTER_TYPE_INCLUDE, "ERROR&&orderId");
+        Assertions.assertTrue(matcher.matches("ERROR orderId=1", Arrays.asList(include)));
+        Assertions.assertFalse(matcher.matches("ERROR only", Arrays.asList(include)));
+    }
+
+    /**
+     * 单条规则支持 OR 表达式（||）。
+     */
+    @Test
+    void shouldSupportOrExpressionInSingleRule() {
+        LogLineFilterMatcher matcher = new LogLineFilterMatcher();
+        LogStreamRequest.FilterRule include = rule(LogStreamRequest.FILTER_TYPE_INCLUDE, "ERROR||WARN");
+        Assertions.assertTrue(matcher.matches("WARN timeout", Arrays.asList(include)));
+        Assertions.assertFalse(matcher.matches("INFO startup", Arrays.asList(include)));
+    }
+
+    /**
+     * 排除规则支持表达式。
+     */
+    @Test
+    void shouldSupportExpressionInExcludeRule() {
+        LogLineFilterMatcher matcher = new LogLineFilterMatcher();
+        LogStreamRequest.FilterRule include = rule(LogStreamRequest.FILTER_TYPE_INCLUDE, "ERROR");
+        LogStreamRequest.FilterRule exclude = rule(LogStreamRequest.FILTER_TYPE_EXCLUDE, "DEBUG&&trace");
+        Assertions.assertFalse(matcher.matches("ERROR DEBUG trace", Arrays.asList(include, exclude)));
+        Assertions.assertTrue(matcher.matches("ERROR DEBUG", Arrays.asList(include, exclude)));
+    }
+
+    /**
      * 创建过滤规则对象。
      *
      * @param type 规则类型

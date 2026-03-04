@@ -81,7 +81,7 @@ export class FilterChainManager {
         const dataInput = document.createElement('input');
         dataInput.className = 'filter-data';
         dataInput.type = 'text';
-        dataInput.placeholder = '输入关键词，例如：异常、超时、下单成功';
+        dataInput.placeholder = '支持 && 与 ||，例如：异常&&超时 或 ERROR||WARN';
         dataInput.value = data || '';
 
         const removeButton = document.createElement('button');

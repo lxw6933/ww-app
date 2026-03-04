@@ -104,19 +104,20 @@ body[data-ui-mode='quick'] .group-action {
 .view-mode-panel {
     display: inline-flex;
     align-items: center;
-    gap: 4px;
-    padding: 3px 5px;
-    border: 1px solid #c8d8ea;
-    border-radius: 12px;
-    background: linear-gradient(180deg, #f9fcff 0%, #edf5fe 100%);
-    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.9);
+    gap: 7px;
+    padding: 3px 6px 3px 9px;
+    border: 1px solid #d2e0ee;
+    border-radius: 999px;
+    background: linear-gradient(180deg, #fbfdff 0%, #eef5fd 100%);
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.95);
 }
 
 .mode-panel-label {
-    font-size: 11px;
-    color: #3a5672;
+    font-size: 12px;
+    color: #36556f;
     font-weight: 700;
     white-space: nowrap;
+    letter-spacing: 0.2px;
 }
 
 .header-tool-actions {
@@ -130,11 +131,11 @@ body[data-ui-mode='quick'] .group-action {
 .utility-panel {
     display: inline-flex;
     align-items: center;
-    padding: 4px;
-    border: 1px solid #d7e2ee;
-    border-radius: 12px;
-    background: linear-gradient(180deg, #fbfdff 0%, #f0f7ff 100%);
-    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.92);
+    padding: 0;
+    border: none;
+    border-radius: 0;
+    background: transparent;
+    box-shadow: none;
     gap: 5px;
 }
 
@@ -153,18 +154,26 @@ body[data-ui-mode='quick'] .group-action {
 
 .mode-separator {
     width: 1px;
-    height: 20px;
-    margin: 0 2px;
-    background: #c7d9eb;
+    height: 18px;
+    margin: 0 1px;
+    background: #cfdeed;
     border-radius: 999px;
 }
 
 .mode-settings-btn.icon-btn {
-    min-width: 30px !important;
-    width: 30px;
+    min-width: 28px !important;
+    width: 28px;
     height: 28px;
-    border-radius: 8px;
+    border-radius: 999px;
+    border-color: #cbdaea;
+    background: #f4f9ff;
+    color: #375b78;
     font-size: 13px;
+}
+
+.mode-settings-btn.icon-btn:hover:not(:disabled) {
+    background: #e7f1fb;
+    border-color: #b9cfe4;
 }
 
 body[data-ui-mode='quick'] .utility-panel {
@@ -619,6 +628,10 @@ body.metrics-collapsed #btnToggleMetrics {
     align-items: center;
     column-gap: 8px;
     row-gap: 0;
+    border: none;
+    background: transparent;
+    padding: 0;
+    box-shadow: none;
 }
 
 .group-env label,
@@ -649,10 +662,10 @@ body.metrics-collapsed #btnToggleMetrics {
     width: 100%;
     min-width: 0;
     overflow: hidden;
-    padding: 4px;
-    border: 1px solid #d9e4f0;
-    border-radius: 10px;
-    background: #f7fbff;
+    padding: 0;
+    border: none;
+    border-radius: 0;
+    background: transparent;
 }
 
 .group-action button {
@@ -678,11 +691,11 @@ body.metrics-collapsed #btnToggleMetrics {
 .mode-switch {
     display: grid;
     grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: 4px;
-    padding: 3px;
+    gap: 2px;
+    padding: 2px;
     border-radius: 999px;
-    border: 1px solid #c4d6e8;
-    background: #deebf8;
+    border: 1px solid #c8d9ea;
+    background: #e6f0fa;
 }
 
 .mode-switch-header {
@@ -694,10 +707,10 @@ body.metrics-collapsed #btnToggleMetrics {
     font-size: 13px;
     padding: 0;
     width: 30px;
-    border-radius: 8px;
+    border-radius: 999px;
     border-color: transparent;
     background: transparent;
-    color: #4a6480;
+    color: #3f5f7c;
     font-weight: 700;
     min-width: 30px;
 }
@@ -709,14 +722,14 @@ body.metrics-collapsed #btnToggleMetrics {
 }
 
 .mode-btn:hover:not(:disabled) {
-    background: rgba(75, 116, 153, 0.12);
+    background: rgba(66, 109, 145, 0.16);
 }
 
 .mode-btn.active {
-    background: #1d7ed4;
+    background: linear-gradient(180deg, #2d8ae0 0%, #1f79cb 100%);
     color: #ffffff;
     border-color: #1d7ed4;
-    box-shadow: 0 4px 10px rgba(29, 126, 212, 0.28);
+    box-shadow: 0 3px 8px rgba(31, 121, 203, 0.33);
 }
 
 .group-toggle {
@@ -742,10 +755,10 @@ body.metrics-collapsed #btnToggleMetrics {
     grid-template-columns: repeat(6, minmax(0, 1fr));
     align-items: center;
     gap: 6px;
-    border: 1px solid var(--border);
-    border-radius: 12px;
-    background: #f8fbff;
-    padding: 8px;
+    border: none;
+    border-radius: 0;
+    background: transparent;
+    padding: 0;
 }
 
 .status-bar span {
@@ -1143,22 +1156,22 @@ body.settings-drawer-open .settings-drawer {
     align-items: center;
     flex: 1 1 auto;
     gap: 8px;
-    padding: 4px;
-    border: 1px solid #d8e4f0;
-    border-radius: 12px;
-    background: #ffffff;
+    padding: 0;
+    border: none;
+    border-radius: 0;
+    background: transparent;
 }
 
 .log-level-box {
     display: inline-flex;
     align-items: center;
     flex-wrap: nowrap;
-    gap: 4px;
+    gap: 5px;
     min-width: 0;
-    padding: 3px;
-    border: 1px solid #dbe6f2;
-    border-radius: 10px;
-    background: #f6faff;
+    padding: 0;
+    border: none;
+    border-radius: 0;
+    background: transparent;
     flex: 0 0 auto;
 }
 
@@ -1167,10 +1180,10 @@ body.settings-drawer-open .settings-drawer {
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    padding: 0 8px;
-    border-radius: 8px;
-    background: #eaf3fd;
-    color: #4e6b86;
+    padding: 0 2px 0 0;
+    border-radius: 0;
+    background: transparent;
+    color: #4b6279;
     font-size: 11px;
     font-weight: 700;
     margin-right: 0;
@@ -1178,11 +1191,12 @@ body.settings-drawer-open .settings-drawer {
 
 .level-btn {
     height: 28px;
-    min-width: 62px;
-    padding: 0 8px;
+    min-width: 74px;
+    padding: 0 10px;
     font-size: 12px;
     border-radius: 8px;
     font-variant-numeric: tabular-nums;
+    white-space: nowrap;
 }
 
 .level-btn.active {
@@ -1264,6 +1278,18 @@ body.settings-drawer-open .settings-drawer {
     font-family: "Consolas", "Courier New", monospace;
     font-size: 13px;
     line-height: 1.55;
+    background: #fcfeff;
+}
+
+.active-filter-expr {
+    min-height: 28px;
+    padding: 4px 12px 6px;
+    font-size: 12px;
+    color: #415d76;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    border-top: 1px dashed #d8e5f1;
     background: #fcfeff;
 }
 
@@ -1470,6 +1496,10 @@ body.immersive-mode #log {
 }
 
 .line-level-hidden {
+    display: none !important;
+}
+
+.line-filter-hidden {
     display: none !important;
 }
 

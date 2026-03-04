@@ -18,6 +18,7 @@ export class LogView {
         this.state = state;
         this.maxLines = maxLines;
         this.highlightKeywords = [];
+        this.filterRules = [];
         this.levelFilter = 'ALL';
         this.deferredSearchTimer = null;
         this.deferMs = 300;
@@ -311,6 +312,7 @@ export class LogView {
         lineEl.appendChild(textEl);
         lineEl.appendChild(copyBtn);
         this.applyLineClass(lineEl, line);
+        this.applyRuleFilterForLine(lineEl);
         return lineEl;
     }
 
@@ -429,16 +431,142 @@ export class LogView {
      * @param {Array<{type:string,data:string}>} rules 过滤规则
      */
     setHighlightRules(rules) {
+        this.filterRules = this.normalizeFilterRules(rules);
         const keywordSet = new Set();
-        (rules || []).forEach(rule => {
-            const keyword = rule && rule.data ? String(rule.data).trim().toLowerCase() : '';
-            if (!keyword) {
-                return;
-            }
-            keywordSet.add(keyword);
+        this.filterRules.forEach(rule => {
+            const expression = rule && rule.data ? String(rule.data) : '';
+            this.extractHighlightKeywords(expression).forEach(keyword => {
+                keywordSet.add(keyword.toLowerCase());
+            });
         });
         this.highlightKeywords = Array.from(keywordSet).sort((left, right) => right.length - left.length);
         this.refreshExistingHighlights();
+    }
+
+    /**
+     * 从规则表达式中提取用于高亮的关键词。
+     * <p>
+     * 支持按 && 与 || 拆分，忽略空白词。
+     * </p>
+     *
+     * @param {string} expression 规则表达式
+     * @returns {Array<string>} 关键词数组
+     */
+    extractHighlightKeywords(expression) {
+        return String(expression || '')
+            .split(/(?:\|\||&&)/)
+            .map(item => item.trim())
+            .filter(Boolean);
+    }
+
+    /**
+     * 规范化过滤规则，保留合法 include/exclude 条件。
+     *
+     * @param {Array<{type:string,data:string}>} rules 原始规则
+     * @returns {Array<{type:string,data:string}>} 规范化规则
+     */
+    normalizeFilterRules(rules) {
+        const normalized = [];
+        (rules || []).forEach(rule => {
+            const type = rule && rule.type ? String(rule.type).trim().toLowerCase() : '';
+            const data = rule && rule.data ? String(rule.data).trim() : '';
+            if (!data) {
+                return;
+            }
+            if (type !== 'include' && type !== 'exclude') {
+                return;
+            }
+            normalized.push({type: type, data: data});
+        });
+        return normalized;
+    }
+
+    /**
+     * 按当前规则更新单行日志的可见性。
+     *
+     * @param {HTMLElement} lineEl 日志行节点
+     */
+    applyRuleFilterForLine(lineEl) {
+        if (!lineEl) {
+            return;
+        }
+        if (lineEl.classList.contains('line-system-msg')) {
+            lineEl.classList.remove('line-filter-hidden');
+            return;
+        }
+        const rawText = lineEl.dataset && lineEl.dataset.rawText ? lineEl.dataset.rawText : '';
+        const visible = this.matchesRuleChain(rawText);
+        lineEl.classList.toggle('line-filter-hidden', !visible);
+    }
+
+    /**
+     * 按规则链判断日志是否应显示。
+     * <p>
+     * 与后端保持一致：多 include 为 AND，多 exclude 为 OR；
+     * 单条规则内部支持 && / ||（先与后或）。
+     * </p>
+     *
+     * @param {string} line 日志文本
+     * @returns {boolean} 是否显示
+     */
+    matchesRuleChain(line) {
+        const text = String(line || '');
+        if (!this.filterRules.length) {
+            return true;
+        }
+        for (const rule of this.filterRules) {
+            if (rule.type === 'include') {
+                if (!this.matchesKeywordExpression(text, rule.data)) {
+                    return false;
+                }
+                continue;
+            }
+            if (rule.type === 'exclude' && this.matchesKeywordExpression(text, rule.data)) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    /**
+     * 匹配关键字表达式（支持 && / ||）。
+     *
+     * @param {string} line 日志文本
+     * @param {string} expression 规则表达式
+     * @returns {boolean} 是否命中
+     */
+    matchesKeywordExpression(line, expression) {
+        const groups = String(expression || '')
+            .split('||')
+            .map(item => item.trim())
+            .filter(Boolean);
+        if (!groups.length) {
+            return false;
+        }
+        for (const group of groups) {
+            if (this.matchesAndGroup(line, group)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    /**
+     * 匹配 AND 分组：组内所有词都命中才成立。
+     *
+     * @param {string} line 日志文本
+     * @param {string} group AND 分组文本
+     * @returns {boolean} 是否命中
+     */
+    matchesAndGroup(line, group) {
+        const terms = String(group || '')
+            .split('&&')
+            .map(item => item.trim())
+            .filter(Boolean);
+        if (!terms.length) {
+            return false;
+        }
+        return terms.every(term => line.indexOf(term) >= 0);
     }
 
     /**
@@ -456,8 +584,10 @@ export class LogView {
             }
             const rawText = lineEl.dataset && lineEl.dataset.rawText ? lineEl.dataset.rawText : '';
             this.renderLineText(textEl, rawText);
+            this.applyRuleFilterForLine(lineEl);
         });
         this.refreshSearchMatches(true, false);
+        this.renderLineCount();
     }
 
     /**
@@ -730,6 +860,9 @@ export class LogView {
         if (lineEl.classList.contains('line-level-hidden')) {
             return false;
         }
+        if (lineEl.classList.contains('line-filter-hidden')) {
+            return false;
+        }
         return !lineEl.classList.contains('hidden');
 
     }
@@ -787,7 +920,7 @@ export class LogView {
         };
         const lines = Array.from(document.querySelectorAll('#log .log-line'));
         lines.forEach(lineEl => {
-            if (lineEl.classList.contains('hidden')) {
+            if (lineEl.classList.contains('hidden') || lineEl.classList.contains('line-filter-hidden')) {
                 return;
             }
             stats.ALL += 1;

@@ -894,6 +894,51 @@ function onFilterRuleChanged() {
     logView.setHighlightRules(rules);
     preferenceStore.set('filterRules', JSON.stringify(rules));
     updateSettingsSummary();
+    renderActiveFilterExpression();
+}
+
+/**
+ * 渲染实时日志窗口下方的过滤表达式摘要。
+ * <p>
+ * 仅在存在有效过滤规则时展示；快速模式下始终隐藏。
+ * </p>
+ */
+function renderActiveFilterExpression() {
+    const expressionEl = el('activeFilterExpr');
+    if (!expressionEl) {
+        return;
+    }
+    const rules = getActiveFilterRules();
+    if (!rules.length) {
+        expressionEl.classList.add('hidden');
+        expressionEl.textContent = '';
+        return;
+    }
+    expressionEl.textContent = `过滤表达式：${buildFilterExpressionText(rules)}`;
+    expressionEl.classList.remove('hidden');
+}
+
+/**
+ * 将过滤规则列表拼装为可读表达式文本。
+ *
+ * @param {Array<{type:string,data:string}>} rules 规则列表
+ * @returns {string} 过滤表达式
+ */
+function buildFilterExpressionText(rules) {
+    return rules
+        .map(rule => {
+            const type = rule && rule.type ? String(rule.type).trim().toLowerCase() : '';
+            const data = rule && rule.data ? String(rule.data).trim() : '';
+            if (!data) {
+                return '';
+            }
+            if (type === 'exclude') {
+                return `NOT (${data})`;
+            }
+            return `(${data})`;
+        })
+        .filter(Boolean)
+        .join(' AND ');
 }
 
 /**
