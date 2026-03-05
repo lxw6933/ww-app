@@ -177,9 +177,21 @@ public class SshLogService {
      * @return 命令输出文本
      */
     public String operateInstance(LogTarget target, String action) {
+        String normalizedAction = trimToEmpty(action).toLowerCase();
+        if (InstanceOperationRequest.ACTION_START.equals(normalizedAction)
+                || InstanceOperationRequest.ACTION_STOP.equals(normalizedAction)) {
+            InstanceStatusProbe current = probeInstanceStatus(target);
+            if (InstanceOperationRequest.ACTION_START.equals(normalizedAction) && current.isRunning()) {
+                return "实例当前已在运行状态，已跳过重复启动";
+            }
+            if (InstanceOperationRequest.ACTION_STOP.equals(normalizedAction) && current.isStopped()) {
+                return "实例当前已在停止状态，已跳过重复停止";
+            }
+        }
         String commandFile = resolveManageCommandFile(target);
         String command = sshCommandBuilder.buildInstanceOperationCommand(commandFile, action);
-        List<String> lines = executeCommandForLines(target, command, 2000);
+        CommandReadResult commandResult = executeCommandForResult(target, command, 2000, INSTANCE_EXIT_MARKER);
+        List<String> lines = commandResult.getLines();
         int exitCode = 1;
         boolean hasExitMarker = false;
         List<String> userOutput = new ArrayList<>();
@@ -193,6 +205,9 @@ public class SshLogService {
             userOutput.add(line);
         }
         if (!hasExitMarker) {
+            if (commandResult.isOutputTruncated()) {
+                throw new IllegalStateException("命令输出过长且未读到退出码标记，请收敛脚本输出后重试");
+            }
             throw new IllegalStateException("命令执行结果未知：未获取退出码，请检查脚本是否中途 exit 或输出过多");
         }
         if (userOutput.isEmpty()) {
@@ -207,6 +222,12 @@ public class SshLogService {
                 builder.append('\n');
             }
             builder.append(line == null ? "" : line);
+        }
+        if (commandResult.isOutputTruncated()) {
+            if (builder.length() > 0) {
+                builder.append('\n');
+            }
+            builder.append("[系统提示] 命令输出过长，已截断部分内容");
         }
         if (exitCode != 0) {
             throw new IllegalStateException("命令执行失败，退出码: " + exitCode + "，输出: " + builder);
@@ -555,7 +576,8 @@ public class SshLogService {
     private InstanceStatusProbe probeInstanceStatus(LogTarget target) {
         String commandFile = resolveManageCommandFile(target);
         String command = sshCommandBuilder.buildInstanceStatusCommand(commandFile);
-        List<String> lines = executeCommandForLines(target, command, 160);
+        CommandReadResult commandResult = executeCommandForResult(target, command, 160, INSTANCE_EXIT_MARKER);
+        List<String> lines = commandResult.getLines();
         int exitCode = 1;
         boolean hasExitMarker = false;
         List<String> output = new ArrayList<>();
@@ -584,7 +606,13 @@ public class SshLogService {
             return new InstanceStatusProbe(INSTANCE_STATUS_RUNNING, detail);
         }
         if (!hasExitMarker) {
-            return new InstanceStatusProbe(INSTANCE_STATUS_UNKNOWN, detail.isEmpty() ? "状态脚本未返回退出码" : detail);
+            String fallbackDetail = detail;
+            if (fallbackDetail.isEmpty()) {
+                fallbackDetail = commandResult.isOutputTruncated()
+                        ? "状态脚本输出过长且未读到退出码"
+                        : "状态脚本未返回退出码";
+            }
+            return new InstanceStatusProbe(INSTANCE_STATUS_UNKNOWN, fallbackDetail);
         }
         return new InstanceStatusProbe(INSTANCE_STATUS_UNKNOWN, detail.isEmpty()
                 ? "状态脚本返回退出码(未知语义): " + exitCode
@@ -681,7 +709,33 @@ public class SshLogService {
      * @return 命令输出
      */
     private List<String> executeCommandForLines(LogTarget target, String command, int maxLines) {
+        return executeCommandForResult(target, command, maxLines, "").getLines();
+    }
+
+    /**
+     * 执行远程命令并读取输出结果。
+     * <p>
+     * 该方法支持“限量采集 + 标记行探测”：
+     * 1. 当未指定标记时，达到 maxLines 即停止读取，保持历史行为；<br>
+     * 2. 当指定 markerPrefix 时，超过 maxLines 后继续探测退出标记，避免因输出截断导致状态误判。<br>
+     * 返回结果中会携带是否截断标志，便于上层给出更准确提示。
+     * </p>
+     *
+     * @param target       目标服务节点
+     * @param command      待执行命令
+     * @param maxLines     最大采集行数
+     * @param markerPrefix 标记前缀（可为空）
+     * @return 命令读取结果
+     */
+    private CommandReadResult executeCommandForResult(LogTarget target,
+                                                      String command,
+                                                      int maxLines,
+                                                      String markerPrefix) {
         List<String> lines = new ArrayList<>();
+        boolean outputTruncated = false;
+        boolean markerDetected = false;
+        String normalizedMarker = trimToEmpty(markerPrefix);
+        boolean detectMarker = !normalizedMarker.isEmpty();
         Session session = null;
         ChannelExec channel = null;
         try {
@@ -696,18 +750,91 @@ public class SshLogService {
             try (BufferedReader reader = new BufferedReader(new InputStreamReader(inputStream, StandardCharsets.UTF_8))) {
                 String line;
                 while ((line = reader.readLine()) != null) {
-                    lines.add(line);
-                    if (lines.size() >= maxLines) {
+                    String trimmed = trimToEmpty(line);
+                    boolean markerLine = detectMarker && trimmed.startsWith(normalizedMarker);
+                    if (markerLine) {
+                        markerDetected = true;
+                    }
+                    if (lines.size() < maxLines || markerLine) {
+                        lines.add(line);
+                    } else {
+                        outputTruncated = true;
+                    }
+                    if (!detectMarker && lines.size() >= maxLines) {
+                        break;
+                    }
+                    if (detectMarker && markerDetected && outputTruncated) {
                         break;
                     }
                 }
             }
-            return lines;
+            return new CommandReadResult(lines, outputTruncated, markerDetected);
         } catch (Exception ex) {
             throw new IllegalStateException("执行远程命令失败: " + target.displayName() + " - " + ex.getMessage(), ex);
         } finally {
             disconnectQuietly(channel);
             disconnectQuietly(session);
+        }
+    }
+
+    /**
+     * 命令读取结果。
+     */
+    private static class CommandReadResult {
+
+        /**
+         * 已读取输出行。
+         */
+        private final List<String> lines;
+
+        /**
+         * 是否发生输出截断。
+         */
+        private final boolean outputTruncated;
+
+        /**
+         * 是否命中标记行。
+         */
+        private final boolean markerDetected;
+
+        /**
+         * 构造方法。
+         *
+         * @param lines           输出行
+         * @param outputTruncated 是否截断
+         * @param markerDetected  是否命中标记
+         */
+        private CommandReadResult(List<String> lines, boolean outputTruncated, boolean markerDetected) {
+            this.lines = lines;
+            this.outputTruncated = outputTruncated;
+            this.markerDetected = markerDetected;
+        }
+
+        /**
+         * 获取输出行。
+         *
+         * @return 输出行
+         */
+        private List<String> getLines() {
+            return lines;
+        }
+
+        /**
+         * 判断是否输出截断。
+         *
+         * @return true 表示截断
+         */
+        private boolean isOutputTruncated() {
+            return outputTruncated;
+        }
+
+        /**
+         * 判断是否命中标记行。
+         *
+         * @return true 表示命中
+         */
+        private boolean isMarkerDetected() {
+            return markerDetected;
         }
     }
 
