@@ -1,10 +1,15 @@
 package com.ww.app.ssh.ws;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.ww.app.common.utils.IpUtil;
+import com.ww.app.ssh.config.LogStreamHandshakeInterceptor;
 import com.ww.app.ssh.model.LogStreamRequest;
 import com.ww.app.ssh.model.LogTarget;
 import com.ww.app.ssh.service.LogPanelQueryService;
 import com.ww.app.ssh.service.SshLogService;
+import org.checkerframework.checker.nullness.qual.NonNull;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 import org.springframework.web.socket.CloseStatus;
 import org.springframework.web.socket.TextMessage;
@@ -25,6 +30,56 @@ import java.util.concurrent.ConcurrentHashMap;
  */
 @Component
 public class LogStreamWebSocketHandler extends TextWebSocketHandler {
+
+    /**
+     * 日志组件。
+     */
+    private static final Logger log = LoggerFactory.getLogger(LogStreamWebSocketHandler.class);
+
+    /**
+     * 日志事件名称。
+     */
+    private static final String EVENT_WS_STREAM = "ws-stream";
+
+    /**
+     * 日志阶段：连接建立。
+     */
+    private static final String STAGE_CONNECTED = "connected";
+
+    /**
+     * 日志阶段：接收消息。
+     */
+    private static final String STAGE_RECEIVE = "receive";
+
+    /**
+     * 日志阶段：消息解析失败。
+     */
+    private static final String STAGE_PAYLOAD_PARSE_FAILED = "payload-parse-failed";
+
+    /**
+     * 日志阶段：订阅开始。
+     */
+    private static final String STAGE_SUBSCRIBE_START = "subscribe-start";
+
+    /**
+     * 日志阶段：订阅成功。
+     */
+    private static final String STAGE_SUBSCRIBE_SUCCESS = "subscribe-success";
+
+    /**
+     * 日志阶段：订阅失败。
+     */
+    private static final String STAGE_SUBSCRIBE_FAILED = "subscribe-failed";
+
+    /**
+     * 日志阶段：传输异常。
+     */
+    private static final String STAGE_TRANSPORT_ERROR = "transport-error";
+
+    /**
+     * 日志阶段：连接关闭。
+     */
+    private static final String STAGE_CLOSED = "closed";
 
     /**
      * JSON 序列化组件。
@@ -63,32 +118,61 @@ public class LogStreamWebSocketHandler extends TextWebSocketHandler {
 
     @Override
     public void afterConnectionEstablished(WebSocketSession session) {
+        log.info("event={} stage={} sessionId={} ip={}",
+                EVENT_WS_STREAM, STAGE_CONNECTED, session.getId(), resolveClientIp(session));
         sendSystemMessage(session, "连接已建立，请发送订阅参数");
     }
 
     @Override
     protected void handleTextMessage(WebSocketSession session, TextMessage message) {
+        String payload = message.getPayload();
+        log.info("event={} stage={} sessionId={} ip={} payloadLength={}",
+                EVENT_WS_STREAM, STAGE_RECEIVE, session.getId(), resolveClientIp(session), payload.length());
         LogStreamRequest request;
         try {
-            request = objectMapper.readValue(message.getPayload(), LogStreamRequest.class);
+            request = objectMapper.readValue(payload, LogStreamRequest.class);
         } catch (Exception ex) {
+            log.warn("event={} stage={} sessionId={} ip={} error={}",
+                    EVENT_WS_STREAM, STAGE_PAYLOAD_PARSE_FAILED, session.getId(), resolveClientIp(session), ex.getMessage());
             sendSystemMessage(session, "请求解析失败: " + ex.getMessage());
             return;
         }
         try {
             restartStreams(session, request);
         } catch (Exception ex) {
+            log.warn("event={} stage={} sessionId={} ip={} env={} service={} mode={} error={}",
+                    EVENT_WS_STREAM,
+                    STAGE_SUBSCRIBE_FAILED,
+                    session.getId(),
+                    resolveClientIp(session),
+                    request.normalizedEnv(),
+                    request.normalizedService(),
+                    request.normalizedReadMode(),
+                    ex.getMessage());
             sendSystemMessage(session, "启动订阅失败: " + ex.getMessage());
         }
     }
 
     @Override
-    public void handleTransportError(WebSocketSession session, Throwable exception) {
+    public void handleTransportError(WebSocketSession session, @NonNull Throwable exception) {
+        log.warn("event={} stage={} sessionId={} ip={} error={}",
+                EVENT_WS_STREAM,
+                STAGE_TRANSPORT_ERROR,
+                session.getId(),
+                resolveClientIp(session),
+                exception.getMessage());
         closeContext(session.getId());
     }
 
     @Override
     public void afterConnectionClosed(WebSocketSession session, CloseStatus status) {
+        log.info("event={} stage={} sessionId={} ip={} code={} reason={}",
+                EVENT_WS_STREAM,
+                STAGE_CLOSED,
+                session.getId(),
+                resolveClientIp(session),
+                status.getCode(),
+                status.getReason());
         closeContext(session.getId());
     }
 
@@ -100,6 +184,15 @@ public class LogStreamWebSocketHandler extends TextWebSocketHandler {
      */
     private void restartStreams(WebSocketSession session, LogStreamRequest request) {
         closeContext(session.getId());
+        String clientIp = resolveClientIp(session);
+        log.info("event={} stage={} sessionId={} ip={} env={} service={} mode={}",
+                EVENT_WS_STREAM,
+                STAGE_SUBSCRIBE_START,
+                session.getId(),
+                clientIp,
+                request.normalizedEnv(),
+                request.normalizedService(),
+                request.normalizedReadMode());
         List<LogTarget> targets = logPanelQueryService.resolveTargets(request);
         List<SshLogService.StreamHandle> handles = new ArrayList<>();
         for (LogTarget target : targets) {
@@ -116,6 +209,8 @@ public class LogStreamWebSocketHandler extends TextWebSocketHandler {
             throw new IllegalStateException("没有可用日志流，请检查环境/服务或连接配置");
         }
         streamContexts.put(session.getId(), new StreamContext(handles));
+        log.info("event={} stage={} sessionId={} ip={} streamCount={}",
+                EVENT_WS_STREAM, STAGE_SUBSCRIBE_SUCCESS, session.getId(), clientIp, handles.size());
         sendSystemMessage(session, "已启动 " + handles.size() + " 个日志流");
     }
 
@@ -171,6 +266,26 @@ public class LogStreamWebSocketHandler extends TextWebSocketHandler {
         if (context != null) {
             context.closeAll();
         }
+    }
+
+    /**
+     * 解析 WebSocket 会话客户端 IP。
+     *
+     * @param session WebSocket 会话
+     * @return 客户端 IP
+     */
+    private String resolveClientIp(WebSocketSession session) {
+        if (session == null) {
+            return IpUtil.UNKNOWN;
+        } else {
+            session.getAttributes();
+        }
+        Object value = session.getAttributes().get(LogStreamHandshakeInterceptor.ATTR_CLIENT_IP);
+        if (!(value instanceof String)) {
+            return IpUtil.UNKNOWN;
+        }
+        String ip = ((String) value).trim();
+        return ip.isEmpty() ? IpUtil.UNKNOWN : ip;
     }
 
     /**

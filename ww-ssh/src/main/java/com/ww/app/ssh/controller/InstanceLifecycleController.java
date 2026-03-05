@@ -1,15 +1,19 @@
 package com.ww.app.ssh.controller;
 
+import com.ww.app.common.utils.IpUtil;
 import com.ww.app.ssh.model.InstanceOperationRequest;
 import com.ww.app.ssh.model.InstanceOperationResponse;
 import com.ww.app.ssh.model.LogTarget;
 import com.ww.app.ssh.service.LogPanelQueryService;
 import com.ww.app.ssh.service.SshLogService;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import javax.servlet.http.HttpServletRequest;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
@@ -24,6 +28,46 @@ import java.util.concurrent.locks.ReentrantLock;
 @RestController
 @RequestMapping("/api/instance")
 public class InstanceLifecycleController {
+
+    /**
+     * 日志组件。
+     */
+    private static final Logger log = LoggerFactory.getLogger(InstanceLifecycleController.class);
+
+    /**
+     * 日志事件名称。
+     */
+    private static final String EVENT_INSTANCE_OPERATION = "instance-operation";
+
+    /**
+     * 操作日志阶段：收到请求。
+     */
+    private static final String STAGE_ATTEMPT = "attempt";
+
+    /**
+     * 操作日志阶段：参数无效。
+     */
+    private static final String STAGE_INVALID_PARAMS = "invalid-params";
+
+    /**
+     * 操作日志阶段：锁竞争失败。
+     */
+    private static final String STAGE_LOCK_FAILED = "lock-failed";
+
+    /**
+     * 操作日志阶段：执行成功。
+     */
+    private static final String STAGE_SUCCESS = "success";
+
+    /**
+     * 操作日志阶段：执行失败。
+     */
+    private static final String STAGE_FAILED = "failed";
+
+    /**
+     * 运维结果摘要最大日志长度。
+     */
+    private static final int RESULT_MAX_LOG_LEN = 160;
 
     /**
      * 配置解析服务。
@@ -58,14 +102,22 @@ public class InstanceLifecycleController {
      * 执行实例运维动作。
      *
      * @param request 运维请求
+     * @param httpRequest HTTP 请求（用于解析来源 IP）
      * @return 操作响应
      */
     @PostMapping("/operate")
-    public InstanceOperationResponse operate(@RequestBody InstanceOperationRequest request) {
+    public InstanceOperationResponse operate(@RequestBody InstanceOperationRequest request,
+                                             HttpServletRequest httpRequest) {
+        long startAt = System.currentTimeMillis();
+        String clientIp = IpUtil.getRealIp(httpRequest);
         String env = request == null ? "" : request.normalizedEnv();
         String service = request == null ? "" : request.normalizedService();
         String action = request == null ? "" : request.normalizedAction();
+        log.info("event={} stage={} ip={} env={} service={} action={}",
+                EVENT_INSTANCE_OPERATION, STAGE_ATTEMPT, clientIp, env, service, action);
         if (env.isEmpty() || service.isEmpty() || action.isEmpty()) {
+            log.warn("event={} stage={} ip={} env={} service={} action={}",
+                    EVENT_INSTANCE_OPERATION, STAGE_INVALID_PARAMS, clientIp, env, service, action);
             return InstanceOperationResponse.failure(env, service, action, "参数不完整：env/service/action 必填");
         }
         String lockKey = buildOperationLockKey(env, service);
@@ -74,13 +126,22 @@ public class InstanceLifecycleController {
         try {
             locked = tryAcquireOperationLock(operationLock);
             if (!locked) {
+                log.warn("event={} stage={} ip={} env={} service={} action={} costMs={}",
+                        EVENT_INSTANCE_OPERATION, STAGE_LOCK_FAILED, clientIp, env, service, action,
+                        System.currentTimeMillis() - startAt);
                 return InstanceOperationResponse.failure(env, service, action, "当前实例有运维操作执行中，请稍后重试");
             }
             LogTarget target = logPanelQueryService.resolveExactTarget(env, service);
             String output = sshLogService.operateInstance(target, action);
+            log.info("event={} stage={} ip={} env={} service={} action={} host={} costMs={} output={}",
+                    EVENT_INSTANCE_OPERATION, STAGE_SUCCESS, clientIp, env, service, action,
+                    resolveTargetHost(target), System.currentTimeMillis() - startAt, summarizeOutputForLog(output));
             return InstanceOperationResponse.success(env, service, action, summarizeMessage(action, output), output);
         } catch (Exception ex) {
             String message = ex.getMessage() == null ? "实例运维失败" : ex.getMessage();
+            log.warn("event={} stage={} ip={} env={} service={} action={} costMs={} error={}",
+                    EVENT_INSTANCE_OPERATION, STAGE_FAILED, clientIp, env, service, action,
+                    System.currentTimeMillis() - startAt, summarizeOutputForLog(message));
             return InstanceOperationResponse.failure(env, service, action, message, message);
         } finally {
             if (locked) {
@@ -139,5 +200,43 @@ public class InstanceLifecycleController {
             firstLine = firstLine.substring(0, 72) + "...";
         }
         return "操作完成: " + normalizedAction + " | " + firstLine;
+    }
+
+    /**
+     * 生成可用于日志输出的文本摘要。
+     * <p>
+     * 为避免日志污染，仅保留单行并限制长度。
+     * </p>
+     *
+     * @param raw 原始文本
+     * @return 摘要文本
+     */
+    private String summarizeOutputForLog(String raw) {
+        String text = raw == null ? "" : raw.trim();
+        if (text.isEmpty()) {
+            return "";
+        }
+        String singleLine = text.replace('\r', ' ').replace('\n', ' ');
+        if (singleLine.length() <= RESULT_MAX_LOG_LEN) {
+            return singleLine;
+        }
+        return singleLine.substring(0, RESULT_MAX_LOG_LEN) + "...";
+    }
+
+    /**
+     * 提取目标实例主机标识。
+     *
+     * @param target 目标实例
+     * @return 主机标识（无法获取时返回 unknown）
+     */
+    private String resolveTargetHost(LogTarget target) {
+        if (target == null || target.getServerNode() == null) {
+            return IpUtil.UNKNOWN;
+        }
+        String host = target.getServerNode().getHost();
+        if (host == null || host.trim().isEmpty()) {
+            return IpUtil.UNKNOWN;
+        }
+        return host.trim();
     }
 }

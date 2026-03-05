@@ -13,6 +13,11 @@
     <description>ssh服务</description>
 
     <dependencies>
+        <dependency>
+            <groupId>com.ww.app</groupId>
+            <artifactId>ww-common</artifactId>
+            <version>${revision}</version>
+        </dependency>
         <!-- Spring Boot Web -->
         <dependency>
             <groupId>org.springframework.boot</groupId>

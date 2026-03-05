@@ -22,6 +22,11 @@ public class WebSocketConfig implements WebSocketConfigurer {
     private final LogStreamWebSocketHandler logStreamWebSocketHandler;
 
     /**
+     * 握手日志拦截器。
+     */
+    private final LogStreamHandshakeInterceptor logStreamHandshakeInterceptor = new LogStreamHandshakeInterceptor();
+
+    /**
      * 构造方法。
      *
      * @param logStreamWebSocketHandler 日志流处理器
@@ -32,6 +37,8 @@ public class WebSocketConfig implements WebSocketConfigurer {
 
     @Override
     public void registerWebSocketHandlers(WebSocketHandlerRegistry registry) {
-        registry.addHandler(logStreamWebSocketHandler, "/log-stream").setAllowedOrigins("*");
+        registry.addHandler(logStreamWebSocketHandler, "/log-stream")
+                .addInterceptors(logStreamHandshakeInterceptor)
+                .setAllowedOrigins("*");
     }
 }
