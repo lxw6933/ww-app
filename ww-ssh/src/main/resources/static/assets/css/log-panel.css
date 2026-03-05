@@ -264,7 +264,6 @@ body.metrics-collapsed .metrics-panel-head h2 {
     display: none;
 }
 
-body.metrics-collapsed #btnRefreshMetrics,
 body.metrics-collapsed .metrics-panel-tip,
 body.metrics-collapsed .metrics-summary,
 body.metrics-collapsed .metrics-list {
@@ -1799,8 +1798,7 @@ body.immersive-mode .header-top-controls {
 }
 
 body.immersive-mode .view-mode-panel,
-body.immersive-mode #btnShareLink,
-body.immersive-mode #btnOpenSettings {
+body.immersive-mode #btnShareLink {
     display: none;
 }
 
@@ -1811,7 +1809,10 @@ body.immersive-mode .utility-panel {
 }
 
 body.immersive-mode #btnImmersive {
-    min-width: 88px;
+    min-width: 34px;
+    width: 34px;
+    height: 34px;
+    padding: 0;
 }
 
 body.immersive-mode .row-primary {
@@ -3415,4 +3416,980 @@ select optgroup {
 .filter-row .filter-type {
     border-radius: 0;
     clip-path: polygon(7px 0, calc(100% - 7px) 0, 100% 7px, 100% calc(100% - 7px), calc(100% - 7px) 100%, 7px 100%, 0 calc(100% - 7px), 0 7px);
+}
+
+/* ==================== 指标面板虚线清理（科技风一致性） ==================== */
+.metrics-empty,
+.metric-load-block,
+.metric-message,
+.metric-op-note {
+    border-style: solid !important;
+}
+
+.metric-host-head,
+.metric-head {
+    border-bottom-style: solid !important;
+}
+
+/* ==================== 科技风立体度增强（Depth v2） ==================== */
+:root {
+    --depth-1: 0 8px 20px rgba(1, 10, 17, 0.34);
+    --depth-2: 0 14px 34px rgba(1, 12, 22, 0.48);
+    --depth-3: 0 22px 48px rgba(1, 13, 24, 0.62);
+    --inner-glow: inset 0 1px 0 rgba(160, 232, 255, 0.12), inset 0 -1px 0 rgba(6, 19, 33, 0.52);
+}
+
+.panel-header,
+.toolbar,
+.metrics-panel,
+.log-shell,
+.settings-drawer {
+    box-shadow:
+        var(--depth-3),
+        0 0 0 1px rgba(112, 202, 250, 0.18),
+        var(--inner-glow) !important;
+}
+
+.status-bar-top {
+    box-shadow:
+        var(--depth-1),
+        inset 0 1px 0 rgba(152, 230, 255, 0.18),
+        inset 0 -1px 0 rgba(6, 20, 32, 0.62);
+}
+
+.status-bar-top span {
+    box-shadow:
+        0 6px 14px rgba(3, 18, 31, 0.42),
+        inset 0 1px 0 rgba(163, 235, 255, 0.2);
+}
+
+.metrics-summary,
+.summary-item,
+.metric-host-group,
+.metric-card,
+.metrics-empty,
+.filter-row,
+.filter-tag {
+    box-shadow:
+        var(--depth-2),
+        0 0 0 1px rgba(122, 214, 255, 0.12),
+        var(--inner-glow) !important;
+    transition:
+        transform 0.2s var(--ui-ease),
+        box-shadow 0.2s var(--ui-ease),
+        border-color 0.2s var(--ui-ease);
+}
+
+.metric-host-group:hover,
+.metric-card:hover,
+.summary-item:hover,
+.filter-row:hover {
+    transform: translateY(-1px);
+    box-shadow:
+        0 18px 42px rgba(1, 12, 22, 0.58),
+        0 0 0 1px rgba(132, 224, 255, 0.2),
+        inset 0 1px 0 rgba(176, 240, 255, 0.18);
+}
+
+.metric-progress,
+.metric-load-block,
+.metric-op-tip,
+.metric-op-note,
+.metric-instance-tag,
+.metric-tag {
+    box-shadow:
+        0 6px 14px rgba(3, 19, 31, 0.32),
+        inset 0 1px 0 rgba(162, 235, 255, 0.14);
+}
+
+#log {
+    box-shadow:
+        inset 0 1px 0 rgba(151, 231, 255, 0.12),
+        inset 0 -1px 0 rgba(5, 18, 31, 0.62),
+        0 10px 24px rgba(1, 12, 22, 0.36);
+}
+
+.log-line {
+    box-shadow:
+        0 6px 12px rgba(2, 15, 26, 0.24),
+        inset 0 1px 0 rgba(156, 233, 255, 0.08);
+    transition: transform 0.16s var(--ui-ease), box-shadow 0.16s var(--ui-ease);
+}
+
+.log-line:hover {
+    transform: translateX(1px);
+    box-shadow:
+        0 10px 18px rgba(2, 15, 26, 0.3),
+        inset 0 1px 0 rgba(172, 240, 255, 0.14);
+}
+
+button {
+    box-shadow:
+        0 10px 20px rgba(3, 19, 31, 0.42),
+        inset 0 1px 0 rgba(170, 239, 255, 0.16);
+}
+
+button:hover:not(:disabled) {
+    transform: translateY(-1px);
+    box-shadow:
+        0 14px 28px rgba(3, 19, 31, 0.56),
+        0 0 0 1px rgba(125, 216, 255, 0.24),
+        inset 0 1px 0 rgba(184, 244, 255, 0.22);
+}
+
+button:active:not(:disabled) {
+    transform: translateY(0);
+    box-shadow:
+        0 8px 16px rgba(3, 19, 31, 0.45),
+        inset 0 1px 0 rgba(160, 232, 255, 0.16);
+}
+
+select,
+input,
+textarea {
+    box-shadow:
+        0 8px 16px rgba(4, 22, 36, 0.34),
+        inset 0 1px 0 rgba(165, 237, 255, 0.14) !important;
+}
+
+@media (max-width: 980px) {
+    .panel-header,
+    .toolbar,
+    .metrics-panel,
+    .log-shell,
+    .settings-drawer,
+    .metrics-summary,
+    .summary-item,
+    .metric-host-group,
+    .metric-card,
+    .metrics-empty,
+    .filter-row,
+    .filter-tag,
+    button,
+    #log,
+    .status-bar-top span {
+        box-shadow:
+            0 8px 18px rgba(1, 12, 22, 0.34),
+            inset 0 1px 0 rgba(152, 228, 255, 0.1) !important;
+    }
+}
+
+/* ==================== 科技舱体层级增强（Depth v3） ==================== */
+.workspace {
+    perspective: 1400px;
+    transform-style: preserve-3d;
+}
+
+.metrics-panel,
+.main-panel,
+.main-panel .toolbar,
+.main-panel .log-shell {
+    transform-style: preserve-3d;
+    will-change: transform, box-shadow, filter;
+    transition:
+        transform 0.28s var(--ui-ease),
+        box-shadow 0.28s var(--ui-ease),
+        filter 0.28s var(--ui-ease);
+}
+
+.metrics-panel {
+    transform: translateZ(20px) translateY(-1px);
+    filter: saturate(1.05);
+}
+
+.main-panel {
+    transform: translateZ(8px);
+}
+
+.main-panel .toolbar {
+    transform: translateZ(11px);
+}
+
+.main-panel .log-shell {
+    transform: translateZ(16px);
+}
+
+.metrics-panel::after,
+.main-panel .toolbar::after,
+.main-panel .log-shell::after {
+    border-color: rgba(129, 223, 255, 0.22) !important;
+    box-shadow:
+        inset 0 0 20px rgba(72, 191, 255, 0.08),
+        0 0 24px rgba(50, 182, 245, 0.14);
+    opacity: 0.56;
+}
+
+.metrics-panel:hover {
+    transform: translateZ(24px) translateY(-2px);
+    box-shadow:
+        0 28px 56px rgba(1, 13, 24, 0.66),
+        0 0 0 1px rgba(130, 223, 255, 0.24),
+        inset 0 1px 0 rgba(174, 242, 255, 0.2) !important;
+}
+
+.main-panel .toolbar:hover,
+.main-panel .log-shell:hover {
+    transform: translateZ(18px) translateY(-1px);
+    box-shadow:
+        0 24px 52px rgba(1, 13, 24, 0.62),
+        0 0 0 1px rgba(127, 218, 255, 0.2),
+        inset 0 1px 0 rgba(168, 238, 255, 0.18) !important;
+}
+
+@media (max-width: 1200px) {
+    .workspace {
+        perspective: 1100px;
+    }
+
+    .metrics-panel {
+        transform: translateZ(14px);
+    }
+
+    .main-panel,
+    .main-panel .toolbar,
+    .main-panel .log-shell {
+        transform: translateZ(6px);
+    }
+}
+
+@media (max-width: 980px) {
+    .workspace {
+        perspective: none;
+    }
+
+    .metrics-panel,
+    .main-panel,
+    .main-panel .toolbar,
+    .main-panel .log-shell {
+        transform: none !important;
+        filter: none;
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .metrics-panel,
+    .main-panel,
+    .main-panel .toolbar,
+    .main-panel .log-shell {
+        transform: none !important;
+        filter: none !important;
+    }
+}
+
+/* ==================== 科技氛围动态光效（Desktop） ==================== */
+@media (min-width: 981px) and (prefers-reduced-motion: no-preference) {
+    .page-shell {
+        position: relative;
+        isolation: isolate;
+    }
+
+    .page-shell::before,
+    .page-shell::after {
+        content: '';
+        position: absolute;
+        inset: -8% -6%;
+        pointer-events: none;
+        z-index: -1;
+        filter: blur(22px);
+        opacity: 0.42;
+        animation: ambientFieldDrift 18s ease-in-out infinite alternate;
+    }
+
+    .page-shell::before {
+        background:
+            radial-gradient(42% 58% at 8% 16%, rgba(53, 198, 255, 0.24), transparent 72%),
+            radial-gradient(38% 54% at 86% 12%, rgba(64, 255, 221, 0.14), transparent 70%);
+    }
+
+    .page-shell::after {
+        background:
+            radial-gradient(45% 62% at 18% 92%, rgba(45, 171, 245, 0.18), transparent 74%),
+            radial-gradient(30% 44% at 92% 84%, rgba(76, 229, 255, 0.16), transparent 72%);
+        animation-duration: 24s;
+        animation-direction: alternate-reverse;
+    }
+
+    .metrics-panel::before,
+    .main-panel .toolbar::before,
+    .main-panel .log-shell::before {
+        animation: panelAuraBreath 7.2s ease-in-out infinite;
+    }
+
+    .metrics-panel::after,
+    .main-panel .toolbar::after,
+    .main-panel .log-shell::after {
+        animation: edgeSweepPulse 6.4s ease-in-out infinite;
+    }
+
+    .metrics-panel,
+    .main-panel .toolbar,
+    .main-panel .log-shell {
+        backdrop-filter: blur(10px) saturate(122%);
+    }
+}
+
+@keyframes ambientFieldDrift {
+    0% {
+        transform: translate3d(-1.1%, -0.8%, 0) scale(1);
+        opacity: 0.36;
+    }
+    50% {
+        transform: translate3d(1.2%, 0.9%, 0) scale(1.03);
+        opacity: 0.46;
+    }
+    100% {
+        transform: translate3d(-0.6%, 1.1%, 0) scale(1.01);
+        opacity: 0.4;
+    }
+}
+
+@keyframes panelAuraBreath {
+    0% {
+        opacity: 0.42;
+        filter: saturate(1);
+    }
+    50% {
+        opacity: 0.56;
+        filter: saturate(1.08);
+    }
+    100% {
+        opacity: 0.44;
+        filter: saturate(1.02);
+    }
+}
+
+@keyframes edgeSweepPulse {
+    0% {
+        opacity: 0.42;
+        box-shadow:
+            inset 0 0 18px rgba(72, 191, 255, 0.06),
+            0 0 18px rgba(49, 181, 245, 0.1);
+    }
+    50% {
+        opacity: 0.66;
+        box-shadow:
+            inset 0 0 22px rgba(81, 205, 255, 0.1),
+            0 0 26px rgba(65, 199, 250, 0.18);
+    }
+    100% {
+        opacity: 0.46;
+        box-shadow:
+            inset 0 0 20px rgba(74, 194, 255, 0.08),
+            0 0 20px rgba(52, 186, 246, 0.12);
+    }
+}
+
+/* ==================== 终版统一科技主题（Crisp Pro） ==================== */
+:root {
+    --final-bg-0: #060f18;
+    --final-bg-1: #0b1e30;
+    --final-bg-2: #0f2a40;
+    --final-border: rgba(100, 189, 244, 0.38);
+    --final-text: #d9efff;
+    --final-sub: #93b9d3;
+    --final-shadow: 0 12px 28px rgba(1, 10, 18, 0.48);
+}
+
+html,
+body {
+    max-width: 100%;
+    overflow-x: hidden !important;
+    background:
+        radial-gradient(1200px 700px at 8% -12%, rgba(40, 151, 216, 0.16), transparent 62%),
+        radial-gradient(1000px 600px at 96% -8%, rgba(34, 185, 224, 0.12), transparent 58%),
+        linear-gradient(180deg, var(--final-bg-0), #071422 52%, #050d15 100%) !important;
+}
+
+body {
+    color: var(--final-text);
+    filter: none !important;
+    text-shadow: none !important;
+}
+
+.page-shell {
+    width: min(1680px, 96vw) !important;
+    margin: 12px auto !important;
+    height: calc(100vh - 24px) !important;
+    position: relative;
+    isolation: isolate;
+}
+
+.workspace {
+    grid-template-columns: 360px minmax(0, 1fr) !important;
+    gap: 12px !important;
+    perspective: none !important;
+    transform-style: flat !important;
+}
+
+/* 关闭所有叠加导致糊和乱的动态光效/遮罩层 */
+body::before,
+body::after,
+.page-shell::before,
+.page-shell::after,
+.panel-header::before,
+.panel-header::after,
+.toolbar::before,
+.toolbar::after,
+.metrics-panel::before,
+.metrics-panel::after,
+.log-shell::before,
+.log-shell::after,
+.status-bar-top::before,
+#log::after {
+    display: none !important;
+    animation: none !important;
+    filter: none !important;
+}
+
+.panel-header,
+.toolbar,
+.metrics-panel,
+.log-shell,
+.settings-drawer,
+.group,
+.metrics-summary,
+.metric-host-group,
+.metric-card,
+.summary-item,
+.metrics-empty,
+.filter-row,
+.filter-tag,
+.log-header {
+    background: linear-gradient(180deg, var(--final-bg-2) 0%, var(--final-bg-1) 100%) !important;
+    border: 1px solid var(--final-border) !important;
+    color: var(--final-text) !important;
+    box-shadow:
+        var(--final-shadow),
+        inset 0 1px 0 rgba(156, 232, 255, 0.12) !important;
+    backdrop-filter: none !important;
+    filter: none !important;
+    clip-path: none !important;
+    border-radius: 12px !important;
+}
+
+.group-env,
+.group-service,
+.group-action {
+    background: transparent !important;
+    border: none !important;
+    box-shadow: none !important;
+    border-radius: 0 !important;
+}
+
+.metrics-panel,
+.main-panel,
+.main-panel .toolbar,
+.main-panel .log-shell {
+    transform: none !important;
+    transform-style: flat !important;
+    will-change: auto !important;
+    filter: none !important;
+}
+
+.status-bar-top {
+    border: 1px solid rgba(112, 199, 248, 0.42) !important;
+    background: linear-gradient(180deg, #0b2236, #081a2a) !important;
+    padding: 6px !important;
+}
+
+.status-bar-top span {
+    min-height: 30px !important;
+    padding: 0 10px !important;
+    border: 1px solid rgba(113, 202, 254, 0.42) !important;
+    background: linear-gradient(180deg, #12344e, #0d273d) !important;
+    color: #d3ecff !important;
+    box-shadow: inset 0 1px 0 rgba(169, 235, 255, 0.14) !important;
+    clip-path: none !important;
+    border-radius: 10px !important;
+}
+
+#log {
+    background: linear-gradient(180deg, #071726 0%, #06131f 100%) !important;
+    color: #d9edff !important;
+    font-size: 13px !important;
+    line-height: 1.58 !important;
+    box-shadow: inset 0 1px 0 rgba(151, 229, 255, 0.1) !important;
+}
+
+.log-line {
+    background: rgba(10, 29, 44, 0.72) !important;
+    border: 1px solid rgba(95, 170, 220, 0.2) !important;
+    border-radius: 8px !important;
+    clip-path: none !important;
+    box-shadow: none !important;
+    transform: none !important;
+}
+
+.log-line:hover {
+    background: rgba(13, 36, 56, 0.84) !important;
+    border-color: rgba(123, 210, 255, 0.42) !important;
+    box-shadow: 0 8px 16px rgba(1, 12, 22, 0.44) !important;
+    transform: none !important;
+}
+
+.metric-host-head,
+.metric-head {
+    border-bottom: 1px solid rgba(106, 189, 244, 0.3) !important;
+}
+
+.metrics-empty,
+.metric-load-block,
+.metric-message,
+.metric-op-note {
+    border-style: solid !important;
+}
+
+button,
+select,
+input,
+textarea,
+.mode-btn.icon-btn,
+.toolbar-settings-btn.icon-btn,
+.metrics-icon-btn.icon-btn,
+.search-icon-btn {
+    clip-path: none !important;
+    filter: none !important;
+}
+
+button {
+    border-radius: 10px !important;
+    box-shadow:
+        0 8px 16px rgba(2, 15, 26, 0.34),
+        inset 0 1px 0 rgba(172, 239, 255, 0.12) !important;
+}
+
+button:hover:not(:disabled) {
+    transform: translateY(-1px) !important;
+    box-shadow:
+        0 12px 22px rgba(2, 15, 26, 0.46),
+        inset 0 1px 0 rgba(184, 244, 255, 0.18) !important;
+}
+
+button:active:not(:disabled) {
+    transform: translateY(0) !important;
+}
+
+select,
+input,
+textarea {
+    border-radius: 10px !important;
+    box-shadow:
+        0 8px 16px rgba(2, 15, 26, 0.3),
+        inset 0 1px 0 rgba(168, 236, 255, 0.12) !important;
+}
+
+.panel-subtitle,
+.metrics-panel-tip,
+.group-tip,
+.metric-host-badge-label,
+.metric-load-label,
+.metric-instance-detail {
+    color: var(--final-sub) !important;
+}
+
+@media (max-width: 1200px) {
+    .workspace {
+        grid-template-columns: 320px minmax(0, 1fr) !important;
+    }
+}
+
+@media (max-width: 980px) {
+    .workspace {
+        grid-template-columns: 1fr !important;
+        gap: 10px !important;
+    }
+
+    .page-shell {
+        width: min(1680px, 98vw) !important;
+        margin: 8px auto !important;
+        height: auto !important;
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    * {
+        animation: none !important;
+        transition-duration: 0.01ms !important;
+    }
+}
+
+/* ==================== 布局稳定器（缩放/模式切换空白修复） ==================== */
+html,
+body {
+    overflow-x: hidden !important;
+    overflow-y: auto !important;
+}
+
+body.settings-drawer-open {
+    overflow: hidden !important;
+}
+
+.page-shell {
+    height: auto !important;
+    min-height: calc(100vh - 24px) !important;
+    overflow: visible !important;
+}
+
+.workspace {
+    margin-top: 8px !important;
+    align-items: stretch;
+    min-height: 0;
+    grid-template-columns: minmax(300px, 360px) minmax(0, 1fr) !important;
+}
+
+.main-panel,
+.toolbar,
+.log-shell {
+    min-height: 0 !important;
+}
+
+.log-shell {
+    display: flex !important;
+    flex-direction: column;
+}
+
+#log {
+    flex: 1 1 auto;
+    min-height: 260px !important;
+}
+
+.row-primary {
+    grid-template-columns: minmax(170px, 1fr) minmax(170px, 1fr) minmax(340px, 2fr) !important;
+    align-items: end;
+}
+
+.status-bar {
+    grid-template-columns: repeat(auto-fit, minmax(132px, 1fr)) !important;
+    gap: 8px !important;
+}
+
+.metrics-summary {
+    grid-template-columns: repeat(auto-fit, minmax(110px, 1fr)) !important;
+}
+
+body[data-ui-mode='quick'] .group-action {
+    min-height: 34px;
+}
+
+body.immersive-mode .page-shell {
+    margin: 4px auto !important;
+    min-height: calc(100vh - 8px) !important;
+}
+
+body.immersive-mode .workspace {
+    margin-top: 4px !important;
+}
+
+body.immersive-mode #log {
+    min-height: calc(100vh - 210px) !important;
+}
+
+@media (max-width: 1360px) {
+    .workspace {
+        grid-template-columns: minmax(270px, 320px) minmax(0, 1fr) !important;
+    }
+}
+
+@media (max-width: 1120px) {
+    .row-primary {
+        grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    }
+
+    .row-primary .group-action {
+        grid-column: 1 / -1;
+    }
+}
+
+@media (max-width: 980px) {
+    .page-shell {
+        min-height: auto !important;
+    }
+
+    .workspace {
+        grid-template-columns: 1fr !important;
+        gap: 10px !important;
+    }
+
+    #log {
+        min-height: min(56vh, 460px) !important;
+    }
+
+    body.immersive-mode #log {
+        min-height: calc(100vh - 160px) !important;
+    }
+}
+
+/* ==================== 交互布局终修（收起/沉浸/模式切换空隙） ==================== */
+.metrics-actions {
+    gap: 0 !important;
+}
+
+body.metrics-collapsed .workspace {
+    grid-template-columns: 72px minmax(0, 1fr) !important;
+}
+
+body.metrics-collapsed .metrics-panel {
+    min-width: 72px !important;
+    max-width: 72px !important;
+    padding: 8px 6px !important;
+}
+
+body.metrics-collapsed .metrics-panel-head {
+    justify-content: center !important;
+    align-items: center !important;
+    gap: 0 !important;
+}
+
+body.metrics-collapsed .metrics-actions {
+    width: auto !important;
+}
+
+body.metrics-collapsed .metrics-panel-tip,
+body.metrics-collapsed .metrics-summary,
+body.metrics-collapsed .metrics-list {
+    display: none !important;
+}
+
+body.immersive-mode .workspace {
+    grid-template-columns: 1fr !important;
+    gap: 8px !important;
+}
+
+body.immersive-mode .main-panel {
+    gap: 8px !important;
+}
+
+body.immersive-mode .row-primary {
+    grid-template-columns: 1fr !important;
+}
+
+body.immersive-mode .group-action {
+    flex-wrap: nowrap !important;
+    gap: 5px !important;
+}
+
+body.immersive-mode .group-action .action-separator {
+    display: none !important;
+}
+
+body.immersive-mode #log {
+    min-height: calc(100vh - 190px) !important;
+}
+
+.view-mode-panel {
+    gap: 6px !important;
+    padding: 2px 6px 2px 8px !important;
+}
+
+.mode-switch,
+.read-mode-switch {
+    display: inline-grid !important;
+    grid-auto-flow: column;
+    grid-auto-columns: 30px;
+    grid-template-columns: none !important;
+    width: auto !important;
+    min-width: fit-content;
+    gap: 1px !important;
+    padding: 1px !important;
+}
+
+.mode-switch-header {
+    min-width: auto !important;
+}
+
+.mode-switch .mode-btn,
+.read-mode-switch .read-mode-btn {
+    width: 30px !important;
+    min-width: 30px !important;
+    height: 30px !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    border-radius: 8px !important;
+}
+
+.group-action {
+    gap: 5px !important;
+}
+
+.action-separator {
+    margin: 0 1px !important;
+    height: 18px !important;
+}
+
+body[data-read-mode='cat'] .group-action .action-separator {
+    display: none !important;
+}
+
+@media (max-width: 980px) {
+    body.immersive-mode .group-action {
+        flex-wrap: wrap !important;
+    }
+}
+
+/* ==================== 无缝开关样式（模式 / Tail-Cat） ==================== */
+.mode-switch,
+.read-mode-switch {
+    display: inline-flex !important;
+    align-items: center;
+    gap: 0 !important;
+    padding: 2px !important;
+    border: 1px solid rgba(114, 204, 255, 0.5) !important;
+    border-radius: 999px !important;
+    background: linear-gradient(180deg, rgba(13, 36, 56, 0.94), rgba(9, 28, 45, 0.96)) !important;
+    box-shadow:
+        inset 0 1px 0 rgba(166, 237, 255, 0.14),
+        0 6px 14px rgba(2, 16, 27, 0.3) !important;
+    clip-path: none !important;
+}
+
+.mode-switch .mode-btn,
+.read-mode-switch .read-mode-btn {
+    margin: 0 !important;
+    border: 0 !important;
+    border-radius: 999px !important;
+    background: transparent !important;
+    box-shadow: none !important;
+    color: #a9d5f0 !important;
+    height: 30px !important;
+    min-width: 42px !important;
+    width: auto !important;
+    padding: 0 12px !important;
+    font-size: 12px !important;
+    font-weight: 700 !important;
+    line-height: 30px !important;
+    letter-spacing: 0.2px !important;
+}
+
+.mode-switch .mode-btn + .mode-btn,
+.read-mode-switch .read-mode-btn + .read-mode-btn {
+    margin-left: 0 !important;
+}
+
+.mode-switch .mode-btn.active,
+.read-mode-switch .read-mode-btn.active {
+    background: linear-gradient(180deg, #35d8ff 0%, #179bdf 100%) !important;
+    color: #f2fdff !important;
+    box-shadow:
+        0 0 0 1px rgba(142, 232, 255, 0.36) inset,
+        0 6px 14px rgba(8, 58, 90, 0.48) !important;
+}
+
+.mode-switch .mode-btn.secondary,
+.read-mode-switch .read-mode-btn.secondary {
+    border-color: transparent !important;
+}
+
+.mode-switch .mode-btn:hover:not(:disabled):not(.active),
+.read-mode-switch .read-mode-btn:hover:not(:disabled):not(.active) {
+    background: rgba(57, 145, 199, 0.22) !important;
+    color: #c8e8fb !important;
+}
+
+.read-mode-switch .read-mode-btn {
+    min-width: 52px !important;
+}
+
+@media (max-width: 980px) {
+    .mode-switch .mode-btn,
+    .read-mode-switch .read-mode-btn {
+        height: 28px !important;
+        line-height: 28px !important;
+        min-width: 40px !important;
+        padding: 0 10px !important;
+        font-size: 11px !important;
+    }
+}
+
+/* ==================== 滚动行为锁定（仅日志区滚动） ==================== */
+html,
+body {
+    height: 100%;
+}
+
+.page-shell {
+    height: calc(100vh - 24px) !important;
+    min-height: calc(100vh - 24px) !important;
+    overflow: hidden !important;
+}
+
+.workspace {
+    flex: 1 1 auto;
+    min-height: 0 !important;
+    overflow: hidden !important;
+}
+
+.panel-header {
+    flex: 0 0 auto !important;
+}
+
+.main-panel {
+    min-height: 0 !important;
+}
+
+.log-shell {
+    flex: 1 1 auto;
+    min-height: 0 !important;
+    overflow: hidden !important;
+}
+
+#log {
+    flex: 1 1 auto;
+    min-height: 0 !important;
+    max-height: none !important;
+    overflow-y: auto !important;
+    overflow-x: auto !important;
+    overscroll-behavior: contain;
+}
+
+body.immersive-mode .page-shell {
+    height: calc(100vh - 8px) !important;
+    min-height: calc(100vh - 8px) !important;
+    overflow: hidden !important;
+}
+
+body.immersive-mode #log {
+    min-height: 0 !important;
+}
+
+/* ==================== 沉浸模式工具行（更多设置 + 沉浸按钮） ==================== */
+body.immersive-mode #btnOpenSettings {
+    display: inline-flex !important;
+    margin-left: auto !important;
+}
+
+body.immersive-mode .group-action #btnImmersive {
+    min-width: 34px !important;
+    width: 34px !important;
+    height: 34px !important;
+    padding: 0 !important;
+    margin-left: 4px;
+}
+
+/* ==================== 默认舒适密度（已移除密度切换） ==================== */
+.status-bar-top {
+    padding: 8px !important;
+}
+
+.status-bar {
+    gap: 9px !important;
+}
+
+.status-bar-top span {
+    min-height: 32px !important;
+    padding: 6px 12px !important;
+    font-size: 12px !important;
+    letter-spacing: 0.28px !important;
+}
+
+.metrics-summary {
+    gap: 9px !important;
+}
+
+.summary-item {
+    padding: 7px 10px !important;
+}
+
+#log {
+    font-size: 13px !important;
+    line-height: 1.6 !important;
 }

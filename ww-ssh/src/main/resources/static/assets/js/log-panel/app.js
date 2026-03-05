@@ -69,6 +69,11 @@ const READ_MODE_TAIL = 'tail';
 const READ_MODE_CAT = 'cat';
 
 /**
+ * 界面密度：舒适。
+ */
+const UI_DENSITY_COMFORTABLE = 'comfortable';
+
+/**
  * URL 分享参数中的文件键名。
  */
 const SHARED_FILE_KEY = 'file';
@@ -152,7 +157,6 @@ function bindEvents() {
         logView.refreshSystemVisibility();
     });
 
-    el('btnRefreshMetrics').addEventListener('click', () => metricsPanel.refresh(true));
     el('btnToggleMetrics').addEventListener('click', toggleMetricsPanel);
     el('btnModeQuick').addEventListener('click', () => setUiMode('quick'));
     el('btnModeExpert').addEventListener('click', () => setUiMode('expert'));
@@ -268,7 +272,7 @@ function flashShareButton(text, tone) {
     if (!button) {
         return;
     }
-    const baseText = button.getAttribute('data-base-text') || button.textContent || '⧉';
+    const baseText = button.getAttribute('data-base-text') || button.textContent || '⎘';
     button.setAttribute('data-base-text', baseText);
     if (state.shareFeedbackTimer) {
         window.clearTimeout(state.shareFeedbackTimer);
@@ -324,6 +328,7 @@ function buildShareLink() {
     params.set('autoReconnect', checked('autoReconnect') ? '1' : '0');
     params.set('showSystem', checked('showSystem') ? '1' : '0');
     params.set('uiMode', document.body.getAttribute('data-ui-mode') || 'quick');
+    params.set('uiDensity', getUiDensity());
     params.set('readMode', getReadMode());
     params.set('logSearch', value('logSearch'));
     params.set('rules', JSON.stringify(getActiveFilterRules()));
@@ -460,6 +465,7 @@ function restoreLocalPreferences() {
     el('logSearch').value = getSharedString('logSearch', preferenceStore.getString('logSearch', ''));
     applyReadModeByState();
     applyUiModeByState();
+    applyDefaultUiDensity();
     applySavedMetricsCollapse();
     applyFilterRulesByState();
     applyLogLevelByState();
@@ -472,6 +478,13 @@ function restoreLocalPreferences() {
 function applyUiModeByState() {
     const uiMode = getSharedString('uiMode', preferenceStore.getString('uiMode', 'quick'));
     setUiMode(uiMode === 'expert' ? 'expert' : 'quick');
+}
+
+/**
+ * 应用默认界面密度（舒适）。
+ */
+function applyDefaultUiDensity() {
+    setUiDensity(UI_DENSITY_COMFORTABLE, false);
 }
 
 /**
@@ -538,7 +551,7 @@ function toggleMetricsPanel() {
 function renderMetricsToggleButton() {
     const collapsed = document.body.classList.contains('metrics-collapsed');
     const toggleButton = el('btnToggleMetrics');
-    toggleButton.textContent = collapsed ? '❯' : '❮';
+    toggleButton.textContent = collapsed ? '▸' : '◂';
     toggleButton.title = collapsed ? '展开面板' : '收起面板';
     toggleButton.setAttribute('aria-label', collapsed ? '展开面板' : '收起面板');
 }
@@ -1007,6 +1020,29 @@ function setUiMode(mode) {
 }
 
 /**
+ * 获取当前界面密度。
+ *
+ * @returns {string} 密度值（compact/comfortable）
+ */
+function getUiDensity() {
+    return document.body.getAttribute('data-density') || UI_DENSITY_COMFORTABLE;
+}
+
+/**
+ * 设置界面密度（当前仅保留舒适模式）。
+ *
+ * @param {string} mode 密度值
+ * @param {boolean} persist 是否持久化
+ */
+function setUiDensity(mode, persist) {
+    const normalized = mode === UI_DENSITY_COMFORTABLE ? UI_DENSITY_COMFORTABLE : UI_DENSITY_COMFORTABLE;
+    document.body.setAttribute('data-density', normalized);
+    if (persist) {
+        preferenceStore.set('uiDensity', normalized);
+    }
+}
+
+/**
  * 获取当前读取模式。
  *
  * @returns {string} 模式值（tail/cat）
@@ -1072,7 +1108,7 @@ function renderReadModeButtons() {
         catButton.classList.toggle('active', !tailMode);
     }
     if (startButton) {
-        startButton.textContent = tailMode ? '▶' : '↺';
+        startButton.textContent = tailMode ? '⏵' : '⟳';
         startButton.title = tailMode ? '开始实时监听（tail）' : '读取一次快照（cat）';
         startButton.setAttribute('aria-label', tailMode ? '开始实时监听' : '读取一次快照');
     }
@@ -1153,8 +1189,9 @@ function setImmersiveMode(enabled, persist) {
     const button = el('btnImmersive');
     if (button) {
         button.classList.toggle('active', active);
-        button.textContent = active ? '⤡' : '⛶';
+        button.textContent = active ? '⤡' : '⤢';
         button.title = active ? '退出沉浸模式' : '进入沉浸模式';
+        button.setAttribute('aria-label', active ? '退出沉浸模式' : '进入沉浸模式');
     }
     if (active) {
         closeSettingsDrawer();
@@ -1439,6 +1476,7 @@ function parseSharedStateFromUrl() {
         autoReconnect: params.get('autoReconnect') || '',
         showSystem: params.get('showSystem') || '',
         uiMode: params.get('uiMode') || '',
+        uiDensity: params.get('uiDensity') || '',
         readMode: params.get('readMode') || '',
         logSearch: params.get('logSearch') || '',
         rules: params.get('rules') || ''

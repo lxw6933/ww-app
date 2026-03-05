@@ -18,13 +18,12 @@
                     <div class="view-mode-panel">
                         <span class="mode-panel-label">模式: </span>
                         <div class="mode-switch mode-switch-header">
-                            <button id="btnModeQuick" type="button" class="mode-btn active icon-btn" title="快速模式" aria-label="快速模式">⚡</button>
-                            <button id="btnModeExpert" type="button" class="mode-btn secondary icon-btn" title="专家模式" aria-label="专家模式">✦</button>
+                            <button id="btnModeQuick" type="button" class="mode-btn active icon-btn" title="快速模式" aria-label="快速模式">快</button>
+                            <button id="btnModeExpert" type="button" class="mode-btn secondary icon-btn" title="专家模式" aria-label="专家模式">专</button>
                         </div>
                     </div>
                     <div class="header-tool-actions utility-panel">
-                        <button id="btnShareLink" type="button" class="secondary icon-btn" title="复制排查链接" aria-label="复制排查链接">⧉</button>
-                        <button id="btnImmersive" type="button" class="secondary icon-btn" title="切换沉浸模式" aria-label="切换沉浸模式">⛶</button>
+                        <button id="btnShareLink" type="button" class="secondary icon-btn" title="复制排查链接" aria-label="复制排查链接">⎘</button>
                     </div>
                 </div>
             </div>
@@ -44,12 +43,10 @@
             <div class="metrics-panel-head">
                 <h2>服务器指标</h2>
                 <div class="metrics-actions">
-                    <button id="btnToggleMetrics" type="button" class="secondary icon-btn metrics-icon-btn" title="收起面板" aria-label="收起面板">❮</button>
-                    <button id="btnRefreshMetrics" type="button" class="secondary icon-btn metrics-icon-btn" title="刷新指标" aria-label="刷新指标">↻</button>
+                    <button id="btnToggleMetrics" type="button" class="secondary icon-btn metrics-icon-btn" title="收起面板" aria-label="收起面板">◂</button>
                 </div>
             </div>
             <p class="metrics-panel-tip">展示当前环境/服务的 CPU、内存和负载，异常实例优先显示。</p>
-            <div id="metricsSummary" class="metrics-summary">等待选择环境后加载...</div>
             <div id="metricsList" class="metrics-list"></div>
         </aside>
 
@@ -66,18 +63,19 @@
                     </div>
                     <div class="group group-action">
                         <div class="read-mode-switch" role="group" aria-label="日志读取方式">
-                            <button id="btnReadTail" type="button" class="secondary read-mode-btn active" title="tail 实时监听" aria-label="tail 实时监听">T</button>
-                            <button id="btnReadCat" type="button" class="secondary read-mode-btn" title="cat 快照读取" aria-label="cat 快照读取">C</button>
+                            <button id="btnReadTail" type="button" class="secondary read-mode-btn active" title="tail 实时监听" aria-label="tail 实时监听">实时</button>
+                            <button id="btnReadCat" type="button" class="secondary read-mode-btn" title="cat 快照读取" aria-label="cat 快照读取">快照</button>
                         </div>
                         <span class="action-separator" aria-hidden="true"></span>
-                        <button id="btnStart" class="icon-btn" title="开始查看" aria-label="开始查看">▶</button>
-                        <button id="btnStop" class="icon-btn" disabled title="结束查看" aria-label="结束查看">■</button>
+                        <button id="btnStart" class="icon-btn" title="开始查看" aria-label="开始查看">⏵</button>
+                        <button id="btnStop" class="icon-btn" disabled title="结束查看" aria-label="结束查看">⏹</button>
                         <span class="action-separator btn-expert" aria-hidden="true"></span>
                         <button id="btnPause" class="btn-expert icon-btn" title="暂停接收" aria-label="暂停接收">⏸</button>
-                        <button id="btnBreak" class="secondary btn-expert icon-btn" title="插入分隔线" aria-label="插入分隔线">∥</button>
-                        <button id="btnClear" class="danger btn-expert icon-btn" title="清空窗口" aria-label="清空窗口">⌫</button>
+                        <button id="btnBreak" class="secondary btn-expert icon-btn" title="插入分隔线" aria-label="插入分隔线">┆</button>
+                        <button id="btnClear" class="danger btn-expert icon-btn" title="清空窗口" aria-label="清空窗口">⌧</button>
                         <span class="action-separator btn-expert settings-separator" aria-hidden="true"></span>
-                        <button id="btnOpenSettings" type="button" class="secondary btn-expert toolbar-settings-btn icon-btn" title="更多设置（仅专家模式）" aria-label="更多设置（仅专家模式）">⚙</button>
+                        <button id="btnOpenSettings" type="button" class="secondary btn-expert toolbar-settings-btn icon-btn" title="更多设置（仅专家模式）" aria-label="更多设置（仅专家模式）">☰</button>
+                        <button id="btnImmersive" type="button" class="secondary icon-btn" title="切换沉浸模式" aria-label="切换沉浸模式">⤢</button>
                     </div>
                 </div>
 

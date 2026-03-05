@@ -196,9 +196,9 @@ export class MetricsPanelController {
         const okServerMetrics = hostGroups
             .map(group => group && group.serverMetric ? group.serverMetric : null)
             .filter(item => item && item.status === 'ok');
-        const runningCount = list.filter(item => resolveInstanceStatus(item && item.instanceStatus).level === 'running').length;
         const errorCount = total - list.filter(item => item && item.status === 'ok').length;
         const healthyServers = hostGroups.filter(group => group && group.serverMetric && group.serverMetric.status === 'ok').length;
+        const unhealthyServers = Math.max(totalServers - healthyServers, 0);
         const avgCpu = average(okServerMetrics.map(item => item.cpuUsagePercent));
         const avgMem = average(okServerMetrics.map(item => item.memoryUsagePercent));
 
@@ -206,9 +206,7 @@ export class MetricsPanelController {
             statusText: '采集正常',
             healthyServers: healthyServers,
             totalServers: totalServers,
-            runningCount: runningCount,
-            total: total,
-            errorCount: errorCount,
+            unhealthyServers: unhealthyServers,
             avgCpu: avgCpu,
             avgMem: avgMem,
             timeText: formatTime(Date.now())
@@ -241,9 +239,7 @@ export class MetricsPanelController {
             statusText: manual ? '刷新中' : '加载中',
             healthyServers: null,
             totalServers: null,
-            runningCount: null,
-            total: null,
-            errorCount: null,
+            unhealthyServers: null,
             avgCpu: null,
             avgMem: null,
             timeText: formatTime(Date.now())
@@ -595,7 +591,7 @@ export class MetricsPanelController {
         summaryEl.innerHTML = '';
         summaryEl.appendChild(createSummaryItem('状态', data.statusText || '--'));
         summaryEl.appendChild(createSummaryItem(
-            '服务器',
+            '主机健康',
             (data.healthyServers === null
                 || data.healthyServers === undefined
                 || data.totalServers === null
@@ -605,14 +601,8 @@ export class MetricsPanelController {
             'strong'
         ));
         summaryEl.appendChild(createSummaryItem(
-            '运行服务',
-            (data.runningCount === null || data.runningCount === undefined || data.total === null || data.total === undefined)
-                ? '--'
-                : `${data.runningCount}/${data.total} 个`
-        ));
-        summaryEl.appendChild(createSummaryItem(
-            '异常实例',
-            (data.errorCount === null || data.errorCount === undefined) ? '--' : `${data.errorCount} 台`
+            '主机异常',
+            (data.unhealthyServers === null || data.unhealthyServers === undefined) ? '--' : `${data.unhealthyServers} 台`
         ));
         summaryEl.appendChild(createSummaryItem('平均CPU', formatPercent(data.avgCpu)));
         summaryEl.appendChild(createSummaryItem('平均内存', formatPercent(data.avgMem)));
