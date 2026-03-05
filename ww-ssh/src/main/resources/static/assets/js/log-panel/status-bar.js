@@ -14,6 +14,7 @@ export class StatusBarController {
     constructor() {
         this.lastLogTimestamp = null;
         this.reconnectSeconds = null;
+        this.latencyEnabled = false;
         this.timer = null;
         this.tickMs = 1000;
     }
@@ -64,6 +65,19 @@ export class StatusBarController {
     }
 
     /**
+     * 设置是否启用延迟计算展示。
+     * <p>
+     * 仅在 tail 实时监听连接活跃时启用，其他状态统一显示“--”。
+     * </p>
+     *
+     * @param {boolean} enabled 是否启用延迟计算
+     */
+    setLatencyEnabled(enabled) {
+        this.latencyEnabled = !!enabled;
+        this.renderLatency();
+    }
+
+    /**
      * 更新查看模式文案。
      *
      * @param {boolean} aggregate 是否为聚合模式
@@ -93,7 +107,11 @@ export class StatusBarController {
         if (!target) {
             return;
         }
-        target.textContent = this.lastLogTimestamp ? `最后日志: ${formatTime(this.lastLogTimestamp)}` : '最后日志: --';
+        if (!this.latencyEnabled || !this.lastLogTimestamp) {
+            target.textContent = '最后日志: --';
+            return;
+        }
+        target.textContent = `最后日志: ${formatTime(this.lastLogTimestamp)}`;
     }
 
     /**
@@ -104,7 +122,7 @@ export class StatusBarController {
         if (!target) {
             return;
         }
-        if (!this.lastLogTimestamp) {
+        if (!this.latencyEnabled || !this.lastLogTimestamp) {
             target.textContent = '延迟: --';
             return;
         }

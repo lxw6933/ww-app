@@ -4355,6 +4355,11 @@ body.immersive-mode #btnOpenSettings {
     margin-left: auto !important;
 }
 
+/* 沉浸模式隐藏最顶部模式切换整行（包含快速/专家与分享按钮） */
+body.immersive-mode .panel-header .header-main {
+    display: none !important;
+}
+
 body.immersive-mode .group-action #btnImmersive {
     min-width: 34px !important;
     width: 34px !important;
@@ -4426,4 +4431,38 @@ body.immersive-mode .group-action #btnImmersive {
     color: #332200 !important;
     border: 1px solid rgba(255, 213, 110, 0.88) !important;
     box-shadow: 0 0 0 1px rgba(99, 67, 15, 0.3) inset;
+}
+
+/* 标题区紧凑化：主标题与副标题同一行，副标题缩小并限制宽度 */
+.title-wrap {
+    display: flex !important;
+    align-items: baseline !important;
+    gap: 10px !important;
+    min-width: 0;
+    max-width: 100%;
+    white-space: nowrap;
+}
+
+.panel-title {
+    margin: 0 !important;
+    flex: 0 0 auto;
+}
+
+.panel-subtitle {
+    margin: 0 !important;
+    font-size: 12px !important;
+    line-height: 1.25 !important;
+    color: var(--final-sub, var(--text-sub)) !important;
+    flex: 0 1 480px;
+    min-width: 0;
+    max-width: 480px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+@media (max-width: 980px) {
+    .panel-subtitle {
+        max-width: 260px;
+    }
 }

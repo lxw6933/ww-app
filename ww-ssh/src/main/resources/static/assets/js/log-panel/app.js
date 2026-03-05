@@ -1423,6 +1423,7 @@ function updateControls() {
     const tailMode = isTailMode();
     const tailLocked = wsActive && tailMode;
     const catBusy = !!state.catLoading;
+    statusBar.setLatencyEnabled(tailLocked);
     el('env').disabled = tailLocked || catBusy;
     el('service').disabled = tailLocked || catBusy;
     el('lines').disabled = catBusy;
