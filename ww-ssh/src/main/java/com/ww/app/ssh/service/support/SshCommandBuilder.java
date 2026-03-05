@@ -434,6 +434,21 @@ public class SshCommandBuilder {
     }
 
     /**
+     * 构建交换内存指标采集命令。
+     * <p>
+     * 输出格式：使用率(%) 已使用(MB) 总量(MB)。
+     * 若机器未启用 swap（SwapTotal=0），固定输出 {@code 0 0 0}。
+     * </p>
+     *
+     * @return Shell 命令
+     */
+    public String buildSwapUsageCommand() {
+        return "awk '/SwapTotal:/ {t=$2} /SwapFree:/ {f=$2} "
+                + "END {if(t>0){u=t-f; printf \"%.2f %d %d\", (u*100/t), int(u/1024), int(t/1024)} "
+                + "else {printf \"0 0 0\"}}' /proc/meminfo";
+    }
+
+    /**
      * 构建负载采集命令。
      * <p>
      * 输出格式：1m 5m 15m。

@@ -502,6 +502,12 @@ export class MetricsPanelController {
             formatPercent(item && item.memoryUsagePercent),
             formatMemoryRange(item)
         ));
+        kpiGridEl.appendChild(createUsageVisual(
+            '交换',
+            item && item.swapUsagePercent,
+            formatPercent(item && item.swapUsagePercent),
+            formatSwapRange(item)
+        ));
         cardEl.appendChild(kpiGridEl);
         cardEl.appendChild(createLoadBlock(item));
 
@@ -560,6 +566,12 @@ export class MetricsPanelController {
                 item && item.memoryUsagePercent,
                 formatPercent(item && item.memoryUsagePercent),
                 formatMemoryRange(item)
+            ));
+            kpiGridEl.appendChild(createUsageVisual(
+                '交换',
+                item && item.swapUsagePercent,
+                formatPercent(item && item.swapUsagePercent),
+                formatSwapRange(item)
             ));
             cardEl.appendChild(kpiGridEl);
             cardEl.appendChild(createLoadBlock(item));
@@ -998,7 +1010,7 @@ function createUsageVisual(label, percent, valueText, extraText) {
     let typeClass = '';
     if (normalizedLabel.indexOf('CPU') >= 0) {
         typeClass = 'cpu';
-    } else if (normalizedLabel.indexOf('内存') >= 0) {
+    } else if (normalizedLabel.indexOf('内存') >= 0 || normalizedLabel.indexOf('交换') >= 0) {
         typeClass = 'memory';
     }
     wrapperEl.className = typeClass ? `metric-kpi ${typeClass}` : 'metric-kpi';
@@ -1153,6 +1165,21 @@ function formatMemoryRange(item) {
     }
     const used = formatStorage(item.memoryUsedMb);
     const total = formatStorage(item.memoryTotalMb);
+    return `${used}/${total}`;
+}
+
+/**
+ * 格式化交换内存区间。
+ *
+ * @param {Object} item 指标对象
+ * @returns {string} 文本
+ */
+function formatSwapRange(item) {
+    if (!item) {
+        return '--/--';
+    }
+    const used = formatStorage(item.swapUsedMb);
+    const total = formatStorage(item.swapTotalMb);
     return `${used}/${total}`;
 }
 

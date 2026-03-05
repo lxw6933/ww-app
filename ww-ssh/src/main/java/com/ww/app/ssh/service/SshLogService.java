@@ -149,10 +149,12 @@ public class SshLogService {
         try {
             String cpuLine = firstLine(executeCommandForLines(target, sshCommandBuilder.buildCpuUsageCommand(), 1));
             String memoryLine = firstLine(executeCommandForLines(target, sshCommandBuilder.buildMemoryUsageCommand(), 1));
+            String swapLine = firstLine(executeCommandForLines(target, sshCommandBuilder.buildSwapUsageCommand(), 1));
             String loadLine = firstLine(executeCommandForLines(target, sshCommandBuilder.buildLoadAverageCommand(), 1));
 
             snapshot.setCpuUsagePercent(normalizePercent(parseDouble(cpuLine)));
             applyMemoryMetrics(snapshot, memoryLine);
+            applySwapMetrics(snapshot, swapLine);
             applyLoadMetrics(snapshot, loadLine);
             applyInstanceStatus(snapshot, target);
             snapshot.setStatus("ok");
@@ -540,14 +542,6 @@ public class SshLogService {
                 sleepQuietly(OP_VERIFY_SLEEP_MS);
             }
         }
-        if (lastProbe == null) {
-            String message = "命令已执行，但状态校验失败：未获取到状态回读结果";
-            String trimmedOutput = trimToEmpty(operationOutput);
-            if (!trimmedOutput.isEmpty()) {
-                message = message + "，命令输出: " + limitMessage(trimmedOutput);
-            }
-            throw new IllegalStateException(message);
-        }
         if (expectedRunning && lastProbe.isRunning()) {
             return;
         }
@@ -556,7 +550,7 @@ public class SshLogService {
         }
         String expectedText = expectedRunning ? "运行中" : "已停止";
         String actualText = toStatusText(lastProbe.status);
-        String detail = lastProbe == null ? "状态回读失败" : trimToEmpty(lastProbe.detail);
+        String detail = trimToEmpty(lastProbe.detail);
         String message = "命令已执行，但状态校验未通过，期望: " + expectedText
                 + "，实际: " + actualText
                 + (detail.isEmpty() ? "" : "，状态详情: " + detail);
@@ -947,6 +941,22 @@ public class SshLogService {
         snapshot.setMemoryUsagePercent(normalizePercent(parseDouble(parts[0])));
         snapshot.setMemoryUsedMb(parseLong(parts[1]));
         snapshot.setMemoryTotalMb(parseLong(parts[2]));
+    }
+
+    /**
+     * 应用交换内存指标。
+     *
+     * @param snapshot 目标快照
+     * @param swapLine 命令输出行，格式：使用率 已用MB 总MB
+     */
+    private void applySwapMetrics(HostMetricSnapshot snapshot, String swapLine) {
+        String[] parts = splitByBlank(swapLine);
+        if (parts.length < 3) {
+            return;
+        }
+        snapshot.setSwapUsagePercent(normalizePercent(parseDouble(parts[0])));
+        snapshot.setSwapUsedMb(parseLong(parts[1]));
+        snapshot.setSwapTotalMb(parseLong(parts[2]));
     }
 
     /**

@@ -49,6 +49,21 @@ public class HostMetricSnapshot {
     private Long memoryTotalMb;
 
     /**
+     * 交换内存使用率，单位百分比（0-100）。
+     */
+    private Double swapUsagePercent;
+
+    /**
+     * 已使用交换内存（MB）。
+     */
+    private Long swapUsedMb;
+
+    /**
+     * 交换内存总量（MB）。
+     */
+    private Long swapTotalMb;
+
+    /**
      * 1 分钟平均负载。
      */
     private Double load1m;
