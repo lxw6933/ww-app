@@ -205,7 +205,10 @@ export class LogView {
     appendManualBreak() {
         const logEl = el('log');
         const lineEl = this.createLogLineElement('---------------- 分隔线（便于区分前后日志） ----------------');
-        lineEl.classList.add('line-system');
+        // 手工分割线属于操作标记，需始终可见，不受系统消息/级别/规则筛选影响。
+        lineEl.classList.add('line-system', 'line-manual-break');
+        lineEl.dataset.level = 'SYSTEM';
+        lineEl.classList.remove('line-level-hidden', 'line-filter-hidden', 'hidden');
         logEl.appendChild(lineEl);
         this.trimLines(logEl);
         if (this.searchKeyword) {
@@ -490,7 +493,7 @@ export class LogView {
         if (!lineEl) {
             return;
         }
-        if (lineEl.classList.contains('line-system-msg')) {
+        if (lineEl.classList.contains('line-system-msg') || lineEl.classList.contains('line-manual-break')) {
             lineEl.classList.remove('line-filter-hidden');
             return;
         }
@@ -844,6 +847,13 @@ export class LogView {
      * @param {string} filter 过滤级别
      */
     applyLevelFilterForLine(row, filter) {
+        if (!row) {
+            return;
+        }
+        if (row.classList.contains('line-manual-break')) {
+            row.classList.remove('line-level-hidden');
+            return;
+        }
         const level = row.dataset && row.dataset.level ? row.dataset.level : 'INFO';
         const visible = matchLevelFilter(filter || this.levelFilter, level);
         row.classList.toggle('line-level-hidden', !visible);

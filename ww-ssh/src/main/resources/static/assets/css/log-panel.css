@@ -1778,9 +1778,7 @@ body.immersive-mode .main-panel {
 }
 
 body.immersive-mode .title-wrap,
-body.immersive-mode #statusWrap,
-body.immersive-mode .group-env,
-body.immersive-mode .group-service {
+body.immersive-mode #statusWrap {
     display: none;
 }
 
@@ -4392,4 +4390,40 @@ body.immersive-mode .group-action #btnImmersive {
 #log {
     font-size: 13px !important;
     line-height: 1.6 !important;
+}
+
+.line-manual-break {
+    justify-content: center;
+    color: #7fc6f0 !important;
+    font-weight: 600;
+    letter-spacing: 0.3px;
+    border: 1px dashed rgba(127, 198, 240, 0.45);
+    background: rgba(11, 39, 61, 0.55);
+}
+
+/* ==================== 搜索高亮可见性修复 ==================== */
+#log .log-line.line-search-hit {
+    background: rgba(113, 79, 27, 0.72) !important;
+    border-color: rgba(255, 199, 98, 0.72) !important;
+    box-shadow: inset 0 0 0 1px rgba(255, 208, 126, 0.2) !important;
+}
+
+#log .log-line.line-search-current {
+    background: rgba(138, 95, 29, 0.82) !important;
+    border-color: rgba(255, 223, 147, 0.9) !important;
+    box-shadow:
+        0 0 0 1px rgba(255, 226, 155, 0.44),
+        0 8px 20px rgba(58, 37, 9, 0.52) !important;
+}
+
+#log .log-line.line-search-hit:hover,
+#log .log-line.line-search-current:hover {
+    background: rgba(146, 101, 31, 0.86) !important;
+}
+
+#log .line-text .line-highlight {
+    background: rgba(255, 234, 148, 0.92) !important;
+    color: #332200 !important;
+    border: 1px solid rgba(255, 213, 110, 0.88) !important;
+    box-shadow: 0 0 0 1px rgba(99, 67, 15, 0.3) inset;
 }
