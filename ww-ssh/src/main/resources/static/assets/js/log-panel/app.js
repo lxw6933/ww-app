@@ -74,6 +74,19 @@ const READ_MODE_CAT = 'cat';
 const UI_DENSITY_COMFORTABLE = 'comfortable';
 
 /**
+ * cat 降级 WebSocket：空闲判定超时（毫秒）。
+ * <p>
+ * 过短会导致“首条日志尚未到达就提前结束”，从而误判未命中。
+ * </p>
+ */
+const CAT_WS_IDLE_TIMEOUT_MS = 1200;
+
+/**
+ * cat 降级 WebSocket：硬超时（毫秒）。
+ */
+const CAT_WS_HARD_TIMEOUT_MS = 6000;
+
+/**
  * URL 分享参数中的文件键名。
  */
 const SHARED_FILE_KEY = 'file';
@@ -783,8 +796,8 @@ function requestCatSnapshot() {
             }
             return response.json();
         })
-        .then(lines => {
-            const rows = Array.isArray(lines) ? lines : [];
+        .then(payload => {
+            const rows = resolveCatSnapshotRows(payload);
             if (rows.length) {
                 logView.appendLines(`${rows.join('\n')}\n`);
                 logView.setStatus('快照完成', 'var(--ok)');
@@ -792,7 +805,7 @@ function requestCatSnapshot() {
                 return;
             }
             logView.setStatus('快照完成', 'var(--ok)');
-            logView.setEmptyTip('未命中日志，可调整条件后再次读取。');
+            logView.setEmptyTip(buildCatNoHitTip());
         })
         .catch(error => {
             if (error && (error.status === 404 || error.status === 405)) {
@@ -818,7 +831,7 @@ function requestCatSnapshotViaWebSocket(payload) {
         logView.appendSystem('后端未提供 cat 接口，已降级为 tail 快照');
         const protocol = location.protocol === 'https:' ? 'wss' : 'ws';
         const ws = new WebSocket(`${protocol}://${location.host}/log-stream`);
-        let received = false;
+        let receivedLogLine = false;
         let closed = false;
         let idleTimer = null;
         let hardTimer = null;
@@ -840,8 +853,8 @@ function requestCatSnapshotViaWebSocket(payload) {
                 ws.close();
             }
             logView.setStatus('快照完成', 'var(--ok)');
-            if (!received) {
-                logView.setEmptyTip('未命中日志，可调整条件后再次读取。');
+            if (!receivedLogLine) {
+                logView.setEmptyTip(buildCatNoHitTip());
             } else {
                 logView.setEmptyTip('快照读取完成，可调整条件后再次读取。');
             }
@@ -852,7 +865,7 @@ function requestCatSnapshotViaWebSocket(payload) {
             if (idleTimer) {
                 window.clearTimeout(idleTimer);
             }
-            idleTimer = window.setTimeout(() => finish(), 420);
+            idleTimer = window.setTimeout(() => finish(), CAT_WS_IDLE_TIMEOUT_MS);
         };
 
         ws.onopen = () => {
@@ -864,12 +877,14 @@ function requestCatSnapshotViaWebSocket(payload) {
                 finish();
                 return;
             }
-            hardTimer = window.setTimeout(() => finish(), 1300);
+            hardTimer = window.setTimeout(() => finish(), CAT_WS_HARD_TIMEOUT_MS);
             refreshIdleTimer();
         };
 
         ws.onmessage = event => {
-            received = true;
+            if (hasBusinessLogLine(event.data)) {
+                receivedLogLine = true;
+            }
             statusBar.markLogReceived();
             logView.onMessage(event.data);
             refreshIdleTimer();
@@ -884,6 +899,155 @@ function requestCatSnapshotViaWebSocket(payload) {
             finish();
         };
     });
+}
+
+/**
+ * 判断 WebSocket 文本块中是否存在真实业务日志行（排除系统提示）。
+ *
+ * @param {string} chunk 文本块
+ * @returns {boolean} true 表示存在业务日志
+ */
+function hasBusinessLogLine(chunk) {
+    return String(chunk || '')
+        .split(/\r?\n/)
+        .some(line => {
+            const text = String(line || '').trim();
+            return !!text && text.indexOf('[系统提示]') !== 0;
+        });
+}
+
+/**
+ * 解析 cat 接口返回，兼容数组与常见对象包装结构。
+ * <p>
+ * 兼容场景：
+ * 1. 直接返回数组：{@code ["line1","line2"]}；<br>
+ * 2. 包装返回：{@code {data:[...]}} / {@code {rows:[...]}} 等。
+ * </p>
+ *
+ * @param {*} payload 接口返回体
+ * @returns {string[]} 日志行列表
+ */
+function resolveCatSnapshotRows(payload) {
+    const businessError = detectCatSnapshotBusinessError(payload);
+    if (businessError) {
+        throw new Error(businessError);
+    }
+    const directRows = normalizeSnapshotRowCollection(payload);
+    if (directRows.length || Array.isArray(payload)) {
+        return directRows;
+    }
+    if (!payload || typeof payload !== 'object') {
+        return [];
+    }
+    const firstLevelKeys = ['data', 'rows', 'result', 'records', 'list', 'content'];
+    for (const key of firstLevelKeys) {
+        const rows = normalizeSnapshotRowCollection(payload[key]);
+        if (rows.length) {
+            return rows;
+        }
+    }
+    const data = payload.data;
+    if (data && typeof data === 'object' && !Array.isArray(data)) {
+        const nestedKeys = ['rows', 'list', 'records', 'content', 'result', 'data'];
+        for (const key of nestedKeys) {
+            const rows = normalizeSnapshotRowCollection(data[key]);
+            if (rows.length) {
+                return rows;
+            }
+        }
+    }
+    return [];
+}
+
+/**
+ * 识别 cat 业务返回中的失败语义，避免把失败对象误判为空结果。
+ *
+ * @param {*} payload 接口返回体
+ * @returns {string} 失败消息（空串表示无业务失败）
+ */
+function detectCatSnapshotBusinessError(payload) {
+    if (!payload || typeof payload !== 'object' || Array.isArray(payload)) {
+        return '';
+    }
+    if (payload.success === false) {
+        return payload.message ? String(payload.message) : '快照读取失败';
+    }
+    if (payload.code === undefined || payload.code === null) {
+        return '';
+    }
+    const normalized = String(payload.code).trim();
+    if (!normalized || normalized === '0' || normalized === '200') {
+        return '';
+    }
+    return payload.message
+        ? String(payload.message)
+        : `快照读取失败（code=${normalized}）`;
+}
+
+/**
+ * 将数组/文本等候选值规范化为日志行数组。
+ *
+ * @param {*} value 候选值
+ * @returns {string[]} 日志行数组
+ */
+function normalizeSnapshotRowCollection(value) {
+    if (Array.isArray(value)) {
+        return value
+            .map(item => normalizeSnapshotRow(item))
+            .filter(item => item !== null);
+    }
+    if (typeof value === 'string') {
+        return String(value)
+            .split(/\r?\n/)
+            .map(item => item.trim())
+            .filter(Boolean);
+    }
+    return [];
+}
+
+/**
+ * 将单条返回项规范化为字符串日志行。
+ *
+ * @param {*} value 单条返回项
+ * @returns {string|null} 规范化结果
+ */
+function normalizeSnapshotRow(value) {
+    if (value === null || value === undefined) {
+        return null;
+    }
+    if (typeof value === 'string') {
+        return value;
+    }
+    if (typeof value === 'number' || typeof value === 'boolean') {
+        return String(value);
+    }
+    if (typeof value === 'object') {
+        const textFields = ['line', 'content', 'message', 'msg', 'log'];
+        for (const key of textFields) {
+            if (typeof value[key] === 'string' && value[key].trim()) {
+                return value[key];
+            }
+        }
+        try {
+            return JSON.stringify(value);
+        } catch (error) {
+            return String(value);
+        }
+    }
+    return String(value);
+}
+
+/**
+ * 构建 cat 模式未命中提示文案。
+ *
+ * @returns {string} 提示文案
+ */
+function buildCatNoHitTip() {
+    const rules = getActiveFilterRules();
+    if (rules && rules.length) {
+        return '按当前过滤条件未命中日志，可调整条件后再次读取。';
+    }
+    return '当前快照窗口未读取到日志，可增大行数或稍后重试。';
 }
 
 /**
