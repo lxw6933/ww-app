@@ -28,6 +28,8 @@ export class LogView {
         this.searchKeyword = '';
         this.searchMatches = [];
         this.searchCursor = -1;
+        this.metricsRefreshTimer = null;
+        this.metricsRefreshMs = 180;
     }
 
     /**
@@ -162,8 +164,7 @@ export class LogView {
             this.scheduleSearchRefresh();
         }
         this.state.lineCount = logEl.children.length;
-        this.renderLineCount();
-        this.renderLevelStats();
+        this.scheduleMetricsRefresh();
         if (checked('autoScroll')) {
             this.scrollToBottom();
         } else {
@@ -178,6 +179,7 @@ export class LogView {
         const logEl = el('log');
         logEl.textContent = '';
         this.pendingChunks = [];
+        this.cancelMetricsRefresh();
         if (this.appendFlushTimer) {
             window.clearTimeout(this.appendFlushTimer);
             this.appendFlushTimer = null;
@@ -394,7 +396,8 @@ export class LogView {
      * @param {HTMLElement} logEl 日志容器
      */
     trimLines(logEl) {
-        while (logEl.children.length > this.maxLines) {
+        const overflow = logEl.children.length - this.maxLines;
+        for (let index = 0; index < overflow; index += 1) {
             logEl.removeChild(logEl.firstChild);
         }
     }
@@ -405,13 +408,43 @@ export class LogView {
     renderLineCount() {
         const logEl = el('log');
         const total = logEl ? logEl.children.length : this.state.lineCount;
-        const visible = logEl ? Array.from(logEl.children).filter(lineEl => this.isLineVisible(lineEl)).length : total;
+        if (!logEl) {
+            el('lineCount').textContent = `${total} 行`;
+            return;
+        }
+        // 常见路径：未启用级别筛选、未隐藏系统消息、无过滤规则时，可直接使用总行数，避免全量扫描。
+        const canUseTotalDirectly = this.levelFilter === 'ALL'
+            && checked('showSystem')
+            && (!this.filterRules || this.filterRules.length === 0);
+        const visible = canUseTotalDirectly
+            ? total
+            : this.countVisibleLines(logEl);
         this.state.lineCount = total;
         if (visible === total) {
             el('lineCount').textContent = `${visible} 行`;
             return;
         }
         el('lineCount').textContent = `${visible}/${total} 行`;
+    }
+
+    /**
+     * 统计当前日志区可见行数。
+     *
+     * @param {HTMLElement} logEl 日志容器
+     * @returns {number} 可见行数量
+     */
+    countVisibleLines(logEl) {
+        if (!logEl || !logEl.children) {
+            return 0;
+        }
+        let visible = 0;
+        for (let index = 0; index < logEl.children.length; index += 1) {
+            const lineEl = logEl.children[index];
+            if (this.isLineVisible(lineEl)) {
+                visible += 1;
+            }
+        }
+        return visible;
     }
 
     /**
@@ -830,6 +863,38 @@ export class LogView {
     }
 
     /**
+     * 延迟刷新行数与级别统计，降低高频日志写入时的全量扫描开销。
+     */
+    scheduleMetricsRefresh() {
+        if (this.metricsRefreshTimer) {
+            return;
+        }
+        this.metricsRefreshTimer = window.setTimeout(() => {
+            this.metricsRefreshTimer = null;
+            this.flushMetricsRefresh();
+        }, this.metricsRefreshMs);
+    }
+
+    /**
+     * 立即刷新行数与级别统计。
+     */
+    flushMetricsRefresh() {
+        this.renderLineCount();
+        this.renderLevelStats();
+    }
+
+    /**
+     * 取消待执行的统计刷新任务。
+     */
+    cancelMetricsRefresh() {
+        if (!this.metricsRefreshTimer) {
+            return;
+        }
+        window.clearTimeout(this.metricsRefreshTimer);
+        this.metricsRefreshTimer = null;
+    }
+
+    /**
      * 刷新级别过滤下的显示状态。
      */
     refreshLevelVisibility() {
@@ -930,23 +995,27 @@ export class LogView {
             WARN: 0,
             ERROR: 0
         };
-        const lines = Array.from(document.querySelectorAll('#log .log-line'));
-        lines.forEach(lineEl => {
+        const logEl = el('log');
+        if (!logEl || !logEl.children) {
+            return stats;
+        }
+        for (let index = 0; index < logEl.children.length; index += 1) {
+            const lineEl = logEl.children[index];
             if (lineEl.classList.contains('hidden') || lineEl.classList.contains('line-filter-hidden')) {
-                return;
+                continue;
             }
             stats.ALL += 1;
             const level = lineEl.dataset && lineEl.dataset.level ? lineEl.dataset.level : 'INFO';
             if (level === 'ERROR') {
                 stats.ERROR += 1;
-                return;
+                continue;
             }
             if (level === 'WARN') {
                 stats.WARN += 1;
-                return;
+                continue;
             }
             stats.INFO += 1;
-        });
+        }
         return stats;
     }
 
