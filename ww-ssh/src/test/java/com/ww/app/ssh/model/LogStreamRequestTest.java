@@ -37,10 +37,22 @@ class LogStreamRequestTest {
     @Test
     void shouldRecognizeAllScope() {
         LogStreamRequest request = new LogStreamRequest();
+        request.setProject("__ALL__");
         request.setEnv("__ALL__");
         request.setService("__all__");
+        Assertions.assertTrue(request.isAllProject());
         Assertions.assertTrue(request.isAllEnv());
         Assertions.assertTrue(request.isAllService());
+    }
+
+    /**
+     * 校验项目字段归一化。
+     */
+    @Test
+    void shouldNormalizeProjectValue() {
+        LogStreamRequest request = new LogStreamRequest();
+        request.setProject("  ww-mall  ");
+        Assertions.assertEquals("ww-mall", request.normalizedProject());
     }
 
     /**

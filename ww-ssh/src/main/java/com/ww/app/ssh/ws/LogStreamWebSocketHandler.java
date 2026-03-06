@@ -140,11 +140,12 @@ public class LogStreamWebSocketHandler extends TextWebSocketHandler {
         try {
             restartStreams(session, request);
         } catch (Exception ex) {
-            log.warn("event={} stage={} sessionId={} ip={} env={} service={} mode={} error={}",
+            log.warn("event={} stage={} sessionId={} ip={} project={} env={} service={} mode={} error={}",
                     EVENT_WS_STREAM,
                     STAGE_SUBSCRIBE_FAILED,
                     session.getId(),
                     resolveClientIp(session),
+                    request.normalizedProject(),
                     request.normalizedEnv(),
                     request.normalizedService(),
                     request.normalizedReadMode(),
@@ -185,11 +186,12 @@ public class LogStreamWebSocketHandler extends TextWebSocketHandler {
     private void restartStreams(WebSocketSession session, LogStreamRequest request) {
         closeContext(session.getId());
         String clientIp = resolveClientIp(session);
-        log.info("event={} stage={} sessionId={} ip={} env={} service={} mode={}",
+        log.info("event={} stage={} sessionId={} ip={} project={} env={} service={} mode={}",
                 EVENT_WS_STREAM,
                 STAGE_SUBSCRIBE_START,
                 session.getId(),
                 clientIp,
+                request.normalizedProject(),
                 request.normalizedEnv(),
                 request.normalizedService(),
                 request.normalizedReadMode());

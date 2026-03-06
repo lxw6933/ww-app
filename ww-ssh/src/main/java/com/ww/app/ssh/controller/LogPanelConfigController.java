@@ -53,21 +53,24 @@ public class LogPanelConfigController {
      * @return 环境服务概览
      */
     @GetMapping("/servers")
-    public Map<String, Map<String, Map<String, String>>> listServers() {
+    public Map<String, Map<String, Map<String, Map<String, String>>>> listServers() {
         return logPanelQueryService.getServerOverview();
     }
 
     /**
      * 查询指定环境与服务的日志文件候选列表。
      *
+     * @param project 项目名称
      * @param env     环境名称
      * @param service 服务名称
      * @return 日志文件路径集合
      */
     @GetMapping("/files")
-    public List<String> listFiles(@RequestParam("env") String env, @RequestParam("service") String service) {
+    public List<String> listFiles(@RequestParam("project") String project,
+                                  @RequestParam("env") String env,
+                                  @RequestParam("service") String service) {
         try {
-            List<LogTarget> targets = logPanelQueryService.resolveTargets(env, service);
+            List<LogTarget> targets = logPanelQueryService.resolveTargets(project, env, service);
             Set<String> fileSet = new LinkedHashSet<>();
             int successCount = 0;
             for (LogTarget target : targets) {

@@ -2,161 +2,175 @@ server:
   port: 8080
 
 app:
-  servers:
-    # 多实例服务命名约定：
-    # 同一环境下若一个服务有多个实例，可使用 "服务名@实例标识" 作为 key。
-    # 例如：mall-basic@node1、mall-basic@node2。
-    # 前端会按 "服务名" 聚合展示与订阅。
-    test:
-      mall-basic-portal:
-        host: "192.168.10.143"
-        port: 22
-        username: "root"
-        password: "2020pflm@143#"
-        # privateKeyPath: "/home/dev/.ssh/id_rsa"
-        # privateKeyPassphrase: ""
-        # preferredAuthentications: "publickey,password,keyboard-interactive"
-        # connectTimeoutMs: 8000
-        logPath: "/data/B2B2C/mall-basic-portal/target/logs"
-        manageCommandFile: "/data/B2B2C/mall-basic-portal/bin/server.sh"
-      mall-basic-service:
-        host: "192.168.10.143"
-        port: 22
-        username: "root"
-        password: "2020pflm@143#"
-        logPath: "/data/B2B2C/mall-basic-service/target/logs"
-        manageCommandFile: "/data/B2B2C/mall-basic-service/bin/server.sh"
-      mall-auth-service:
-        host: "192.168.10.143"
-        port: 22
-        username: "root"
-        password: "2020pflm@143#"
-        logPath: "/data/B2B2C/mall-auth-service/target/logs"
-        manageCommandFile: "/data/B2B2C/mall-auth-service/bin/server.sh"
-      mall-ext-service:
-        host: "192.168.10.143"
-        port: 22
-        username: "root"
-        password: "2020pflm@143#"
-        logPath: "/data/B2B2C/mall-ext-service/target/logs"
-        manageCommandFile: "/data/B2B2C/mall-ext-service/bin/server.sh"
+  # 推荐结构：app.projects.<project>.<env>.<service>。
+  # 兼容说明：若仍使用 app.servers，系统会自动归并到 default 项目。
+  projects:
+    mall:
+      # 多实例服务命名约定：
+      # 同一环境下若一个服务有多个实例，可使用 "服务名@实例标识" 作为 key。
+      # 例如：mall-basic@node1、mall-basic@node2。
+      # 前端会按 "服务名" 聚合展示与订阅。
+      test:
+        mall-basic-portal:
+          host: "192.168.10.143"
+          port: 22
+          username: "root"
+          password: "2020pflm@143#"
+          # privateKeyPath: "/home/dev/.ssh/id_rsa"
+          # privateKeyPassphrase: ""
+          # preferredAuthentications: "publickey,password,keyboard-interactive"
+          # connectTimeoutMs: 8000
+          logPath: "/data/B2B2C/mall-basic-portal/target/logs"
+          manageCommandFile: "/data/B2B2C/mall-basic-portal/bin/server.sh"
+        mall-basic-service:
+          host: "192.168.10.143"
+          port: 22
+          username: "root"
+          password: "2020pflm@143#"
+          logPath: "/data/B2B2C/mall-basic-service/target/logs"
+          manageCommandFile: "/data/B2B2C/mall-basic-service/bin/server.sh"
+        mall-auth-service:
+          host: "192.168.10.143"
+          port: 22
+          username: "root"
+          password: "2020pflm@143#"
+          logPath: "/data/B2B2C/mall-auth-service/target/logs"
+          manageCommandFile: "/data/B2B2C/mall-auth-service/bin/server.sh"
+        mall-ext-service:
+          host: "192.168.10.143"
+          port: 22
+          username: "root"
+          password: "2020pflm@143#"
+          logPath: "/data/B2B2C/mall-ext-service/target/logs"
+          manageCommandFile: "/data/B2B2C/mall-ext-service/bin/server.sh"
 
-    test2:
-      mall-basic-portal:
-        host: "192.168.10.185"
-        port: 22
-        username: "root"
-        password: "2016@pflm"
-        logPath: "/data/B2B2C/mall-basic-portal/target/logs"
-        manageCommandFile: "/data/B2B2C/mall-basic-portal/bin/server.sh"
-      mall-basic-service:
-        host: "192.168.10.185"
-        port: 22
-        username: "root"
-        password: "2016@pflm"
-        logPath: "/data/B2B2C/mall-basic-service/target/logs"
-        manageCommandFile: "/data/B2B2C/mall-basic-service/bin/server.sh"
-      mall-auth-service:
-        host: "192.168.10.185"
-        port: 22
-        username: "root"
-        password: "2016@pflm"
-        logPath: "/data/B2B2C/mall-auth-service/target/logs"
-        manageCommandFile: "/data/B2B2C/mall-auth-service/bin/server.sh"
-      mall-ext-service:
-        host: "192.168.10.185"
-        port: 22
-        username: "root"
-        password: "2016@pflm"
-        logPath: "/data/B2B2C/mall-ext-service/target/logs"
-        manageCommandFile: "/data/B2B2C/mall-ext-service/bin/server.sh"
+      test2:
+        mall-basic-portal:
+          host: "192.168.10.185"
+          port: 22
+          username: "root"
+          password: "2016@pflm"
+          logPath: "/data/B2B2C/mall-basic-portal/target/logs"
+          manageCommandFile: "/data/B2B2C/mall-basic-portal/bin/server.sh"
+        mall-basic-service:
+          host: "192.168.10.185"
+          port: 22
+          username: "root"
+          password: "2016@pflm"
+          logPath: "/data/B2B2C/mall-basic-service/target/logs"
+          manageCommandFile: "/data/B2B2C/mall-basic-service/bin/server.sh"
+        mall-auth-service:
+          host: "192.168.10.185"
+          port: 22
+          username: "root"
+          password: "2016@pflm"
+          logPath: "/data/B2B2C/mall-auth-service/target/logs"
+          manageCommandFile: "/data/B2B2C/mall-auth-service/bin/server.sh"
+        mall-ext-service:
+          host: "192.168.10.185"
+          port: 22
+          username: "root"
+          password: "2016@pflm"
+          logPath: "/data/B2B2C/mall-ext-service/target/logs"
+          manageCommandFile: "/data/B2B2C/mall-ext-service/bin/server.sh"
 
-    uat2:
-      mall-basic-portal:
-        host: "192.168.10.175"
-        port: 22
-        username: "root"
-        password: "2021@pflm"
-        logPath: "/data/B2B2C/mall-basic-portal/target/logs"
-        manageCommandFile: "/data/B2B2C/mall-basic-portal/bin/server.sh"
-      mall-basic-service:
-        host: "192.168.10.175"
-        port: 22
-        username: "root"
-        password: "2021@pflm"
-        logPath: "/data/B2B2C/mall-basic-service/target/logs"
-        manageCommandFile: "/data/B2B2C/mall-basic-service/bin/server.sh"
-      mall-auth-service:
-        host: "192.168.10.175"
-        port: 22
-        username: "root"
-        password: "2021@pflm"
-        logPath: "/data/B2B2C/mall-auth-service/target/logs"
-        manageCommandFile: "/data/B2B2C/mall-auth-service/bin/server.sh"
-      mall-ext-service:
-        host: "192.168.10.175"
-        port: 22
-        username: "root"
-        password: "2021@pflm"
-        logPath: "/data/B2B2C/mall-ext-service/target/logs"
-        manageCommandFile: "/data/B2B2C/mall-ext-service/bin/server.sh"
+      uat2:
+        mall-basic-portal:
+          host: "192.168.10.175"
+          port: 22
+          username: "root"
+          password: "2021@pflm"
+          logPath: "/data/B2B2C/mall-basic-portal/target/logs"
+          manageCommandFile: "/data/B2B2C/mall-basic-portal/bin/server.sh"
+        mall-basic-service:
+          host: "192.168.10.175"
+          port: 22
+          username: "root"
+          password: "2021@pflm"
+          logPath: "/data/B2B2C/mall-basic-service/target/logs"
+          manageCommandFile: "/data/B2B2C/mall-basic-service/bin/server.sh"
+        mall-auth-service:
+          host: "192.168.10.175"
+          port: 22
+          username: "root"
+          password: "2021@pflm"
+          logPath: "/data/B2B2C/mall-auth-service/target/logs"
+          manageCommandFile: "/data/B2B2C/mall-auth-service/bin/server.sh"
+        mall-ext-service:
+          host: "192.168.10.175"
+          port: 22
+          username: "root"
+          password: "2021@pflm"
+          logPath: "/data/B2B2C/mall-ext-service/target/logs"
+          manageCommandFile: "/data/B2B2C/mall-ext-service/bin/server.sh"
 
-    press:
-      mall-basic-portal:
-        host: "192.168.10.177"
-        port: 22
-        username: "root"
-        password: "2016@pflm"
-        logPath: "/data/B2B2C/mall-basic-portal/target/logs"
-        manageCommandFile: "/data/B2B2C/mall-basic-portal/bin/server.sh"
-      mall-basic-service:
-        host: "192.168.10.177"
-        port: 22
-        username: "root"
-        password: "2016@pflm"
-        logPath: "/data/B2B2C/mall-basic-service/target/logs"
-        manageCommandFile: "/data/B2B2C/mall-basic-service/bin/server.sh"
-      mall-auth-service:
-        host: "192.168.10.177"
-        port: 22
-        username: "root"
-        password: "2016@pflm"
-        logPath: "/data/B2B2C/mall-auth-service/target/logs"
-        manageCommandFile: "/data/B2B2C/mall-auth-service/bin/server.sh"
-      mall-ext-service:
-        host: "192.168.10.177"
-        port: 22
-        username: "root"
-        password: "2016@pflm"
-        logPath: "/data/B2B2C/mall-ext-service/target/logs"
-        manageCommandFile: "/data/B2B2C/mall-ext-service/bin/server.sh"
+      press:
+        mall-basic-portal:
+          host: "192.168.10.177"
+          port: 22
+          username: "root"
+          password: "2016@pflm"
+          logPath: "/data/B2B2C/mall-basic-portal/target/logs"
+          manageCommandFile: "/data/B2B2C/mall-basic-portal/bin/server.sh"
+        mall-basic-service:
+          host: "192.168.10.177"
+          port: 22
+          username: "root"
+          password: "2016@pflm"
+          logPath: "/data/B2B2C/mall-basic-service/target/logs"
+          manageCommandFile: "/data/B2B2C/mall-basic-service/bin/server.sh"
+        mall-auth-service:
+          host: "192.168.10.177"
+          port: 22
+          username: "root"
+          password: "2016@pflm"
+          logPath: "/data/B2B2C/mall-auth-service/target/logs"
+          manageCommandFile: "/data/B2B2C/mall-auth-service/bin/server.sh"
+        mall-ext-service:
+          host: "192.168.10.177"
+          port: 22
+          username: "root"
+          password: "2016@pflm"
+          logPath: "/data/B2B2C/mall-ext-service/target/logs"
+          manageCommandFile: "/data/B2B2C/mall-ext-service/bin/server.sh"
 
-    bcm:
-      mall-basic-portal:
-        host: "192.168.10.141"
-        port: 22
-        username: "root"
-        password: "2020pflm@141#"
-        logPath: "/data/B2B2C/mall-basic-portal/target/logs"
-        manageCommandFile: "/data/B2B2C/mall-basic-portal/bin/server.sh"
-      mall-basic-service:
-        host: "192.168.10.141"
-        port: 22
-        username: "root"
-        password: "2020pflm@141#"
-        logPath: "/data/B2B2C/mall-basic-service/target/logs"
-        manageCommandFile: "/data/B2B2C/mall-basic-service/bin/server.sh"
-      mall-auth-service:
-        host: "192.168.10.141"
-        port: 22
-        username: "root"
-        password: "2020pflm@141#"
-        logPath: "/data/B2B2C/mall-auth-service/target/logs"
-        manageCommandFile: "/data/B2B2C/mall-auth-service/bin/server.sh"
-      mall-ext-service:
-        host: "192.168.10.141"
-        port: 22
-        username: "root"
-        password: "2020pflm@141#"
-        logPath: "/data/B2B2C/mall-ext-service/target/logs"
-        manageCommandFile: "/data/B2B2C/mall-ext-service/bin/server.sh"
+      bcm:
+        mall-basic-portal:
+          host: "192.168.10.141"
+          port: 22
+          username: "root"
+          password: "2020pflm@141#"
+          logPath: "/data/B2B2C/mall-basic-portal/target/logs"
+          manageCommandFile: "/data/B2B2C/mall-basic-portal/bin/server.sh"
+        mall-basic-service:
+          host: "192.168.10.141"
+          port: 22
+          username: "root"
+          password: "2020pflm@141#"
+          logPath: "/data/B2B2C/mall-basic-service/target/logs"
+          manageCommandFile: "/data/B2B2C/mall-basic-service/bin/server.sh"
+        mall-auth-service:
+          host: "192.168.10.141"
+          port: 22
+          username: "root"
+          password: "2020pflm@141#"
+          logPath: "/data/B2B2C/mall-auth-service/target/logs"
+          manageCommandFile: "/data/B2B2C/mall-auth-service/bin/server.sh"
+        mall-ext-service:
+          host: "192.168.10.141"
+          port: 22
+          username: "root"
+          password: "2020pflm@141#"
+          logPath: "/data/B2B2C/mall-ext-service/target/logs"
+          manageCommandFile: "/data/B2B2C/mall-ext-service/bin/server.sh"
+
+#    vms:
+#      # 默认占位项目配置（假环境 + 假实例），用于项目维度展示与后续按需替换。
+#      mock:
+#        vms-demo@node1:
+#          host: "127.0.0.1"
+#          port: 22
+#          username: "fake"
+#          password: "fake"
+#          logPath: "/tmp/vms-demo/logs"
+#          manageCommandFile: "/tmp/vms-demo/bin/server.sh"

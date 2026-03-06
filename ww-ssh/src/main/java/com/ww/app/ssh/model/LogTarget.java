@@ -7,12 +7,18 @@ import lombok.Data;
 /**
  * 日志订阅目标。
  * <p>
- * 将“环境 + 服务 + 节点配置”打包为单一对象，供 SSH 日志读取服务消费。
+ * 将“项目 + 环境 + 服务 + 节点配置”打包为单一对象，
+ * 供 SSH 日志读取服务消费。
  * </p>
  */
 @Data
 @AllArgsConstructor
 public class LogTarget {
+
+    /**
+     * 项目名称。
+     */
+    private String project;
 
     /**
      * 环境名称。
@@ -30,11 +36,11 @@ public class LogTarget {
     private LogPanelProperties.ServerNode serverNode;
 
     /**
-     * 获取“环境/服务”的展示标识。
+     * 获取“项目/环境/服务”的展示标识。
      *
-     * @return 形如 TEST-1/mall-basic 的标识
+     * @return 形如 projectA/test/mall-basic 的标识
      */
     public String displayName() {
-        return env + "/" + service;
+        return project + "/" + env + "/" + service;
     }
 }

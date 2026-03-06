@@ -82,7 +82,7 @@ public class InstanceLifecycleController {
     /**
      * 实例运维并发锁。
      * <p>
-     * 锁粒度为 env+service，防止同一实例并发执行多个运维动作。
+     * 锁粒度为 project+env+service，防止同一实例并发执行多个运维动作。
      * </p>
      */
     private final Map<String, ReentrantLock> operationLocks = new ConcurrentHashMap<>();
@@ -110,39 +110,43 @@ public class InstanceLifecycleController {
                                              HttpServletRequest httpRequest) {
         long startAt = System.currentTimeMillis();
         String clientIp = IpUtil.getRealIp(httpRequest);
+        String project = request == null ? "" : request.normalizedProject();
         String env = request == null ? "" : request.normalizedEnv();
         String service = request == null ? "" : request.normalizedService();
         String action = request == null ? "" : request.normalizedAction();
-        log.info("event={} stage={} ip={} env={} service={} action={}",
-                EVENT_INSTANCE_OPERATION, STAGE_ATTEMPT, clientIp, env, service, action);
-        if (env.isEmpty() || service.isEmpty() || action.isEmpty()) {
-            log.warn("event={} stage={} ip={} env={} service={} action={}",
-                    EVENT_INSTANCE_OPERATION, STAGE_INVALID_PARAMS, clientIp, env, service, action);
-            return InstanceOperationResponse.failure(env, service, action, "参数不完整：env/service/action 必填");
+        log.info("event={} stage={} ip={} project={} env={} service={} action={}",
+                EVENT_INSTANCE_OPERATION, STAGE_ATTEMPT, clientIp, project, env, service, action);
+        if (project.isEmpty() || env.isEmpty() || service.isEmpty() || action.isEmpty()) {
+            log.warn("event={} stage={} ip={} project={} env={} service={} action={}",
+                    EVENT_INSTANCE_OPERATION, STAGE_INVALID_PARAMS, clientIp, project, env, service, action);
+            return InstanceOperationResponse.failure(project, env, service, action,
+                    "参数不完整：project/env/service/action 必填");
         }
-        String lockKey = buildOperationLockKey(env, service);
+        String lockKey = buildOperationLockKey(project, env, service);
         ReentrantLock operationLock = operationLocks.computeIfAbsent(lockKey, key -> new ReentrantLock());
         boolean locked = false;
         try {
             locked = tryAcquireOperationLock(operationLock);
             if (!locked) {
-                log.warn("event={} stage={} ip={} env={} service={} action={} costMs={}",
-                        EVENT_INSTANCE_OPERATION, STAGE_LOCK_FAILED, clientIp, env, service, action,
+                log.warn("event={} stage={} ip={} project={} env={} service={} action={} costMs={}",
+                        EVENT_INSTANCE_OPERATION, STAGE_LOCK_FAILED, clientIp, project, env, service, action,
                         System.currentTimeMillis() - startAt);
-                return InstanceOperationResponse.failure(env, service, action, "当前实例有运维操作执行中，请稍后重试");
+                return InstanceOperationResponse.failure(project, env, service, action,
+                        "当前实例有运维操作执行中，请稍后重试");
             }
-            LogTarget target = logPanelQueryService.resolveExactTarget(env, service);
+            LogTarget target = logPanelQueryService.resolveExactTarget(project, env, service);
             String output = sshLogService.operateInstance(target, action);
-            log.info("event={} stage={} ip={} env={} service={} action={} host={} costMs={} output={}",
-                    EVENT_INSTANCE_OPERATION, STAGE_SUCCESS, clientIp, env, service, action,
+            log.info("event={} stage={} ip={} project={} env={} service={} action={} host={} costMs={} output={}",
+                    EVENT_INSTANCE_OPERATION, STAGE_SUCCESS, clientIp, project, env, service, action,
                     resolveTargetHost(target), System.currentTimeMillis() - startAt, summarizeOutputForLog(output));
-            return InstanceOperationResponse.success(env, service, action, summarizeMessage(action, output), output);
+            return InstanceOperationResponse.success(project, env, service, action,
+                    summarizeMessage(action, output), output);
         } catch (Exception ex) {
             String message = ex.getMessage() == null ? "实例运维失败" : ex.getMessage();
-            log.warn("event={} stage={} ip={} env={} service={} action={} costMs={} error={}",
-                    EVENT_INSTANCE_OPERATION, STAGE_FAILED, clientIp, env, service, action,
+            log.warn("event={} stage={} ip={} project={} env={} service={} action={} costMs={} error={}",
+                    EVENT_INSTANCE_OPERATION, STAGE_FAILED, clientIp, project, env, service, action,
                     System.currentTimeMillis() - startAt, summarizeOutputForLog(message));
-            return InstanceOperationResponse.failure(env, service, action, message, message);
+            return InstanceOperationResponse.failure(project, env, service, action, message, message);
         } finally {
             if (locked) {
                 operationLock.unlock();
@@ -156,12 +160,13 @@ public class InstanceLifecycleController {
     /**
      * 构建实例运维锁键。
      *
+     * @param project 项目名
      * @param env     环境名
      * @param service 实例服务键
      * @return 锁键
      */
-    private String buildOperationLockKey(String env, String service) {
-        return env + "#" + service;
+    private String buildOperationLockKey(String project, String env, String service) {
+        return project + "#" + env + "#" + service;
     }
 
     /**

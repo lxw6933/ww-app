@@ -17,6 +17,11 @@ public class InstanceOperationResponse {
     private boolean success;
 
     /**
+     * 目标项目。
+     */
+    private String project;
+
+    /**
      * 目标环境。
      */
     private String env;
@@ -49,6 +54,7 @@ public class InstanceOperationResponse {
     /**
      * 构建成功响应。
      *
+     * @param project 项目
      * @param env     环境
      * @param service 服务
      * @param action  动作
@@ -56,13 +62,15 @@ public class InstanceOperationResponse {
      * @param output  输出
      * @return 成功响应
      */
-    public static InstanceOperationResponse success(String env,
+    public static InstanceOperationResponse success(String project,
+                                                    String env,
                                                     String service,
                                                     String action,
                                                     String message,
                                                     String output) {
         InstanceOperationResponse response = new InstanceOperationResponse();
         response.setSuccess(true);
+        response.setProject(project);
         response.setEnv(env);
         response.setService(service);
         response.setAction(action);
@@ -75,22 +83,25 @@ public class InstanceOperationResponse {
     /**
      * 构建失败响应。
      *
+     * @param project 项目
      * @param env     环境
      * @param service 服务
      * @param action  动作
      * @param message 失败原因
      * @return 失败响应
      */
-    public static InstanceOperationResponse failure(String env,
+    public static InstanceOperationResponse failure(String project,
+                                                    String env,
                                                     String service,
                                                     String action,
                                                     String message) {
-        return failure(env, service, action, message, "");
+        return failure(project, env, service, action, message, "");
     }
 
     /**
      * 构建失败响应（附带输出内容）。
      *
+     * @param project 项目
      * @param env     环境
      * @param service 服务
      * @param action  动作
@@ -98,13 +109,15 @@ public class InstanceOperationResponse {
      * @param output  失败输出
      * @return 失败响应
      */
-    public static InstanceOperationResponse failure(String env,
+    public static InstanceOperationResponse failure(String project,
+                                                    String env,
                                                     String service,
                                                     String action,
                                                     String message,
                                                     String output) {
         InstanceOperationResponse response = new InstanceOperationResponse();
         response.setSuccess(false);
+        response.setProject(project);
         response.setEnv(env);
         response.setService(service);
         response.setAction(action);

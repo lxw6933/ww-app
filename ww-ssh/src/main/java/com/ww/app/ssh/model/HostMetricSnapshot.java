@@ -14,6 +14,11 @@ import lombok.Data;
 public class HostMetricSnapshot {
 
     /**
+     * 项目名称。
+     */
+    private String project;
+
+    /**
      * 环境名称。
      */
     private String env;
@@ -62,6 +67,21 @@ public class HostMetricSnapshot {
      * 交换内存总量（MB）。
      */
     private Long swapTotalMb;
+
+    /**
+     * 磁盘使用率，单位百分比（0-100）。
+     */
+    private Double diskUsagePercent;
+
+    /**
+     * 已使用磁盘容量（MB）。
+     */
+    private Long diskUsedMb;
+
+    /**
+     * 磁盘总容量（MB）。
+     */
+    private Long diskTotalMb;
 
     /**
      * 1 分钟平均负载。

@@ -20,7 +20,7 @@ import java.util.concurrent.ConcurrentHashMap;
 /**
  * 主机指标查询接口。
  * <p>
- * 按“环境 + 服务（支持全部服务聚合）”返回对应实例的实时主机指标。
+ * 按“项目 + 环境 + 服务（支持全部服务聚合）”返回对应实例的实时主机指标。
  * 该接口是日志面板左侧指标栏的数据来源。
  * </p>
  */
@@ -47,7 +47,7 @@ public class HostMetricsController {
      * 指标响应缓存。
      * <p>
      * 用于降低多人同时访问时的 SSH 采集压力，
-     * 以“环境 + 服务”为粒度做短期缓存，避免高频重复采集。
+     * 以“项目 + 环境 + 服务”为粒度做短期缓存，避免高频重复采集。
      * </p>
      */
     private final Map<String, CacheEntry> metricsCache = new ConcurrentHashMap<>();
@@ -71,22 +71,24 @@ public class HostMetricsController {
      * 2. 同状态下按服务与主机稳定排序。
      * </p>
      *
+     * @param project 项目名称（必填）
      * @param env     环境名称（必填）
      * @param service 服务名称（支持“全部服务”占位值）
      * @return 主机指标快照列表
      */
     @GetMapping("/hosts")
-    public List<HostMetricSnapshot> listHostMetrics(@RequestParam("env") String env,
+    public List<HostMetricSnapshot> listHostMetrics(@RequestParam("project") String project,
+                                                    @RequestParam("env") String env,
                                                     @RequestParam("service") String service) {
         try {
-            String cacheKey = buildCacheKey(env, service);
+            String cacheKey = buildCacheKey(project, env, service);
             long now = System.currentTimeMillis();
             CacheEntry cached = metricsCache.get(cacheKey);
             if (cached != null && now - cached.timestamp <= CACHE_TTL_MS) {
                 return new ArrayList<>(cached.metrics);
             }
 
-            List<LogTarget> targets = logPanelQueryService.resolveTargets(env, service);
+            List<LogTarget> targets = logPanelQueryService.resolveTargets(project, env, service);
             List<HostMetricSnapshot> metrics = new ArrayList<>();
             for (LogTarget target : targets) {
                 metrics.add(sshLogService.queryHostMetric(target));
@@ -108,12 +110,13 @@ public class HostMetricsController {
     /**
      * 构建缓存键。
      *
+     * @param project 项目
      * @param env     环境
      * @param service 服务
      * @return 缓存键
      */
-    private String buildCacheKey(String env, String service) {
-        return nullSafe(env) + "|" + nullSafe(service);
+    private String buildCacheKey(String project, String env, String service) {
+        return nullSafe(project) + "|" + nullSafe(env) + "|" + nullSafe(service);
     }
 
     /**

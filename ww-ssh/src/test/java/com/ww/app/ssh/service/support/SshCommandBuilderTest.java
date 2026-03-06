@@ -41,4 +41,16 @@ class SshCommandBuilderTest {
         Assertions.assertTrue(command.contains("||"));
         Assertions.assertTrue(command.contains("tail -n 200 -f"));
     }
+
+    /**
+     * 校验磁盘指标采集命令包含根分区采集与百分比处理逻辑。
+     */
+    @Test
+    void shouldBuildDiskUsageCommand() {
+        SshCommandBuilder builder = new SshCommandBuilder();
+        String command = builder.buildDiskUsageCommand();
+        Assertions.assertTrue(command.contains("df -Pm /"));
+        Assertions.assertTrue(command.contains("gsub(/%/"));
+        Assertions.assertTrue(command.contains("$5"));
+    }
 }

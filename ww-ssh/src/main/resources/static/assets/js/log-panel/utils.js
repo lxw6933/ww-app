@@ -35,31 +35,73 @@ export function fileName(path) {
 /**
  * 判断是否为聚合模式。
  *
- * @param {string} env 环境（保留参数仅用于兼容现有调用）
+ * @param {string} project 项目（保留参数用于兼容现有调用）
+ * @param {string} env 环境（保留参数用于兼容现有调用）
  * @param {string} service 服务
  * @returns {boolean} true 表示聚合模式
  */
-export function isAggregateSelected(env, service) {
+export function isAggregateSelected(project, env, service) {
     return service === ALL;
+}
+
+/**
+ * 汇总可用项目列表。
+ *
+ * @param {Object} config 配置对象
+ * @returns {Array<string>} 项目列表
+ */
+export function collectProjects(config) {
+    return Object.keys(config || {}).sort();
+}
+
+/**
+ * 汇总某项目下可用环境列表。
+ *
+ * @param {Object} config 配置对象
+ * @param {string} project 当前项目
+ * @returns {Array<string>} 环境列表
+ */
+export function collectEnvs(config, project) {
+    if (!project) {
+        return [];
+    }
+    if (project === ALL) {
+        const envSet = new Set();
+        Object.keys(config || {}).forEach(projectName => {
+            const envMap = (config || {})[projectName] || {};
+            Object.keys(envMap).forEach(env => envSet.add(env));
+        });
+        return Array.from(envSet).sort();
+    }
+    return Object.keys((config || {})[project] || {}).sort();
 }
 
 /**
  * 汇总可用服务列表。
  *
  * @param {Object} config 配置对象
+ * @param {string} project 当前项目
  * @param {string} env 当前环境
  * @returns {Array<string>} 服务列表
  */
-export function collectServices(config, env) {
-    if (env === ALL) {
+export function collectServices(config, project, env) {
+    if (!project || !env) {
+        return [];
+    }
+    if (project === ALL || env === ALL) {
         const serviceSet = new Set();
-        Object.keys(config || {}).forEach(envName => {
-            const services = config[envName] || {};
-            Object.keys(services).forEach(service => serviceSet.add(service));
+        const projectNames = project === ALL ? Object.keys(config || {}) : [project];
+        projectNames.forEach(projectName => {
+            const envMap = ((config || {})[projectName] || {});
+            const envNames = env === ALL ? Object.keys(envMap) : [env];
+            envNames.forEach(envName => {
+                const services = envMap[envName] || {};
+                Object.keys(services).forEach(service => serviceSet.add(service));
+            });
         });
         return Array.from(serviceSet).sort();
     }
-    return Object.keys((config || {})[env] || {});
+    return Object.keys((((config || {})[project] || {})[env] || {})).sort();
 }
 
 /**

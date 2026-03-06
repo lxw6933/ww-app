@@ -16,12 +16,26 @@ import java.util.Map;
 class LogPanelQueryServiceTest {
 
     /**
+     * 校验项目聚合被禁用。
+     */
+    @Test
+    void shouldRejectWhenAllProjectSelected() {
+        LogPanelQueryService service = new LogPanelQueryService(mockProjectProperties());
+        LogStreamRequest request = new LogStreamRequest();
+        request.setProject(LogStreamRequest.ALL);
+        request.setEnv("TEST-1");
+        request.setService("mall-basic");
+        Assertions.assertThrows(IllegalArgumentException.class, () -> service.resolveTargets(request));
+    }
+
+    /**
      * 校验环境聚合被禁用。
      */
     @Test
     void shouldRejectWhenAllEnvironmentSelected() {
-        LogPanelQueryService service = new LogPanelQueryService(mockProperties());
+        LogPanelQueryService service = new LogPanelQueryService(mockProjectProperties());
         LogStreamRequest request = new LogStreamRequest();
+        request.setProject("ww-mall");
         request.setEnv(LogStreamRequest.ALL);
         request.setService("mall-basic");
         Assertions.assertThrows(IllegalArgumentException.class, () -> service.resolveTargets(request));
@@ -32,13 +46,15 @@ class LogPanelQueryServiceTest {
      */
     @Test
     void shouldResolveAllServicesInOneEnvironment() {
-        LogPanelQueryService service = new LogPanelQueryService(mockProperties());
+        LogPanelQueryService service = new LogPanelQueryService(mockProjectProperties());
         LogStreamRequest request = new LogStreamRequest();
+        request.setProject("ww-mall");
         request.setEnv("TEST-1");
         request.setService(LogStreamRequest.ALL);
 
         List<LogTarget> targets = service.resolveTargets(request);
         Assertions.assertEquals(3, targets.size());
+        Assertions.assertTrue(targets.stream().allMatch(target -> "ww-mall".equals(target.getProject())));
         Assertions.assertEquals("TEST-1", targets.get(0).getEnv());
     }
 
@@ -47,8 +63,9 @@ class LogPanelQueryServiceTest {
      */
     @Test
     void shouldResolveServiceGroupInstancesInOneEnvironment() {
-        LogPanelQueryService service = new LogPanelQueryService(mockProperties());
+        LogPanelQueryService service = new LogPanelQueryService(mockProjectProperties());
         LogStreamRequest request = new LogStreamRequest();
+        request.setProject("ww-mall");
         request.setEnv("TEST-1");
         request.setService("mall-basic");
 
@@ -63,8 +80,9 @@ class LogPanelQueryServiceTest {
      */
     @Test
     void shouldThrowWhenEnvironmentNotFound() {
-        LogPanelQueryService service = new LogPanelQueryService(mockProperties());
+        LogPanelQueryService service = new LogPanelQueryService(mockProjectProperties());
         LogStreamRequest request = new LogStreamRequest();
+        request.setProject("ww-mall");
         request.setEnv("NOT-EXIST");
         request.setService(LogStreamRequest.ALL);
 
@@ -72,13 +90,29 @@ class LogPanelQueryServiceTest {
     }
 
     /**
-     * 校验前端服务概览会按服务组去重展示。
+     * 校验多项目场景下，未传项目会明确报错。
+     */
+    @Test
+    void shouldRequireProjectWhenMultipleProjectsExist() {
+        LogPanelQueryService service = new LogPanelQueryService(mockProjectProperties());
+        LogStreamRequest request = new LogStreamRequest();
+        request.setEnv("TEST-1");
+        request.setService(LogStreamRequest.ALL);
+        IllegalArgumentException exception =
+                Assertions.assertThrows(IllegalArgumentException.class, () -> service.resolveTargets(request));
+        Assertions.assertTrue(exception.getMessage().contains("项目不能为空"));
+    }
+
+    /**
+     * 校验前端服务概览会按“项目 -> 环境 -> 服务组”去重展示。
      */
     @Test
     void shouldGroupServicesInServerOverview() {
-        LogPanelQueryService service = new LogPanelQueryService(mockProperties());
-        Map<String, Map<String, Map<String, String>>> overview = service.getServerOverview();
-        Map<String, Map<String, String>> test1 = overview.get("TEST-1");
+        LogPanelQueryService service = new LogPanelQueryService(mockProjectProperties());
+        Map<String, Map<String, Map<String, Map<String, String>>>> overview = service.getServerOverview();
+        Map<String, Map<String, Map<String, String>>> mallProject = overview.get("ww-mall");
+        Assertions.assertNotNull(mallProject);
+        Map<String, Map<String, String>> test1 = mallProject.get("TEST-1");
         Assertions.assertNotNull(test1);
         Assertions.assertTrue(test1.containsKey("mall-basic"));
         Assertions.assertTrue(test1.containsKey("mall-auth"));
@@ -86,25 +120,64 @@ class LogPanelQueryServiceTest {
     }
 
     /**
-     * 组装测试用配置。
+     * 校验旧版 servers 结构会回落到 default 项目，保持向后兼容。
+     */
+    @Test
+    void shouldFallbackToDefaultProjectForLegacyServers() {
+        LogPanelQueryService service = new LogPanelQueryService(mockLegacyProperties());
+        LogStreamRequest request = new LogStreamRequest();
+        request.setEnv("TEST-1");
+        request.setService(LogStreamRequest.ALL);
+        List<LogTarget> targets = service.resolveTargets(request);
+        Assertions.assertFalse(targets.isEmpty());
+        Assertions.assertTrue(targets.stream()
+                .allMatch(target -> LogPanelProperties.DEFAULT_PROJECT.equals(target.getProject())));
+    }
+
+    /**
+     * 组装新版“项目 -> 环境 -> 服务”测试配置。
      *
      * @return 配置对象
      */
-    private LogPanelProperties mockProperties() {
+    private LogPanelProperties mockProjectProperties() {
         LogPanelProperties properties = new LogPanelProperties();
-        Map<String, Map<String, LogPanelProperties.ServerNode>> servers =
+        Map<String, Map<String, Map<String, LogPanelProperties.ServerNode>>> projects =
                 new LinkedHashMap<>();
 
         Map<String, LogPanelProperties.ServerNode> test1 = new LinkedHashMap<>();
         test1.put("mall-basic@node1", node("10.0.0.1", "/data/basic/logs"));
         test1.put("mall-basic@node2", node("10.0.0.2", "/data/basic/logs"));
         test1.put("mall-auth", node("10.0.0.3", "/data/auth/logs"));
-        servers.put("TEST-1", test1);
-
         Map<String, LogPanelProperties.ServerNode> test2 = new LinkedHashMap<>();
         test2.put("mall-basic@node1", node("10.0.0.4", "/data/basic/logs"));
-        servers.put("TEST-2", test2);
 
+        Map<String, Map<String, LogPanelProperties.ServerNode>> mallEnvs = new LinkedHashMap<>();
+        mallEnvs.put("TEST-1", test1);
+        mallEnvs.put("TEST-2", test2);
+        projects.put("ww-mall", mallEnvs);
+
+        Map<String, LogPanelProperties.ServerNode> imTest = new LinkedHashMap<>();
+        imTest.put("im-gateway", node("10.0.1.1", "/data/im/logs"));
+        Map<String, Map<String, LogPanelProperties.ServerNode>> imEnvs = new LinkedHashMap<>();
+        imEnvs.put("TEST-1", imTest);
+        projects.put("ww-im", imEnvs);
+
+        properties.setProjects(projects);
+        return properties;
+    }
+
+    /**
+     * 组装旧版“环境 -> 服务”兼容配置。
+     *
+     * @return 配置对象
+     */
+    private LogPanelProperties mockLegacyProperties() {
+        LogPanelProperties properties = new LogPanelProperties();
+        Map<String, Map<String, LogPanelProperties.ServerNode>> servers = new LinkedHashMap<>();
+        Map<String, LogPanelProperties.ServerNode> test1 = new LinkedHashMap<>();
+        test1.put("mall-basic@node1", node("10.1.0.1", "/data/basic/logs"));
+        test1.put("mall-auth", node("10.1.0.2", "/data/auth/logs"));
+        servers.put("TEST-1", test1);
         properties.setServers(servers);
         return properties;
     }

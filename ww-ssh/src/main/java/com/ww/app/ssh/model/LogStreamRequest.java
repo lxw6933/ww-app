@@ -16,7 +16,7 @@ import java.util.List;
 public class LogStreamRequest {
 
     /**
-     * 全部环境占位值。
+     * 全部占位值。
      */
     public static final String ALL = "__ALL__";
 
@@ -39,6 +39,11 @@ public class LogStreamRequest {
      * 读取模式：一次性 cat。
      */
     public static final String READ_MODE_CAT = "cat";
+
+    /**
+     * 目标项目名，支持 {@link #ALL}。
+     */
+    private String project;
 
     /**
      * 目标环境名，支持 {@link #ALL}。
@@ -86,6 +91,15 @@ public class LogStreamRequest {
      * </p>
      */
     private List<FilterRule> filterRules;
+
+    /**
+     * 判断是否选择了全部项目。
+     *
+     * @return true 表示全部项目
+     */
+    public boolean isAllProject() {
+        return ALL.equalsIgnoreCase(trimToEmpty(project));
+    }
 
     /**
      * 判断是否选择了全部环境。
@@ -138,6 +152,15 @@ public class LogStreamRequest {
      */
     public boolean isCatMode() {
         return READ_MODE_CAT.equals(normalizedReadMode());
+    }
+
+    /**
+     * 获取去空格后的项目名。
+     *
+     * @return 规范化项目名
+     */
+    public String normalizedProject() {
+        return trimToEmpty(project);
     }
 
     /**

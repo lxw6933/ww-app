@@ -4466,3 +4466,18 @@ body.immersive-mode .group-action #btnImmersive {
         max-width: 260px;
     }
 }
+
+/* Project-dimension layout: add project selector into top toolbar row. */
+.row-primary {
+    grid-template-columns: minmax(150px, 0.9fr) minmax(150px, 0.9fr) minmax(170px, 1fr) minmax(340px, 2fr) !important;
+}
+
+@media (max-width: 1120px) {
+    .row-primary {
+        grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    }
+
+    .row-primary .group-action {
+        grid-column: 1 / -1;
+    }
+}

@@ -449,6 +449,19 @@ public class SshCommandBuilder {
     }
 
     /**
+     * 构建磁盘容量指标采集命令。
+     * <p>
+     * 输出格式：使用率(%) 已使用(MB) 总量(MB)。
+     * 默认采集根分区 {@code /}，用于反映服务所在主机的整体磁盘压力。
+     * </p>
+     *
+     * @return Shell 命令
+     */
+    public String buildDiskUsageCommand() {
+        return "df -Pm / 2>/dev/null | awk 'NR==2 {gsub(/%/,\"\",$5); printf \"%s %s %s\", $5, $3, $2}'";
+    }
+
+    /**
      * 构建负载采集命令。
      * <p>
      * 输出格式：1m 5m 15m。

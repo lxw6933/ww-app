@@ -1,6 +1,8 @@
 import {ALL, MAX_LINES, createState} from './state.js';
 import {el, value, checked} from './dom.js';
 import {
+    collectProjects,
+    collectEnvs,
     collectServices,
     isAggregateSelected,
     matchFileKeyword,
@@ -43,6 +45,7 @@ const preferenceStore = new PreferenceStore();
  * 指标面板控制器。
  */
 const metricsPanel = new MetricsPanelController({
+    getProject: () => value('project'),
     getEnv: () => value('env'),
     getService: () => value('service'),
     operateInstance: (instanceService, action) => operateInstanceLifecycle(instanceService, action)
@@ -109,10 +112,10 @@ function init() {
     metricsPanel.init();
     updateControls();
     logView.setHighlightRules(filterChainManager.getRules());
-    logView.setEmptyTip('尚未开始查看日志。请先选择环境和服务，然后点击“开始查看”。');
+    logView.setEmptyTip('尚未开始查看日志。请先选择项目、环境和服务，然后点击“开始查看”。');
     logView.renderLevelStats();
     updateSettingsSummary();
-    logView.appendSystem('操作提示：先选择环境和服务，再点击“开始查看”。');
+    logView.appendSystem('操作提示：先选择项目、环境和服务，再点击“开始查看”。');
     loadServers();
     window.addEventListener('beforeunload', beforeUnloadCleanup);
     onFilterRuleChanged();
@@ -136,6 +139,10 @@ function bindEvents() {
     filterChainManager.bindAddAction();
     filterChainManager.bindEnterAction(connect);
 
+    el('project').addEventListener('change', () => {
+        preferenceStore.set('project', value('project'));
+        loadEnvs();
+    });
     el('env').addEventListener('change', () => {
         preferenceStore.set('env', value('env'));
         loadServices();
@@ -332,6 +339,7 @@ function buildShareLink() {
     const url = new URL(window.location.href);
     const params = url.searchParams;
     params.set('share', '1');
+    params.set('project', value('project'));
     params.set('env', value('env'));
     params.set('service', value('service'));
     params.set('file', value('file'));
@@ -406,16 +414,18 @@ function onLogAreaClick(event) {
  * @returns {Promise<Object>} 操作结果
  */
 function operateInstanceLifecycle(instanceService, action) {
+    const project = value('project');
     const env = value('env');
     const service = String(instanceService || '').trim();
     const normalizedAction = String(action || '').trim().toLowerCase();
-    if (!env || !service || !normalizedAction) {
+    if (!project || !env || !service || !normalizedAction) {
         return Promise.reject(new Error('实例运维参数不完整'));
     }
     return fetch('/api/instance/operate', {
         method: 'POST',
         headers: {'Content-Type': 'application/json'},
         body: JSON.stringify({
+            project: project,
             env: env,
             service: service,
             action: normalizedAction
@@ -570,30 +580,43 @@ function renderMetricsToggleButton() {
 }
 
 /**
- * 加载环境列表。
+ * 加载项目/环境/服务配置。
  */
 function loadServers() {
     fetch('/api/config/servers')
         .then(response => response.json())
         .then(data => {
             state.config = data || {};
-            const envEl = el('env');
-            envEl.innerHTML = '';
-            Object.keys(state.config).forEach(env => envEl.add(new Option(env, env)));
-            applySavedSelectValue(envEl, consumeSharedString('env', preferenceStore.getString('env', '')));
-            loadServices();
+            const projectEl = el('project');
+            projectEl.innerHTML = '';
+            collectProjects(state.config).forEach(project => projectEl.add(new Option(project, project)));
+            applySavedSelectValue(projectEl, consumeSharedString('project', preferenceStore.getString('project', '')));
+            loadEnvs();
         })
         .catch(() => logView.setStatus('配置加载失败', 'var(--error)'));
+}
+
+/**
+ * 加载环境列表。
+ */
+function loadEnvs() {
+    const project = value('project');
+    const envEl = el('env');
+    envEl.innerHTML = '';
+    collectEnvs(state.config, project).forEach(env => envEl.add(new Option(env, env)));
+    applySavedSelectValue(envEl, consumeSharedString('env', preferenceStore.getString('env', '')));
+    loadServices();
 }
 
 /**
  * 加载服务列表。
  */
 function loadServices() {
+    const project = value('project');
     const env = value('env');
     const serviceEl = el('service');
     serviceEl.innerHTML = '';
-    collectServices(state.config, env).forEach(service => serviceEl.add(new Option(service, service)));
+    collectServices(state.config, project, env).forEach(service => serviceEl.add(new Option(service, service)));
     serviceEl.add(new Option('全部服务', ALL));
     applySavedSelectValue(serviceEl, consumeSharedString('service', preferenceStore.getString('service', '')));
     loadFiles();
@@ -604,18 +627,19 @@ function loadServices() {
  * 加载文件列表。
  */
 function loadFiles() {
+    const project = value('project');
     const env = value('env');
     const service = value('service');
     el('fileSearch').value = '';
     state.fileOptions = [];
 
-    if (!env || !service || isAggregateSelected(env, service)) {
+    if (!project || !env || !service || isAggregateSelected(project, env, service)) {
         renderFileOptions();
         updateFileMode();
         return;
     }
 
-    fetch(`/api/config/files?env=${encodeURIComponent(env)}&service=${encodeURIComponent(service)}`)
+    fetch(`/api/config/files?project=${encodeURIComponent(project)}&env=${encodeURIComponent(env)}&service=${encodeURIComponent(service)}`)
         .then(response => response.ok ? response.json() : [])
         .then(list => {
             state.fileOptions = Array.isArray(list) ? sortFileOptions(list) : [];
@@ -634,9 +658,10 @@ function loadFiles() {
  * 渲染文件下拉列表（支持模糊筛选）。
  */
 function renderFileOptions() {
+    const project = value('project');
     const env = value('env');
     const service = value('service');
-    const aggregate = isAggregateSelected(env, service);
+    const aggregate = isAggregateSelected(project, env, service);
     const fileEl = el('file');
     const keyword = value('fileSearch').trim().toLowerCase();
     const sharedFile = consumeSharedString(SHARED_FILE_KEY, '');
@@ -671,10 +696,11 @@ function renderFileOptions() {
  * 启动日志监听。
  */
 function connect() {
+    const project = value('project');
     const env = value('env');
     const service = value('service');
-    if (!env || !service) {
-        logView.appendSystem('请先选择环境和服务');
+    if (!project || !env || !service) {
+        logView.appendSystem('请先选择项目、环境和服务');
         return;
     }
     if (isCatMode()) {
@@ -687,10 +713,11 @@ function connect() {
 /**
  * 构建日志读取请求体（WebSocket 与 cat 接口共用）。
  *
- * @returns {{env:string,service:string,filePath:string,lines:number,includeKeyword:string,excludeKeyword:string,filterRules:Array}} 请求体
+ * @returns {{project:string,env:string,service:string,filePath:string,lines:number,includeKeyword:string,excludeKeyword:string,filterRules:Array}} 请求体
  */
 function buildLogRequestPayload() {
     return {
+        project: value('project'),
         env: value('env'),
         service: value('service') || ALL,
         filePath: value('file'),
@@ -823,7 +850,7 @@ function requestCatSnapshot() {
 /**
  * 当后端未提供 cat 接口时，降级为短时 tail 快照读取。
  *
- * @param {{env:string,service:string,filePath:string,lines:number,includeKeyword:string,excludeKeyword:string,filterRules:Array}} payload 请求体
+ * @param {{project:string,env:string,service:string,filePath:string,lines:number,includeKeyword:string,excludeKeyword:string,filterRules:Array}} payload 请求体
  * @returns {Promise<void>} 执行结果
  */
 function requestCatSnapshotViaWebSocket(payload) {
@@ -1424,6 +1451,7 @@ function updateControls() {
     const tailLocked = wsActive && tailMode;
     const catBusy = !!state.catLoading;
     statusBar.setLatencyEnabled(tailLocked);
+    el('project').disabled = tailLocked || catBusy;
     el('env').disabled = tailLocked || catBusy;
     el('service').disabled = tailLocked || catBusy;
     el('lines').disabled = catBusy;
@@ -1441,9 +1469,10 @@ function updateControls() {
  * 刷新文件区域模式与文案。
  */
 function updateFileMode() {
+    const project = value('project');
     const env = value('env');
     const service = value('service');
-    const aggregate = isAggregateSelected(env, service);
+    const aggregate = isAggregateSelected(project, env, service);
     const catBusy = !!state.catLoading;
     const fileSearchEl = el('fileSearch');
     el('file').disabled = catBusy || aggregate;
@@ -1632,6 +1661,7 @@ function parseSharedStateFromUrl() {
         return null;
     }
     return {
+        project: params.get('project') || '',
         env: params.get('env') || '',
         service: params.get('service') || '',
         file: params.get('file') || '',
@@ -1661,7 +1691,7 @@ function updateSettingsSummary() {
         ? fileEl.options[fileEl.selectedIndex].text
         : '默认文件';
     const shortFile = abbreviateText(selectedLabel || '默认文件', 16);
-    const mode = isAggregateSelected(value('env'), value('service')) ? '全部服务' : '单服务';
+    const mode = isAggregateSelected(value('project'), value('env'), value('service')) ? '全部服务' : '单服务';
     summaryEl.textContent = `文件:${shortFile} | ${mode}`;
 }
 

@@ -5,7 +5,7 @@ import lombok.Data;
 /**
  * 实例运维操作请求。
  * <p>
- * 用于描述“对哪个环境下的哪个实例执行何种动作”。
+ * 用于描述“对哪个项目/环境下的哪个实例执行何种动作”。
  * </p>
  */
 @Data
@@ -27,6 +27,11 @@ public class InstanceOperationRequest {
     public static final String ACTION_STOP = "stop";
 
     /**
+     * 目标项目。
+     */
+    private String project;
+
+    /**
      * 目标环境。
      */
     private String env;
@@ -40,6 +45,15 @@ public class InstanceOperationRequest {
      * 操作动作：start/restart/stop。
      */
     private String action;
+
+    /**
+     * 获取规范化后的项目值。
+     *
+     * @return 项目值
+     */
+    public String normalizedProject() {
+        return trimToEmpty(project);
+    }
 
     /**
      * 获取规范化后的环境值。

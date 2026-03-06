@@ -17,12 +17,14 @@ export class MetricsPanelController {
      * 构造方法。
      *
      * @param {Object} options 配置项
+     * @param {Function} options.getProject 获取当前项目
      * @param {Function} options.getEnv 获取当前环境
      * @param {Function} options.getService 获取当前服务
      */
     constructor(options) {
-        this.getEnv = options.getEnv;
-        this.getService = options.getService;
+        this.getProject = typeof options.getProject === 'function' ? options.getProject : (() => '');
+        this.getEnv = typeof options.getEnv === 'function' ? options.getEnv : (() => '');
+        this.getService = typeof options.getService === 'function' ? options.getService : (() => '');
         this.operateInstance = typeof options.operateInstance === 'function' ? options.operateInstance : null;
         this.refreshMs = 15000;
         this.timer = null;
@@ -41,7 +43,7 @@ export class MetricsPanelController {
      * 初始化指标面板。
      */
     init() {
-        this.renderEmpty('请选择环境与服务后查看服务器指标');
+        this.renderEmpty('请选择项目、环境与服务后查看服务器指标');
         this.startPolling();
     }
 
@@ -71,14 +73,15 @@ export class MetricsPanelController {
      * @param {boolean} manual 是否手动刷新
      */
     refresh(manual) {
+        const project = this.getProject();
         const env = this.getEnv();
         const service = this.getService();
-        if (!env || !service) {
+        if (!project || !env || !service) {
             this.cancelActiveRequest();
-            this.renderEmpty('请选择环境与服务后查看服务器指标');
+            this.renderEmpty('请选择项目、环境与服务后查看服务器指标');
             return;
         }
-        const queryKey = `${String(env)}#${String(service)}`;
+        const queryKey = `${String(project)}#${String(env)}#${String(service)}`;
         if (!manual && this.requestInFlight && this.activeQueryKey === queryKey) {
             return;
         }
@@ -93,7 +96,7 @@ export class MetricsPanelController {
         this.requestInFlight = true;
         const options = controller ? {signal: controller.signal} : undefined;
 
-        fetch(`/api/metrics/hosts?env=${encodeURIComponent(env)}&service=${encodeURIComponent(service)}`, options)
+        fetch(`/api/metrics/hosts?project=${encodeURIComponent(project)}&env=${encodeURIComponent(env)}&service=${encodeURIComponent(service)}`, options)
             .then(response => {
                 if (!response.ok) {
                     throw new Error(`状态码 ${response.status}`);
@@ -201,6 +204,7 @@ export class MetricsPanelController {
         const unhealthyServers = Math.max(totalServers - healthyServers, 0);
         const avgCpu = average(okServerMetrics.map(item => item.cpuUsagePercent));
         const avgMem = average(okServerMetrics.map(item => item.memoryUsagePercent));
+        const avgDisk = average(okServerMetrics.map(item => item.diskUsagePercent));
 
         this.renderSummary({
             statusText: '采集正常',
@@ -209,6 +213,7 @@ export class MetricsPanelController {
             unhealthyServers: unhealthyServers,
             avgCpu: avgCpu,
             avgMem: avgMem,
+            avgDisk: avgDisk,
             timeText: formatTime(Date.now())
         });
 
@@ -242,6 +247,7 @@ export class MetricsPanelController {
             unhealthyServers: null,
             avgCpu: null,
             avgMem: null,
+            avgDisk: null,
             timeText: formatTime(Date.now())
         });
         if (!listEl) {
@@ -508,6 +514,12 @@ export class MetricsPanelController {
             formatPercent(item && item.swapUsagePercent),
             formatSwapRange(item)
         ));
+        kpiGridEl.appendChild(createUsageVisual(
+            '磁盘',
+            item && item.diskUsagePercent,
+            formatPercent(item && item.diskUsagePercent),
+            formatDiskRange(item)
+        ));
         cardEl.appendChild(kpiGridEl);
         cardEl.appendChild(createLoadBlock(item));
 
@@ -573,6 +585,12 @@ export class MetricsPanelController {
                 formatPercent(item && item.swapUsagePercent),
                 formatSwapRange(item)
             ));
+            kpiGridEl.appendChild(createUsageVisual(
+                '磁盘',
+                item && item.diskUsagePercent,
+                formatPercent(item && item.diskUsagePercent),
+                formatDiskRange(item)
+            ));
             cardEl.appendChild(kpiGridEl);
             cardEl.appendChild(createLoadBlock(item));
         }
@@ -618,6 +636,7 @@ export class MetricsPanelController {
         ));
         summaryEl.appendChild(createSummaryItem('平均CPU', formatPercent(data.avgCpu)));
         summaryEl.appendChild(createSummaryItem('平均内存', formatPercent(data.avgMem)));
+        summaryEl.appendChild(createSummaryItem('平均磁盘', formatPercent(data.avgDisk)));
         summaryEl.appendChild(createSummaryItem('更新时间', data.timeText || '--'));
     }
 
@@ -814,14 +833,15 @@ export class MetricsPanelController {
     }
 
     /**
-     * 构建实例服务唯一键（按环境隔离）。
+     * 构建实例服务唯一键（按项目与环境隔离）。
      *
      * @param {string} service 实例服务键
      * @returns {string} 唯一键
      */
     buildServiceKey(service) {
+        const project = this.getProject ? String(this.getProject() || '') : '';
         const env = this.getEnv ? String(this.getEnv() || '') : '';
-        return `${env}#${service}`;
+        return `${project}#${env}#${service}`;
     }
 
     /**
@@ -1010,7 +1030,9 @@ function createUsageVisual(label, percent, valueText, extraText) {
     let typeClass = '';
     if (normalizedLabel.indexOf('CPU') >= 0) {
         typeClass = 'cpu';
-    } else if (normalizedLabel.indexOf('内存') >= 0 || normalizedLabel.indexOf('交换') >= 0) {
+    } else if (normalizedLabel.indexOf('内存') >= 0
+        || normalizedLabel.indexOf('交换') >= 0
+        || normalizedLabel.indexOf('磁盘') >= 0) {
         typeClass = 'memory';
     }
     wrapperEl.className = typeClass ? `metric-kpi ${typeClass}` : 'metric-kpi';
@@ -1184,7 +1206,22 @@ function formatSwapRange(item) {
 }
 
 /**
- * 自动格式化容量单位（MB/GB）。
+ * 格式化磁盘容量区间。
+ *
+ * @param {Object} item 指标对象
+ * @returns {string} 文本
+ */
+function formatDiskRange(item) {
+    if (!item) {
+        return '--/--';
+    }
+    const used = formatStorage(item.diskUsedMb);
+    const total = formatStorage(item.diskTotalMb);
+    return `${used}/${total}`;
+}
+
+/**
+ * 自动格式化容量单位（MB/GB/TB）。
  *
  * @param {number} valueMb 容量（MB）
  * @returns {string} 文本
@@ -1196,6 +1233,11 @@ function formatStorage(valueMb) {
     const mb = Number(valueMb);
     if (mb < 1024) {
         return `${Math.round(mb)}MB`;
+    }
+    if (mb >= 1024 * 1024) {
+        const tb = mb / (1024 * 1024);
+        const precision = tb >= 10 ? 0 : 1;
+        return `${tb.toFixed(precision)}TB`;
     }
     const gb = mb / 1024;
     const precision = gb >= 10 ? 0 : 1;

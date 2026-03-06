@@ -150,11 +150,13 @@ public class SshLogService {
             String cpuLine = firstLine(executeCommandForLines(target, sshCommandBuilder.buildCpuUsageCommand(), 1));
             String memoryLine = firstLine(executeCommandForLines(target, sshCommandBuilder.buildMemoryUsageCommand(), 1));
             String swapLine = firstLine(executeCommandForLines(target, sshCommandBuilder.buildSwapUsageCommand(), 1));
+            String diskLine = firstLine(executeCommandForLines(target, sshCommandBuilder.buildDiskUsageCommand(), 1));
             String loadLine = firstLine(executeCommandForLines(target, sshCommandBuilder.buildLoadAverageCommand(), 1));
 
             snapshot.setCpuUsagePercent(normalizePercent(parseDouble(cpuLine)));
             applyMemoryMetrics(snapshot, memoryLine);
             applySwapMetrics(snapshot, swapLine);
+            applyDiskMetrics(snapshot, diskLine);
             applyLoadMetrics(snapshot, loadLine);
             applyInstanceStatus(snapshot, target);
             snapshot.setStatus("ok");
@@ -902,6 +904,7 @@ public class SshLogService {
      */
     private HostMetricSnapshot initMetricSnapshot(LogTarget target) {
         HostMetricSnapshot snapshot = new HostMetricSnapshot();
+        snapshot.setProject(target.getProject());
         snapshot.setEnv(target.getEnv());
         snapshot.setService(target.getService());
         snapshot.setHost(target.getServerNode() == null ? "" : trimToEmpty(target.getServerNode().getHost()));
@@ -957,6 +960,22 @@ public class SshLogService {
         snapshot.setSwapUsagePercent(normalizePercent(parseDouble(parts[0])));
         snapshot.setSwapUsedMb(parseLong(parts[1]));
         snapshot.setSwapTotalMb(parseLong(parts[2]));
+    }
+
+    /**
+     * 应用磁盘容量指标。
+     *
+     * @param snapshot 目标快照
+     * @param diskLine 命令输出行，格式：使用率 已用MB 总MB
+     */
+    private void applyDiskMetrics(HostMetricSnapshot snapshot, String diskLine) {
+        String[] parts = splitByBlank(diskLine);
+        if (parts.length < 3) {
+            return;
+        }
+        snapshot.setDiskUsagePercent(normalizePercent(parseDouble(parts[0])));
+        snapshot.setDiskUsedMb(parseLong(parts[1]));
+        snapshot.setDiskTotalMb(parseLong(parts[2]));
     }
 
     /**

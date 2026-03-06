@@ -52,6 +52,10 @@
             <section class="toolbar">
                 <div class="toolbar-row row-primary">
                     <div class="group group-env">
+                        <label for="project">项目：</label>
+                        <select id="project" class="control-lg"></select>
+                    </div>
+                    <div class="group group-env">
                         <label for="env">环境：</label>
                         <select id="env" class="control-lg"></select>
                     </div>
@@ -101,7 +105,7 @@
                         </div>
                     </div>
                 </div>
-                <div id="log" data-empty-tip="尚未开始查看日志。请先选择环境和服务，然后点击“开始查看”。"></div>
+                <div id="log" data-empty-tip="尚未开始查看日志。请先选择项目、环境和服务，然后点击“开始查看”。"></div>
                 <div id="activeFilterExpr" class="active-filter-expr hidden"></div>
             </section>
         </main>
