@@ -474,6 +474,120 @@ public class SshCommandBuilder {
     }
 
     /**
+     * 构建 JVM GC 指标采集命令。
+     * <p>
+     * 采集策略：
+     * 1. 先根据 manageCommandFile 与 serviceKey 推断服务识别词；<br>
+     * 2. 优先从脚本目录与应用目录的 pid 文件识别 Java 进程 PID；<br>
+     * 3. pid 文件未命中时，回退到 ps/jps 进行进程匹配；<br>
+     * 4. 使用 jstat -gc 读取单次快照（含堆详细容量/占用）；<br>
+     * 5. 统一输出带标记结果，便于上层稳定解析。
+     * </p>
+     *
+     * @param manageCommandFile 实例运维脚本配置（可为空）
+     * @param serviceKey        实例服务键（如 mall-basic@node1）
+     * @return Shell 命令
+     */
+    public String buildJvmGcStatsCommand(String manageCommandFile, String serviceKey) {
+        String normalizedServiceKey = serviceKey == null ? "" : serviceKey.trim();
+        String serviceGroup = normalizeServiceGroupName(normalizedServiceKey);
+        String normalizedManageCommand = manageCommandFile == null ? "" : manageCommandFile.trim();
+        String scriptPath = "";
+        if (!normalizedManageCommand.isEmpty()) {
+            if (looksLikeCommandPrefix(normalizedManageCommand)) {
+                scriptPath = extractScriptPathFromPrefix(normalizedManageCommand);
+            } else {
+                scriptPath = normalizedManageCommand;
+            }
+        }
+        return buildProfileBootstrapCommand()
+                + "SERVICE_KEY=" + shellQuote(normalizedServiceKey) + "; "
+                + "SERVICE_GROUP=" + shellQuote(serviceGroup) + "; "
+                + "SCRIPT_PATH=" + shellQuote(scriptPath) + "; "
+                + "SCRIPT_DIR=''; "
+                + "APP_HOME=''; "
+                + "SERVICE_GUESS=\"$SERVICE_GROUP\"; "
+                + "if [ -n \"$SCRIPT_PATH\" ]; then "
+                + "SCRIPT_DIR=$(dirname \"$SCRIPT_PATH\"); "
+                + "if [ -d \"$SCRIPT_DIR\" ]; then "
+                + "APP_HOME=$(dirname \"$SCRIPT_DIR\"); "
+                + "SERVICE_FROM_DIR=$(basename \"$APP_HOME\"); "
+                + "if [ -n \"$SERVICE_FROM_DIR\" ]; then SERVICE_GUESS=\"$SERVICE_FROM_DIR\"; fi; "
+                + "SCRIPT_BASE=$(basename \"$SCRIPT_PATH\"); "
+                + "if [ -f \"$SCRIPT_DIR/$SCRIPT_BASE\" ]; then "
+                + "SCRIPT_SERVICE=$(awk -F'=' '/^[[:space:]]*SERVICE_NAME=/{gsub(/[\"'\"'\"'[:space:]]/,\"\",$2); "
+                + "if($2!=\"\"){print $2; exit}}' \"$SCRIPT_DIR/$SCRIPT_BASE\" 2>/dev/null); "
+                + "if [ -n \"$SCRIPT_SERVICE\" ]; then SERVICE_GUESS=\"$SCRIPT_SERVICE\"; fi; "
+                + "fi; "
+                + "fi; "
+                + "fi; "
+                + "if [ -z \"$SERVICE_GUESS\" ]; then SERVICE_GUESS=\"$SERVICE_KEY\"; fi; "
+                + "if ! command -v ps >/dev/null 2>&1; then echo __WW_JVM_GC__:NO_PS; exit; fi; "
+                + "JAVA_PID=''; "
+                + "collect_pid_from_file() { "
+                + "PID_FILE=\"$1\"; "
+                + "[ -f \"$PID_FILE\" ] || return; "
+                + "PID_VAL=$(tr -cd '0-9' < \"$PID_FILE\"); "
+                + "[ -n \"$PID_VAL\" ] || return; "
+                + "if kill -0 \"$PID_VAL\" 2>/dev/null || ps -p \"$PID_VAL\" >/dev/null 2>&1 || [ -d \"/proc/$PID_VAL\" ]; then "
+                + "JAVA_PID=\"$PID_VAL\"; "
+                + "fi; "
+                + "}; "
+                + "if [ -n \"$SCRIPT_DIR\" ]; then "
+                + "for PID_FILE in \"$SCRIPT_DIR\"/pid/*.pid; do "
+                + "[ -f \"$PID_FILE\" ] || continue; "
+                + "collect_pid_from_file \"$PID_FILE\"; "
+                + "[ -n \"$JAVA_PID\" ] && break; "
+                + "done; "
+                + "fi; "
+                + "if [ -z \"$JAVA_PID\" ] && [ -n \"$APP_HOME\" ]; then "
+                + "for PID_FILE in \"$APP_HOME\"/pid/*.pid; do "
+                + "[ -f \"$PID_FILE\" ] || continue; "
+                + "collect_pid_from_file \"$PID_FILE\"; "
+                + "[ -n \"$JAVA_PID\" ] && break; "
+                + "done; "
+                + "fi; "
+                + "if [ -z \"$JAVA_PID\" ]; then "
+                + "JAVA_PID=$(ps -eo pid=,args= 2>/dev/null | "
+                + "awk -v svc=\"$SERVICE_GUESS\" -v key=\"$SERVICE_KEY\" -v home=\"$APP_HOME\" -v self=\"$$\" "
+                + "'BEGIN{svc=tolower(svc); key=tolower(key); home=tolower(home)} "
+                + "$1!=self && $0 ~ /[j]ava/ {line=tolower($0); "
+                + "if ((svc!=\"\" && index(line, svc)>0) || (key!=\"\" && index(line,key)>0) || (home!=\"\" && index(line,home)>0)) {print $1; exit}}'); "
+                + "fi; "
+                + "if [ -z \"$JAVA_PID\" ] && command -v jps >/dev/null 2>&1; then "
+                + "JAVA_PID=$(jps -l 2>/dev/null | "
+                + "awk -v svc=\"$SERVICE_GUESS\" -v key=\"$SERVICE_KEY\" "
+                + "'BEGIN{svc=tolower(svc); key=tolower(key)} "
+                + "{line=tolower($0); if((svc!=\"\" && index(line,svc)>0) || (key!=\"\" && index(line,key)>0)){print $1; exit}}'); "
+                + "fi; "
+                + "if [ -z \"$JAVA_PID\" ]; then echo __WW_JVM_GC__:NO_PID:$SERVICE_GUESS; exit; fi; "
+                + "if ! command -v jstat >/dev/null 2>&1; then echo __WW_JVM_GC__:NO_JSTAT:$JAVA_PID; exit; fi; "
+                + "GC_OUTPUT=$(jstat -gc \"$JAVA_PID\" 1 1 2>/dev/null); "
+                + "GC_HEADER=$(printf \"%s\\n\" \"$GC_OUTPUT\" | awk 'NR==1{print $0}'); "
+                + "GC_LINE=$(printf \"%s\\n\" \"$GC_OUTPUT\" | awk 'NR==2{print $0}'); "
+                + "if [ -z \"$GC_HEADER\" ] || [ -z \"$GC_LINE\" ]; then echo __WW_JVM_GC__:NO_DATA:$JAVA_PID; exit; fi; "
+                + "echo \"__WW_JVM_GC__:OK:$JAVA_PID|$GC_HEADER|$GC_LINE\"";
+    }
+
+    /**
+     * 将实例服务键归一化为服务组名。
+     * <p>
+     * 例如：{@code mall-basic@node1} 会归一化为 {@code mall-basic}。
+     * </p>
+     *
+     * @param serviceKey 实例服务键
+     * @return 服务组名
+     */
+    private String normalizeServiceGroupName(String serviceKey) {
+        String normalized = serviceKey == null ? "" : serviceKey.trim();
+        int index = normalized.indexOf("@");
+        if (index <= 0) {
+            return normalized;
+        }
+        return normalized.substring(0, index);
+    }
+
+    /**
      * Shell 单引号安全转义。
      *
      * @param raw 原始字符串

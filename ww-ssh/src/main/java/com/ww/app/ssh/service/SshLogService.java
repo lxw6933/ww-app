@@ -23,8 +23,10 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Properties;
 import java.util.Set;
 import java.util.concurrent.ExecutorService;
@@ -82,6 +84,41 @@ public class SshLogService {
      * 状态校验重试间隔（毫秒）。
      */
     private static final long OP_VERIFY_SLEEP_MS = 1200L;
+
+    /**
+     * JVM GC 命令输出标记前缀。
+     */
+    private static final String JVM_GC_MARKER = "__WW_JVM_GC__:";
+
+    /**
+     * JVM GC 状态：采集成功。
+     */
+    private static final String JVM_GC_STATUS_OK = "ok";
+
+    /**
+     * JVM GC 状态：未识别到 Java 进程。
+     */
+    private static final String JVM_GC_STATUS_NO_PID = "no_pid";
+
+    /**
+     * JVM GC 状态：目标机缺少 jstat。
+     */
+    private static final String JVM_GC_STATUS_NO_JSTAT = "no_jstat";
+
+    /**
+     * JVM GC 状态：输出解析失败。
+     */
+    private static final String JVM_GC_STATUS_PARSE_ERROR = "parse_error";
+
+    /**
+     * JVM GC 状态：采集异常。
+     */
+    private static final String JVM_GC_STATUS_ERROR = "error";
+
+    /**
+     * JVM GC 状态：尚未采集。
+     */
+    private static final String JVM_GC_STATUS_UNKNOWN = "unknown";
 
     /**
      * SSH 命令构建器。
@@ -158,10 +195,15 @@ public class SshLogService {
             applySwapMetrics(snapshot, swapLine);
             applyDiskMetrics(snapshot, diskLine);
             applyLoadMetrics(snapshot, loadLine);
+            applyJvmGcMetrics(snapshot, target);
             applyInstanceStatus(snapshot, target);
             snapshot.setStatus("ok");
             snapshot.setMessage("采集成功");
         } catch (Exception ex) {
+            if (JVM_GC_STATUS_UNKNOWN.equals(snapshot.getJvmGcStatus())) {
+                snapshot.setJvmGcStatus(JVM_GC_STATUS_ERROR);
+                snapshot.setJvmGcMessage("JVM GC采集失败: " + limitMessage(ex.getMessage()));
+            }
             applyInstanceStatus(snapshot, target);
             snapshot.setStatus("error");
             snapshot.setMessage(limitMessage(ex.getMessage()));
@@ -911,6 +953,8 @@ public class SshLogService {
         snapshot.setCanManage(hasManageCommandFile(target));
         snapshot.setInstanceStatus(hasManageCommandFile(target) ? INSTANCE_STATUS_UNKNOWN : INSTANCE_STATUS_UNCONFIGURED);
         snapshot.setInstanceStatusDetail(hasManageCommandFile(target) ? "检测中" : "未配置运维脚本");
+        snapshot.setJvmGcStatus(JVM_GC_STATUS_UNKNOWN);
+        snapshot.setJvmGcMessage("待采集");
         snapshot.setUpdatedAt(System.currentTimeMillis());
         snapshot.setStatus("error");
         snapshot.setMessage("采集中");
@@ -995,6 +1039,308 @@ public class SshLogService {
     }
 
     /**
+     * 采集并应用 JVM GC 指标。
+     * <p>
+     * 指标来源为远程 {@code jstat -gc}，用于前端绘制 GC 趋势图与堆区容量图。
+     * 该方法内部自行兜底异常，保证 JVM 指标采集失败不会影响宿主机指标显示。
+     * </p>
+     *
+     * @param snapshot 指标快照
+     * @param target   目标实例
+     */
+    private void applyJvmGcMetrics(HostMetricSnapshot snapshot, LogTarget target) {
+        if (snapshot == null || target == null) {
+            return;
+        }
+        try {
+            String manageCommandFile = target.getServerNode() == null
+                    ? ""
+                    : trimToEmpty(target.getServerNode().getManageCommandFile());
+            String command = sshCommandBuilder.buildJvmGcStatsCommand(manageCommandFile, target.getService());
+            List<String> lines = executeCommandForLines(target, command, 8);
+            parseJvmGcMetrics(snapshot, lines);
+        } catch (Exception ex) {
+            snapshot.setJvmGcStatus(JVM_GC_STATUS_ERROR);
+            snapshot.setJvmGcMessage("JVM GC采集异常: " + limitMessage(ex.getMessage()));
+        }
+    }
+
+    /**
+     * 解析 JVM GC 命令输出并写入快照。
+     *
+     * @param snapshot 指标快照
+     * @param lines    命令输出行
+     */
+    private void parseJvmGcMetrics(HostMetricSnapshot snapshot, List<String> lines) {
+        String markedLine = extractJvmGcMarkedLine(lines);
+        if (markedLine.isEmpty()) {
+            snapshot.setJvmGcStatus(JVM_GC_STATUS_PARSE_ERROR);
+            snapshot.setJvmGcMessage("未找到JVM GC标记输出");
+            return;
+        }
+        String payload = trimToEmpty(markedLine.substring(JVM_GC_MARKER.length()));
+        if (payload.startsWith("NO_PID") || payload.startsWith("NO_PS")) {
+            snapshot.setJvmGcStatus(JVM_GC_STATUS_NO_PID);
+            String[] segments = payload.split(":", 2);
+            if (segments.length == 2 && !trimToEmpty(segments[1]).isEmpty()) {
+                snapshot.setJvmGcMessage("未识别到Java进程，匹配词: " + trimToEmpty(segments[1]));
+            } else {
+                snapshot.setJvmGcMessage("未识别到Java进程");
+            }
+            return;
+        }
+        if (payload.startsWith("NO_JSTAT")) {
+            String[] segments = payload.split(":", 2);
+            if (segments.length == 2) {
+                snapshot.setJvmPid(parseLongNumber(segments[1]));
+            }
+            snapshot.setJvmGcStatus(JVM_GC_STATUS_NO_JSTAT);
+            snapshot.setJvmGcMessage("目标机未安装jstat");
+            return;
+        }
+        if (payload.startsWith("NO_DATA")) {
+            String[] segments = payload.split(":", 2);
+            if (segments.length == 2) {
+                snapshot.setJvmPid(parseLongNumber(segments[1]));
+            }
+            snapshot.setJvmGcStatus(JVM_GC_STATUS_PARSE_ERROR);
+            snapshot.setJvmGcMessage("jstat返回空结果");
+            return;
+        }
+        if (!payload.startsWith("OK:")) {
+            snapshot.setJvmGcStatus(JVM_GC_STATUS_PARSE_ERROR);
+            snapshot.setJvmGcMessage("未知JVM GC输出: " + limitMessage(payload));
+            return;
+        }
+        String body = trimToEmpty(payload.substring(3));
+        boolean parsed = body.contains("|")
+                ? applyJvmGcDetailMetrics(snapshot, body)
+                : applyJvmGcUtilMetrics(snapshot, body);
+        if (!parsed) {
+            snapshot.setJvmGcStatus(JVM_GC_STATUS_PARSE_ERROR);
+            snapshot.setJvmGcMessage("JVM GC输出格式异常: " + limitMessage(body));
+            return;
+        }
+        snapshot.setJvmGcStatus(JVM_GC_STATUS_OK);
+        snapshot.setJvmGcMessage("采集成功");
+    }
+
+    /**
+     * 解析 jstat -gc 输出（含头部字段）并写入快照。
+     *
+     * @param snapshot 指标快照
+     * @param body     输出正文，格式：pid|header|value
+     * @return true 表示解析成功
+     */
+    private boolean applyJvmGcDetailMetrics(HostMetricSnapshot snapshot, String body) {
+        String[] segments = body.split("\\|", 3);
+        if (segments.length < 3) {
+            return false;
+        }
+        snapshot.setJvmPid(parseLongNumber(segments[0]));
+        String[] headers = splitByBlank(segments[1]);
+        String[] values = splitByBlank(segments[2]);
+        if (headers.length == 0 || values.length < headers.length) {
+            return false;
+        }
+        Map<String, String> metricMap = new LinkedHashMap<>();
+        for (int i = 0; i < headers.length; i++) {
+            String key = trimToEmpty(headers[i]).toUpperCase();
+            if (key.isEmpty()) {
+                continue;
+            }
+            metricMap.put(key, trimToEmpty(values[i]));
+        }
+
+        Double survivor0CapacityKb = parseMetricDouble(metricMap, "S0C");
+        Double survivor1CapacityKb = parseMetricDouble(metricMap, "S1C");
+        Double survivor0UsedKb = parseMetricDouble(metricMap, "S0U");
+        Double survivor1UsedKb = parseMetricDouble(metricMap, "S1U");
+        Double edenCapacityKb = parseMetricDouble(metricMap, "EC");
+        Double edenUsedKb = parseMetricDouble(metricMap, "EU");
+        Double oldCapacityKb = parseMetricDouble(metricMap, "OC");
+        Double oldUsedKb = parseMetricDouble(metricMap, "OU");
+        Double metaCapacityKb = firstNonNull(parseMetricDouble(metricMap, "MC"), parseMetricDouble(metricMap, "PC"));
+        Double metaUsedKb = firstNonNull(parseMetricDouble(metricMap, "MU"), parseMetricDouble(metricMap, "PU"));
+        Double ccsCapacityKb = parseMetricDouble(metricMap, "CCSC");
+        Double ccsUsedKb = parseMetricDouble(metricMap, "CCSU");
+        if (edenCapacityKb == null || edenUsedKb == null || oldCapacityKb == null || oldUsedKb == null) {
+            return false;
+        }
+
+        Double survivorCapacityKb = sumIfAllPresent(survivor0CapacityKb, survivor1CapacityKb);
+        Double survivorUsedKb = sumIfAllPresent(survivor0UsedKb, survivor1UsedKb);
+        Double heapCapacityKb = sumIfAllPresent(survivorCapacityKb, edenCapacityKb, oldCapacityKb);
+        Double heapUsedKb = sumIfAllPresent(survivorUsedKb, edenUsedKb, oldUsedKb);
+
+        snapshot.setJvmEdenUsagePercent(normalizePercent(calculateUsagePercent(edenUsedKb, edenCapacityKb)));
+        snapshot.setJvmOldUsagePercent(normalizePercent(calculateUsagePercent(oldUsedKb, oldCapacityKb)));
+        snapshot.setJvmMetaUsagePercent(normalizePercent(calculateUsagePercent(metaUsedKb, metaCapacityKb)));
+        snapshot.setJvmEdenUsedMb(toMb(edenUsedKb));
+        snapshot.setJvmEdenCapacityMb(toMb(edenCapacityKb));
+        snapshot.setJvmSurvivorUsedMb(toMb(survivorUsedKb));
+        snapshot.setJvmSurvivorCapacityMb(toMb(survivorCapacityKb));
+        snapshot.setJvmOldUsedMb(toMb(oldUsedKb));
+        snapshot.setJvmOldCapacityMb(toMb(oldCapacityKb));
+        snapshot.setJvmMetaUsedMb(toMb(metaUsedKb));
+        snapshot.setJvmMetaCapacityMb(toMb(metaCapacityKb));
+        snapshot.setJvmCompressedClassUsedMb(toMb(ccsUsedKb));
+        snapshot.setJvmCompressedClassCapacityMb(toMb(ccsCapacityKb));
+        snapshot.setJvmHeapUsedMb(toMb(heapUsedKb));
+        snapshot.setJvmHeapCapacityMb(toMb(heapCapacityKb));
+        snapshot.setJvmHeapUsagePercent(normalizePercent(calculateUsagePercent(heapUsedKb, heapCapacityKb)));
+
+        snapshot.setJvmYoungGcCount(parseMetricLong(metricMap, "YGC"));
+        snapshot.setJvmYoungGcTimeSeconds(parseMetricDouble(metricMap, "YGCT"));
+        snapshot.setJvmFullGcCount(parseMetricLong(metricMap, "FGC"));
+        snapshot.setJvmFullGcTimeSeconds(parseMetricDouble(metricMap, "FGCT"));
+        snapshot.setJvmTotalGcTimeSeconds(parseMetricDouble(metricMap, "GCT"));
+        return true;
+    }
+
+    /**
+     * 兼容解析旧版 jstat -gcutil 输出。
+     *
+     * @param snapshot 指标快照
+     * @param body     输出正文，格式：pid value...
+     * @return true 表示解析成功
+     */
+    private boolean applyJvmGcUtilMetrics(HostMetricSnapshot snapshot, String body) {
+        int firstBlankIndex = body.indexOf(' ');
+        if (firstBlankIndex <= 0) {
+            return false;
+        }
+        String pidText = trimToEmpty(body.substring(0, firstBlankIndex));
+        snapshot.setJvmPid(parseLongNumber(pidText));
+        String metricsText = trimToEmpty(body.substring(firstBlankIndex + 1));
+        String[] parts = splitByBlank(metricsText);
+        if (parts.length < 11) {
+            return false;
+        }
+        snapshot.setJvmEdenUsagePercent(normalizePercent(parseDouble(parts[2])));
+        snapshot.setJvmOldUsagePercent(normalizePercent(parseDouble(parts[3])));
+        snapshot.setJvmMetaUsagePercent(normalizePercent(parseDouble(parts[4])));
+        snapshot.setJvmYoungGcCount(parseLongNumber(parts[6]));
+        snapshot.setJvmYoungGcTimeSeconds(parseDouble(parts[7]));
+        snapshot.setJvmFullGcCount(parseLongNumber(parts[8]));
+        snapshot.setJvmFullGcTimeSeconds(parseDouble(parts[9]));
+        snapshot.setJvmTotalGcTimeSeconds(parseDouble(parts[10]));
+        return true;
+    }
+
+    /**
+     * 从指标映射中读取浮点值。
+     *
+     * @param metricMap 指标映射
+     * @param key       字段名
+     * @return 浮点值，缺失或非法时返回 null
+     */
+    private Double parseMetricDouble(Map<String, String> metricMap, String key) {
+        if (metricMap == null || key == null) {
+            return null;
+        }
+        return parseDouble(metricMap.get(key));
+    }
+
+    /**
+     * 从指标映射中读取整型值。
+     *
+     * @param metricMap 指标映射
+     * @param key       字段名
+     * @return 整型值，缺失或非法时返回 null
+     */
+    private Long parseMetricLong(Map<String, String> metricMap, String key) {
+        if (metricMap == null || key == null) {
+            return null;
+        }
+        return parseLongNumber(metricMap.get(key));
+    }
+
+    /**
+     * 计算使用率百分比。
+     *
+     * @param used     已使用值
+     * @param capacity 总容量值
+     * @return 百分比，容量缺失或非正数时返回 null
+     */
+    private Double calculateUsagePercent(Double used, Double capacity) {
+        if (used == null || capacity == null || capacity <= 0D) {
+            return null;
+        }
+        return used * 100D / capacity;
+    }
+
+    /**
+     * 将 KB 转换为 MB。
+     *
+     * @param kilobytes KB 数值
+     * @return MB 数值
+     */
+    private Double toMb(Double kilobytes) {
+        if (kilobytes == null) {
+            return null;
+        }
+        return kilobytes / 1024D;
+    }
+
+    /**
+     * 求和（要求所有参与值都存在）。
+     *
+     * @param values 数值列表
+     * @return 求和结果，存在 null 时返回 null
+     */
+    private Double sumIfAllPresent(Double... values) {
+        if (values == null || values.length == 0) {
+            return null;
+        }
+        double sum = 0D;
+        for (Double value : values) {
+            if (value == null) {
+                return null;
+            }
+            sum += value;
+        }
+        return sum;
+    }
+
+    /**
+     * 获取首个非空值。
+     *
+     * @param candidates 候选值
+     * @return 首个非空值，若均为空则返回 null
+     */
+    private Double firstNonNull(Double... candidates) {
+        if (candidates == null || candidates.length == 0) {
+            return null;
+        }
+        for (Double candidate : candidates) {
+            if (candidate != null) {
+                return candidate;
+            }
+        }
+        return null;
+    }
+
+    /**
+     * 提取 JVM GC 标记行。
+     *
+     * @param lines 命令输出
+     * @return 标记行；未命中返回空字符串
+     */
+    private String extractJvmGcMarkedLine(List<String> lines) {
+        if (lines == null || lines.isEmpty()) {
+            return "";
+        }
+        for (int i = lines.size() - 1; i >= 0; i--) {
+            String line = trimToEmpty(lines.get(i));
+            if (line.startsWith(JVM_GC_MARKER)) {
+                return line;
+            }
+        }
+        return "";
+    }
+
+    /**
      * 获取首行文本。
      *
      * @param lines 文本行集合
@@ -1034,6 +1380,20 @@ public class SshLogService {
         } catch (Exception ignored) {
             return null;
         }
+    }
+
+    /**
+     * 解析 long 数值（兼容整数或浮点文本）。
+     *
+     * @param text 输入文本
+     * @return 解析结果，失败返回 null
+     */
+    private Long parseLongNumber(String text) {
+        Double value = parseDouble(text);
+        if (value == null) {
+            return null;
+        }
+        return Math.round(value);
     }
 
     /**

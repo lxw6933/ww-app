@@ -15,6 +15,7 @@ import {FilterChainManager} from './filter-chain.js';
 import {StatusBarController} from './status-bar.js';
 import {MetricsPanelController} from './metrics-panel.js';
 import {PreferenceStore} from './preferences.js';
+import {JvmViewController} from './jvm-view.js';
 
 /**
  * 页面全局状态。
@@ -48,7 +49,18 @@ const metricsPanel = new MetricsPanelController({
     getProject: () => value('project'),
     getEnv: () => value('env'),
     getService: () => value('service'),
-    operateInstance: (instanceService, action) => operateInstanceLifecycle(instanceService, action)
+    operateInstance: (instanceService, action) => operateInstanceLifecycle(instanceService, action),
+    openJvmMonitor: (instanceService) => openJvmMonitorInline(instanceService)
+});
+
+/**
+ * JVM 视图控制器。
+ */
+const jvmView = new JvmViewController({
+    getProject: () => value('project'),
+    getEnv: () => value('env'),
+    getService: () => value('service'),
+    isAggregate: (project, env, service) => isAggregateSelected(project, env, service)
 });
 
 /**
@@ -75,6 +87,16 @@ const READ_MODE_CAT = 'cat';
  * 界面密度：舒适。
  */
 const UI_DENSITY_COMFORTABLE = 'comfortable';
+
+/**
+ * 中央视图：日志。
+ */
+const CENTER_VIEW_LOG = 'log';
+
+/**
+ * 中央视图：JVM。
+ */
+const CENTER_VIEW_JVM = 'jvm';
 
 /**
  * cat 降级 WebSocket：空闲判定超时（毫秒）。
@@ -110,7 +132,9 @@ function init() {
     bindEvents();
     statusBar.start();
     metricsPanel.init();
+    jvmView.init();
     updateControls();
+    applyCenterViewByState();
     logView.setHighlightRules(filterChainManager.getRules());
     logView.setEmptyTip('尚未开始查看日志。请先选择项目、环境和服务，然后点击“开始查看”。');
     logView.renderLevelStats();
@@ -130,6 +154,7 @@ function beforeUnloadCleanup() {
     clearReconnectTimer();
     statusBar.stop();
     metricsPanel.stopPolling();
+    jvmView.stop();
 }
 
 /**
@@ -142,15 +167,18 @@ function bindEvents() {
     el('project').addEventListener('change', () => {
         preferenceStore.set('project', value('project'));
         loadEnvs();
+        jvmView.handleContextChanged();
     });
     el('env').addEventListener('change', () => {
         preferenceStore.set('env', value('env'));
         loadServices();
+        jvmView.handleContextChanged();
     });
     el('service').addEventListener('change', () => {
         preferenceStore.set('service', value('service'));
         loadFiles();
         metricsPanel.refresh(false);
+        jvmView.handleContextChanged();
     });
 
     el('fileSearch').addEventListener('input', renderFileOptions);
@@ -182,6 +210,8 @@ function bindEvents() {
     el('btnModeExpert').addEventListener('click', () => setUiMode('expert'));
     el('btnReadTail').addEventListener('click', () => setReadMode(READ_MODE_TAIL, true));
     el('btnReadCat').addEventListener('click', () => setReadMode(READ_MODE_CAT, true));
+    el('btnViewLog').addEventListener('click', () => setCenterView(CENTER_VIEW_LOG, true));
+    el('btnViewJvm').addEventListener('click', () => setCenterView(CENTER_VIEW_JVM, true));
     el('btnStart').addEventListener('click', connect);
     el('btnStop').addEventListener('click', stop);
     el('btnPause').addEventListener('click', () => logView.togglePause());
@@ -223,6 +253,44 @@ function bindEvents() {
             }
         });
     });
+}
+
+/**
+ * 切换中央信息窗口（日志/JVM）。
+ *
+ * @param {string} view 目标视图
+ * @param {boolean} persist 是否持久化
+ */
+function setCenterView(view, persist) {
+    const normalized = view === CENTER_VIEW_JVM ? CENTER_VIEW_JVM : CENTER_VIEW_LOG;
+    const jvmActive = normalized === CENTER_VIEW_JVM;
+    const logShell = el('logShell');
+    const jvmShell = el('jvmShell');
+    const logButton = el('btnViewLog');
+    const jvmButton = el('btnViewJvm');
+
+    if (logShell) {
+        logShell.classList.toggle('hidden', jvmActive);
+    }
+    if (jvmShell) {
+        jvmShell.classList.toggle('hidden', !jvmActive);
+    }
+    if (logButton) {
+        logButton.classList.toggle('active', !jvmActive);
+    }
+    if (jvmButton) {
+        jvmButton.classList.toggle('active', jvmActive);
+    }
+    document.body.classList.toggle('center-view-jvm', jvmActive);
+
+    if (jvmActive) {
+        jvmView.setActive(true);
+    } else {
+        jvmView.setActive(false);
+    }
+    if (persist) {
+        preferenceStore.set('centerView', normalized);
+    }
 }
 
 /**
@@ -317,6 +385,79 @@ function copyShareLink() {
     copyText(link)
         .then(() => flashShareButton('✓', 'success'))
         .catch(() => showManualCopyHint(link));
+}
+
+/**
+ * 打开 JVM/GC 实时监控页面。
+ *
+ * @param {string} instanceService 实例服务键（可选，形如 mall-basic@node1）
+ */
+function openJvmMonitorInline(instanceService) {
+    const project = value('project');
+    const env = value('env');
+    const currentService = value('service');
+    const normalizedInstance = String(instanceService || '').trim();
+    const rawService = normalizedInstance || String(currentService || '').trim();
+    const targetService = resolveServiceGroup(rawService);
+
+    if (!project || !env || !targetService || isAggregateSelected(project, env, targetService)) {
+        setCenterView(CENTER_VIEW_JVM, true);
+        jvmView.handleContextChanged();
+        logView.appendSystem('JVM 监控仅支持单个服务，请先选择具体项目/环境/服务');
+        return;
+    }
+
+    if (targetService !== currentService) {
+        const serviceEl = el('service');
+        if (!hasSelectOption(serviceEl, targetService)) {
+            jvmView.handleContextChanged();
+            logView.appendSystem(`未找到服务: ${targetService}`);
+            return;
+        }
+        serviceEl.value = targetService;
+        preferenceStore.set('service', targetService);
+        loadFiles();
+        metricsPanel.refresh(false);
+    }
+
+    if (normalizedInstance && normalizedInstance.indexOf('@') > 0) {
+        jvmView.setPreferredInstance(normalizedInstance);
+    }
+    setCenterView(CENTER_VIEW_JVM, true);
+    jvmView.handleContextChanged();
+    jvmView.refresh(true);
+}
+
+/**
+ * 提取服务组名（去掉实例后缀）。
+ *
+ * @param {string} serviceKey 服务键
+ * @returns {string} 服务组名
+ */
+function resolveServiceGroup(serviceKey) {
+    const normalized = String(serviceKey || '').trim();
+    if (!normalized) {
+        return '';
+    }
+    const delimiterIndex = normalized.indexOf('@');
+    if (delimiterIndex <= 0) {
+        return normalized;
+    }
+    return normalized.substring(0, delimiterIndex);
+}
+
+/**
+ * 判断下拉框中是否包含指定值。
+ *
+ * @param {HTMLSelectElement} selectEl 下拉框元素
+ * @param {string} targetValue 目标值
+ * @returns {boolean} 是否存在
+ */
+function hasSelectOption(selectEl, targetValue) {
+    if (!selectEl || !selectEl.options) {
+        return false;
+    }
+    return Array.from(selectEl.options).some(option => option && option.value === targetValue);
 }
 
 /**
@@ -519,6 +660,14 @@ function applyReadModeByState() {
 }
 
 /**
+ * 应用保存的中央视图（日志/JVM）。
+ */
+function applyCenterViewByState() {
+    const saved = preferenceStore.getString('centerView', CENTER_VIEW_LOG);
+    setCenterView(saved === CENTER_VIEW_JVM ? CENTER_VIEW_JVM : CENTER_VIEW_LOG, false);
+}
+
+/**
  * 应用保存的指标面板收起状态。
  */
 function applySavedMetricsCollapse() {
@@ -621,6 +770,7 @@ function loadServices() {
     applySavedSelectValue(serviceEl, consumeSharedString('service', preferenceStore.getString('service', '')));
     loadFiles();
     metricsPanel.refresh(false);
+    jvmView.handleContextChanged();
 }
 
 /**

@@ -26,6 +26,7 @@ export class MetricsPanelController {
         this.getEnv = typeof options.getEnv === 'function' ? options.getEnv : (() => '');
         this.getService = typeof options.getService === 'function' ? options.getService : (() => '');
         this.operateInstance = typeof options.operateInstance === 'function' ? options.operateInstance : null;
+        this.openJvmMonitor = typeof options.openJvmMonitor === 'function' ? options.openJvmMonitor : null;
         this.refreshMs = 15000;
         this.timer = null;
         this.token = 0;
@@ -594,19 +595,29 @@ export class MetricsPanelController {
             cardEl.appendChild(kpiGridEl);
             cardEl.appendChild(createLoadBlock(item));
         }
-        cardEl.appendChild(createInstanceStatusBlock(item));
-
+        const mainEl = document.createElement('div');
+        mainEl.className = 'metric-instance-main';
+        mainEl.appendChild(createInstanceStatusBlock(item));
         if (!ok) {
             const messageEl = document.createElement('p');
             messageEl.className = 'metric-message';
             messageEl.textContent = item && item.message ? item.message : '采集失败';
-            cardEl.appendChild(messageEl);
+            mainEl.appendChild(messageEl);
         }
-
+        cardEl.appendChild(mainEl);
         cardEl.appendChild(this.createOperationBar(item));
         return cardEl;
     }
 
+    /**
+     * 更新 JVM GC 趋势缓存。
+     * <p>
+     * 缓存以 project/env/service 为键，仅保留最近 N 个采样点，
+     * 用于实例卡片中的实时折线图展示。
+     * </p>
+     *
+     * @param {Array<Object>} list 最新指标列表
+     */
     /**
      * 渲染指标摘要（结构化卡片）。
      *
@@ -652,6 +663,16 @@ export class MetricsPanelController {
         const service = item && item.service ? String(item.service) : '';
         if (!service) {
             return barEl;
+        }
+
+        if (this.openJvmMonitor) {
+            const monitorBtn = document.createElement('button');
+            monitorBtn.type = 'button';
+            monitorBtn.className = 'secondary metric-op-btn';
+            monitorBtn.title = '打开 JVM 监控';
+            monitorBtn.textContent = 'JVM';
+            monitorBtn.addEventListener('click', () => this.openJvmMonitor(service));
+            barEl.appendChild(monitorBtn);
         }
 
         if (!item || !item.canManage || !this.operateInstance) {

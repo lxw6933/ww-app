@@ -164,13 +164,13 @@ app:
           logPath: "/data/B2B2C/mall-ext-service/target/logs"
           manageCommandFile: "/data/B2B2C/mall-ext-service/bin/server.sh"
 
-#    vms:
-#      # 默认占位项目配置（假环境 + 假实例），用于项目维度展示与后续按需替换。
-#      mock:
-#        vms-demo@node1:
-#          host: "127.0.0.1"
-#          port: 22
-#          username: "fake"
-#          password: "fake"
-#          logPath: "/tmp/vms-demo/logs"
-#          manageCommandFile: "/tmp/vms-demo/bin/server.sh"
+    vms:
+      # 默认占位项目配置（假环境 + 假实例），用于项目维度展示与后续按需替换。
+      mock:
+        vms-demo@node1:
+          host: "127.0.0.1"
+          port: 22
+          username: "fake"
+          password: "fake"
+          logPath: "/tmp/vms-demo/logs"
+          manageCommandFile: "/tmp/vms-demo/bin/server.sh"

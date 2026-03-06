@@ -140,4 +140,136 @@ public class HostMetricSnapshot {
      * </p>
      */
     private String instanceStatusDetail;
+
+    /**
+     * JVM 进程号。
+     * <p>
+     * 仅在成功识别到目标 Java 进程时返回。
+     * </p>
+     */
+    private Long jvmPid;
+
+    /**
+     * JVM Eden 区使用率，单位百分比（0-100）。
+     */
+    private Double jvmEdenUsagePercent;
+
+    /**
+     * JVM Old 区使用率，单位百分比（0-100）。
+     */
+    private Double jvmOldUsagePercent;
+
+    /**
+     * JVM Meta（Metaspace）使用率，单位百分比（0-100）。
+     */
+    private Double jvmMetaUsagePercent;
+
+    /**
+     * JVM Eden 区已使用容量（MB）。
+     */
+    private Double jvmEdenUsedMb;
+
+    /**
+     * JVM Eden 区总容量（MB）。
+     */
+    private Double jvmEdenCapacityMb;
+
+    /**
+     * JVM Survivor 区已使用容量（MB，S0U + S1U）。
+     */
+    private Double jvmSurvivorUsedMb;
+
+    /**
+     * JVM Survivor 区总容量（MB，S0C + S1C）。
+     */
+    private Double jvmSurvivorCapacityMb;
+
+    /**
+     * JVM Old 区已使用容量（MB）。
+     */
+    private Double jvmOldUsedMb;
+
+    /**
+     * JVM Old 区总容量（MB）。
+     */
+    private Double jvmOldCapacityMb;
+
+    /**
+     * JVM Meta 区已使用容量（MB）。
+     */
+    private Double jvmMetaUsedMb;
+
+    /**
+     * JVM Meta 区总容量（MB）。
+     */
+    private Double jvmMetaCapacityMb;
+
+    /**
+     * JVM Compressed Class Space 已使用容量（MB）。
+     */
+    private Double jvmCompressedClassUsedMb;
+
+    /**
+     * JVM Compressed Class Space 总容量（MB）。
+     */
+    private Double jvmCompressedClassCapacityMb;
+
+    /**
+     * JVM Heap 已使用容量（MB，Eden + Survivor + Old）。
+     */
+    private Double jvmHeapUsedMb;
+
+    /**
+     * JVM Heap 总容量（MB，Eden + Survivor + Old）。
+     */
+    private Double jvmHeapCapacityMb;
+
+    /**
+     * JVM Heap 使用率，单位百分比（0-100）。
+     */
+    private Double jvmHeapUsagePercent;
+
+    /**
+     * JVM 年轻代 GC 次数（YGC）。
+     */
+    private Long jvmYoungGcCount;
+
+    /**
+     * JVM 年轻代 GC 总耗时（秒，YGCT）。
+     */
+    private Double jvmYoungGcTimeSeconds;
+
+    /**
+     * JVM Full GC 次数（FGC）。
+     */
+    private Long jvmFullGcCount;
+
+    /**
+     * JVM Full GC 总耗时（秒，FGCT）。
+     */
+    private Double jvmFullGcTimeSeconds;
+
+    /**
+     * JVM GC 累计总耗时（秒，GCT）。
+     */
+    private Double jvmTotalGcTimeSeconds;
+
+    /**
+     * JVM GC 采集状态。
+     * <p>
+     * 可选值：
+     * 1. ok：采集成功；<br>
+     * 2. no_pid：未识别到 Java 进程；<br>
+     * 3. no_jstat：目标机缺少 jstat；<br>
+     * 4. parse_error：结果解析失败；<br>
+     * 5. error：采集异常；<br>
+     * 6. unknown：未采集。
+     * </p>
+     */
+    private String jvmGcStatus;
+
+    /**
+     * JVM GC 状态说明。
+     */
+    private String jvmGcMessage;
 }

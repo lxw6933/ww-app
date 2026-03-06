@@ -4098,6 +4098,815 @@ body.immersive-mode #log {
     }
 }
 
+/* ==================== JVM头部与卡片内边距终修（实例/刷新同排） ==================== */
+body.center-view-jvm #jvmShell .jvm-head {
+    display: grid !important;
+    grid-template-columns: 1fr !important;
+    align-items: stretch !important;
+    gap: 10px !important;
+    padding: 12px 14px 14px !important;
+    border: 1px solid rgba(103, 183, 238, 0.34) !important;
+    border-radius: 12px;
+    background: linear-gradient(180deg, rgba(12, 35, 55, 0.92), rgba(8, 24, 40, 0.94));
+}
+
+body.center-view-jvm #jvmShell .jvm-head-top {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    min-width: 0;
+    border-bottom: 1px solid rgba(109, 188, 241, 0.24);
+    padding-bottom: 9px;
+}
+
+body.center-view-jvm #jvmShell .jvm-head-title h2 {
+    letter-spacing: 0 !important;
+    line-height: 1.25;
+}
+
+body.center-view-jvm #jvmShell .jvm-head-tools {
+    display: flex !important;
+    flex-wrap: nowrap;
+    align-items: center !important;
+    justify-content: flex-start;
+    gap: 10px !important;
+    min-width: 0;
+}
+
+body.center-view-jvm #jvmShell .jvm-inline-controls {
+    display: flex !important;
+    flex-wrap: wrap;
+    align-items: center !important;
+    gap: 8px 10px !important;
+    min-width: 0;
+    width: 100%;
+}
+
+body.center-view-jvm #jvmShell .jvm-control-group {
+    display: inline-flex !important;
+    align-items: center !important;
+    gap: 6px !important;
+    min-width: 0 !important;
+    padding-right: 2px;
+}
+
+body.center-view-jvm #jvmShell .jvm-control-group label {
+    margin: 0 !important;
+    white-space: nowrap;
+    line-height: 1.2;
+}
+
+body.center-view-jvm #jvmShell .jvm-control-group select {
+    margin: 0 !important;
+    height: 34px !important;
+}
+
+body.center-view-jvm #jvmShell #jvmInstance {
+    min-width: 220px;
+    max-width: 320px;
+}
+
+body.center-view-jvm #jvmShell #jvmPollInterval,
+body.center-view-jvm #jvmShell #jvmWindowSize {
+    min-width: 94px;
+}
+
+body.center-view-jvm #jvmShell #btnJvmRefresh,
+body.center-view-jvm #jvmShell #btnJvmTogglePolling {
+    height: 34px;
+    padding: 0 12px;
+}
+
+body.center-view-jvm #jvmShell .jvm-inline-status {
+    display: inline-flex !important;
+    flex-direction: row !important;
+    align-items: center !important;
+    justify-content: flex-end !important;
+    gap: 8px !important;
+    white-space: normal;
+    line-height: 1.35;
+}
+
+body.center-view-jvm #jvmShell .jvm-inline-status > span {
+    display: inline-flex;
+    align-items: center;
+    min-height: 28px;
+    padding: 3px 10px;
+    border: 1px solid rgba(116, 197, 244, 0.36);
+    border-radius: 999px;
+    background: linear-gradient(180deg, rgba(16, 47, 72, 0.9), rgba(10, 31, 50, 0.92));
+}
+
+/* JVM正文卡片增加内边距，避免文本贴边。 */
+body.center-view-jvm #jvmShell .jvm-kpi-item {
+    padding: 12px 13px !important;
+    gap: 7px;
+}
+
+body.center-view-jvm #jvmShell .jvm-chart-card,
+body.center-view-jvm #jvmShell .jvm-detail-card {
+    padding: 12px 14px !important;
+}
+
+body.center-view-jvm #jvmShell .jvm-chart-head {
+    margin-bottom: 10px !important;
+}
+
+body.center-view-jvm #jvmShell .jvm-detail-tools {
+    margin-bottom: 12px !important;
+}
+
+body.center-view-jvm #jvmShell .jvm-detail-meta {
+    line-height: 1.45;
+}
+
+body.center-view-jvm #jvmShell .jvm-sample-item {
+    padding: 12px !important;
+}
+
+@media (max-width: 1100px) {
+    body.center-view-jvm #jvmShell .jvm-head {
+        gap: 10px !important;
+    }
+
+    body.center-view-jvm #jvmShell .jvm-head-top {
+        flex-wrap: wrap;
+        align-items: flex-start;
+    }
+
+    body.center-view-jvm #jvmShell .jvm-head-tools {
+        justify-content: flex-start;
+        flex-wrap: wrap;
+    }
+
+    body.center-view-jvm #jvmShell .jvm-inline-status {
+        width: 100%;
+        justify-content: flex-start !important;
+    }
+}
+
+@media (max-width: 980px) {
+    body.center-view-jvm #jvmShell .jvm-head {
+        padding: 10px 12px 12px !important;
+    }
+
+    body.center-view-jvm #jvmShell .jvm-inline-controls {
+        width: 100%;
+        gap: 8px !important;
+    }
+
+    body.center-view-jvm #jvmShell .jvm-control-group {
+        flex: 1 1 calc(50% - 8px);
+    }
+
+    body.center-view-jvm #jvmShell #jvmInstance,
+    body.center-view-jvm #jvmShell #jvmPollInterval,
+    body.center-view-jvm #jvmShell #jvmWindowSize {
+        min-width: 0;
+        width: 100%;
+    }
+
+    body.center-view-jvm #jvmShell .jvm-inline-status {
+        width: 100%;
+        flex-wrap: wrap;
+        gap: 6px 10px !important;
+    }
+}
+
+/* ==================== JVM视图终版微调（单行头部 + 字距 + 当前采样参数） ==================== */
+body.center-view-jvm .jvm-shell,
+body.center-view-jvm .jvm-shell * {
+    letter-spacing: 0 !important;
+}
+
+@media (min-width: 981px) {
+    body.center-view-jvm .jvm-head {
+        grid-template-columns: auto minmax(0, 1fr) !important;
+        align-items: end;
+    }
+
+    body.center-view-jvm .jvm-head-tools {
+        display: flex !important;
+        align-items: flex-end;
+        justify-content: space-between;
+        gap: 12px;
+        min-width: 0;
+    }
+
+    body.center-view-jvm .jvm-inline-controls {
+        flex-wrap: nowrap !important;
+        align-items: flex-end;
+        gap: 8px;
+        min-width: 0;
+    }
+
+    body.center-view-jvm .jvm-inline-status {
+        flex: 0 0 auto;
+        justify-content: flex-end;
+        gap: 12px;
+        white-space: nowrap;
+    }
+}
+
+body.center-view-jvm .jvm-inline-controls button {
+    min-width: 74px;
+}
+
+body.center-view-jvm .jvm-detail-tools {
+    justify-content: flex-start;
+}
+
+body.center-view-jvm .jvm-sample-panel {
+    width: 100%;
+}
+
+body.center-view-jvm .jvm-sample-grid {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 10px;
+}
+
+body.center-view-jvm .jvm-sample-item {
+    border: 1px solid rgba(94, 175, 230, 0.36);
+    border-radius: 10px;
+    background: linear-gradient(180deg, rgba(15, 42, 66, 0.88), rgba(10, 29, 46, 0.92));
+    padding: 10px;
+    display: grid;
+    gap: 6px;
+}
+
+body.center-view-jvm .jvm-sample-label {
+    color: #8eb3cf;
+    font-size: 12px;
+    line-height: 1;
+}
+
+body.center-view-jvm .jvm-sample-value {
+    color: #d8edf9;
+    font-size: 16px;
+    font-weight: 700;
+    line-height: 1.25;
+    word-break: break-word;
+}
+
+body.center-view-jvm .jvm-sample-tip {
+    color: #8fb8d5;
+    font-size: 12px;
+    line-height: 1.3;
+    word-break: break-word;
+}
+
+body.center-view-jvm .jvm-sample-item.ok .jvm-sample-value {
+    color: var(--ok);
+}
+
+body.center-view-jvm .jvm-sample-item.warn .jvm-sample-value {
+    color: var(--warn);
+}
+
+body.center-view-jvm .jvm-sample-item.error .jvm-sample-value {
+    color: var(--error);
+}
+
+@media (max-width: 1380px) {
+    body.center-view-jvm .jvm-sample-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+}
+
+@media (max-width: 980px) {
+    body.center-view-jvm .jvm-sample-grid {
+        grid-template-columns: 1fr;
+    }
+}
+
+/* ==================== JVM视图交互与排版优化 ==================== */
+body.center-view-jvm .group-action #btnReadTail,
+body.center-view-jvm .group-action #btnReadCat,
+body.center-view-jvm .group-action #btnStart,
+body.center-view-jvm .group-action #btnStop,
+body.center-view-jvm .group-action #btnPause,
+body.center-view-jvm .group-action #btnBreak,
+body.center-view-jvm .group-action #btnClear,
+body.center-view-jvm .group-action #btnOpenSettings {
+    display: none !important;
+}
+
+body.center-view-jvm .group-action .action-separator {
+    display: none !important;
+}
+
+body.center-view-jvm .group-action {
+    gap: 6px !important;
+}
+
+body.center-view-jvm .group-action #btnImmersive {
+    margin-left: auto;
+}
+
+.jvm-body,
+.jvm-table-wrap {
+    scrollbar-width: thin;
+    scrollbar-color: rgba(88, 176, 236, 0.55) rgba(8, 24, 40, 0.5);
+}
+
+.jvm-body::-webkit-scrollbar,
+.jvm-table-wrap::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+}
+
+.jvm-body::-webkit-scrollbar-track,
+.jvm-table-wrap::-webkit-scrollbar-track {
+    background: rgba(7, 20, 34, 0.62);
+    border-radius: 999px;
+}
+
+.jvm-body::-webkit-scrollbar-thumb,
+.jvm-table-wrap::-webkit-scrollbar-thumb {
+    background: linear-gradient(180deg, rgba(70, 210, 255, 0.9), rgba(28, 137, 212, 0.85));
+    border-radius: 999px;
+    border: 1px solid rgba(140, 223, 255, 0.32);
+}
+
+body.center-view-jvm .jvm-body {
+    overflow-y: auto !important;
+    overflow-x: hidden !important;
+    padding-right: 4px;
+}
+
+body.center-view-jvm .jvm-table-wrap {
+    overflow-y: auto !important;
+    overflow-x: hidden !important;
+}
+
+body.center-view-jvm .jvm-table-wrap table {
+    width: 100% !important;
+    min-width: 100% !important;
+    table-layout: fixed;
+}
+
+body.center-view-jvm .jvm-table-wrap th,
+body.center-view-jvm .jvm-table-wrap td {
+    white-space: normal !important;
+    word-break: break-word;
+    overflow-wrap: anywhere;
+    vertical-align: top;
+    line-height: 1.35;
+}
+
+/* ==================== 中央视图切换（日志/JVM） ==================== */
+.center-view-switch .read-mode-btn {
+    min-width: 52px !important;
+}
+
+.jvm-shell {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    overflow: hidden;
+    min-height: 0;
+}
+
+/* 视图互斥显示：日志窗口与 JVM 窗口同一时刻仅显示一个。 */
+#logShell.hidden,
+#jvmShell.hidden {
+    display: none !important;
+}
+
+body.center-view-jvm #logShell {
+    display: none !important;
+}
+
+body.center-view-jvm #jvmShell {
+    display: flex !important;
+}
+
+body:not(.center-view-jvm) #logShell {
+    display: flex !important;
+}
+
+body:not(.center-view-jvm) #jvmShell {
+    display: none !important;
+}
+
+.jvm-head {
+    display: grid;
+    grid-template-columns: auto 1fr;
+    gap: 10px;
+    align-items: center;
+    border-bottom: 1px solid rgba(107, 187, 241, 0.26);
+    padding-bottom: 8px;
+}
+
+.jvm-head-title h2 {
+    margin: 0;
+    font-size: 16px;
+    letter-spacing: 0.2px;
+}
+
+.jvm-head-tools {
+    display: grid;
+    gap: 6px;
+}
+
+.jvm-inline-controls {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: flex-end;
+    gap: 8px;
+}
+
+.jvm-control-group {
+    display: grid;
+    gap: 4px;
+    min-width: 140px;
+}
+
+.jvm-control-group label {
+    font-size: 12px;
+    color: var(--final-sub, var(--text-sub));
+}
+
+.jvm-control-group select {
+    height: 34px;
+}
+
+.jvm-inline-status {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    font-size: 12px;
+    color: var(--final-sub, var(--text-sub));
+}
+
+.jvm-status-ok {
+    color: var(--ok);
+    font-weight: 700;
+}
+
+.jvm-status-warn {
+    color: var(--warn);
+    font-weight: 700;
+}
+
+.jvm-status-error {
+    color: var(--error);
+    font-weight: 700;
+}
+
+.jvm-status-unknown {
+    color: var(--final-sub, var(--text-sub));
+    font-weight: 700;
+}
+
+.jvm-body {
+    min-height: 0;
+    overflow: auto;
+    display: grid;
+    gap: 10px;
+    padding-right: 4px;
+}
+
+.jvm-kpi-grid {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 8px;
+}
+
+.jvm-kpi-item {
+    border: 1px solid rgba(98, 179, 236, 0.38);
+    border-radius: 10px;
+    background: linear-gradient(180deg, rgba(12, 35, 55, 0.9), rgba(8, 24, 40, 0.92));
+    padding: 10px;
+    display: grid;
+    gap: 6px;
+}
+
+.jvm-kpi-label {
+    font-size: 12px;
+    color: var(--final-sub, var(--text-sub));
+}
+
+.jvm-kpi-value {
+    font-size: 20px;
+    line-height: 1;
+    font-weight: 800;
+}
+
+.jvm-kpi-tip {
+    font-size: 12px;
+    color: var(--final-sub, var(--text-sub));
+}
+
+.jvm-kpi-item.ok .jvm-kpi-value {
+    color: var(--ok);
+}
+
+.jvm-kpi-item.warn .jvm-kpi-value {
+    color: var(--warn);
+}
+
+.jvm-kpi-item.error .jvm-kpi-value {
+    color: var(--error);
+}
+
+.jvm-chart-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 10px;
+}
+
+.jvm-chart-card,
+.jvm-detail-card {
+    border: 1px solid rgba(98, 179, 236, 0.38);
+    border-radius: 10px;
+    background: linear-gradient(180deg, rgba(12, 35, 55, 0.9), rgba(8, 24, 40, 0.92));
+    padding: 10px;
+}
+
+.jvm-chart-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    margin-bottom: 8px;
+}
+
+.jvm-chart-head h3,
+.jvm-detail-card h3 {
+    margin: 0;
+    font-size: 14px;
+}
+
+.jvm-legend {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+}
+
+.jvm-legend-item {
+    font-size: 12px;
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    color: var(--final-sub, var(--text-sub));
+}
+
+.jvm-legend-item::before {
+    content: '';
+    width: 12px;
+    height: 3px;
+    border-radius: 999px;
+    background: currentColor;
+}
+
+.jvm-legend-item.eden { color: #2f7fe0; }
+.jvm-legend-item.survivor { color: #8c6ad9; }
+.jvm-legend-item.old { color: #e0902a; }
+.jvm-legend-item.meta { color: #13a27b; }
+.jvm-legend-item.ccs { color: #2f9ea1; }
+.jvm-legend-item.ygc { color: #2769d4; }
+.jvm-legend-item.fgc { color: #c85f20; }
+.jvm-legend-item.ygct { color: #315bd8; }
+.jvm-legend-item.fgct { color: #d27819; }
+.jvm-legend-item.gct { color: #0f9b73; }
+
+#jvmHeapChart,
+#jvmHeapStructChart,
+#jvmCountChart,
+#jvmTimeChart,
+#jvmRateChart,
+#jvmDeltaTimeChart {
+    width: 100%;
+    height: 280px;
+    display: block;
+    border: 1px solid rgba(100, 179, 236, 0.34);
+    border-radius: 8px;
+    background: linear-gradient(180deg, rgba(15, 39, 60, 0.86), rgba(10, 29, 47, 0.92));
+}
+
+.jvm-chart-grid-line {
+    stroke: rgba(131, 194, 239, 0.28);
+    stroke-width: 1;
+}
+
+.jvm-chart-axis-label {
+    fill: #87aecd;
+    font-size: 11px;
+}
+
+.jvm-chart-series {
+    fill: none;
+    stroke-width: 2.2;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+}
+
+.jvm-chart-point {
+    r: 2.5;
+}
+
+.jvm-chart-event-bar {
+    opacity: 0.88;
+}
+
+.jvm-chart-empty {
+    fill: #8eb3cf;
+    font-size: 13px;
+}
+
+.jvm-detail-tools {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    margin-bottom: 10px;
+}
+
+.jvm-detail-meta {
+    font-size: 12px;
+    color: #8eb3cf;
+}
+
+.jvm-detail-cards {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 10px;
+}
+
+.jvm-detail-empty {
+    border: 1px dashed rgba(112, 188, 241, 0.35);
+    border-radius: 10px;
+    padding: 14px;
+    font-size: 13px;
+    color: #8eb3cf;
+    background: rgba(14, 39, 60, 0.58);
+}
+
+.jvm-detail-item {
+    border: 1px solid rgba(94, 175, 230, 0.36);
+    border-radius: 10px;
+    background: linear-gradient(180deg, rgba(15, 42, 66, 0.88), rgba(10, 29, 46, 0.92));
+    padding: 10px;
+    display: grid;
+    gap: 9px;
+}
+
+.jvm-detail-item-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    border-bottom: 1px dashed rgba(102, 176, 228, 0.3);
+    padding-bottom: 8px;
+}
+
+.jvm-detail-head-text {
+    display: inline-flex;
+    align-items: baseline;
+    gap: 4px;
+    min-width: 0;
+}
+
+.jvm-detail-head-label {
+    color: #8eb3cf;
+    font-size: 12px;
+}
+
+.jvm-detail-head-value {
+    color: #d7ecfb;
+    font-size: 13px;
+    font-weight: 700;
+}
+
+.jvm-detail-status {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 24px;
+    padding: 0 10px;
+    border-radius: 999px;
+    border: 1px solid currentColor;
+    font-size: 12px;
+    font-weight: 700;
+}
+
+.jvm-detail-item-grid {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 8px;
+}
+
+.jvm-detail-metric {
+    border: 1px solid rgba(100, 173, 222, 0.3);
+    border-radius: 8px;
+    background: rgba(9, 29, 45, 0.66);
+    padding: 6px 7px;
+    display: grid;
+    gap: 4px;
+}
+
+.jvm-detail-metric-label {
+    color: #8eb3cf;
+    font-size: 11px;
+    line-height: 1;
+}
+
+.jvm-detail-metric-value {
+    color: #d8edf9;
+    font-size: 13px;
+    font-weight: 700;
+    line-height: 1.2;
+    word-break: break-word;
+}
+
+.jvm-heap-row-label {
+    fill: #9bc4df;
+    font-size: 12px;
+    font-weight: 600;
+}
+
+.jvm-heap-row-value {
+    fill: #95bad6;
+    font-size: 11px;
+}
+
+.jvm-heap-row-bg {
+    fill: rgba(26, 72, 105, 0.38);
+    stroke: rgba(101, 170, 220, 0.3);
+    stroke-width: 1;
+}
+
+.jvm-table-wrap {
+    overflow: auto;
+    border: 1px solid rgba(100, 179, 236, 0.34);
+    border-radius: 8px;
+}
+
+.jvm-table-wrap table {
+    width: 100%;
+    border-collapse: collapse;
+    min-width: 1600px;
+}
+
+.jvm-table-wrap th,
+.jvm-table-wrap td {
+    border-bottom: 1px solid rgba(100, 179, 236, 0.2);
+    padding: 8px 10px;
+    font-size: 12px;
+    text-align: left;
+    white-space: nowrap;
+}
+
+.jvm-table-wrap th {
+    position: sticky;
+    top: 0;
+    z-index: 1;
+    background: rgba(12, 39, 61, 0.98);
+    color: #9bc5e3;
+}
+
+.jvm-table-wrap tbody tr:hover {
+    background: rgba(16, 48, 73, 0.62);
+}
+
+@media (max-width: 1380px) {
+    .jvm-kpi-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .jvm-chart-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .jvm-detail-cards {
+        grid-template-columns: 1fr;
+    }
+
+    .jvm-detail-item-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+}
+
+@media (max-width: 980px) {
+    .jvm-head {
+        grid-template-columns: 1fr;
+    }
+
+    .jvm-inline-status {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+
+    .jvm-detail-item-grid {
+        grid-template-columns: 1fr;
+    }
+}
+
 /* Final override: immersive mode keeps project/env/service selectors on one row (desktop). */
 @media (min-width: 981px) {
     body.immersive-mode .row-primary {

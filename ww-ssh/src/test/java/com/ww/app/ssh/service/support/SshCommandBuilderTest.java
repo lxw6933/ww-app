@@ -53,4 +53,19 @@ class SshCommandBuilderTest {
         Assertions.assertTrue(command.contains("gsub(/%/"));
         Assertions.assertTrue(command.contains("$5"));
     }
+
+    /**
+     * 校验 JVM GC 命令包含 PID 识别、jstat 采集与统一输出标记。
+     */
+    @Test
+    void shouldBuildJvmGcStatsCommand() {
+        SshCommandBuilder builder = new SshCommandBuilder();
+        String command = builder.buildJvmGcStatsCommand("/data/app/mall-basic/bin/server.sh", "mall-basic@node1");
+        Assertions.assertTrue(command.contains("__WW_JVM_GC__"));
+        Assertions.assertTrue(command.contains("jstat -gcutil"));
+        Assertions.assertTrue(command.contains("NO_PID"));
+        Assertions.assertTrue(command.contains("SERVICE_GROUP"));
+        Assertions.assertTrue(command.contains("collect_pid_from_file"));
+        Assertions.assertTrue(command.contains("jps -l"));
+    }
 }

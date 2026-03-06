@@ -64,6 +64,11 @@
                         <select id="service" class="control-lg"></select>
                     </div>
                     <div class="group group-action">
+                        <div class="center-view-switch read-mode-switch" role="group" aria-label="查看中心切换">
+                            <button id="btnViewLog" type="button" class="secondary read-mode-btn active" title="切换到日志窗口" aria-label="切换到日志窗口">日志</button>
+                            <button id="btnViewJvm" type="button" class="secondary read-mode-btn" title="切换到 JVM 监控窗口" aria-label="切换到 JVM 监控窗口">JVM</button>
+                        </div>
+                        <span class="action-separator" aria-hidden="true"></span>
                         <div class="read-mode-switch" role="group" aria-label="日志读取方式">
                             <button id="btnReadTail" type="button" class="secondary read-mode-btn active" title="tail 实时监听" aria-label="tail 实时监听">实时</button>
                             <button id="btnReadCat" type="button" class="secondary read-mode-btn" title="cat 快照读取" aria-label="cat 快照读取">快照</button>
@@ -83,7 +88,7 @@
 
             </section>
 
-            <section class="log-shell">
+            <section id="logShell" class="log-shell">
                 <div class="log-header">
                     <div class="log-header-title">
                         <h2>实时日志窗口</h2>
@@ -107,6 +112,134 @@
                 </div>
                 <div id="log" data-empty-tip="尚未开始查看日志。请先选择项目、环境和服务，然后点击“开始查看”。"></div>
                 <div id="activeFilterExpr" class="active-filter-expr hidden"></div>
+            </section>
+
+            <section id="jvmShell" class="log-shell jvm-shell hidden">
+                <div class="jvm-head">
+                    <div class="jvm-head-top">
+                        <div class="jvm-head-title">
+                            <h2>JVM 实时监控窗口</h2>
+                        </div>
+                        <div class="jvm-inline-status">
+                            <span id="jvmStatusText" class="jvm-status-unknown">等待采样...</span>
+                            <span id="jvmLastUpdate">最后更新: --</span>
+                        </div>
+                    </div>
+                    <div class="jvm-head-tools">
+                        <div class="jvm-inline-controls">
+                            <div class="jvm-control-group">
+                                <label for="jvmInstance">实例</label>
+                                <select id="jvmInstance" class="control-lg"></select>
+                            </div>
+                            <div class="jvm-control-group">
+                                <label for="jvmPollInterval">刷新</label>
+                                <select id="jvmPollInterval" class="control-sm">
+                                    <option value="2000">2 秒</option>
+                                    <option value="3000" selected>3 秒</option>
+                                    <option value="5000">5 秒</option>
+                                    <option value="10000">10 秒</option>
+                                </select>
+                            </div>
+                            <div class="jvm-control-group">
+                                <label for="jvmWindowSize">窗口</label>
+                                <select id="jvmWindowSize" class="control-sm">
+                                    <option value="30">30 点</option>
+                                    <option value="60">60 点</option>
+                                    <option value="120" selected>120 点</option>
+                                </select>
+                            </div>
+                            <button id="btnJvmRefresh" type="button" class="secondary">立即刷新</button>
+                            <button id="btnJvmTogglePolling" type="button" class="secondary">暂停轮询</button>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="jvm-body">
+                    <section id="jvmKpiGrid" class="jvm-kpi-grid"></section>
+
+                    <section class="jvm-chart-grid">
+                        <article class="jvm-chart-card">
+                            <div class="jvm-chart-head">
+                                <h3>堆区使用率趋势(%)</h3>
+                                <div class="jvm-legend">
+                                    <span class="jvm-legend-item eden">Eden</span>
+                                    <span class="jvm-legend-item old">Old</span>
+                                    <span class="jvm-legend-item meta">Meta</span>
+                                </div>
+                            </div>
+                            <svg id="jvmHeapChart" viewBox="0 0 860 280" preserveAspectRatio="none"></svg>
+                        </article>
+
+                        <article class="jvm-chart-card">
+                            <div class="jvm-chart-head">
+                                <h3>堆详细占用(MB)</h3>
+                                <div class="jvm-legend">
+                                    <span class="jvm-legend-item eden">Eden</span>
+                                    <span class="jvm-legend-item survivor">Survivor</span>
+                                    <span class="jvm-legend-item old">Old</span>
+                                    <span class="jvm-legend-item meta">Meta</span>
+                                    <span class="jvm-legend-item ccs">CCS</span>
+                                </div>
+                            </div>
+                            <svg id="jvmHeapStructChart" viewBox="0 0 860 280" preserveAspectRatio="none"></svg>
+                        </article>
+
+                        <article class="jvm-chart-card">
+                            <div class="jvm-chart-head">
+                                <h3>GC 事件图（参考 JVisualVM）</h3>
+                                <div class="jvm-legend">
+                                    <span class="jvm-legend-item ygc">YGC增量</span>
+                                    <span class="jvm-legend-item fgc">FGC增量</span>
+                                    <span class="jvm-legend-item gct">ΔGCT(ms)</span>
+                                </div>
+                            </div>
+                            <svg id="jvmCountChart" viewBox="0 0 860 280" preserveAspectRatio="none"></svg>
+                        </article>
+
+                        <article class="jvm-chart-card">
+                            <div class="jvm-chart-head">
+                                <h3>GC 耗时累计(秒)</h3>
+                                <div class="jvm-legend">
+                                    <span class="jvm-legend-item ygct">YGCT</span>
+                                    <span class="jvm-legend-item fgct">FGCT</span>
+                                    <span class="jvm-legend-item gct">GCT</span>
+                                </div>
+                            </div>
+                            <svg id="jvmTimeChart" viewBox="0 0 860 280" preserveAspectRatio="none"></svg>
+                        </article>
+
+                        <article class="jvm-chart-card">
+                            <div class="jvm-chart-head">
+                                <h3>GC 频率(次/分钟)</h3>
+                                <div class="jvm-legend">
+                                    <span class="jvm-legend-item ygc">YGC/min</span>
+                                    <span class="jvm-legend-item fgc">FGC/min</span>
+                                </div>
+                            </div>
+                            <svg id="jvmRateChart" viewBox="0 0 860 280" preserveAspectRatio="none"></svg>
+                        </article>
+
+                        <article class="jvm-chart-card">
+                            <div class="jvm-chart-head">
+                                <h3>单轮 GC 耗时增量(秒/采样周期)</h3>
+                                <div class="jvm-legend">
+                                    <span class="jvm-legend-item ygct">ΔYGCT</span>
+                                    <span class="jvm-legend-item fgct">ΔFGCT</span>
+                                    <span class="jvm-legend-item gct">ΔGCT</span>
+                                </div>
+                            </div>
+                            <svg id="jvmDeltaTimeChart" viewBox="0 0 860 280" preserveAspectRatio="none"></svg>
+                        </article>
+                    </section>
+
+                    <section class="jvm-detail-card">
+                        <h3>当前采样参数（不累加列表）</h3>
+                        <div class="jvm-detail-tools">
+                            <span id="jvmDetailMeta" class="jvm-detail-meta">等待采样...</span>
+                        </div>
+                        <div id="jvmSamplePanel" class="jvm-sample-panel"></div>
+                    </section>
+                </div>
             </section>
         </main>
     </div>
