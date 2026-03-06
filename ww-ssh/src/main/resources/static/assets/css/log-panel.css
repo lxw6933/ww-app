@@ -4098,6 +4098,28 @@ body.immersive-mode #log {
     }
 }
 
+/* Final override: immersive mode keeps project/env/service selectors on one row (desktop). */
+@media (min-width: 981px) {
+    body.immersive-mode .row-primary {
+        grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+    }
+
+    body.immersive-mode .row-primary .group-action {
+        grid-column: 1 / -1 !important;
+    }
+}
+
+/* Immersive mode desktop: keep project/env/service selectors in one row. */
+@media (min-width: 981px) {
+    body.immersive-mode .row-primary {
+        grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+    }
+
+    body.immersive-mode .row-primary .group-action {
+        grid-column: 1 / -1 !important;
+    }
+}
+
 @media (max-width: 980px) {
     .page-shell {
         min-height: auto !important;
@@ -4157,8 +4179,14 @@ body.immersive-mode .main-panel {
     gap: 8px !important;
 }
 
-body.immersive-mode .row-primary {
-    grid-template-columns: 1fr !important;
+@media (min-width: 981px) {
+    body.immersive-mode .row-primary {
+        grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+    }
+
+    body.immersive-mode .row-primary .group-action {
+        grid-column: 1 / -1 !important;
+    }
 }
 
 body.immersive-mode .group-action {
