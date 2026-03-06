@@ -5318,3 +5318,54 @@ body.immersive-mode .group-action #btnImmersive {
         grid-column: 1 / -1;
     }
 }
+
+/* ==================== 沉浸模式终覆盖（日志/JVM统一：项目环境服务+按钮同一行） ==================== */
+@media (min-width: 981px) {
+    body.immersive-mode .toolbar .row-primary {
+        grid-template-columns:
+            minmax(130px, 0.78fr)
+            minmax(130px, 0.78fr)
+            minmax(150px, 0.98fr)
+            minmax(420px, 2.46fr) !important;
+        align-items: end !important;
+        gap: 8px !important;
+    }
+
+    body.immersive-mode .toolbar .row-primary .group-action {
+        grid-column: auto !important;
+        width: 100% !important;
+        min-width: 0 !important;
+        justify-content: flex-start !important;
+        flex-wrap: nowrap !important;
+    }
+
+    body.immersive-mode .toolbar .row-primary .group-action #btnOpenSettings {
+        margin-left: auto !important;
+    }
+
+    body.immersive-mode .toolbar .row-primary .group-action #btnImmersive {
+        margin-left: 4px !important;
+    }
+}
+
+@media (min-width: 981px) and (max-width: 1260px) {
+    body.immersive-mode .toolbar .row-primary {
+        grid-template-columns:
+            minmax(118px, 0.72fr)
+            minmax(118px, 0.72fr)
+            minmax(138px, 0.92fr)
+            minmax(390px, 2.64fr) !important;
+        gap: 6px !important;
+    }
+
+    body.immersive-mode .toolbar .row-primary .group-action {
+        gap: 4px !important;
+    }
+}
+
+/* JVM视图沉浸模式：退出按钮固定在最右侧。 */
+@media (min-width: 981px) {
+    body.center-view-jvm.immersive-mode .toolbar .row-primary .group-action #btnImmersive {
+        margin-left: auto !important;
+    }
+}
