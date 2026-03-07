@@ -175,6 +175,9 @@ function bindEvents() {
         jvmView.handleContextChanged();
     });
     el('service').addEventListener('change', () => {
+        if (enforceJvmSingleServiceSelection(false)) {
+            return;
+        }
         preferenceStore.set('service', value('service'));
         loadFiles();
         metricsPanel.refresh(false);
@@ -282,6 +285,10 @@ function setCenterView(view, persist) {
         jvmButton.classList.toggle('active', jvmActive);
     }
     document.body.classList.toggle('center-view-jvm', jvmActive);
+    syncServiceAggregateOptionState(jvmActive);
+    if (jvmActive) {
+        enforceJvmSingleServiceSelection(true);
+    }
 
     if (jvmActive) {
         jvmView.setActive(true);
@@ -291,6 +298,74 @@ function setCenterView(view, persist) {
     if (persist) {
         preferenceStore.set('centerView', normalized);
     }
+}
+
+/**
+ * 判断当前是否处于 JVM 中央视图。
+ *
+ * @returns {boolean} true 表示 JVM 视图
+ */
+function isJvmCenterViewActive() {
+    return document.body.classList.contains('center-view-jvm');
+}
+
+/**
+ * 同步“全部服务”选项在不同视图下的可用状态。
+ * <p>
+ * JVM 模式下禁用“全部服务”，日志模式下恢复可选。
+ * </p>
+ *
+ * @param {boolean} disabled 是否禁用
+ */
+function syncServiceAggregateOptionState(disabled) {
+    const serviceEl = el('service');
+    if (!serviceEl || !serviceEl.options) {
+        return;
+    }
+    Array.from(serviceEl.options).forEach(option => {
+        if (option && option.value === ALL) {
+            option.disabled = !!disabled;
+        }
+    });
+}
+
+/**
+ * JVM 模式下强制单服务选择。
+ * <p>
+ * 若当前选择为“全部服务”，自动切换到第一个可用单服务并刷新上下文。
+ * </p>
+ *
+ * @param {boolean} showTip 是否输出系统提示
+ * @returns {boolean} true 表示发生了自动切换
+ */
+function enforceJvmSingleServiceSelection(showTip) {
+    if (!isJvmCenterViewActive()) {
+        return false;
+    }
+    const project = value('project');
+    const env = value('env');
+    const service = value('service');
+    if (!isAggregateSelected(project, env, service)) {
+        return false;
+    }
+    const serviceEl = el('service');
+    if (!serviceEl || !serviceEl.options) {
+        return false;
+    }
+    const fallbackOption = Array.from(serviceEl.options).find(option =>
+        option && option.value && option.value !== ALL);
+    if (!fallbackOption) {
+        return false;
+    }
+    serviceEl.value = fallbackOption.value;
+    preferenceStore.set('service', fallbackOption.value);
+    loadFiles();
+    metricsPanel.refresh(false);
+    jvmView.handleContextChanged();
+    if (showTip) {
+        logView.appendSystem('JVM 模式不支持“全部服务”，已自动切换到单服务');
+    }
+    return true;
 }
 
 /**
@@ -768,9 +843,12 @@ function loadServices() {
     collectServices(state.config, project, env).forEach(service => serviceEl.add(new Option(service, service)));
     serviceEl.add(new Option('全部服务', ALL));
     applySavedSelectValue(serviceEl, consumeSharedString('service', preferenceStore.getString('service', '')));
-    loadFiles();
-    metricsPanel.refresh(false);
-    jvmView.handleContextChanged();
+    syncServiceAggregateOptionState(isJvmCenterViewActive());
+    if (!enforceJvmSingleServiceSelection(false)) {
+        loadFiles();
+        metricsPanel.refresh(false);
+        jvmView.handleContextChanged();
+    }
 }
 
 /**

@@ -634,11 +634,12 @@ export class LogView {
      */
     renderLineText(textEl, line) {
         const text = String(line || '');
-        if (!this.highlightKeywords.length) {
+        const highlightKeywords = this.collectTextHighlightKeywords();
+        if (!highlightKeywords.length) {
             textEl.textContent = text;
             return;
         }
-        const ranges = this.computeHighlightRanges(text);
+        const ranges = this.computeHighlightRanges(text, highlightKeywords);
         if (!ranges.length) {
             textEl.textContent = text;
             return;
@@ -667,12 +668,13 @@ export class LogView {
      * 计算关键词命中范围，并合并重叠区间。
      *
      * @param {string} line 行文本
+     * @param {Array<string>} keywords 关键词列表（小写）
      * @returns {Array<{start:number,end:number}>} 高亮区间
      */
-    computeHighlightRanges(line) {
+    computeHighlightRanges(line, keywords) {
         const lowerLine = String(line || '').toLowerCase();
         const matches = [];
-        this.highlightKeywords.forEach(keyword => {
+        (keywords || []).forEach(keyword => {
             if (!keyword) {
                 return;
             }
@@ -712,13 +714,52 @@ export class LogView {
     }
 
     /**
+     * 汇总文本高亮关键词。
+     * <p>
+     * 同时包含规则关键词与前端窗口搜索关键词，统一用于日志文本片段高亮。
+     * </p>
+     *
+     * @returns {Array<string>} 高亮关键词列表（按长度倒序）
+     */
+    collectTextHighlightKeywords() {
+        const keywordSet = new Set(this.highlightKeywords || []);
+        if (this.searchKeyword) {
+            keywordSet.add(this.searchKeyword);
+        }
+        return Array.from(keywordSet).sort((left, right) => right.length - left.length);
+    }
+
+    /**
      * 设置窗口内搜索关键词。
      *
      * @param {string} keyword 搜索关键词
      */
     setSearchKeyword(keyword) {
-        this.searchKeyword = String(keyword || '').trim().toLowerCase();
+        const normalized = String(keyword || '').trim().toLowerCase();
+        const changed = normalized !== this.searchKeyword;
+        this.searchKeyword = normalized;
+        if (changed) {
+            this.refreshSearchHighlights();
+        }
         this.refreshSearchMatches(false, true);
+    }
+
+    /**
+     * 刷新搜索关键词片段高亮（仅重绘文本，不重算过滤）。
+     */
+    refreshSearchHighlights() {
+        const logEl = el('log');
+        if (!logEl) {
+            return;
+        }
+        logEl.querySelectorAll('.log-line').forEach(lineEl => {
+            const textEl = lineEl.querySelector('.line-text');
+            if (!textEl) {
+                return;
+            }
+            const rawText = lineEl.dataset && lineEl.dataset.rawText ? lineEl.dataset.rawText : '';
+            this.renderLineText(textEl, rawText);
+        });
     }
 
     /**
