@@ -184,6 +184,7 @@ public class LogStreamWebSocketHandler extends TextWebSocketHandler {
      * @param request 订阅请求
      */
     private void restartStreams(WebSocketSession session, LogStreamRequest request) {
+        validateFilePathPolicy(request);
         closeContext(session.getId());
         String clientIp = resolveClientIp(session);
         log.info("event={} stage={} sessionId={} ip={} project={} env={} service={} mode={}",
@@ -214,6 +215,23 @@ public class LogStreamWebSocketHandler extends TextWebSocketHandler {
         log.info("event={} stage={} sessionId={} ip={} streamCount={}",
                 EVENT_WS_STREAM, STAGE_SUBSCRIBE_SUCCESS, session.getId(), clientIp, handles.size());
         sendSystemMessage(session, "已启动 " + handles.size() + " 个日志流");
+    }
+
+    /**
+     * 校验日志文件选择策略。
+     * <p>
+     * 单服务模式要求显式传入 filePath，避免订阅时回落到后端默认文件导致排查对象不清晰。
+     * </p>
+     *
+     * @param request 订阅请求
+     */
+    private void validateFilePathPolicy(LogStreamRequest request) {
+        if (request == null) {
+            throw new IllegalArgumentException("请求参数不能为空");
+        }
+        if (!request.isAllService() && request.normalizedFilePath().isEmpty()) {
+            throw new IllegalArgumentException("单服务模式下必须显式选择日志文件");
+        }
     }
 
     /**

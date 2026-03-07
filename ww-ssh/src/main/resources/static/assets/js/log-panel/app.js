@@ -818,24 +818,32 @@ function renderFileOptions() {
     const currentValue = fileEl.value;
 
     fileEl.innerHTML = '';
-    fileEl.add(new Option('使用后端默认', ''));
 
     if (aggregate) {
-        fileEl.add(new Option('聚合模式下使用各服务默认日志', ''));
+        fileEl.add(new Option('聚合模式下读取各服务默认日志', ''));
         fileEl.value = '';
+        preferenceStore.set('file', '');
         updateSettingsSummary();
         return;
     }
 
     const filtered = state.fileOptions.filter(path => matchFileKeyword(path, keyword));
-    filtered.forEach(path => fileEl.add(new Option(fileName(path), path)));
+    if (!filtered.length) {
+        fileEl.add(new Option('暂无可选日志文件', ''));
+        fileEl.value = '';
+        preferenceStore.set('file', '');
+        updateSettingsSummary();
+        return;
+    }
+    filtered.forEach(path => {
+        fileEl.add(new Option(fileName(path), path));
+    });
 
     if (sharedFile && filtered.indexOf(sharedFile) >= 0) {
         fileEl.value = sharedFile;
     } else if (currentValue && filtered.indexOf(currentValue) >= 0) {
         fileEl.value = currentValue;
     } else {
-        // 默认选择“使用后端默认”，由后端每次连接时解析最新日志文件。
         fileEl.selectedIndex = 0;
     }
     preferenceStore.set('file', fileEl.value || '');
@@ -851,6 +859,10 @@ function connect() {
     const service = value('service');
     if (!project || !env || !service) {
         logView.appendSystem('请先选择项目、环境和服务');
+        return;
+    }
+    if (!isAggregateSelected(project, env, service) && !value('file')) {
+        logView.appendSystem('请先选择具体日志文件后再开始查看');
         return;
     }
     if (isCatMode()) {
@@ -1839,8 +1851,8 @@ function updateSettingsSummary() {
     const fileEl = el('file');
     const selectedLabel = fileEl && fileEl.options && fileEl.selectedIndex >= 0
         ? fileEl.options[fileEl.selectedIndex].text
-        : '默认文件';
-    const shortFile = abbreviateText(selectedLabel || '默认文件', 16);
+        : '未选择';
+    const shortFile = abbreviateText(selectedLabel || '未选择', 16);
     const mode = isAggregateSelected(value('project'), value('env'), value('service')) ? '全部服务' : '单服务';
     summaryEl.textContent = `文件:${shortFile} | ${mode}`;
 }

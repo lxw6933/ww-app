@@ -17,6 +17,7 @@ class SshCommandBuilderTest {
         String command = builder.buildListFilesCommand("/data/logs");
         Assertions.assertTrue(command.contains("find"));
         Assertions.assertTrue(command.contains("*.log"));
+        Assertions.assertTrue(command.contains("*.log.*"));
     }
 
     /**
@@ -28,6 +29,9 @@ class SshCommandBuilderTest {
         String command = builder.buildLatestFileCommand("/data/logs");
         Assertions.assertTrue(command.contains("ls -1t"));
         Assertions.assertTrue(command.contains("head -n 1"));
+        Assertions.assertTrue(command.contains("date +%F"));
+        Assertions.assertTrue(command.contains("TODAY_FILE"));
+        Assertions.assertTrue(command.contains("*.log.*"));
     }
 
     /**

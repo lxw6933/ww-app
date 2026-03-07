@@ -22,11 +22,21 @@ public class SshCommandBuilder {
         String quoted = shellQuote(logPath);
         return "if [ -f " + quoted + " ]; then echo " + quoted
                 + "; elif [ -d " + quoted + " ]; then find " + quoted
-                + " -maxdepth 1 -type f \\( -name '*.log' -o -name '*.out' -o -name '*.txt' \\) | sort; fi";
+                + " -maxdepth 1 -type f \\( "
+                + "-name '*.log' -o -name '*.log.*' "
+                + "-o -name '*.out' -o -name '*.out.*' "
+                + "-o -name '*.txt' -o -name '*.txt.*' "
+                + "\\) | sort; fi";
     }
 
     /**
      * 构建最新日志文件发现命令。
+     * <p>
+     * 选择策略：
+     * 1. 若目录下存在文件名包含当天日期（yyyy-MM-dd）的日志，优先返回该类文件中最近修改的一个；<br>
+     * 2. 若当天文件尚未生成，则回退到目录内最近修改的日志文件。<br>
+     * 通过该策略可兼容按天滚动日志在跨日或延迟生成场景下的默认读取行为。
+     * </p>
      *
      * @param logPath 日志目录或日志文件
      * @return Shell 命令
@@ -34,8 +44,24 @@ public class SshCommandBuilder {
     public String buildLatestFileCommand(String logPath) {
         String quoted = shellQuote(logPath);
         return "if [ -f " + quoted + " ]; then echo " + quoted
-                + "; elif [ -d " + quoted + " ]; then ls -1t " + quoted
-                + "/*.log " + quoted + "/*.out " + quoted + "/*.txt 2>/dev/null | head -n 1; fi";
+                + "; elif [ -d " + quoted + " ]; then "
+                + "TODAY=$(date +%F 2>/dev/null); "
+                + "LATEST_LIST=$(ls -1t "
+                + quoted + "/*.log " + quoted + "/*.log.* "
+                + quoted + "/*.out " + quoted + "/*.out.* "
+                + quoted + "/*.txt " + quoted + "/*.txt.* "
+                + "2>/dev/null); "
+                + "if [ -n \"$TODAY\" ]; then "
+                + "TODAY_FILE=$(printf \"%s\\n\" \"$LATEST_LIST\" | awk -v d=\"$TODAY\" 'index($0,d)>0 {print; exit}'); "
+                + "if [ -n \"$TODAY_FILE\" ]; then "
+                + "echo \"$TODAY_FILE\"; "
+                + "else "
+                + "printf \"%s\\n\" \"$LATEST_LIST\" | head -n 1; "
+                + "fi; "
+                + "else "
+                + "printf \"%s\\n\" \"$LATEST_LIST\" | head -n 1; "
+                + "fi; "
+                + "fi";
     }
 
     /**

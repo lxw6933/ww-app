@@ -54,6 +54,7 @@ public class LogReadController {
     @PostMapping("/cat")
     public List<String> readByCat(@RequestBody LogStreamRequest request) {
         try {
+            validateFilePathPolicy(request);
             List<LogTarget> targets = logPanelQueryService.resolveTargets(request);
             List<String> rows = new ArrayList<>();
             for (LogTarget target : targets) {
@@ -72,6 +73,23 @@ public class LogReadController {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, ex.getMessage(), ex);
         } catch (Exception ex) {
             throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "日志快照读取失败: " + ex.getMessage(), ex);
+        }
+    }
+
+    /**
+     * 校验日志文件选择策略。
+     * <p>
+     * 单服务模式下要求前端显式传入 filePath，避免后端自动回退默认文件导致排查对象不明确。
+     * </p>
+     *
+     * @param request 请求参数
+     */
+    private void validateFilePathPolicy(LogStreamRequest request) {
+        if (request == null) {
+            throw new IllegalArgumentException("请求参数不能为空");
+        }
+        if (!request.isAllService() && request.normalizedFilePath().isEmpty()) {
+            throw new IllegalArgumentException("单服务模式下必须显式选择日志文件");
         }
     }
 }
