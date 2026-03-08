@@ -5369,3 +5369,14 @@ body.immersive-mode .group-action #btnImmersive {
         margin-left: auto !important;
     }
 }
+
+/* ==================== Header Simplify ==================== */
+/* 顶部状态条容器保留在 DOM 中供脚本更新，但不再占据视觉空间。 */
+#statusWrap {
+    display: none !important;
+}
+
+/* 沉浸模式下彻底隐藏顶部 header，避免出现空白框。 */
+body.immersive-mode .panel-header {
+    display: none !important;
+}
