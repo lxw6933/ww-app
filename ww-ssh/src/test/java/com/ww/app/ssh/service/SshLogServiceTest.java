@@ -7,6 +7,7 @@ import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
 import java.lang.reflect.Method;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 
@@ -72,6 +73,46 @@ class SshLogServiceTest {
     }
 
     /**
+     * 校验默认文件选择逻辑：info 日志优先于其他类型日志。
+     *
+     * @throws Exception 反射调用异常
+     */
+    @Test
+    void shouldPreferInfoFileWhenResolvingDefaultLogFile() throws Exception {
+        String resolved = invokeResolvePreferredLogFilePath(Arrays.asList(
+                "/data/logs/service-job.log",
+                "/data/logs/service-error.log",
+                "/data/logs/service-info.log"
+        ));
+        Assertions.assertEquals("/data/logs/service-info.log", resolved);
+    }
+
+    /**
+     * 校验同优先级文件的比较逻辑：按完整路径倒序选择。
+     *
+     * @throws Exception 反射调用异常
+     */
+    @Test
+    void shouldChooseDescendingPathWhenPriorityIsSame() throws Exception {
+        String resolved = invokeResolvePreferredLogFilePath(Arrays.asList(
+                "/data/logs/service-debug-20260308.log",
+                "/data/logs/service-debug-20260309.log"
+        ));
+        Assertions.assertEquals("/data/logs/service-debug-20260309.log", resolved);
+    }
+
+    /**
+     * 校验候选为空时返回空字符串，供上层执行 latest 回退逻辑。
+     *
+     * @throws Exception 反射调用异常
+     */
+    @Test
+    void shouldReturnEmptyWhenNoCandidateLogFiles() throws Exception {
+        String resolved = invokeResolvePreferredLogFilePath(Collections.emptyList());
+        Assertions.assertEquals("", resolved);
+    }
+
+    /**
      * 通过反射调用私有方法，验证 cat 扫描窗口计算结果。
      *
      * @param requestedLines 请求展示行数
@@ -98,6 +139,19 @@ class SshLogServiceTest {
         Method method = SshLogService.class.getDeclaredMethod("hasIncludeFilterRule", List.class);
         method.setAccessible(true);
         return (Boolean) method.invoke(sshLogService, filterRules);
+    }
+
+    /**
+     * 通过反射调用默认文件选择方法。
+     *
+     * @param candidates 候选文件路径
+     * @return 选中的默认路径
+     * @throws Exception 反射调用异常
+     */
+    private String invokeResolvePreferredLogFilePath(List<String> candidates) throws Exception {
+        Method method = SshLogService.class.getDeclaredMethod("resolvePreferredLogFilePath", List.class);
+        method.setAccessible(true);
+        return (String) method.invoke(sshLogService, candidates);
     }
 
     /**

@@ -591,11 +591,12 @@ public class SshLogService {
      * <p>
      * 规则：
      * 1. 前端显式传入 filePath 时直接使用；<br>
-     * 2. 否则从配置 logPath 中自动发现最新日志文件。
+     * 2. 未指定 filePath 时，优先按“info 文件优先 + 路径倒序”选择，和单服务模式保持一致；<br>
+     * 3. 若候选列表为空，再回退到“最新文件”探测，保证旧行为兼容。<br>
      * </p>
      *
-     * @param target         目标服务节点
-     * @param requestedPath  前端指定路径
+     * @param target        目标服务节点
+     * @param requestedPath 前端指定路径
      * @return 可用于 tail 的文件路径
      */
     private String resolveLogFilePath(LogTarget target, String requestedPath) {
@@ -606,6 +607,17 @@ public class SshLogService {
         if (configuredPath.isEmpty()) {
             throw new IllegalArgumentException("未配置默认日志目录，且请求未指定 filePath");
         }
+
+        String preferredPath = "";
+        try {
+            preferredPath = resolvePreferredLogFilePath(listLogFiles(target));
+        } catch (Exception ignored) {
+            // 候选文件列表探测失败时回退到旧版 latest 兜底逻辑，避免影响在线可用性。
+        }
+        if (!preferredPath.isEmpty()) {
+            return preferredPath;
+        }
+
         String command = sshCommandBuilder.buildLatestFileCommand(configuredPath);
         List<String> lines = executeCommandForLines(target, command, 5);
         for (String line : lines) {
@@ -615,6 +627,76 @@ public class SshLogService {
             }
         }
         throw new IllegalStateException("未发现可读取的日志文件: " + target.displayName());
+    }
+
+    /**
+     * 从候选日志路径中选择“默认文件”。
+     * <p>
+     * 与前端单服务模式对齐：
+     * 1. 文件名包含 info 的优先；<br>
+     * 2. 同优先级时按完整路径倒序。<br>
+     * </p>
+     *
+     * @param candidates 候选日志路径
+     * @return 首选路径；无可用项时返回空字符串
+     */
+    private String resolvePreferredLogFilePath(List<String> candidates) {
+        if (candidates == null || candidates.isEmpty()) {
+            return "";
+        }
+        String best = "";
+        for (String candidate : candidates) {
+            String normalized = trimToEmpty(candidate);
+            if (normalized.isEmpty()) {
+                continue;
+            }
+            if (best.isEmpty() || isBetterLogFileCandidate(normalized, best)) {
+                best = normalized;
+            }
+        }
+        return best;
+    }
+
+    /**
+     * 判断候选路径是否优于当前最优路径。
+     *
+     * @param candidate 候选路径
+     * @param current   当前最优路径
+     * @return true 表示候选更优
+     */
+    private boolean isBetterLogFileCandidate(String candidate, String current) {
+        int candidatePriority = resolveLogFilePriority(candidate);
+        int currentPriority = resolveLogFilePriority(current);
+        if (candidatePriority != currentPriority) {
+            return candidatePriority < currentPriority;
+        }
+        return candidate.compareTo(current) > 0;
+    }
+
+    /**
+     * 解析日志文件优先级。
+     *
+     * @param path 日志路径
+     * @return 优先级数值（越小越优先）
+     */
+    private int resolveLogFilePriority(String path) {
+        String fileName = resolveFileName(path).toLowerCase();
+        return fileName.contains("info") ? 0 : 1;
+    }
+
+    /**
+     * 解析路径中的文件名部分。
+     *
+     * @param path 原始路径
+     * @return 文件名
+     */
+    private String resolveFileName(String path) {
+        String normalized = trimToEmpty(path).replace('\\', '/');
+        int separatorIndex = normalized.lastIndexOf('/');
+        if (separatorIndex < 0) {
+            return normalized;
+        }
+        return normalized.substring(separatorIndex + 1);
     }
 
     /**
