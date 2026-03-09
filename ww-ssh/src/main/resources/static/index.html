@@ -90,10 +90,6 @@
                             <svg class="btn-icon" aria-hidden="true"><use href="/assets/icons/button-icons.svg#icon-divider"></use></svg>
                             <span class="btn-label">分隔</span>
                         </button>
-                        <button id="btnClear" class="danger btn-expert icon-btn" title="清空窗口" aria-label="清空窗口" data-default-label="清空" data-default-icon="icon-clear">
-                            <svg class="btn-icon" aria-hidden="true"><use href="/assets/icons/button-icons.svg#icon-clear"></use></svg>
-                            <span class="btn-label">清空</span>
-                        </button>
                         <span class="action-separator btn-expert settings-separator" aria-hidden="true"></span>
                         <button id="btnOpenSettings" type="button" class="secondary btn-expert toolbar-settings-btn icon-btn" title="更多设置（仅专家模式）" aria-label="更多设置（仅专家模式）" data-default-label="设置" data-default-icon="icon-settings">
                             <svg class="btn-icon" aria-hidden="true"><use href="/assets/icons/button-icons.svg#icon-settings"></use></svg>
@@ -122,7 +118,12 @@
                             <button id="btnLevelError" data-level="ERROR" type="button" class="secondary level-btn">ERROR</button>
                         </div>
                         <div class="log-search-box">
-                            <input id="logSearch" type="text" placeholder="在当前窗口搜索关键词（仅前端）">
+                            <div class="log-search-input-wrap">
+                                <input id="logSearch" type="text" placeholder="在当前窗口搜索关键词（仅前端）">
+                                <button id="btnSearchInputClear" type="button" class="search-input-clear hidden" title="清空关键词" aria-label="清空关键词" disabled>
+                                    <span class="btn-label">×</span>
+                                </button>
+                            </div>
                             <span id="logSearchCount"></span>
                             <button id="btnSearchPrev" type="button" class="secondary search-icon-btn" title="上一条" aria-label="上一条" data-default-label="上条" data-default-icon="icon-arrow-up">
                                 <svg class="btn-icon" aria-hidden="true"><use href="/assets/icons/button-icons.svg#icon-arrow-up"></use></svg>
@@ -132,8 +133,8 @@
                                 <svg class="btn-icon" aria-hidden="true"><use href="/assets/icons/button-icons.svg#icon-arrow-down"></use></svg>
                                 <span class="btn-label">下条</span>
                             </button>
-                            <button id="btnSearchClear" type="button" class="secondary search-icon-btn" title="清空搜索" aria-label="清空搜索" data-default-label="清空" data-default-icon="icon-close">
-                                <svg class="btn-icon" aria-hidden="true"><use href="/assets/icons/button-icons.svg#icon-close"></use></svg>
+                            <button id="btnClear" type="button" class="danger search-icon-btn" title="清空日志窗口" aria-label="清空日志窗口" data-default-label="清空" data-default-icon="icon-clear">
+                                <svg class="btn-icon" aria-hidden="true"><use href="/assets/icons/button-icons.svg#icon-clear"></use></svg>
                                 <span class="btn-label">清空</span>
                             </button>
                         </div>

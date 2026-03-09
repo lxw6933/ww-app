@@ -139,6 +139,7 @@ function init() {
     logView.setEmptyTip('尚未开始查看日志。请先选择项目、环境和服务，然后点击“开始查看”。');
     logView.renderLevelStats();
     updateSettingsSummary();
+    updateLogSearchClearButton();
     logView.appendSystem('操作提示：先选择项目、环境和服务，再点击“开始查看”。');
     loadServers();
     window.addEventListener('beforeunload', beforeUnloadCleanup);
@@ -245,10 +246,11 @@ function bindEvents() {
     el('logSearch').addEventListener('input', () => {
         preferenceStore.set('logSearch', value('logSearch'));
         logView.setSearchKeyword(value('logSearch'));
+        updateLogSearchClearButton();
     });
+    el('btnSearchInputClear').addEventListener('click', clearLogSearch);
     el('btnSearchNext').addEventListener('click', () => logView.jumpSearch(false));
     el('btnSearchPrev').addEventListener('click', () => logView.jumpSearch(true));
-    el('btnSearchClear').addEventListener('click', clearLogSearch);
     Object.keys(LOG_LEVEL_BUTTON_IDS).forEach(level => {
         const buttonId = LOG_LEVEL_BUTTON_IDS[level];
         el(buttonId).addEventListener('click', () => setLogLevelFilter(level, true));
@@ -404,9 +406,29 @@ function enforceJvmSingleServiceSelection(showTip) {
  * 清空窗口搜索关键词。
  */
 function clearLogSearch() {
-    el('logSearch').value = '';
+    const searchEl = el('logSearch');
+    searchEl.value = '';
     preferenceStore.set('logSearch', '');
     logView.setSearchKeyword('');
+    updateLogSearchClearButton();
+    searchEl.focus();
+}
+
+/**
+ * 同步“搜索关键词输入框右侧清空按钮”的显示状态。
+ * <p>
+ * 当输入框为空时隐藏按钮，非空时显示，降低视觉噪音并保持点击目标稳定。
+ * </p>
+ */
+function updateLogSearchClearButton() {
+    const searchEl = el('logSearch');
+    const clearButtonEl = el('btnSearchInputClear');
+    if (!searchEl || !clearButtonEl) {
+        return;
+    }
+    const hasText = String(searchEl.value || '').trim().length > 0;
+    clearButtonEl.classList.toggle('hidden', !hasText);
+    clearButtonEl.disabled = !hasText;
 }
 
 /**

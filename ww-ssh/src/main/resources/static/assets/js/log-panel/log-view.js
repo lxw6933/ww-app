@@ -869,14 +869,21 @@ export class LogView {
         if (!this.searchKeyword) {
             counterEl.textContent = '';
             counterEl.style.display = 'none';
+            counterEl.removeAttribute('data-search-state');
+            counterEl.removeAttribute('title');
             return;
         }
         counterEl.style.display = 'inline-flex';
         if (!this.searchMatches.length) {
             counterEl.textContent = '0 条';
+            counterEl.setAttribute('data-search-state', 'empty');
+            counterEl.title = '未命中';
             return;
         }
-        counterEl.textContent = `${this.searchCursor + 1}/${this.searchMatches.length}`;
+        const text = `${this.searchCursor + 1}/${this.searchMatches.length}`;
+        counterEl.textContent = text;
+        counterEl.setAttribute('data-search-state', 'hit');
+        counterEl.title = `当前命中 ${text}`;
     }
 
     /**
