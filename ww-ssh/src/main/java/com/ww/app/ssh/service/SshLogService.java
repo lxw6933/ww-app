@@ -22,7 +22,9 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
+import java.util.ArrayDeque;
 import java.util.ArrayList;
+import java.util.Deque;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
@@ -119,6 +121,24 @@ public class SshLogService {
      * JVM GC 状态：尚未采集。
      */
     private static final String JVM_GC_STATUS_UNKNOWN = "unknown";
+
+    /**
+     * cat 快照在过滤场景下的最小扫描窗口行数。
+     * <p>
+     * 目的是避免用户只配置较小显示行数（如 200）时，过滤命中恰好落在更早位置导致“无结果”的误判。
+     * </p>
+     */
+    private static final int CAT_FILTER_MIN_SCAN_LINES = 500;
+
+    /**
+     * cat 快照过滤场景的扫描放大倍数。
+     */
+    private static final int CAT_FILTER_SCAN_MULTIPLIER = 5;
+
+    /**
+     * cat 快照过滤场景的扫描上限行数。
+     */
+    private static final int CAT_FILTER_MAX_SCAN_LINES = 5000;
 
     /**
      * SSH 命令构建器。
@@ -294,7 +314,21 @@ public class SshLogService {
     public StreamHandle startStreaming(LogTarget target, LogStreamRequest request, Consumer<String> lineConsumer) {
         String resolvedFile = resolveLogFilePath(target, request.normalizedFilePath());
         List<LogStreamRequest.FilterRule> filterRules = resolveEffectiveRules(request);
-        String command = sshCommandBuilder.buildTailCommand(resolvedFile, request.normalizedLines());
+        boolean hasIncludeRule = hasIncludeFilterRule(filterRules);
+        if (hasIncludeRule) {
+            try {
+                List<String> bootstrapLines = readByCatByGrepPrefilter(
+                        target, resolvedFile, filterRules, request.normalizedLines());
+                for (String line : bootstrapLines) {
+                    lineConsumer.accept(line);
+                }
+            } catch (Exception ex) {
+                lineConsumer.accept("[系统提示] 历史命中预读失败，已切换到实时追踪: " + ex.getMessage());
+            }
+        }
+        String command = hasIncludeRule
+                ? sshCommandBuilder.buildTailFollowGrepPrefilterCommand(resolvedFile, filterRules)
+                : sshCommandBuilder.buildTailCommand(resolvedFile, request.normalizedLines());
         Session session = null;
         ChannelExec channel = null;
         try {
@@ -331,9 +365,13 @@ public class SshLogService {
     public List<String> readByCat(LogTarget target, LogStreamRequest request) {
         String resolvedFile = resolveLogFilePath(target, request.normalizedFilePath());
         int lines = request.normalizedLines();
-        String command = sshCommandBuilder.buildCatCommand(resolvedFile, lines);
-        List<String> rawLines = executeCommandForLines(target, command, lines + 20);
         List<LogStreamRequest.FilterRule> filterRules = resolveEffectiveRules(request);
+        if (hasIncludeFilterRule(filterRules)) {
+            return readByCatByGrepPrefilter(target, resolvedFile, filterRules, lines);
+        }
+        int scanLines = resolveCatScanLines(lines, filterRules);
+        String command = sshCommandBuilder.buildCatCommand(resolvedFile, scanLines);
+        List<String> rawLines = executeCommandForLines(target, command, scanLines + 20);
         if (filterRules.isEmpty()) {
             return trimToWindow(rawLines, lines);
         }
@@ -415,6 +453,119 @@ public class SshLogService {
             return filterRules;
         }
         return buildFallbackRules(request.normalizedIncludeKeyword(), request.normalizedExcludeKeyword());
+    }
+
+    /**
+     * 判断规则集中是否包含“包含规则”。
+     * <p>
+     * 仅在包含规则存在时，才需要进行全文件候选行检索；
+     * 纯排除规则场景沿用 tail 快照窗口语义，避免无谓全量扫描。
+     * </p>
+     *
+     * @param filterRules 生效规则
+     * @return true 表示存在包含规则
+     */
+    private boolean hasIncludeFilterRule(List<LogStreamRequest.FilterRule> filterRules) {
+        if (filterRules == null || filterRules.isEmpty()) {
+            return false;
+        }
+        for (LogStreamRequest.FilterRule rule : filterRules) {
+            if (rule == null) {
+                continue;
+            }
+            if (LogStreamRequest.FILTER_TYPE_INCLUDE.equalsIgnoreCase(trimToEmpty(rule.getType()))) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    /**
+     * 基于 grep 预筛执行 cat 快照读取（全文件范围）。
+     * <p>
+     * 执行策略：
+     * 1. 远端命令先用 grep 做包含条件预筛，减少回传；<br>
+     * 2. 服务端再用统一 matcher 做最终精确匹配；<br>
+     * 3. 仅保留最后 keepLines 条，控制内存占用。<br>
+     * </p>
+     *
+     * @param target      目标服务节点
+     * @param resolvedFile 已解析日志路径
+     * @param filterRules 生效过滤规则
+     * @param keepLines   最终保留行数
+     * @return 过滤后的尾部窗口
+     */
+    private List<String> readByCatByGrepPrefilter(LogTarget target,
+                                                   String resolvedFile,
+                                                   List<LogStreamRequest.FilterRule> filterRules,
+                                                   int keepLines) {
+        String command = sshCommandBuilder.buildCatGrepPrefilterCommand(resolvedFile, filterRules);
+        Deque<String> window = new ArrayDeque<>();
+        Session session = null;
+        ChannelExec channel = null;
+        try {
+            session = openSession(target.getServerNode());
+            channel = (ChannelExec) session.openChannel("exec");
+            channel.setInputStream(null);
+            channel.setPty(true);
+            channel.setCommand(command);
+            InputStream inputStream = channel.getInputStream();
+            channel.connect(resolveTimeout(target.getServerNode()));
+            try (BufferedReader reader = new BufferedReader(new InputStreamReader(inputStream, StandardCharsets.UTF_8))) {
+                String line;
+                while ((line = reader.readLine()) != null) {
+                    if (logLineFilterMatcher.matches(line, filterRules)) {
+                        appendTailWindow(window, line, keepLines);
+                    }
+                }
+            }
+            return new ArrayList<>(window);
+        } catch (Exception ex) {
+            throw new IllegalStateException("日志快照读取失败: " + target.displayName() + " - " + ex.getMessage(), ex);
+        } finally {
+            disconnectQuietly(channel);
+            disconnectQuietly(session);
+        }
+    }
+
+    /**
+     * 向尾部窗口追加一行，并按容量上限淘汰最旧元素。
+     *
+     * @param window    尾部窗口
+     * @param line      新行内容
+     * @param keepLines 保留上限
+     */
+    private void appendTailWindow(Deque<String> window, String line, int keepLines) {
+        if (window == null || keepLines <= 0) {
+            return;
+        }
+        if (window.size() >= keepLines) {
+            window.pollFirst();
+        }
+        window.addLast(line);
+    }
+
+    /**
+     * 计算 cat 快照读取时应使用的扫描窗口行数。
+     * <p>
+     * 行为约束：
+     * 1. 无过滤条件时，保持历史行为，扫描窗口等于用户请求行数；<br>
+     * 2. 有过滤条件时，按“倍数放大 + 最小窗口 + 最大上限”策略扩大扫描范围（主要用于纯排除规则场景）；<br>
+     * 3. 返回值始终不小于用户请求行数，避免窗口反向缩小。<br>
+     * </p>
+     *
+     * @param requestedLines 用户请求展示的行数
+     * @param filterRules    生效过滤规则
+     * @return 实际用于 tail 扫描的行数
+     */
+    private int resolveCatScanLines(int requestedLines, List<LogStreamRequest.FilterRule> filterRules) {
+        if (filterRules == null || filterRules.isEmpty()) {
+            return requestedLines;
+        }
+        long multiplied = (long) requestedLines * CAT_FILTER_SCAN_MULTIPLIER;
+        long enlarged = Math.max(multiplied, CAT_FILTER_MIN_SCAN_LINES);
+        long bounded = Math.min(enlarged, CAT_FILTER_MAX_SCAN_LINES);
+        return (int) Math.max(bounded, requestedLines);
     }
 
     /**

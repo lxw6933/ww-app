@@ -1,7 +1,13 @@
 package com.ww.app.ssh.service.support;
 
 import com.ww.app.ssh.model.InstanceOperationRequest;
+import com.ww.app.ssh.model.LogStreamRequest;
 import org.springframework.stereotype.Component;
+
+import java.util.ArrayList;
+import java.util.LinkedHashSet;
+import java.util.List;
+import java.util.Set;
 
 /**
  * SSH 命令构建器。
@@ -96,6 +102,64 @@ public class SshCommandBuilder {
     public String buildCatCommand(String filePath, int lines) {
         String quotedPath = shellQuote(filePath);
         return "tail -n " + lines + " " + quotedPath + " 2>&1";
+    }
+
+    /**
+     * 构建 cat 模式 grep 预筛命令（全文件扫描）。
+     * <p>
+     * 该命令只应用“包含规则”的必要条件，避免遗漏真实命中；
+     * 复杂表达式的最终精确判定由服务层 matcher 完成。
+     * </p>
+     *
+     * @param filePath    日志文件路径
+     * @param filterRules 过滤规则
+     * @return Shell 命令
+     */
+    public String buildCatGrepPrefilterCommand(String filePath, List<LogStreamRequest.FilterRule> filterRules) {
+        String quotedPath = shellQuote(filePath);
+        StringBuilder command = new StringBuilder("cat " + quotedPath);
+        List<List<String>> includeRuleTerms = resolveIncludeRuleTerms(filterRules);
+        for (List<String> terms : includeRuleTerms) {
+            if (terms == null || terms.isEmpty()) {
+                continue;
+            }
+            command.append(" | grep -a -F");
+            for (String term : terms) {
+                command.append(" -e ").append(shellQuote(term));
+            }
+        }
+        String fallback = "cat " + quotedPath + " 2>&1";
+        return "if [ -f " + quotedPath + " ]; then " + command + " 2>&1; else " + fallback + "; fi";
+    }
+
+    /**
+     * 构建 tail 模式 grep 预筛追踪命令（仅追踪新增内容）。
+     * <p>
+     * 该命令从“当前时刻”开始跟踪日志，并基于包含规则做远端预筛，
+     * 以避免重复回放历史窗口及降低网络回传量。
+     * </p>
+     *
+     * @param filePath    日志文件路径
+     * @param filterRules 过滤规则
+     * @return Shell 命令
+     */
+    public String buildTailFollowGrepPrefilterCommand(String filePath,
+                                                       List<LogStreamRequest.FilterRule> filterRules) {
+        String quotedPath = shellQuote(filePath);
+        String commandWithF = "tail -n 0 -F " + quotedPath + " 2>&1";
+        String commandWithf = "tail -n 0 -f " + quotedPath + " 2>&1";
+        StringBuilder command = new StringBuilder("(" + commandWithF + " || " + commandWithf + ")");
+        List<List<String>> includeRuleTerms = resolveIncludeRuleTerms(filterRules);
+        for (List<String> terms : includeRuleTerms) {
+            if (terms == null || terms.isEmpty()) {
+                continue;
+            }
+            command.append(" | grep -a -F");
+            for (String term : terms) {
+                command.append(" -e ").append(shellQuote(term));
+            }
+        }
+        return command.toString();
     }
 
     /**
@@ -611,6 +675,67 @@ public class SshCommandBuilder {
             return normalized;
         }
         return normalized.substring(0, index);
+    }
+
+    /**
+     * 提取所有“包含规则”的关键词集合（每条规则一组）。
+     *
+     * @param filterRules 过滤规则
+     * @return 关键词组
+     */
+    private List<List<String>> resolveIncludeRuleTerms(List<LogStreamRequest.FilterRule> filterRules) {
+        List<List<String>> groups = new ArrayList<>();
+        if (filterRules == null || filterRules.isEmpty()) {
+            return groups;
+        }
+        for (LogStreamRequest.FilterRule rule : filterRules) {
+            if (rule == null) {
+                continue;
+            }
+            if (!LogStreamRequest.FILTER_TYPE_INCLUDE.equalsIgnoreCase(trimToEmpty(rule.getType()))) {
+                continue;
+            }
+            List<String> terms = extractExpressionTerms(trimToEmpty(rule.getData()));
+            if (!terms.isEmpty()) {
+                groups.add(terms);
+            }
+        }
+        return groups;
+    }
+
+    /**
+     * 从过滤表达式中提取原子关键词并去重。
+     *
+     * @param expression 表达式
+     * @return 关键词列表
+     */
+    private List<String> extractExpressionTerms(String expression) {
+        Set<String> terms = new LinkedHashSet<>();
+        String normalized = trimToEmpty(expression);
+        if (normalized.isEmpty()) {
+            return new ArrayList<>();
+        }
+        String[] orGroups = normalized.split("\\|\\|");
+        for (String orGroup : orGroups) {
+            String[] andTerms = trimToEmpty(orGroup).split("&&");
+            for (String term : andTerms) {
+                String value = trimToEmpty(term);
+                if (!value.isEmpty()) {
+                    terms.add(value);
+                }
+            }
+        }
+        return new ArrayList<>(terms);
+    }
+
+    /**
+     * 对字符串进行 null 安全的去空处理。
+     *
+     * @param source 原字符串
+     * @return 非 null 字符串
+     */
+    private String trimToEmpty(String source) {
+        return source == null ? "" : source.trim();
     }
 
     /**

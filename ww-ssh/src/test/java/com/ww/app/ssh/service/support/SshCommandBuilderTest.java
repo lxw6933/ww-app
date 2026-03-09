@@ -1,7 +1,10 @@
 package com.ww.app.ssh.service.support;
 
+import com.ww.app.ssh.model.LogStreamRequest;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
+
+import java.util.Arrays;
 
 /**
  * {@link SshCommandBuilder} 命令拼装测试。
@@ -44,6 +47,57 @@ class SshCommandBuilderTest {
         Assertions.assertTrue(command.contains("tail -n 200 -F"));
         Assertions.assertTrue(command.contains("||"));
         Assertions.assertTrue(command.contains("tail -n 200 -f"));
+    }
+
+    /**
+     * 校验 cat grep 预筛命令会基于包含规则拼接 grep 条件。
+     */
+    @Test
+    void shouldBuildCatGrepPrefilterCommand() {
+        SshCommandBuilder builder = new SshCommandBuilder();
+
+        LogStreamRequest.FilterRule include = new LogStreamRequest.FilterRule();
+        include.setType(LogStreamRequest.FILTER_TYPE_INCLUDE);
+        include.setData("ERROR&&orderId||timeout");
+
+        LogStreamRequest.FilterRule exclude = new LogStreamRequest.FilterRule();
+        exclude.setType(LogStreamRequest.FILTER_TYPE_EXCLUDE);
+        exclude.setData("DEBUG");
+
+        String command = builder.buildCatGrepPrefilterCommand("/data/logs/app.log", Arrays.asList(include, exclude));
+        Assertions.assertTrue(command.contains("if [ -f"));
+        Assertions.assertTrue(command.contains("cat '/data/logs/app.log'"));
+        Assertions.assertTrue(command.contains("grep -a -F"));
+        Assertions.assertTrue(command.contains("-e 'ERROR'"));
+        Assertions.assertTrue(command.contains("-e 'orderId'"));
+        Assertions.assertTrue(command.contains("-e 'timeout'"));
+        Assertions.assertFalse(command.contains("-e 'DEBUG'"));
+    }
+
+    /**
+     * 校验 tail grep 预筛命令从当前时刻追踪并拼接包含关键词。
+     */
+    @Test
+    void shouldBuildTailFollowGrepPrefilterCommand() {
+        SshCommandBuilder builder = new SshCommandBuilder();
+
+        LogStreamRequest.FilterRule include = new LogStreamRequest.FilterRule();
+        include.setType(LogStreamRequest.FILTER_TYPE_INCLUDE);
+        include.setData("ERROR&&orderId||timeout");
+
+        LogStreamRequest.FilterRule exclude = new LogStreamRequest.FilterRule();
+        exclude.setType(LogStreamRequest.FILTER_TYPE_EXCLUDE);
+        exclude.setData("DEBUG");
+
+        String command = builder.buildTailFollowGrepPrefilterCommand(
+                "/data/logs/app.log", Arrays.asList(include, exclude));
+        Assertions.assertTrue(command.contains("tail -n 0 -F"));
+        Assertions.assertTrue(command.contains("tail -n 0 -f"));
+        Assertions.assertTrue(command.contains("grep -a -F"));
+        Assertions.assertTrue(command.contains("-e 'ERROR'"));
+        Assertions.assertTrue(command.contains("-e 'orderId'"));
+        Assertions.assertTrue(command.contains("-e 'timeout'"));
+        Assertions.assertFalse(command.contains("-e 'DEBUG'"));
     }
 
     /**
