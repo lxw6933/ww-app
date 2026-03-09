@@ -31,7 +31,6 @@ export class JvmViewController {
         this.isAggregate = typeof options.isAggregate === 'function' ? options.isAggregate : (() => false);
 
         this.active = false;
-        this.polling = true;
         this.pollMs = DEFAULT_POLL_MS;
         this.chartWindowSize = DEFAULT_CHART_WINDOW;
         this.timer = null;
@@ -39,6 +38,7 @@ export class JvmViewController {
         this.controller = null;
         this.metrics = [];
         this.history = new Map();
+        this.kpiUsageCache = new Map();
         this.preferredInstance = '';
     }
 
@@ -52,7 +52,6 @@ export class JvmViewController {
         this.bindEvents();
         this.clearInstanceOptions();
         this.renderEmptyState();
-        this.updatePollingButton();
         this.setStatus('请先选择项目/环境/服务，再切换到 JVM 视图', 'unknown');
     }
 
@@ -94,6 +93,7 @@ export class JvmViewController {
         this.clearInstanceOptions();
         this.metrics = [];
         this.history.clear();
+        this.kpiUsageCache.clear();
         if (this.active) {
             this.refresh(true);
             return;
@@ -191,7 +191,7 @@ export class JvmViewController {
             intervalEl.addEventListener('change', () => {
                 const value = Number(intervalEl.value);
                 this.pollMs = Number.isFinite(value) && value > 0 ? value : DEFAULT_POLL_MS;
-                if (this.active && this.polling) {
+                if (this.active) {
                     this.startPolling();
                 }
             });
@@ -204,16 +204,6 @@ export class JvmViewController {
                 this.chartWindowSize = Number.isFinite(value) && value > 0 ? value : DEFAULT_CHART_WINDOW;
                 this.renderAll();
             });
-        }
-
-        const refreshButton = el('btnJvmRefresh');
-        if (refreshButton) {
-            refreshButton.addEventListener('click', () => this.refresh(true));
-        }
-
-        const pollingButton = el('btnJvmTogglePolling');
-        if (pollingButton) {
-            pollingButton.addEventListener('click', () => this.togglePolling());
         }
     }
 
@@ -233,8 +223,6 @@ export class JvmViewController {
      */
     startPolling() {
         this.stopPolling();
-        this.polling = true;
-        this.updatePollingButton();
         this.timer = window.setInterval(() => this.refresh(false), this.pollMs);
     }
 
@@ -246,33 +234,6 @@ export class JvmViewController {
             window.clearInterval(this.timer);
             this.timer = null;
         }
-        this.updatePollingButton();
-    }
-
-    /**
-     * 切换轮询状态。
-     */
-    togglePolling() {
-        this.polling = !this.polling;
-        if (this.polling) {
-            this.startPolling();
-            this.setStatus('JVM 轮询已恢复', 'ok');
-            return;
-        }
-        this.stopPolling();
-        this.setStatus('JVM 轮询已暂停', 'warn');
-    }
-
-    /**
-     * 更新轮询按钮文案。
-     */
-    updatePollingButton() {
-        const button = el('btnJvmTogglePolling');
-        if (!button) {
-            return;
-        }
-        button.textContent = this.polling ? '暂停轮询' : '恢复轮询';
-        button.classList.toggle('primary', this.polling);
     }
 
     /**
@@ -434,7 +395,6 @@ export class JvmViewController {
         const history = this.getSelectedHistory();
         this.renderKpis(snapshot, history);
         this.renderCharts(snapshot, history);
-        this.renderDetailTable(snapshot, history);
     }
 
     /**
@@ -443,7 +403,6 @@ export class JvmViewController {
     renderEmptyState() {
         this.renderKpis(null, []);
         this.renderCharts(null, []);
-        this.renderDetailTable(null, []);
     }
 
     /**
@@ -455,37 +414,157 @@ export class JvmViewController {
     renderKpis(snapshot, history) {
         const statusInfo = resolveGcStatus(snapshot && snapshot.jvmGcStatus);
         const stats = calculateRates(history);
-        const heapUsage = normalizeNumber(snapshot && snapshot.jvmHeapUsagePercent);
+        const heapUsage = resolveUsagePercent(
+            snapshot && snapshot.jvmHeapUsagePercent,
+            snapshot && snapshot.jvmHeapUsedMb,
+            snapshot && snapshot.jvmHeapCapacityMb
+        );
+        const edenUsage = resolveUsagePercent(
+            snapshot && snapshot.jvmEdenUsagePercent,
+            snapshot && snapshot.jvmEdenUsedMb,
+            snapshot && snapshot.jvmEdenCapacityMb
+        );
+        const oldUsage = resolveUsagePercent(
+            snapshot && snapshot.jvmOldUsagePercent,
+            snapshot && snapshot.jvmOldUsedMb,
+            snapshot && snapshot.jvmOldCapacityMb
+        );
+        const metaUsage = resolveUsagePercent(
+            snapshot && snapshot.jvmMetaUsagePercent,
+            snapshot && snapshot.jvmMetaUsedMb,
+            snapshot && snapshot.jvmMetaCapacityMb
+        );
+        const survivorUsage = resolveUsagePercent(
+            null,
+            snapshot && snapshot.jvmSurvivorUsedMb,
+            snapshot && snapshot.jvmSurvivorCapacityMb
+        );
         const gctTone = stats.gctDelta === null ? 'unknown' : (stats.gctDelta > 0.6 ? 'warn' : 'ok');
         const ygcTone = stats.ygcPerMin === null ? 'unknown' : (stats.ygcPerMin >= 6 ? 'warn' : 'ok');
         const fgcTone = stats.fgcPerMin === null ? 'unknown' : (stats.fgcPerMin >= 0.8 ? 'warn' : 'ok');
+        const gcRateTone = ygcTone === 'warn' || fgcTone === 'warn'
+            ? 'warn'
+            : (stats.ygcPerMin === null && stats.fgcPerMin === null ? 'unknown' : 'ok');
         const items = [
-            {label: 'JVM 状态', value: statusInfo.text, tip: snapshot && snapshot.jvmGcMessage ? snapshot.jvmGcMessage : '等待采样', tone: statusInfo.level},
-            {label: '进程 PID', value: integerOrDash(snapshot && snapshot.jvmPid), tip: '目标 Java 进程号', tone: 'unknown'},
+            {key: 'jvm-status', label: 'JVM 状态', value: statusInfo.text, tip: snapshot && snapshot.jvmGcMessage ? snapshot.jvmGcMessage : '等待采样', tone: statusInfo.level},
+            {key: 'jvm-pid', label: '进程 PID', value: integerOrDash(snapshot && snapshot.jvmPid), tip: '目标 Java 进程号', tone: 'unknown'},
             {
-                label: 'Heap 使用率',
-                value: percentOrDash(heapUsage),
-                tip: `堆占用 ${mbPairOrDash(snapshot && snapshot.jvmHeapUsedMb, snapshot && snapshot.jvmHeapCapacityMb)}`,
-                tone: percentTone(heapUsage)
+                key: 'heap-occupancy',
+                label: 'Heap 占用',
+                value: mbValueOrDash(snapshot && snapshot.jvmHeapUsedMb),
+                tip: buildOccupancyTip(snapshot && snapshot.jvmHeapCapacityMb, heapUsage),
+                tone: percentTone(heapUsage),
+                usagePercent: heapUsage
             },
-            {label: 'Eden 使用率', value: percentOrDash(snapshot && snapshot.jvmEdenUsagePercent), tip: '年轻代 Eden 区', tone: percentTone(snapshot && snapshot.jvmEdenUsagePercent)},
-            {label: 'Old 使用率', value: percentOrDash(snapshot && snapshot.jvmOldUsagePercent), tip: '老年代', tone: percentTone(snapshot && snapshot.jvmOldUsagePercent)},
-            {label: 'Meta 使用率', value: percentOrDash(snapshot && snapshot.jvmMetaUsagePercent), tip: '元空间', tone: percentTone(snapshot && snapshot.jvmMetaUsagePercent)},
-            {label: 'Eden 占用', value: mbPairOrDash(snapshot && snapshot.jvmEdenUsedMb, snapshot && snapshot.jvmEdenCapacityMb), tip: '已用 / 总量', tone: percentTone(snapshot && snapshot.jvmEdenUsagePercent)},
-            {label: 'Survivor 占用', value: mbPairOrDash(snapshot && snapshot.jvmSurvivorUsedMb, snapshot && snapshot.jvmSurvivorCapacityMb), tip: 'S0 + S1 已用 / 总量', tone: percentTone(calcUsagePercent(snapshot && snapshot.jvmSurvivorUsedMb, snapshot && snapshot.jvmSurvivorCapacityMb))},
-            {label: 'GCT 累计', value: secondsOrDash(snapshot && snapshot.jvmTotalGcTimeSeconds), tip: `ΔGCT ${numberOrDash(stats.gctDelta)}s`, tone: gctTone},
-            {label: 'YGC 频率', value: `${numberOrDash(stats.ygcPerMin)} /min`, tip: `ΔYGC ${integerOrDash(stats.ygcDelta)}`, tone: ygcTone},
-            {label: 'FGC 频率', value: `${numberOrDash(stats.fgcPerMin)} /min`, tip: `ΔFGC ${integerOrDash(stats.fgcDelta)}`, tone: fgcTone}
+            {
+                key: 'eden-occupancy',
+                label: 'Eden 占用',
+                value: mbValueOrDash(snapshot && snapshot.jvmEdenUsedMb),
+                tip: buildOccupancyTip(snapshot && snapshot.jvmEdenCapacityMb, edenUsage),
+                tone: percentTone(edenUsage),
+                usagePercent: edenUsage
+            },
+            {
+                key: 'survivor-occupancy',
+                label: 'Survivor 占用',
+                value: mbValueOrDash(snapshot && snapshot.jvmSurvivorUsedMb),
+                tip: buildOccupancyTip(snapshot && snapshot.jvmSurvivorCapacityMb, survivorUsage),
+                tone: percentTone(survivorUsage),
+                usagePercent: survivorUsage
+            },
+            {
+                key: 'old-occupancy',
+                label: 'Old 占用',
+                value: mbValueOrDash(snapshot && snapshot.jvmOldUsedMb),
+                tip: buildOccupancyTip(snapshot && snapshot.jvmOldCapacityMb, oldUsage),
+                tone: percentTone(oldUsage),
+                usagePercent: oldUsage
+            },
+            {
+                key: 'meta-occupancy',
+                label: 'Meta 占用',
+                value: mbValueOrDash(snapshot && snapshot.jvmMetaUsedMb),
+                tip: buildOccupancyTip(snapshot && snapshot.jvmMetaCapacityMb, metaUsage),
+                tone: percentTone(metaUsage),
+                usagePercent: metaUsage
+            },
+            {
+                key: 'ygc-total',
+                label: 'YGC 累计',
+                value: integerOrDash(snapshot && snapshot.jvmYoungGcCount),
+                tip: `本轮 +${integerOrDash(stats.ygcDelta)} | ${numberOrDash(stats.ygcPerMin)} /min`,
+                tone: ygcTone
+            },
+            {
+                key: 'fgc-total',
+                label: 'FGC 累计',
+                value: integerOrDash(snapshot && snapshot.jvmFullGcCount),
+                tip: `本轮 +${integerOrDash(stats.fgcDelta)} | ${numberOrDash(stats.fgcPerMin)} /min`,
+                tone: fgcTone
+            },
+            {
+                key: 'gct-total',
+                label: 'GCT 累计',
+                value: secondsOrDash(snapshot && snapshot.jvmTotalGcTimeSeconds),
+                tip: `本轮 +${numberOrDash(stats.gctDelta)}s | ΔYGCT ${numberOrDash(stats.ygctDelta)}s`,
+                tone: gctTone
+            },
+            {
+                key: 'gc-rate',
+                label: 'GC 频率',
+                value: `Y ${numberOrDash(stats.ygcPerMin)} / F ${numberOrDash(stats.fgcPerMin)} /min`,
+                tip: `ΔYGC ${integerOrDash(stats.ygcDelta)} | ΔFGC ${integerOrDash(stats.fgcDelta)} | ΔGCT ${numberOrDash(stats.gctDelta)}s`,
+                tone: gcRateTone
+            }
         ];
+        items.forEach(item => {
+            if (item && item.key) {
+                item.prevUsagePercent = this.kpiUsageCache.get(item.key);
+            }
+        });
 
         const grid = el('jvmKpiGrid');
         if (!grid) {
             return;
         }
         grid.innerHTML = '';
-        items.forEach(item => grid.appendChild(createKpiItem(item)));
+        const itemMap = new Map();
+        items.forEach(item => {
+            if (item && item.key) {
+                itemMap.set(item.key, item);
+            }
+        });
+        const groupDefs = [
+            {
+                key: 'memory',
+                title: '内存与进程',
+                itemKeys: ['jvm-status', 'jvm-pid', 'heap-occupancy', 'eden-occupancy', 'survivor-occupancy', 'old-occupancy', 'meta-occupancy']
+            },
+            {
+                key: 'gc',
+                title: 'GC 指标',
+                itemKeys: ['ygc-total', 'fgc-total', 'gct-total', 'gc-rate']
+            }
+        ];
+        groupDefs.forEach(group => {
+            const groupItems = (group.itemKeys || []).map(key => itemMap.get(key)).filter(Boolean);
+            if (!groupItems.length) {
+                return;
+            }
+            grid.appendChild(createKpiGroup(group, groupItems));
+        });
+        const nextUsageCache = new Map();
+        items.forEach(item => {
+            if (!item || !item.key) {
+                return;
+            }
+            const usageValue = normalizePercent(item.usagePercent);
+            if (usageValue !== null) {
+                nextUsageCache.set(item.key, usageValue);
+            }
+        });
+        this.kpiUsageCache = nextUsageCache;
     }
-
     /**
      * 渲染图表区域。
      *
@@ -526,59 +605,6 @@ export class JvmViewController {
     }
 
     /**
-     * 渲染当前采样参数面板（仅展示最新采样，不累加列表）。
-     *
-     * @param {Object|null} snapshot 当前快照
-     * @param {Array<Object>} history 历史数据
-     */
-    renderDetailTable(snapshot, history) {
-        const panel = el('jvmSamplePanel');
-        const metaEl = el('jvmDetailMeta');
-        if (!panel) {
-            return;
-        }
-        panel.innerHTML = '';
-
-        const points = Array.isArray(history) ? history : [];
-        const latest = points.length ? points[points.length - 1] : buildPointFromSnapshot(snapshot);
-        let stats = createEmptyStats();
-        if (points.length >= 2) {
-            const previous = points[points.length - 2];
-            stats = calculateDeltaStats(points[points.length - 1], previous);
-        }
-
-        if (!latest) {
-            if (metaEl) {
-                metaEl.textContent = '等待采样...';
-            }
-            const empty = document.createElement('div');
-            empty.className = 'jvm-detail-empty';
-            empty.textContent = '暂无采样数据';
-            panel.appendChild(empty);
-            return;
-        }
-
-        if (metaEl) {
-            metaEl.textContent = `采样时间 ${formatDateTime(latest.time)} ｜ 图表缓存 ${points.length} 点`;
-        }
-
-        const grid = document.createElement('div');
-        grid.className = 'jvm-sample-grid';
-        const statusInfo = resolveGcStatus(latest.status);
-        const heapUsage = resolveHeapUsagePercent(latest);
-        grid.appendChild(createSampleMetric('JVM状态', statusInfo.text, latest.message || '--', statusInfo.level));
-        grid.appendChild(createSampleMetric('PID', integerOrDash(latest.pid), '目标Java进程号', 'unknown'));
-        grid.appendChild(createSampleMetric('Heap%', percentOrDash(heapUsage), mbPairOrDash(latest.heapUsedMb, latest.heapCapacityMb), percentTone(heapUsage)));
-        grid.appendChild(createSampleMetric('Eden%', numberOrDash(latest.eden), mbPairOrDash(latest.edenUsedMb, latest.edenCapacityMb), percentTone(latest.eden)));
-        grid.appendChild(createSampleMetric('Old%', numberOrDash(latest.old), mbPairOrDash(latest.oldUsedMb, latest.oldCapacityMb), percentTone(latest.old)));
-        grid.appendChild(createSampleMetric('Meta%', numberOrDash(latest.meta), mbPairOrDash(latest.metaUsedMb, latest.metaCapacityMb), percentTone(latest.meta)));
-        grid.appendChild(createSampleMetric('YGC', integerOrDash(latest.ygc), `Δ${integerOrDash(stats.ygcDelta)} ｜ ${numberOrDash(stats.ygcPerMin)}/min`, stats.ygcPerMin !== null && stats.ygcPerMin >= 6 ? 'warn' : 'ok'));
-        grid.appendChild(createSampleMetric('FGC', integerOrDash(latest.fgc), `Δ${integerOrDash(stats.fgcDelta)} ｜ ${numberOrDash(stats.fgcPerMin)}/min`, stats.fgcPerMin !== null && stats.fgcPerMin >= 0.8 ? 'warn' : 'ok'));
-        grid.appendChild(createSampleMetric('GCT(s)', numberOrDash(latest.gct), `Δ${numberOrDash(stats.gctDelta)} s`, stats.gctDelta !== null && stats.gctDelta > 0.6 ? 'warn' : 'ok'));
-        panel.appendChild(grid);
-    }
-
-    /**
      * 设置状态文案。
      *
      * @param {string} text 文案
@@ -609,6 +635,38 @@ export class JvmViewController {
     }
 }
 
+/**
+ * 创建 KPI 分组容器，将同类指标聚合展示，降低信息噪音。
+ *
+ * @param {Object} group 分组配置
+ * @param {string} group.key 分组键
+ * @param {string} group.title 分组标题
+ * @param {Array<Object>} items 分组内指标项
+ * @returns {HTMLElement} 分组节点
+ */
+function createKpiGroup(group, items) {
+    const section = document.createElement('article');
+    const groupKey = group && group.key ? String(group.key) : 'default';
+    section.className = `jvm-kpi-group jvm-kpi-group-${groupKey}`;
+
+    const head = document.createElement('div');
+    head.className = 'jvm-kpi-group-head';
+    const title = document.createElement('h3');
+    title.textContent = group && group.title ? String(group.title) : '指标分组';
+    head.appendChild(title);
+    const count = document.createElement('span');
+    count.className = 'jvm-kpi-group-count';
+    count.textContent = `${items.length} 项`;
+    head.appendChild(count);
+    section.appendChild(head);
+
+    const subGrid = document.createElement('div');
+    subGrid.className = 'jvm-kpi-subgrid';
+    items.forEach(item => subGrid.appendChild(createKpiItem(item)));
+    section.appendChild(subGrid);
+    return section;
+}
+
 function createKpiItem(item) {
     const wrap = document.createElement('div');
     const tone = item && item.tone ? item.tone : 'unknown';
@@ -621,16 +679,42 @@ function createKpiItem(item) {
 
     const value = document.createElement('div');
     value.className = 'jvm-kpi-value';
-    value.textContent = item && item.value ? item.value : '--';
+    const valueText = item && item.value !== null && item.value !== undefined && item.value !== ''
+        ? String(item.value)
+        : '--';
+    value.textContent = valueText;
     wrap.appendChild(value);
 
     const tip = document.createElement('div');
     tip.className = 'jvm-kpi-tip';
-    tip.textContent = item && item.tip ? item.tip : '--';
+    const tipText = item && item.tip !== null && item.tip !== undefined && String(item.tip).trim()
+        ? String(item.tip)
+        : '--';
+    tip.textContent = tipText;
     wrap.appendChild(tip);
+
+    const usagePercent = normalizePercent(item && item.usagePercent);
+    if (usagePercent !== null) {
+        wrap.classList.add('jvm-kpi-with-usage');
+        const progress = document.createElement('div');
+        progress.className = 'jvm-kpi-usage-track';
+        const fill = document.createElement('span');
+        fill.className = 'jvm-kpi-usage-fill';
+        const previousUsage = normalizePercent(item && item.prevUsagePercent);
+        const shouldAnimate = previousUsage !== null && Math.abs(previousUsage - usagePercent) > 0.05;
+        const initialUsage = shouldAnimate ? previousUsage : usagePercent;
+        fill.style.width = `${initialUsage.toFixed(2)}%`;
+        progress.appendChild(fill);
+        wrap.appendChild(progress);
+        if (shouldAnimate) {
+            window.requestAnimationFrame(() => {
+                fill.classList.add('jvm-kpi-usage-fill-animate');
+                fill.style.width = `${usagePercent.toFixed(2)}%`;
+            });
+        }
+    }
     return wrap;
 }
-
 function buildDerivedSeries(points) {
     const result = [];
     let previous = null;
@@ -1062,51 +1146,6 @@ function createSvg(tag) {
     return document.createElementNS('http://www.w3.org/2000/svg', tag);
 }
 
-function createSampleMetric(label, value, tip, tone) {
-    const item = document.createElement('div');
-    item.className = `jvm-sample-item ${tone || 'unknown'}`;
-    const labelEl = document.createElement('span');
-    labelEl.className = 'jvm-sample-label';
-    labelEl.textContent = label;
-    const valueEl = document.createElement('span');
-    valueEl.className = 'jvm-sample-value';
-    valueEl.textContent = value;
-    const tipEl = document.createElement('span');
-    tipEl.className = 'jvm-sample-tip';
-    tipEl.textContent = tip || '--';
-    item.appendChild(labelEl);
-    item.appendChild(valueEl);
-    item.appendChild(tipEl);
-    return item;
-}
-
-function buildPointFromSnapshot(snapshot) {
-    if (!snapshot) {
-        return null;
-    }
-    return {
-        time: Number(snapshot.updatedAt || Date.now()),
-        status: String(snapshot.jvmGcStatus || '').trim().toLowerCase(),
-        message: String(snapshot.jvmGcMessage || '').trim(),
-        pid: normalizeNumber(snapshot.jvmPid),
-        eden: normalizeNumber(snapshot.jvmEdenUsagePercent),
-        old: normalizeNumber(snapshot.jvmOldUsagePercent),
-        meta: normalizeNumber(snapshot.jvmMetaUsagePercent),
-        edenUsedMb: normalizeNumber(snapshot.jvmEdenUsedMb),
-        edenCapacityMb: normalizeNumber(snapshot.jvmEdenCapacityMb),
-        oldUsedMb: normalizeNumber(snapshot.jvmOldUsedMb),
-        oldCapacityMb: normalizeNumber(snapshot.jvmOldCapacityMb),
-        metaUsedMb: normalizeNumber(snapshot.jvmMetaUsedMb),
-        metaCapacityMb: normalizeNumber(snapshot.jvmMetaCapacityMb),
-        heapUsedMb: normalizeNumber(snapshot.jvmHeapUsedMb),
-        heapCapacityMb: normalizeNumber(snapshot.jvmHeapCapacityMb),
-        heapUsage: normalizeNumber(snapshot.jvmHeapUsagePercent),
-        ygc: normalizeNumber(snapshot.jvmYoungGcCount),
-        fgc: normalizeNumber(snapshot.jvmFullGcCount),
-        gct: normalizeNumber(snapshot.jvmTotalGcTimeSeconds)
-    };
-}
-
 function calculateRates(history) {
     const points = (history || []).filter(item => item && Number.isFinite(item.time));
     if (points.length < 2) {
@@ -1288,17 +1327,80 @@ function calcUsagePercent(used, capacity) {
     return usedNumber * 100 / capacityNumber;
 }
 
-function resolveHeapUsagePercent(point) {
-    if (!point) {
+/**
+ * 归一化百分比值，限制在 [0, 100]。
+ *
+ * @param {*} value 原始值
+ * @returns {number|null} 百分比
+ */
+function normalizePercent(value) {
+    const number = normalizeNumber(value);
+    if (number === null) {
         return null;
     }
-    const explicit = normalizeNumber(point.heapUsage);
-    if (explicit !== null) {
-        return explicit;
-    }
-    return calcUsagePercent(point.heapUsedMb, point.heapCapacityMb);
+    return Math.max(0, Math.min(100, number));
 }
 
+/**
+ * 解析使用率百分比：优先使用显式值，不存在时按已用/容量反推。
+ *
+ * @param {*} explicit 显式百分比
+ * @param {*} used 已用值
+ * @param {*} capacity 容量值
+ * @returns {number|null} 百分比
+ */
+function resolveUsagePercent(explicit, used, capacity) {
+    const explicitValue = normalizePercent(explicit);
+    if (explicitValue !== null) {
+        return explicitValue;
+    }
+    return normalizePercent(calcUsagePercent(used, capacity));
+}
+
+/**
+ * 格式化单值 MB 文案，用于突出“当前占用”主指标，避免占用/使用率重复堆叠。
+ *
+ * @param {*} value 占用数值
+ * @returns {string} MB 文案
+ */
+function mbValueOrDash(value) {
+    const valueNumber = normalizeNumber(value);
+    if (valueNumber === null) {
+        return '--';
+    }
+    return `${valueNumber.toFixed(1)} MB`;
+}
+
+/**
+ * 生成占用卡片提示文案：显示容量与使用率，避免主值重复表达。
+ *
+ * @param {*} capacity 总容量（MB）
+ * @param {*} usagePercent 使用率（0~100）
+ * @returns {string} 提示文案
+ */
+function buildOccupancyTip(capacity, usagePercent) {
+    const capacityNumber = normalizeNumber(capacity);
+    const capacityText = capacityNumber === null ? '--' : `${capacityNumber.toFixed(1)} MB`;
+    const usageText = percentOrDash(usagePercent);
+    if (capacityText === '--' && usageText === '--') {
+        return '--';
+    }
+    if (capacityText === '--') {
+        return `使用率 ${usageText}`;
+    }
+    if (usageText === '--') {
+        return `容量 ${capacityText}`;
+    }
+    return `容量 ${capacityText} | 使用率 ${usageText}`;
+}
+
+/**
+ * 格式化“已用/容量”文案，供堆结构图行尾说明使用。
+ *
+ * @param {*} used 已用值（MB）
+ * @param {*} capacity 容量值（MB）
+ * @returns {string} 显示文案
+ */
 function mbPairOrDash(used, capacity) {
     const usedNumber = normalizeNumber(used);
     const capacityNumber = normalizeNumber(capacity);

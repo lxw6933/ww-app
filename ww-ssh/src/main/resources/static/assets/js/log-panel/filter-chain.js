@@ -3,7 +3,7 @@ import {el} from './dom.js';
 /**
  * 过滤链管理器。
  * <p>
- * 支持链式添加“包含/排除 + 数据”条件、标签化预览与拖拽排序。
+ * 支持链式添加“包含/排除 + 数据”条件与标签化预览。
  * </p>
  */
 export class FilterChainManager {
@@ -15,7 +15,6 @@ export class FilterChainManager {
         this.chainEl = el('filterChain');
         this.tagEl = el('filterTags');
         this.addButtonEl = el('btnAddFilter');
-        this.draggingRow = null;
     }
 
     /**
@@ -23,7 +22,6 @@ export class FilterChainManager {
      */
     init() {
         this.bindRemoveAction();
-        this.bindDragActions();
         this.bindTagActions();
         this.chainEl.addEventListener('input', () => this.renderTagPreview());
         this.chainEl.addEventListener('change', () => this.renderTagPreview());
@@ -63,14 +61,6 @@ export class FilterChainManager {
     addRule(type, data) {
         const row = document.createElement('div');
         row.className = 'filter-row';
-        row.draggable = true;
-
-        const dragButton = document.createElement('button');
-        dragButton.className = 'btn-drag';
-        dragButton.type = 'button';
-        dragButton.textContent = '拖';
-        dragButton.title = '拖拽排序';
-        dragButton.tabIndex = -1;
 
         const typeSelect = document.createElement('select');
         typeSelect.className = 'filter-type';
@@ -87,10 +77,9 @@ export class FilterChainManager {
         const removeButton = document.createElement('button');
         removeButton.className = 'btn-remove';
         removeButton.type = 'button';
-        removeButton.textContent = '删除';
+        setFilterButtonVisual(removeButton, '删除', 'icon-close');
         removeButton.title = '删除条件';
 
-        row.appendChild(dragButton);
         row.appendChild(typeSelect);
         row.appendChild(dataInput);
         row.appendChild(removeButton);
@@ -148,9 +137,6 @@ export class FilterChainManager {
         this.chainEl.querySelectorAll('select,input,button').forEach(node => {
             node.disabled = disabled;
         });
-        this.chainEl.querySelectorAll('.filter-row').forEach(row => {
-            row.draggable = !disabled;
-        });
         if (this.tagEl) {
             this.tagEl.querySelectorAll('button').forEach(button => {
                 button.disabled = disabled;
@@ -186,69 +172,6 @@ export class FilterChainManager {
             this.renderTagPreview();
             this.emitChanged();
         });
-    }
-
-    /**
-     * 绑定拖拽排序行为。
-     */
-    bindDragActions() {
-        this.chainEl.addEventListener('dragstart', event => {
-            const row = event.target && event.target.closest ? event.target.closest('.filter-row') : null;
-            if (!row || row.getAttribute('draggable') !== 'true') {
-                return;
-            }
-            this.draggingRow = row;
-            row.classList.add('dragging');
-            if (event.dataTransfer) {
-                event.dataTransfer.effectAllowed = 'move';
-                event.dataTransfer.setData('text/plain', 'move');
-            }
-        });
-
-        this.chainEl.addEventListener('dragover', event => {
-            if (!this.draggingRow) {
-                return;
-            }
-            const targetRow = event.target && event.target.closest ? event.target.closest('.filter-row') : null;
-            if (!targetRow || targetRow === this.draggingRow) {
-                return;
-            }
-            event.preventDefault();
-            const rect = targetRow.getBoundingClientRect();
-            const placeBefore = event.clientY < rect.top + rect.height / 2;
-            this.clearDragOverStyles();
-            targetRow.classList.add('drag-over');
-            if (placeBefore) {
-                this.chainEl.insertBefore(this.draggingRow, targetRow);
-            } else {
-                this.chainEl.insertBefore(this.draggingRow, targetRow.nextSibling);
-            }
-        });
-
-        this.chainEl.addEventListener('drop', event => {
-            if (!this.draggingRow) {
-                return;
-            }
-            event.preventDefault();
-            this.clearDragOverStyles();
-            this.renderTagPreview();
-            this.emitChanged();
-        });
-
-        this.chainEl.addEventListener('dragend', () => {
-            if (this.draggingRow) {
-                this.draggingRow.classList.remove('dragging');
-            }
-            this.draggingRow = null;
-            this.clearDragOverStyles();
-        });
-    }
-
-    /**
-     * 清理拖拽过程中的样式标识。
-     */
-    clearDragOverStyles() {
-        this.chainEl.querySelectorAll('.filter-row.drag-over').forEach(row => row.classList.remove('drag-over'));
     }
 
     /**
@@ -319,7 +242,7 @@ export class FilterChainManager {
             removeButton.className = 'filter-tag-remove';
             removeButton.setAttribute('data-index', String(rule.index));
             removeButton.title = '删除该条件';
-            removeButton.textContent = '删';
+            setFilterButtonVisual(removeButton, '删', 'icon-close');
             tag.appendChild(removeButton);
             this.tagEl.appendChild(tag);
         });
@@ -331,4 +254,31 @@ export class FilterChainManager {
     emitChanged() {
         this.chainEl.dispatchEvent(new CustomEvent('chain:changed'));
     }
+}
+
+/**
+ * 设置过滤面板按钮图标与文案。
+ *
+ * @param {HTMLButtonElement} button 按钮元素
+ * @param {string} label 文案
+ * @param {string} iconId 图标 ID
+ */
+function setFilterButtonVisual(button, label, iconId) {
+    if (!button) {
+        return;
+    }
+    button.textContent = '';
+    if (iconId) {
+        const svgEl = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+        svgEl.setAttribute('class', 'btn-icon');
+        svgEl.setAttribute('aria-hidden', 'true');
+        const useEl = document.createElementNS('http://www.w3.org/2000/svg', 'use');
+        useEl.setAttribute('href', `/assets/icons/button-icons.svg#${iconId}`);
+        svgEl.appendChild(useEl);
+        button.appendChild(svgEl);
+    }
+    const labelEl = document.createElement('span');
+    labelEl.className = 'btn-label';
+    labelEl.textContent = String(label || '');
+    button.appendChild(labelEl);
 }

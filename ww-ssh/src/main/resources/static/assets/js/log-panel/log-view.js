@@ -97,8 +97,7 @@ export class LogView {
      */
     togglePause() {
         this.state.paused = !this.state.paused;
-        const pauseBtn = el('btnPause');
-        pauseBtn.textContent = this.state.paused ? '继续' : '暂停';
+        setToolbarButtonVisual('btnPause', this.state.paused ? '继续' : '暂停', this.state.paused ? 'icon-resume' : 'icon-pause');
         if (this.state.paused) {
             if (this.appendFlushTimer) {
                 window.clearTimeout(this.appendFlushTimer);
@@ -125,7 +124,7 @@ export class LogView {
     resetPause() {
         this.state.paused = false;
         this.state.buffer = [];
-        el('btnPause').textContent = '暂停';
+        setToolbarButtonVisual('btnPause', '暂停', 'icon-pause');
     }
 
     /**
@@ -1073,6 +1072,33 @@ export class LogView {
             return;
         }
         button.textContent = `${label}(${count})`;
+    }
+}
+
+/**
+ * 设置顶部工具栏按钮的图标与文案。
+ *
+ * @param {string} buttonId 按钮 ID
+ * @param {string} label 文案
+ * @param {string} iconId 图标 ID
+ */
+function setToolbarButtonVisual(buttonId, label, iconId) {
+    const button = el(buttonId);
+    if (!button) {
+        return;
+    }
+    const labelEl = button.querySelector('.btn-label');
+    if (labelEl) {
+        labelEl.textContent = String(label || '');
+    } else {
+        button.textContent = String(label || '');
+    }
+    if (!iconId) {
+        return;
+    }
+    const useEl = button.querySelector('.btn-icon use');
+    if (useEl) {
+        useEl.setAttribute('href', `/assets/icons/button-icons.svg#${iconId}`);
     }
 }
 

@@ -15,13 +15,15 @@
             </div>
             <div class="header-tools">
                 <div class="header-top-controls">
-<!--                    <span class="mode-panel-label">模式: </span>-->
-                    <div class="mode-switch mode-switch-header">
-                        <button id="btnModeQuick" type="button" class="mode-btn active icon-btn" title="快速模式" aria-label="快速模式">快</button>
-                        <button id="btnModeExpert" type="button" class="mode-btn secondary icon-btn" title="专家模式" aria-label="专家模式">专</button>
-                    </div>
                     <div class="header-tool-actions utility-panel">
-                        <button id="btnShareLink" type="button" class="secondary icon-btn" title="复制排查链接" aria-label="复制排查链接">⎘</button>
+                        <button id="btnShareLink" type="button" class="secondary icon-btn" title="复制排查链接" aria-label="复制排查链接" data-default-label="分享" data-default-icon="icon-share">
+                            <svg class="btn-icon" aria-hidden="true"><use href="/assets/icons/button-icons.svg#icon-share"></use></svg>
+                            <span class="btn-label">分享</span>
+                        </button>
+                        <button id="btnImmersiveHeader" type="button" class="secondary icon-btn" title="切换沉浸模式" aria-label="切换沉浸模式" data-default-label="沉浸" data-default-icon="icon-expand">
+                            <svg class="btn-icon" aria-hidden="true"><use href="/assets/icons/button-icons.svg#icon-expand"></use></svg>
+                            <span class="btn-label">沉浸</span>
+                        </button>
                     </div>
                 </div>
             </div>
@@ -40,9 +42,6 @@
         <aside class="metrics-panel">
             <div class="metrics-panel-head">
                 <h2>服务器指标</h2>
-                <div class="metrics-actions">
-                    <button id="btnToggleMetrics" type="button" class="secondary icon-btn metrics-icon-btn" title="收起面板" aria-label="收起面板">◂</button>
-                </div>
             </div>
             <p class="metrics-panel-tip">当前监听服务器的 CPU、内存和负载，异常实例优先显示。</p>
             <div id="metricsList" class="metrics-list"></div>
@@ -74,15 +73,36 @@
                             <button id="btnReadCat" type="button" class="secondary read-mode-btn" title="cat 快照读取" aria-label="cat 快照读取">快照</button>
                         </div>
                         <span class="action-separator" aria-hidden="true"></span>
-                        <button id="btnStart" class="icon-btn" title="开始查看" aria-label="开始查看">⏵</button>
-                        <button id="btnStop" class="icon-btn" disabled title="结束查看" aria-label="结束查看">⏹</button>
+                        <button id="btnStart" class="icon-btn" title="开始查看" aria-label="开始查看" data-default-label="开始" data-default-icon="icon-play">
+                            <svg class="btn-icon" aria-hidden="true"><use href="/assets/icons/button-icons.svg#icon-play"></use></svg>
+                            <span class="btn-label">开始</span>
+                        </button>
+                        <button id="btnStop" class="icon-btn" disabled title="结束查看" aria-label="结束查看" data-default-label="停止" data-default-icon="icon-stop">
+                            <svg class="btn-icon" aria-hidden="true"><use href="/assets/icons/button-icons.svg#icon-stop"></use></svg>
+                            <span class="btn-label">停止</span>
+                        </button>
                         <span class="action-separator btn-expert" aria-hidden="true"></span>
-                        <button id="btnPause" class="btn-expert icon-btn" title="暂停接收" aria-label="暂停接收">⏸</button>
-                        <button id="btnBreak" class="secondary btn-expert icon-btn" title="插入分隔线" aria-label="插入分隔线">┆</button>
-                        <button id="btnClear" class="danger btn-expert icon-btn" title="清空窗口" aria-label="清空窗口">⌧</button>
+                        <button id="btnPause" class="btn-expert icon-btn" title="暂停接收" aria-label="暂停接收" data-default-label="暂停" data-default-icon="icon-pause">
+                            <svg class="btn-icon" aria-hidden="true"><use href="/assets/icons/button-icons.svg#icon-pause"></use></svg>
+                            <span class="btn-label">暂停</span>
+                        </button>
+                        <button id="btnBreak" class="secondary btn-expert icon-btn" title="插入分隔线" aria-label="插入分隔线" data-default-label="分隔" data-default-icon="icon-divider">
+                            <svg class="btn-icon" aria-hidden="true"><use href="/assets/icons/button-icons.svg#icon-divider"></use></svg>
+                            <span class="btn-label">分隔</span>
+                        </button>
+                        <button id="btnClear" class="danger btn-expert icon-btn" title="清空窗口" aria-label="清空窗口" data-default-label="清空" data-default-icon="icon-clear">
+                            <svg class="btn-icon" aria-hidden="true"><use href="/assets/icons/button-icons.svg#icon-clear"></use></svg>
+                            <span class="btn-label">清空</span>
+                        </button>
                         <span class="action-separator btn-expert settings-separator" aria-hidden="true"></span>
-                        <button id="btnOpenSettings" type="button" class="secondary btn-expert toolbar-settings-btn icon-btn" title="更多设置（仅专家模式）" aria-label="更多设置（仅专家模式）">☰</button>
-                        <button id="btnImmersive" type="button" class="secondary icon-btn" title="切换沉浸模式" aria-label="切换沉浸模式">⤢</button>
+                        <button id="btnOpenSettings" type="button" class="secondary btn-expert toolbar-settings-btn icon-btn" title="更多设置（仅专家模式）" aria-label="更多设置（仅专家模式）" data-default-label="设置" data-default-icon="icon-settings">
+                            <svg class="btn-icon" aria-hidden="true"><use href="/assets/icons/button-icons.svg#icon-settings"></use></svg>
+                            <span class="btn-label">设置</span>
+                        </button>
+                        <button id="btnImmersive" type="button" class="secondary icon-btn" title="切换沉浸模式" aria-label="切换沉浸模式" data-default-label="沉浸" data-default-icon="icon-expand">
+                            <svg class="btn-icon" aria-hidden="true"><use href="/assets/icons/button-icons.svg#icon-expand"></use></svg>
+                            <span class="btn-label">沉浸</span>
+                        </button>
                     </div>
                 </div>
 
@@ -104,9 +124,18 @@
                         <div class="log-search-box">
                             <input id="logSearch" type="text" placeholder="在当前窗口搜索关键词（仅前端）">
                             <span id="logSearchCount"></span>
-                            <button id="btnSearchPrev" type="button" class="secondary search-icon-btn" title="上一条" aria-label="上一条">↑</button>
-                            <button id="btnSearchNext" type="button" class="secondary search-icon-btn" title="下一条" aria-label="下一条">↓</button>
-                            <button id="btnSearchClear" type="button" class="secondary search-icon-btn" title="清空搜索" aria-label="清空搜索">×</button>
+                            <button id="btnSearchPrev" type="button" class="secondary search-icon-btn" title="上一条" aria-label="上一条" data-default-label="上条" data-default-icon="icon-arrow-up">
+                                <svg class="btn-icon" aria-hidden="true"><use href="/assets/icons/button-icons.svg#icon-arrow-up"></use></svg>
+                                <span class="btn-label">上条</span>
+                            </button>
+                            <button id="btnSearchNext" type="button" class="secondary search-icon-btn" title="下一条" aria-label="下一条" data-default-label="下条" data-default-icon="icon-arrow-down">
+                                <svg class="btn-icon" aria-hidden="true"><use href="/assets/icons/button-icons.svg#icon-arrow-down"></use></svg>
+                                <span class="btn-label">下条</span>
+                            </button>
+                            <button id="btnSearchClear" type="button" class="secondary search-icon-btn" title="清空搜索" aria-label="清空搜索" data-default-label="清空" data-default-icon="icon-close">
+                                <svg class="btn-icon" aria-hidden="true"><use href="/assets/icons/button-icons.svg#icon-close"></use></svg>
+                                <span class="btn-label">清空</span>
+                            </button>
                         </div>
                     </div>
                 </div>
@@ -148,8 +177,6 @@
                                     <option value="120" selected>120 点</option>
                                 </select>
                             </div>
-                            <button id="btnJvmRefresh" type="button" class="secondary">立即刷新</button>
-                            <button id="btnJvmTogglePolling" type="button" class="secondary">暂停轮询</button>
                         </div>
                     </div>
                 </div>
@@ -231,14 +258,6 @@
                             <svg id="jvmDeltaTimeChart" viewBox="0 0 860 280" preserveAspectRatio="none"></svg>
                         </article>
                     </section>
-
-                    <section class="jvm-detail-card">
-                        <h3>当前采样参数（不累加列表）</h3>
-                        <div class="jvm-detail-tools">
-                            <span id="jvmDetailMeta" class="jvm-detail-meta">等待采样...</span>
-                        </div>
-                        <div id="jvmSamplePanel" class="jvm-sample-panel"></div>
-                    </section>
                 </div>
             </section>
         </main>
@@ -248,7 +267,10 @@
 <aside id="settingsDrawer" class="settings-drawer" aria-hidden="true">
     <div class="settings-drawer-head">
         <h3>更多设置（文件、过滤、高级）</h3>
-        <button id="btnCloseSettings" type="button" class="secondary">关闭</button>
+        <button id="btnCloseSettings" type="button" class="secondary">
+            <svg class="btn-icon" aria-hidden="true"><use href="/assets/icons/button-icons.svg#icon-close"></use></svg>
+            <span class="btn-label">关闭</span>
+        </button>
     </div>
     <div class="settings-body">
         <div class="toolbar-row row-file">
@@ -262,17 +284,28 @@
             </div>
             <div class="group group-lines">
                 <label for="lines">初始加载行数</label>
-                <input id="lines" type="number" min="10" max="5000" value="200" class="control-sm">
+                <div class="line-count-stepper">
+                    <button id="btnLinesDecrease" type="button" class="secondary line-step-btn" aria-label="减少初始加载行数">
+                        <span class="btn-label">-</span>
+                    </button>
+                    <input id="lines" type="number" min="10" max="5000" value="200" data-step="50" class="control-sm">
+                    <button id="btnLinesIncrease" type="button" class="secondary line-step-btn" aria-label="增加初始加载行数">
+                        <span class="btn-label">+</span>
+                    </button>
+                </div>
             </div>
         </div>
 
         <div class="toolbar-row row-filter">
             <div class="group filter-group">
                 <label>内容过滤（可选）</label>
-                <p class="group-tip">支持连续添加“包含/排除”条件；单条规则支持 && / || 逻辑；支持拖拽调整顺序，日志会高亮命中关键词。</p>
+                <p class="group-tip">支持连续添加“包含/排除”条件；单条规则支持 && / || 逻辑；日志会高亮命中关键词。</p>
                 <div id="filterChain" class="filter-chain"></div>
                 <div id="filterTags" class="filter-tags"></div>
-                <button id="btnAddFilter" type="button" class="secondary">添加条件</button>
+                <button id="btnAddFilter" type="button" class="secondary">
+                    <svg class="btn-icon" aria-hidden="true"><use href="/assets/icons/button-icons.svg#icon-plus"></use></svg>
+                    <span class="btn-label">添加条件</span>
+                </button>
             </div>
         </div>
 

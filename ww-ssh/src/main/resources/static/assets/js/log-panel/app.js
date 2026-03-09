@@ -194,6 +194,14 @@ function bindEvents() {
         preferenceStore.set('lines', parseLines(value('lines')));
         scheduleTailSubscriptionRefresh();
     });
+    const decreaseLinesButton = el('btnLinesDecrease');
+    if (decreaseLinesButton) {
+        decreaseLinesButton.addEventListener('click', () => adjustLinesByStep(-1));
+    }
+    const increaseLinesButton = el('btnLinesIncrease');
+    if (increaseLinesButton) {
+        increaseLinesButton.addEventListener('click', () => adjustLinesByStep(1));
+    }
 
     el('autoScroll').addEventListener('change', () => {
         preferenceStore.set('autoScroll', checked('autoScroll'));
@@ -208,9 +216,6 @@ function bindEvents() {
         logView.refreshSystemVisibility();
     });
 
-    el('btnToggleMetrics').addEventListener('click', toggleMetricsPanel);
-    el('btnModeQuick').addEventListener('click', () => setUiMode('quick'));
-    el('btnModeExpert').addEventListener('click', () => setUiMode('expert'));
     el('btnReadTail').addEventListener('click', () => setReadMode(READ_MODE_TAIL, true));
     el('btnReadCat').addEventListener('click', () => setReadMode(READ_MODE_CAT, true));
     el('btnViewLog').addEventListener('click', () => setCenterView(CENTER_VIEW_LOG, true));
@@ -221,6 +226,10 @@ function bindEvents() {
     el('btnBreak').addEventListener('click', () => logView.appendManualBreak());
     el('btnClear').addEventListener('click', () => logView.clearLogs());
     el('btnImmersive').addEventListener('click', toggleImmersiveMode);
+    const immersiveHeaderButton = el('btnImmersiveHeader');
+    if (immersiveHeaderButton) {
+        immersiveHeaderButton.addEventListener('click', toggleImmersiveMode);
+    }
     el('btnBottom').addEventListener('click', () => logView.scrollToBottom());
     el('btnShareLink').addEventListener('click', copyShareLink);
     el('btnOpenSettings').addEventListener('click', openSettingsDrawer);
@@ -246,6 +255,7 @@ function bindEvents() {
     });
 
     el('log').addEventListener('click', onLogAreaClick);
+    el('log').addEventListener('copy', onLogAreaCopy);
     el('log').addEventListener('scroll', () => logView.updateBottomButton());
     document.addEventListener('keydown', onShortcut);
 
@@ -256,6 +266,28 @@ function bindEvents() {
             }
         });
     });
+}
+
+/**
+ * 按固定步进调整“初始加载行数”，并复用既有 change 流程同步偏好与订阅。
+ *
+ * @param {number} direction 调整方向：正数增加，负数减少
+ */
+function adjustLinesByStep(direction) {
+    const linesEl = el('lines');
+    if (!linesEl) {
+        return;
+    }
+    const normalizedDirection = Number(direction);
+    if (!Number.isFinite(normalizedDirection) || normalizedDirection === 0) {
+        return;
+    }
+    const rawStep = Number(linesEl.getAttribute('data-step') || '50');
+    const step = Number.isFinite(rawStep) && rawStep > 0 ? rawStep : 50;
+    const current = parseLines(linesEl.value);
+    const next = parseLines(String(current + (normalizedDirection > 0 ? step : -step)));
+    linesEl.value = String(next);
+    linesEl.dispatchEvent(new Event('change'));
 }
 
 /**
@@ -378,50 +410,83 @@ function clearLogSearch() {
 }
 
 /**
- * 判断当前是否为专家模式。
- *
- * @returns {boolean} 是否专家模式
- */
-function isExpertMode() {
-    return document.body.getAttribute('data-ui-mode') === 'expert';
-}
-
-/**
- * 获取当前模式下生效的过滤规则。
+ * 获取当前生效的过滤规则。
+ * <p>
+ * 页面已固定为专家视图，因此始终使用当前规则链。
+ * </p>
  *
  * @returns {Array<{type:string,data:string}>} 规则列表
  */
 function getActiveFilterRules() {
-    if (!isExpertMode()) {
-        return [];
-    }
     return filterChainManager.getRules();
 }
 
 /**
- * 暂存专家模式过滤规则，避免切换快速模式后丢失。
+ * 读取按钮当前文案。
+ * <p>
+ * 优先读取 `.btn-label`，兼容旧结构按钮回退到 `textContent`。
+ * </p>
+ *
+ * @param {HTMLButtonElement} button 按钮节点
+ * @returns {string} 当前文案
  */
-function stashExpertFilterRules() {
-    const rules = filterChainManager.getRules();
-    preferenceStore.set('expertFilterRules', JSON.stringify(rules));
+function getButtonLabelText(button) {
+    if (!button) {
+        return '';
+    }
+    const labelEl = button.querySelector('.btn-label');
+    if (labelEl) {
+        return String(labelEl.textContent || '').trim();
+    }
+    return String(button.textContent || '').trim();
 }
 
 /**
- * 恢复专家模式过滤规则。
+ * 设置按钮文案。
+ *
+ * @param {HTMLButtonElement} button 按钮节点
+ * @param {string} label 文案
  */
-function restoreExpertFilterRules() {
-    const raw = preferenceStore.getString('expertFilterRules', '');
-    if (!raw) {
-        filterChainManager.setRules([]);
+function setButtonLabelText(button, label) {
+    if (!button) {
         return;
     }
-    try {
-        const parsed = JSON.parse(raw);
-        filterChainManager.setRules(Array.isArray(parsed) ? parsed : []);
-    } catch (error) {
-        // 忽略异常缓存，保持页面可用
-        filterChainManager.setRules([]);
+    const text = String(label || '');
+    const labelEl = button.querySelector('.btn-label');
+    if (labelEl) {
+        labelEl.textContent = text;
+        return;
     }
+    button.textContent = text;
+}
+
+/**
+ * 设置按钮图标。
+ *
+ * @param {HTMLButtonElement} button 按钮节点
+ * @param {string} iconId 图标 ID（如 icon-share）
+ */
+function setButtonIcon(button, iconId) {
+    if (!button || !iconId) {
+        return;
+    }
+    const useEl = button.querySelector('.btn-icon use');
+    if (!useEl) {
+        return;
+    }
+    useEl.setAttribute('href', `/assets/icons/button-icons.svg#${iconId}`);
+}
+
+/**
+ * 同步更新按钮图标与文案。
+ *
+ * @param {HTMLButtonElement} button 按钮节点
+ * @param {string} label 文案
+ * @param {string} iconId 图标 ID
+ */
+function setButtonVisual(button, label, iconId) {
+    setButtonLabelText(button, label);
+    setButtonIcon(button, iconId);
 }
 
 /**
@@ -435,17 +500,25 @@ function flashShareButton(text, tone) {
     if (!button) {
         return;
     }
-    const baseText = button.getAttribute('data-base-text') || button.textContent || '⎘';
-    button.setAttribute('data-base-text', baseText);
+    const baseLabel = button.getAttribute('data-base-label')
+        || button.getAttribute('data-default-label')
+        || getButtonLabelText(button)
+        || '分享';
+    const baseIcon = button.getAttribute('data-base-icon')
+        || button.getAttribute('data-default-icon')
+        || 'icon-share';
+    button.setAttribute('data-base-label', baseLabel);
+    button.setAttribute('data-base-icon', baseIcon);
     if (state.shareFeedbackTimer) {
         window.clearTimeout(state.shareFeedbackTimer);
         state.shareFeedbackTimer = null;
     }
-    button.textContent = text;
+    const feedbackIcon = tone === 'success' ? 'icon-check' : (tone === 'error' ? 'icon-alert' : baseIcon);
+    setButtonVisual(button, text, feedbackIcon);
     button.classList.toggle('success', tone === 'success');
     button.classList.toggle('error', tone === 'error');
     state.shareFeedbackTimer = window.setTimeout(() => {
-        button.textContent = baseText;
+        setButtonVisual(button, baseLabel, baseIcon);
         button.classList.remove('success');
         button.classList.remove('error');
         state.shareFeedbackTimer = null;
@@ -458,7 +531,7 @@ function flashShareButton(text, tone) {
 function copyShareLink() {
     const link = buildShareLink();
     copyText(link)
-        .then(() => flashShareButton('✓', 'success'))
+        .then(() => flashShareButton('已复制', 'success'))
         .catch(() => showManualCopyHint(link));
 }
 
@@ -542,7 +615,7 @@ function hasSelectOption(selectEl, targetValue) {
  */
 function showManualCopyHint(link) {
     const text = String(link || '');
-    flashShareButton('!', 'error');
+    flashShareButton('复制失败', 'error');
     window.prompt('自动复制失败，请手动复制链接', text);
 }
 
@@ -564,7 +637,6 @@ function buildShareLink() {
     params.set('autoScroll', checked('autoScroll') ? '1' : '0');
     params.set('autoReconnect', checked('autoReconnect') ? '1' : '0');
     params.set('showSystem', checked('showSystem') ? '1' : '0');
-    params.set('uiMode', document.body.getAttribute('data-ui-mode') || 'quick');
     params.set('uiDensity', getUiDensity());
     params.set('readMode', getReadMode());
     params.set('logSearch', value('logSearch'));
@@ -620,6 +692,90 @@ function onLogAreaClick(event) {
     const row = target.closest('.log-line');
     const rawText = row && row.dataset ? row.dataset.rawText : '';
     logView.copyLineFromButton(target, rawText || '');
+}
+
+/**
+ * 日志区域复制事件兜底处理。
+ * <p>
+ * 当鼠标选中多行日志时，浏览器会把每行复制按钮文案（如“复制/已复制/失败”）一并带入剪贴板。
+ * 这里按日志行 `data-raw-text` 重建复制文本，确保只复制日志内容本身。
+ * </p>
+ *
+ * @param {ClipboardEvent} event 复制事件
+ */
+function onLogAreaCopy(event) {
+    const text = collectSelectedLogLinesText();
+    if (!text) {
+        return;
+    }
+    event.preventDefault();
+    if (event.clipboardData && typeof event.clipboardData.setData === 'function') {
+        event.clipboardData.setData('text/plain', text);
+        return;
+    }
+    copyText(text).catch(() => {
+        // 降级路径下无需额外提示，保持系统默认复制体验。
+    });
+}
+
+/**
+ * 采集当前选中的多行日志文本。
+ * <p>
+ * 仅在选区命中至少两行日志时返回重建文本；单行选区交给浏览器默认复制逻辑处理，
+ * 以保留用户的“部分文本复制”习惯。
+ * </p>
+ *
+ * @returns {string} 选中文本；不满足条件时返回空字符串
+ */
+function collectSelectedLogLinesText() {
+    const logEl = el('log');
+    if (!logEl) {
+        return '';
+    }
+    const selection = window.getSelection ? window.getSelection() : null;
+    if (!selection || selection.isCollapsed || selection.rangeCount <= 0) {
+        return '';
+    }
+    const anchorNode = selection.anchorNode;
+    const focusNode = selection.focusNode;
+    if (!anchorNode || !focusNode || !logEl.contains(anchorNode) || !logEl.contains(focusNode)) {
+        return '';
+    }
+    const selectedLines = [];
+    const lineNodes = logEl.querySelectorAll('.log-line');
+    lineNodes.forEach(lineEl => {
+        if (!selectionIntersectsNode(selection, lineEl)) {
+            return;
+        }
+        const rawText = lineEl && lineEl.dataset ? String(lineEl.dataset.rawText || '') : '';
+        if (rawText) {
+            selectedLines.push(rawText);
+        }
+    });
+    if (selectedLines.length < 2) {
+        return '';
+    }
+    return selectedLines.join('\n');
+}
+
+/**
+ * 判断选区是否与指定节点相交。
+ *
+ * @param {Selection} selection 选区对象
+ * @param {Node} node 节点
+ * @returns {boolean} true 表示相交
+ */
+function selectionIntersectsNode(selection, node) {
+    if (!selection || !node || selection.rangeCount <= 0) {
+        return false;
+    }
+    for (let index = 0; index < selection.rangeCount; index += 1) {
+        const range = selection.getRangeAt(index);
+        if (range && typeof range.intersectsNode === 'function' && range.intersectsNode(node)) {
+            return true;
+        }
+    }
+    return false;
 }
 
 /**
@@ -703,20 +859,10 @@ function restoreLocalPreferences() {
     setImmersiveMode(preferenceStore.getBoolean('immersiveMode', false), false);
     el('logSearch').value = getSharedString('logSearch', preferenceStore.getString('logSearch', ''));
     applyReadModeByState();
-    applyUiModeByState();
     applyDefaultUiDensity();
-    applySavedMetricsCollapse();
     applyFilterRulesByState();
     applyLogLevelByState();
     logView.setSearchKeyword(value('logSearch'));
-}
-
-/**
- * 应用保存的界面模式。
- */
-function applyUiModeByState() {
-    const uiMode = getSharedString('uiMode', preferenceStore.getString('uiMode', 'quick'));
-    setUiMode(uiMode === 'expert' ? 'expert' : 'quick');
 }
 
 /**
@@ -743,23 +889,9 @@ function applyCenterViewByState() {
 }
 
 /**
- * 应用保存的指标面板收起状态。
- */
-function applySavedMetricsCollapse() {
-    const collapsed = preferenceStore.getBoolean('metricsCollapsed', true);
-    document.body.classList.toggle('metrics-collapsed', collapsed);
-    renderMetricsToggleButton();
-}
-
-/**
  * 应用保存的过滤规则。
  */
 function applyFilterRulesByState() {
-    if (!isExpertMode()) {
-        filterChainManager.setRules([]);
-        preferenceStore.set('filterRules', '[]');
-        return;
-    }
     const raw = getSharedString('rules', preferenceStore.getString('filterRules', ''));
     if (!raw) {
         return;
@@ -780,27 +912,6 @@ function applyFilterRulesByState() {
 function applyLogLevelByState() {
     const level = getSharedString('level', preferenceStore.getString('logLevelFilter', 'ALL'));
     setLogLevelFilter(level, false);
-}
-
-/**
- * 切换指标面板展开/收起。
- */
-function toggleMetricsPanel() {
-    const collapsed = !document.body.classList.contains('metrics-collapsed');
-    document.body.classList.toggle('metrics-collapsed', collapsed);
-    preferenceStore.set('metricsCollapsed', collapsed);
-    renderMetricsToggleButton();
-}
-
-/**
- * 渲染指标面板切换按钮文案。
- */
-function renderMetricsToggleButton() {
-    const collapsed = document.body.classList.contains('metrics-collapsed');
-    const toggleButton = el('btnToggleMetrics');
-    toggleButton.textContent = collapsed ? '▸' : '◂';
-    toggleButton.title = collapsed ? '展开面板' : '收起面板';
-    toggleButton.setAttribute('aria-label', collapsed ? '展开面板' : '收起面板');
 }
 
 /**
@@ -1426,31 +1537,6 @@ function closeSocket(manualStop) {
 }
 
 /**
- * 设置页面模式（快速/专家）。
- *
- * @param {string} mode 模式值
- */
-function setUiMode(mode) {
-    const normalized = mode === 'expert' ? 'expert' : 'quick';
-    document.body.setAttribute('data-ui-mode', normalized);
-    el('btnModeQuick').classList.toggle('active', normalized === 'quick');
-    el('btnModeQuick').classList.toggle('secondary', normalized !== 'quick');
-    el('btnModeExpert').classList.toggle('active', normalized === 'expert');
-    el('btnModeExpert').classList.toggle('secondary', normalized !== 'expert');
-    if (normalized === 'expert') {
-        restoreExpertFilterRules();
-        logView.setHighlightRules(filterChainManager.getRules());
-    } else {
-        stashExpertFilterRules();
-        filterChainManager.setRules([]);
-        logView.setHighlightRules([]);
-        preferenceStore.set('filterRules', '[]');
-        setSettingsDrawerOpen(false, true);
-    }
-    preferenceStore.set('uiMode', normalized);
-}
-
-/**
  * 获取当前界面密度。
  *
  * @returns {string} 密度值（compact/comfortable）
@@ -1539,7 +1625,7 @@ function renderReadModeButtons() {
         catButton.classList.toggle('active', !tailMode);
     }
     if (startButton) {
-        startButton.textContent = tailMode ? '⏵' : '⟳';
+        setButtonVisual(startButton, tailMode ? '开始' : '快照', tailMode ? 'icon-play' : 'icon-snapshot');
         startButton.title = tailMode ? '开始实时监听（tail）' : '读取一次快照（cat）';
         startButton.setAttribute('aria-label', tailMode ? '开始实时监听' : '读取一次快照');
     }
@@ -1617,13 +1703,13 @@ function toggleImmersiveMode() {
 function setImmersiveMode(enabled, persist) {
     const active = !!enabled;
     document.body.classList.toggle('immersive-mode', active);
-    const button = el('btnImmersive');
-    if (button) {
+    const immersiveButtons = [el('btnImmersive'), el('btnImmersiveHeader')].filter(Boolean);
+    immersiveButtons.forEach(button => {
         button.classList.toggle('active', active);
-        button.textContent = active ? '⤡' : '⤢';
+        setButtonVisual(button, active ? '退出' : '沉浸', active ? 'icon-contract' : 'icon-expand');
         button.title = active ? '退出沉浸模式' : '进入沉浸模式';
         button.setAttribute('aria-label', active ? '退出沉浸模式' : '进入沉浸模式');
-    }
+    });
     if (active) {
         closeSettingsDrawer();
     }
@@ -1695,6 +1781,14 @@ function updateControls() {
     el('env').disabled = tailLocked || catBusy;
     el('service').disabled = tailLocked || catBusy;
     el('lines').disabled = catBusy;
+    const decreaseLinesButton = el('btnLinesDecrease');
+    if (decreaseLinesButton) {
+        decreaseLinesButton.disabled = catBusy;
+    }
+    const increaseLinesButton = el('btnLinesIncrease');
+    if (increaseLinesButton) {
+        increaseLinesButton.disabled = catBusy;
+    }
     el('btnReadTail').disabled = catBusy;
     el('btnReadCat').disabled = catBusy;
     el('btnStart').disabled = catBusy || tailLocked;
@@ -1755,7 +1849,7 @@ function onFilterRuleChanged() {
 /**
  * 渲染实时日志窗口下方的过滤表达式摘要。
  * <p>
- * 仅在存在有效过滤规则时展示；快速模式下始终隐藏。
+ * 仅在存在有效过滤规则时展示。
  * </p>
  */
 function renderActiveFilterExpression() {
@@ -1910,7 +2004,6 @@ function parseSharedStateFromUrl() {
         autoScroll: params.get('autoScroll') || '',
         autoReconnect: params.get('autoReconnect') || '',
         showSystem: params.get('showSystem') || '',
-        uiMode: params.get('uiMode') || '',
         uiDensity: params.get('uiDensity') || '',
         readMode: params.get('readMode') || '',
         logSearch: params.get('logSearch') || '',

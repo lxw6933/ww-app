@@ -670,7 +670,7 @@ export class MetricsPanelController {
             monitorBtn.type = 'button';
             monitorBtn.className = 'secondary metric-op-btn';
             monitorBtn.title = '打开 JVM 监控';
-            monitorBtn.textContent = 'JVM';
+            setOperationButtonVisual(monitorBtn, 'JVM', 'icon-monitor');
             monitorBtn.addEventListener('click', () => this.openJvmMonitor(service));
             barEl.appendChild(monitorBtn);
         }
@@ -684,9 +684,9 @@ export class MetricsPanelController {
         }
 
         const actionList = [
-            {action: 'start', icon: '▶', title: '启动实例', style: 'start'},
-            {action: 'restart', icon: '↻', title: '重启实例', style: 'restart'},
-            {action: 'stop', icon: '■', title: '停止实例', style: 'stop'}
+            {action: 'start', label: '启动', title: '启动实例', style: 'start', icon: 'icon-play'},
+            {action: 'restart', label: '重启', title: '重启实例', style: 'restart', icon: 'icon-restart'},
+            {action: 'stop', label: '停止', title: '停止实例', style: 'stop', icon: 'icon-stop'}
         ];
         const statusInfo = resolveInstanceStatus(item && item.instanceStatus);
         const pendingAction = this.getPendingAction(service);
@@ -695,7 +695,7 @@ export class MetricsPanelController {
             buttonEl.type = 'button';
             buttonEl.className = `secondary metric-op-btn ${option.style}`;
             buttonEl.title = option.title;
-            buttonEl.textContent = option.icon;
+            setOperationButtonVisual(buttonEl, option.label, option.icon);
             const disableReason = resolveActionDisableReason(statusInfo.level, option.action, pendingAction);
             if (disableReason) {
                 buttonEl.disabled = true;
@@ -705,7 +705,7 @@ export class MetricsPanelController {
             }
             if (pendingAction && pendingAction === option.action) {
                 buttonEl.classList.add('is-pending');
-                buttonEl.textContent = '…';
+                setOperationButtonVisual(buttonEl, '执行中', 'icon-loading');
             }
             buttonEl.addEventListener('click', () => this.handleOperateClick(service, option.action, option.title));
             barEl.appendChild(buttonEl);
@@ -898,6 +898,47 @@ export class MetricsPanelController {
         }
         return tip;
     }
+}
+
+/**
+ * 创建运维按钮图标节点。
+ *
+ * @param {string} iconId 图标 ID
+ * @returns {SVGSVGElement|null} SVG 节点
+ */
+function createOperationButtonIcon(iconId) {
+    if (!iconId) {
+        return null;
+    }
+    const svgEl = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+    svgEl.setAttribute('class', 'btn-icon');
+    svgEl.setAttribute('aria-hidden', 'true');
+    const useEl = document.createElementNS('http://www.w3.org/2000/svg', 'use');
+    useEl.setAttribute('href', `/assets/icons/button-icons.svg#${iconId}`);
+    svgEl.appendChild(useEl);
+    return svgEl;
+}
+
+/**
+ * 设置运维按钮图标和文案。
+ *
+ * @param {HTMLButtonElement} button 按钮节点
+ * @param {string} label 文案
+ * @param {string} iconId 图标 ID
+ */
+function setOperationButtonVisual(button, label, iconId) {
+    if (!button) {
+        return;
+    }
+    button.textContent = '';
+    const iconEl = createOperationButtonIcon(iconId);
+    if (iconEl) {
+        button.appendChild(iconEl);
+    }
+    const labelEl = document.createElement('span');
+    labelEl.className = 'btn-label';
+    labelEl.textContent = String(label || '');
+    button.appendChild(labelEl);
 }
 
 /**
