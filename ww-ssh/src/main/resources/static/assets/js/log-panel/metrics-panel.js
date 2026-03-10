@@ -1176,7 +1176,7 @@ function createInstanceStatusBlock(item) {
 
     const tagEl = document.createElement('span');
     tagEl.className = `metric-instance-tag ${statusInfo.level}`;
-    tagEl.textContent = `实例: ${statusInfo.text}`;
+    tagEl.textContent = statusInfo.text;
     blockEl.appendChild(tagEl);
 
     if (detailRaw) {
