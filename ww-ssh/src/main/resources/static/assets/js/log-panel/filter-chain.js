@@ -160,10 +160,14 @@ export class FilterChainManager {
     bindRemoveAction() {
         this.chainEl.addEventListener('click', event => {
             const target = event.target;
-            if (!target || !target.classList.contains('btn-remove')) {
+            if (!target) {
                 return;
             }
-            const row = target.closest('.filter-row');
+            const removeButton = findClosestButton(target, 'btn-remove');
+            if (!removeButton) {
+                return;
+            }
+            const row = removeButton.closest('.filter-row');
             if (!row) {
                 return;
             }
@@ -181,12 +185,26 @@ export class FilterChainManager {
         if (!this.tagEl) {
             return;
         }
-        this.tagEl.addEventListener('click', event => {
+        // 使用 pointerdown 替代 click，避免某些浏览器在按钮聚焦/文本选中场景下出现“首次点击不触发”的体验。
+        this.tagEl.addEventListener('pointerdown', event => {
             const target = event.target;
-            if (!target || !target.classList.contains('filter-tag-remove')) {
+            if (!target) {
                 return;
             }
-            const index = parseInt(target.getAttribute('data-index') || '-1', 10);
+            const removeButton = findClosestButton(target, 'filter-tag-remove');
+            if (!removeButton) {
+                return;
+            }
+            // 标签按钮按下时立即删除，并阻止默认行为（聚焦/文本选中）。
+            if (event && (event.button === undefined || event.button === 0)) {
+                if (typeof event.preventDefault === 'function') {
+                    event.preventDefault();
+                }
+                if (typeof event.stopPropagation === 'function') {
+                    event.stopPropagation();
+                }
+            }
+            const index = parseInt(removeButton.getAttribute('data-index') || '-1', 10);
             if (Number.isNaN(index) || index < 0) {
                 return;
             }
@@ -199,7 +217,7 @@ export class FilterChainManager {
             this.ensureAtLeastOneRule();
             this.renderTagPreview();
             this.emitChanged();
-        });
+        }, {passive: false});
     }
 
     /**
@@ -242,7 +260,8 @@ export class FilterChainManager {
             removeButton.className = 'filter-tag-remove';
             removeButton.setAttribute('data-index', String(rule.index));
             removeButton.title = '删除该条件';
-            setFilterButtonVisual(removeButton, '删', 'icon-close');
+            removeButton.setAttribute('aria-label', '删除该条件');
+            setFilterButtonVisual(removeButton, '', 'icon-close');
             tag.appendChild(removeButton);
             this.tagEl.appendChild(tag);
         });
@@ -277,8 +296,39 @@ function setFilterButtonVisual(button, label, iconId) {
         svgEl.appendChild(useEl);
         button.appendChild(svgEl);
     }
+    const text = String(label || '');
+    if (!text.trim()) {
+        return;
+    }
     const labelEl = document.createElement('span');
     labelEl.className = 'btn-label';
-    labelEl.textContent = String(label || '');
+    labelEl.textContent = text;
     button.appendChild(labelEl);
+}
+
+/**
+ * 从事件源节点向上查找指定 class 的按钮。
+ * <p>
+ * 兼容点击到 SVG/use 等节点时 `closest()` 在不同浏览器中的差异表现。
+ * </p>
+ *
+ * @param {EventTarget} target 点击目标
+ * @param {string} className 按钮 class
+ * @returns {HTMLButtonElement|null} 命中的按钮
+ */
+function findClosestButton(target, className) {
+    const normalized = String(className || '').trim();
+    if (!normalized) {
+        return null;
+    }
+    let node = target;
+    while (node) {
+        if (node.tagName && String(node.tagName).toLowerCase() === 'button') {
+            if (node.classList && node.classList.contains(normalized)) {
+                return node;
+            }
+        }
+        node = node.parentNode;
+    }
+    return null;
 }
