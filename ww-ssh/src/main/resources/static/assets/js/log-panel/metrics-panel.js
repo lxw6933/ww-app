@@ -5,6 +5,74 @@ import {el} from './dom.js';
  */
 const OP_CONFIRM_EXPIRE_MS = 4200;
 
+const INSTANCE_STATUS_META = Object.freeze({
+    running: Object.freeze({text: '运行中', level: 'running'}),
+    stopped: Object.freeze({text: '已停止', level: 'stopped'}),
+    unconfigured: Object.freeze({text: '未配置', level: 'unconfigured'}),
+    unknown: Object.freeze({text: '未知', level: 'unknown'})
+});
+
+const OPERATION_BUTTON_META = Object.freeze({
+    monitor: Object.freeze({
+        label: 'JVM',
+        title: '打开 JVM 监控',
+        style: 'secondary metric-op-btn',
+        icon: 'icon-monitor'
+    }),
+    start: Object.freeze({
+        action: 'start',
+        label: '启动',
+        title: '启动实例',
+        style: 'start',
+        icon: 'icon-play'
+    }),
+    restart: Object.freeze({
+        action: 'restart',
+        label: '重启',
+        title: '重启实例',
+        style: 'restart',
+        icon: 'icon-restart'
+    }),
+    stop: Object.freeze({
+        action: 'stop',
+        label: '停止',
+        title: '停止实例',
+        style: 'stop',
+        icon: 'icon-stop'
+    }),
+    pending: Object.freeze({
+        label: '执行中',
+        icon: 'icon-loading'
+    })
+});
+
+const MANAGED_INSTANCE_ACTIONS = Object.freeze([
+    OPERATION_BUTTON_META.start,
+    OPERATION_BUTTON_META.restart,
+    OPERATION_BUTTON_META.stop
+]);
+
+const ACTION_TEXT_MAP = Object.freeze({
+    start: '启动',
+    restart: '重启',
+    stop: '停止'
+});
+
+const OPERATION_DISABLE_REASON_MAP = Object.freeze({
+    running: Object.freeze({
+        start: '当前实例已运行'
+    }),
+    stopped: Object.freeze({
+        stop: '当前实例已停止'
+    }),
+    unconfigured: Object.freeze({
+        default: '未配置运维脚本'
+    }),
+    default: Object.freeze({
+        default: '当前状态不支持该动作'
+    })
+});
+
 /**
  * 服务器指标面板控制器。
  * <p>
@@ -666,13 +734,7 @@ export class MetricsPanelController {
         }
 
         if (this.openJvmMonitor) {
-            const monitorBtn = document.createElement('button');
-            monitorBtn.type = 'button';
-            monitorBtn.className = 'secondary metric-op-btn';
-            monitorBtn.title = '打开 JVM 监控';
-            setOperationButtonVisual(monitorBtn, 'JVM', 'icon-monitor');
-            monitorBtn.addEventListener('click', () => this.openJvmMonitor(service));
-            barEl.appendChild(monitorBtn);
+            barEl.appendChild(this.createMonitorButton(service));
         }
 
         if (!item || !item.canManage || !this.operateInstance) {
@@ -683,56 +745,85 @@ export class MetricsPanelController {
             return barEl;
         }
 
-        const actionList = [
-            {action: 'start', label: '启动', title: '启动实例', style: 'start', icon: 'icon-play'},
-            {action: 'restart', label: '重启', title: '重启实例', style: 'restart', icon: 'icon-restart'},
-            {action: 'stop', label: '停止', title: '停止实例', style: 'stop', icon: 'icon-stop'}
-        ];
         const statusInfo = resolveInstanceStatus(item && item.instanceStatus);
         const pendingAction = this.getPendingAction(service);
-        actionList.forEach(option => {
-            const buttonEl = document.createElement('button');
-            buttonEl.type = 'button';
-            buttonEl.className = `secondary metric-op-btn ${option.style}`;
-            buttonEl.title = option.title;
-            setOperationButtonVisual(buttonEl, option.label, option.icon);
-            const disableReason = resolveActionDisableReason(statusInfo.level, option.action, pendingAction);
-            if (disableReason) {
-                buttonEl.disabled = true;
-                buttonEl.title = `${option.title}（${disableReason}）`;
-            } else {
-                buttonEl.disabled = false;
-            }
-            if (pendingAction && pendingAction === option.action) {
-                buttonEl.classList.add('is-pending');
-                setOperationButtonVisual(buttonEl, '执行中', 'icon-loading');
-            }
-            buttonEl.addEventListener('click', () => this.handleOperateClick(service, option.action, option.title));
-            barEl.appendChild(buttonEl);
+        MANAGED_INSTANCE_ACTIONS.forEach(option => {
+            barEl.appendChild(this.createManagedOperationButton(service, option, statusInfo.level, pendingAction));
         });
 
-        if (pendingAction) {
-            const pendingTipEl = document.createElement('span');
-            pendingTipEl.className = 'metric-op-tip pending';
-            pendingTipEl.textContent = `${actionText(pendingAction)}中...`;
-            barEl.appendChild(pendingTipEl);
-        } else {
-            const tip = this.getOperationTip(service);
-            if (!tip) {
-                return barEl;
-            }
-            const tipEl = document.createElement('span');
-            if (tip.tone === 'error') {
-                tipEl.className = 'metric-op-tip error';
-            } else if (tip.tone === 'warn') {
-                tipEl.className = 'metric-op-tip pending';
-            } else {
-                tipEl.className = 'metric-op-tip success';
-            }
-            tipEl.textContent = tip.text;
-            barEl.appendChild(tipEl);
+        const feedbackNode = this.createOperationFeedbackNode(service, pendingAction);
+        if (feedbackNode) {
+            barEl.appendChild(feedbackNode);
         }
         return barEl;
+    }
+
+    /**
+     * 创建 JVM 监控按钮。
+     *
+     * @param {string} service 实例服务名
+     * @returns {HTMLButtonElement} 按钮节点
+     */
+    createMonitorButton(service) {
+        const monitorBtn = document.createElement('button');
+        monitorBtn.type = 'button';
+        monitorBtn.className = OPERATION_BUTTON_META.monitor.style;
+        monitorBtn.title = OPERATION_BUTTON_META.monitor.title;
+        setOperationButtonVisual(monitorBtn, OPERATION_BUTTON_META.monitor.label, OPERATION_BUTTON_META.monitor.icon);
+        monitorBtn.addEventListener('click', () => this.openJvmMonitor(service));
+        return monitorBtn;
+    }
+
+    /**
+     * 创建实例运维动作按钮。
+     *
+     * @param {string} service 实例服务名
+     * @param {{action:string,label:string,title:string,style:string,icon:string}} option 动作配置
+     * @param {string} statusLevel 实例状态级别
+     * @param {string} pendingAction 执行中动作
+     * @returns {HTMLButtonElement} 按钮节点
+     */
+    createManagedOperationButton(service, option, statusLevel, pendingAction) {
+        const buttonEl = document.createElement('button');
+        const isPendingAction = !!pendingAction && pendingAction === option.action;
+        const disableReason = resolveActionDisableReason(statusLevel, option.action, pendingAction);
+        buttonEl.type = 'button';
+        buttonEl.className = `secondary metric-op-btn ${option.style}`;
+        buttonEl.title = disableReason ? `${option.title}（${disableReason}）` : option.title;
+        buttonEl.disabled = !!disableReason;
+        setOperationButtonVisual(
+            buttonEl,
+            isPendingAction ? OPERATION_BUTTON_META.pending.label : option.label,
+            isPendingAction ? OPERATION_BUTTON_META.pending.icon : option.icon
+        );
+        if (isPendingAction) {
+            buttonEl.classList.add('is-pending');
+        }
+        buttonEl.addEventListener('click', () => this.handleOperateClick(service, option.action, option.title));
+        return buttonEl;
+    }
+
+    /**
+     * 创建实例动作反馈提示。
+     *
+     * @param {string} service 实例服务名
+     * @param {string} pendingAction 执行中动作
+     * @returns {HTMLSpanElement|null} 提示节点
+     */
+    createOperationFeedbackNode(service, pendingAction) {
+        const tipEl = document.createElement('span');
+        if (pendingAction) {
+            tipEl.className = 'metric-op-tip pending';
+            tipEl.textContent = `${actionText(pendingAction)}中...`;
+            return tipEl;
+        }
+        const tip = this.getOperationTip(service);
+        if (!tip) {
+            return null;
+        }
+        tipEl.className = resolveOperationTipClassName(tip.tone);
+        tipEl.textContent = tip.text;
+        return tipEl;
     }
 
     /**
@@ -1014,16 +1105,8 @@ function resolveActionDisableReason(statusLevel, action, pendingAction) {
     if (isActionAllowed(statusLevel, action)) {
         return '';
     }
-    if (statusLevel === 'running' && action === 'start') {
-        return '当前实例已运行';
-    }
-    if (statusLevel === 'stopped' && action === 'stop') {
-        return '当前实例已停止';
-    }
-    if (statusLevel === 'unconfigured') {
-        return '未配置运维脚本';
-    }
-    return '当前状态不支持该动作';
+    const levelMeta = OPERATION_DISABLE_REASON_MAP[statusLevel] || OPERATION_DISABLE_REASON_MAP.default;
+    return levelMeta[action] || levelMeta.default || OPERATION_DISABLE_REASON_MAP.default.default;
 }
 
 /**
@@ -1034,6 +1117,9 @@ function resolveActionDisableReason(statusLevel, action, pendingAction) {
  * @returns {boolean} true 表示可执行
  */
 function isActionAllowed(statusLevel, action) {
+    if (!ACTION_TEXT_MAP[action]) {
+        return false;
+    }
     if (statusLevel === 'unconfigured') {
         return false;
     }
@@ -1043,7 +1129,7 @@ function isActionAllowed(statusLevel, action) {
     if (statusLevel === 'stopped' && action === 'stop') {
         return false;
     }
-    return action === 'start' || action === 'restart' || action === 'stop';
+    return true;
 }
 
 /**
@@ -1053,16 +1139,23 @@ function isActionAllowed(statusLevel, action) {
  * @returns {string} 文案
  */
 function actionText(action) {
-    if (action === 'start') {
-        return '启动';
+    return ACTION_TEXT_MAP[action] || '执行';
+}
+
+/**
+ * 解析操作提示节点样式类。
+ *
+ * @param {string} tone 提示语气
+ * @returns {string} 样式类名
+ */
+function resolveOperationTipClassName(tone) {
+    if (tone === 'error') {
+        return 'metric-op-tip error';
     }
-    if (action === 'restart') {
-        return '重启';
+    if (tone === 'warn') {
+        return 'metric-op-tip pending';
     }
-    if (action === 'stop') {
-        return '停止';
-    }
-    return '执行';
+    return 'metric-op-tip success';
 }
 
 /**
@@ -1183,7 +1276,7 @@ function createInstanceStatusBlock(item) {
         const detailEl = document.createElement('span');
         detailEl.className = 'metric-instance-detail';
         detailEl.title = detailRaw;
-        detailEl.textContent = detailRaw.length > 120 ? `${detailRaw.substring(0, 120)}...` : detailRaw;
+        detailEl.textContent = abbreviateText(detailRaw, 120);
         blockEl.appendChild(detailEl);
     }
     return blockEl;
@@ -1197,16 +1290,22 @@ function createInstanceStatusBlock(item) {
  */
 function resolveInstanceStatus(rawStatus) {
     const status = String(rawStatus || '').trim().toLowerCase();
-    if (status === 'running') {
-        return {text: '运行中', level: 'running'};
+    return INSTANCE_STATUS_META[status] || INSTANCE_STATUS_META.unknown;
+}
+
+/**
+ * 长文本摘要截断。
+ *
+ * @param {string} text 原始文本
+ * @param {number} maxLength 最大长度
+ * @returns {string} 截断结果
+ */
+function abbreviateText(text, maxLength) {
+    const normalized = String(text || '');
+    if (!normalized || normalized.length <= maxLength) {
+        return normalized;
     }
-    if (status === 'stopped') {
-        return {text: '已停止', level: 'stopped'};
-    }
-    if (status === 'unconfigured') {
-        return {text: '未配置', level: 'unconfigured'};
-    }
-    return {text: '未知', level: 'unknown'};
+    return `${normalized.substring(0, maxLength)}...`;
 }
 
 /**

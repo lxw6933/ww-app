@@ -6,6 +6,23 @@ import {el, checked} from './dom.js';
  * 负责日志渲染、行数统计、系统消息显示控制与滚动行为管理。
  * </p>
  */
+const SYSTEM_MESSAGE_PREFIX = '[系统提示] ';
+
+const MANUAL_BREAK_TEXT = '---------------- 分隔线（便于区分前后日志） ----------------';
+
+const COPY_BUTTON_TEXT = Object.freeze({
+    default: '复制',
+    success: '已复制',
+    error: '失败',
+    title: '复制本行'
+});
+
+const EMPTY_TIP_TEXT = Object.freeze({
+    clearedWhileActive: '日志窗口已清空，等待新日志推送...',
+    clearedWhileIdle: '日志已清空。请点击“开始查看”重新监听。',
+    default: '暂无日志数据'
+});
+
 export class LogView {
 
     /**
@@ -133,7 +150,7 @@ export class LogView {
      * @param {string} text 提示内容
      */
     appendSystem(text) {
-        this.appendLines(`[系统提示] ${text}\n`);
+        this.appendLines(`${SYSTEM_MESSAGE_PREFIX}${text}\n`);
     }
 
     /**
@@ -188,8 +205,8 @@ export class LogView {
             this.deferredSearchTimer = null;
         }
         this.setEmptyTip(this.isSocketActive()
-            ? '日志窗口已清空，等待新日志推送...'
-            : '日志已清空。请点击“开始查看”重新监听。');
+            ? EMPTY_TIP_TEXT.clearedWhileActive
+            : EMPTY_TIP_TEXT.clearedWhileIdle);
         this.state.buffer = [];
         this.searchMatches = [];
         this.searchCursor = -1;
@@ -205,7 +222,7 @@ export class LogView {
      */
     appendManualBreak() {
         const logEl = el('log');
-        const lineEl = this.createLogLineElement('---------------- 分隔线（便于区分前后日志） ----------------');
+        const lineEl = this.createLogLineElement(MANUAL_BREAK_TEXT);
         // 手工分割线属于操作标记，需始终可见，不受系统消息/级别/规则筛选影响。
         lineEl.classList.add('line-system', 'line-manual-break');
         lineEl.dataset.level = 'SYSTEM';
@@ -272,7 +289,7 @@ export class LogView {
      * @param {string} line 文本内容
      */
     applyLineClass(lineEl, line) {
-        const isSystem = line.indexOf('[系统提示]') >= 0;
+        const isSystem = line.indexOf(SYSTEM_MESSAGE_PREFIX) >= 0;
         const level = this.detectLineLevel(line, isSystem);
         lineEl.dataset.level = level;
         if (isSystem) {
@@ -307,17 +324,27 @@ export class LogView {
         textEl.className = 'line-text';
         this.renderLineText(textEl, line);
 
-        const copyBtn = document.createElement('button');
-        copyBtn.type = 'button';
-        copyBtn.className = 'line-copy-btn';
-        copyBtn.textContent = '复制';
-        copyBtn.title = '复制本行';
+        const copyBtn = this.createCopyButton();
 
         lineEl.appendChild(textEl);
         lineEl.appendChild(copyBtn);
         this.applyLineClass(lineEl, line);
         this.applyRuleFilterForLine(lineEl);
         return lineEl;
+    }
+
+    /**
+     * 创建单行复制按钮。
+     *
+     * @returns {HTMLButtonElement} 复制按钮
+     */
+    createCopyButton() {
+        const copyBtn = document.createElement('button');
+        copyBtn.type = 'button';
+        copyBtn.className = 'line-copy-btn';
+        copyBtn.textContent = COPY_BUTTON_TEXT.default;
+        copyBtn.title = COPY_BUTTON_TEXT.title;
+        return copyBtn;
     }
 
     /**
@@ -379,8 +406,8 @@ export class LogView {
         if (!buttonEl) {
             return;
         }
-        const originalText = '复制';
-        buttonEl.textContent = success ? '已复制' : '失败';
+        const originalText = COPY_BUTTON_TEXT.default;
+        buttonEl.textContent = success ? COPY_BUTTON_TEXT.success : COPY_BUTTON_TEXT.error;
         buttonEl.classList.remove('done', 'error');
         buttonEl.classList.add(success ? 'done' : 'error');
         window.setTimeout(() => {
@@ -457,7 +484,7 @@ export class LogView {
             return;
         }
         const tip = String(text || '').trim();
-        logEl.setAttribute('data-empty-tip', tip || '暂无日志数据');
+        logEl.setAttribute('data-empty-tip', tip || EMPTY_TIP_TEXT.default);
     }
 
     /**

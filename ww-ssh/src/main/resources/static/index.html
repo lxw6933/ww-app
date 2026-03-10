@@ -48,7 +48,7 @@
         </aside>
 
         <main class="main-panel">
-            <section class="toolbar">
+            <section class="toolbar toolbar-panel">
                 <div class="toolbar-row row-primary">
                     <div class="group group-env">
                         <label for="project">项目：</label>
@@ -62,40 +62,40 @@
                         <label for="service">服务：</label>
                         <select id="service" class="control-lg"></select>
                     </div>
-                    <div class="group group-action">
-                        <div class="center-view-switch read-mode-switch" role="group" aria-label="查看中心切换">
+                    <div class="group group-action toolbar-action-bar">
+                        <div class="center-view-switch read-mode-switch toolbar-toggle toolbar-toggle-view" role="group" aria-label="查看中心切换">
                             <button id="btnViewLog" type="button" class="secondary read-mode-btn active" title="切换到日志窗口" aria-label="切换到日志窗口">日志</button>
                             <button id="btnViewJvm" type="button" class="secondary read-mode-btn" title="切换到 JVM 监控窗口" aria-label="切换到 JVM 监控窗口">JVM</button>
                         </div>
                         <span class="action-separator" aria-hidden="true"></span>
-                        <div class="read-mode-switch" role="group" aria-label="日志读取方式">
+                        <div class="read-mode-switch toolbar-toggle toolbar-toggle-read" role="group" aria-label="日志读取方式">
                             <button id="btnReadTail" type="button" class="secondary read-mode-btn active" title="tail 实时监听" aria-label="tail 实时监听">实时</button>
                             <button id="btnReadCat" type="button" class="secondary read-mode-btn" title="cat 快照读取" aria-label="cat 快照读取">快照</button>
                         </div>
                         <span class="action-separator" aria-hidden="true"></span>
-                        <button id="btnStart" class="icon-btn" title="开始查看" aria-label="开始查看" data-default-label="开始" data-default-icon="icon-play">
+                        <button id="btnStart" class="icon-btn toolbar-action-btn toolbar-action-btn-primary" title="开始查看" aria-label="开始查看" data-default-label="开始" data-default-icon="icon-play">
                             <svg class="btn-icon" aria-hidden="true"><use href="/assets/icons/button-icons.svg#icon-play"></use></svg>
                             <span class="btn-label">开始</span>
                         </button>
-                        <button id="btnStop" class="icon-btn" disabled title="结束查看" aria-label="结束查看" data-default-label="停止" data-default-icon="icon-stop">
+                        <button id="btnStop" class="icon-btn toolbar-action-btn toolbar-action-btn-primary" disabled title="结束查看" aria-label="结束查看" data-default-label="停止" data-default-icon="icon-stop">
                             <svg class="btn-icon" aria-hidden="true"><use href="/assets/icons/button-icons.svg#icon-stop"></use></svg>
                             <span class="btn-label">停止</span>
                         </button>
                         <span class="action-separator btn-expert" aria-hidden="true"></span>
-                        <button id="btnPause" class="btn-expert icon-btn" title="暂停接收" aria-label="暂停接收" data-default-label="暂停" data-default-icon="icon-pause">
+                        <button id="btnPause" class="btn-expert icon-btn toolbar-action-btn toolbar-action-btn-expert" title="暂停接收" aria-label="暂停接收" data-default-label="暂停" data-default-icon="icon-pause">
                             <svg class="btn-icon" aria-hidden="true"><use href="/assets/icons/button-icons.svg#icon-pause"></use></svg>
                             <span class="btn-label">暂停</span>
                         </button>
-                        <button id="btnBreak" class="secondary btn-expert icon-btn" title="插入分隔线" aria-label="插入分隔线" data-default-label="分隔" data-default-icon="icon-divider">
+                        <button id="btnBreak" class="secondary btn-expert icon-btn toolbar-action-btn toolbar-action-btn-expert" title="插入分隔线" aria-label="插入分隔线" data-default-label="分隔" data-default-icon="icon-divider">
                             <svg class="btn-icon" aria-hidden="true"><use href="/assets/icons/button-icons.svg#icon-divider"></use></svg>
                             <span class="btn-label">分隔</span>
                         </button>
                         <span class="action-separator btn-expert settings-separator" aria-hidden="true"></span>
-                        <button id="btnOpenSettings" type="button" class="secondary btn-expert toolbar-settings-btn icon-btn" title="更多设置（仅专家模式）" aria-label="更多设置（仅专家模式）" data-default-label="设置" data-default-icon="icon-settings">
+                        <button id="btnOpenSettings" type="button" class="secondary btn-expert toolbar-settings-btn icon-btn toolbar-action-btn toolbar-action-anchor" title="更多设置（仅专家模式）" aria-label="更多设置（仅专家模式）" data-default-label="设置" data-default-icon="icon-settings">
                             <svg class="btn-icon" aria-hidden="true"><use href="/assets/icons/button-icons.svg#icon-settings"></use></svg>
                             <span class="btn-label">设置</span>
                         </button>
-                        <button id="btnImmersive" type="button" class="secondary icon-btn" title="切换沉浸模式" aria-label="切换沉浸模式" data-default-label="沉浸" data-default-icon="icon-expand">
+                        <button id="btnImmersive" type="button" class="secondary icon-btn toolbar-action-btn toolbar-action-anchor-follow" title="切换沉浸模式" aria-label="切换沉浸模式" data-default-label="沉浸" data-default-icon="icon-expand">
                             <svg class="btn-icon" aria-hidden="true"><use href="/assets/icons/button-icons.svg#icon-expand"></use></svg>
                             <span class="btn-label">沉浸</span>
                         </button>
@@ -140,7 +140,7 @@
                         </div>
                     </div>
                 </div>
-                <div id="log" data-empty-tip="尚未开始查看日志。请先选择项目、环境和服务，然后点击“开始查看”。"></div>
+                <div id="log" class="log-stream" data-empty-tip="尚未开始查看日志。请先选择项目、环境和服务，然后点击“开始查看”。"></div>
                 <div id="activeFilterExpr" class="active-filter-expr hidden"></div>
             </section>
 
@@ -264,26 +264,26 @@
         </main>
     </div>
 </div>
-<div id="settingsDrawerMask" class="settings-drawer-mask"></div>
-<aside id="settingsDrawer" class="settings-drawer" aria-hidden="true">
+<div id="settingsDrawerMask" class="settings-drawer-mask settings-panel-mask"></div>
+<aside id="settingsDrawer" class="settings-drawer settings-panel" aria-hidden="true">
     <div class="settings-drawer-head">
         <h3>更多设置（文件、过滤、高级）</h3>
-        <button id="btnCloseSettings" type="button" class="secondary">
+        <button id="btnCloseSettings" type="button" class="secondary settings-action-btn">
             <svg class="btn-icon" aria-hidden="true"><use href="/assets/icons/button-icons.svg#icon-close"></use></svg>
             <span class="btn-label">关闭</span>
         </button>
     </div>
-    <div class="settings-body">
-        <div class="toolbar-row row-file">
-            <div class="group group-file-search">
+    <div class="settings-body settings-panel-body">
+        <div class="toolbar-row row-file settings-section settings-section-file">
+            <div class="group group-file-search settings-field-group">
                 <label for="fileSearch">文件名搜索（可选）</label>
                 <input id="fileSearch" type="text" class="control-xl" placeholder="输入文件名关键字">
             </div>
-            <div class="group group-file-select">
+            <div class="group group-file-select settings-field-group">
                 <label for="file">日志文件（单服务必选）</label>
                 <select id="file" class="control-xl"></select>
             </div>
-            <div class="group group-lines">
+            <div class="group group-lines settings-field-group">
                 <label for="lines">初始加载行数</label>
                 <div class="line-count-stepper">
                     <button id="btnLinesDecrease" type="button" class="secondary line-step-btn" aria-label="减少初始加载行数">
@@ -297,21 +297,21 @@
             </div>
         </div>
 
-        <div class="toolbar-row row-filter">
-            <div class="group filter-group">
+        <div class="toolbar-row row-filter settings-section settings-section-filter">
+            <div class="group filter-group settings-field-group">
                 <label>内容过滤（可选）</label>
                 <p class="group-tip">支持连续添加“包含/排除”条件；单条规则支持 && / || 逻辑；日志会高亮命中关键词。</p>
                 <div id="filterChain" class="filter-chain"></div>
                 <div id="filterTags" class="filter-tags"></div>
-                <button id="btnAddFilter" type="button" class="secondary">
+                <button id="btnAddFilter" type="button" class="secondary settings-action-btn">
                     <svg class="btn-icon" aria-hidden="true"><use href="/assets/icons/button-icons.svg#icon-plus"></use></svg>
                     <span class="btn-label">添加条件</span>
                 </button>
             </div>
         </div>
 
-        <div class="advanced-grid">
-            <div class="group group-toggle">
+        <div class="advanced-grid settings-section settings-section-advanced">
+            <div class="group group-toggle settings-field-group">
                 <label><input id="autoScroll" type="checkbox" checked> 自动跟随最新</label>
                 <label><input id="autoReconnect" type="checkbox" checked> 自动重连</label>
                 <label><input id="showSystem" type="checkbox" checked> 显示系统消息</label>

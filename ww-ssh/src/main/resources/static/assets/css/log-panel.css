@@ -4546,8 +4546,7 @@ body.immersive-mode #btnImmersiveHeader {
     display: none !important;
 }
 /* ==================== 更多设置按钮风格统一 ==================== */
-.settings-drawer #btnCloseSettings,
-.settings-drawer #btnAddFilter,
+.settings-drawer .settings-action-btn,
 .settings-drawer .filter-row .btn-remove,
 .settings-drawer .filter-tag-remove {
     display: inline-flex !important;
@@ -4567,8 +4566,7 @@ body.immersive-mode #btnImmersiveHeader {
     font-weight: 700 !important;
     line-height: 1;
 }
-.settings-drawer #btnCloseSettings .btn-icon,
-.settings-drawer #btnAddFilter .btn-icon,
+.settings-drawer .settings-action-btn .btn-icon,
 .settings-drawer .filter-row .btn-remove .btn-icon,
 .settings-drawer .filter-tag-remove .btn-icon {
     width: 13px;
@@ -4579,8 +4577,7 @@ body.immersive-mode #btnImmersiveHeader {
     stroke-linecap: round;
     stroke-linejoin: round;
 }
-.settings-drawer #btnCloseSettings:hover:not(:disabled),
-.settings-drawer #btnAddFilter:hover:not(:disabled),
+.settings-drawer .settings-action-btn:hover:not(:disabled),
 .settings-drawer .filter-row .btn-remove:hover:not(:disabled),
 .settings-drawer .filter-tag-remove:hover:not(:disabled) {
     border-color: rgba(137, 221, 255, 0.76) !important;
@@ -5074,93 +5071,192 @@ body:not(.center-view-jvm) .toolbar .row-primary .group-action #btnStop {
         repeating-linear-gradient(135deg, rgba(158, 214, 255, 0.14) 0 6px, rgba(19, 60, 95, 0) 6px 12px) !important;
 }
 
-/* ==================== Final tweak: 右侧操作位、实例状态、日志行边框 ==================== */
-body:not(.center-view-jvm):not(.immersive-mode) .toolbar .row-primary .group-action #btnOpenSettings {
+/* ==================== Maintainability Layer: 工具栏、状态块、日志行 ==================== */
+.toolbar-action-bar {
+    --toolbar-action-gap: 6px;
+    --toolbar-anchor-gap: 4px;
+}
+
+.toolbar-action-bar,
+.toolbar-toggle,
+.settings-panel,
+.settings-panel-body,
+.settings-section,
+.settings-field-group,
+.log-stream,
+.metric-instance-block {
+    min-width: 0;
+}
+
+body:not(.center-view-jvm) .toolbar-action-bar {
+    gap: var(--toolbar-action-gap) !important;
+}
+
+body:not(.center-view-jvm):not(.immersive-mode) .toolbar-action-bar .toolbar-action-anchor,
+body.immersive-mode:not(.center-view-jvm) .toolbar-action-bar .toolbar-action-anchor {
     margin-left: auto !important;
 }
 
-body.immersive-mode:not(.center-view-jvm) .toolbar .row-primary .group-action #btnOpenSettings {
-    margin-left: auto !important;
+body.immersive-mode:not(.center-view-jvm) .toolbar-action-bar .toolbar-action-anchor-follow {
+    margin-left: var(--toolbar-anchor-gap) !important;
 }
 
-body.immersive-mode:not(.center-view-jvm) .toolbar .row-primary .group-action #btnImmersive {
-    margin-left: 4px !important;
+.settings-panel-body {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.settings-section {
+    width: 100%;
+}
+
+.settings-action-btn {
+    flex: 0 0 auto;
 }
 
 .metric-instance-block {
+    --instance-tag-border: rgba(112, 193, 243, 0.3);
+    --instance-tag-bg: linear-gradient(180deg, rgba(12, 41, 63, 0.92), rgba(8, 29, 46, 0.96));
+    --instance-tag-color: #cfeeff;
     display: flex !important;
     align-items: center;
     gap: 8px;
-    min-width: 0;
     padding: 2px 0;
 }
 
 .metric-instance-tag {
     min-height: 24px;
     padding: 0 10px;
-    border: 1px solid rgba(112, 193, 243, 0.3) !important;
+    border: 1px solid var(--instance-tag-border) !important;
     border-radius: 999px;
-    background: linear-gradient(180deg, rgba(12, 41, 63, 0.92), rgba(8, 29, 46, 0.96)) !important;
-    color: #cfeeff !important;
+    background: var(--instance-tag-bg) !important;
+    color: var(--instance-tag-color) !important;
     box-shadow:
         inset 0 1px 0 rgba(182, 235, 255, 0.14),
         0 6px 12px rgba(3, 16, 27, 0.18);
 }
 
 .metric-instance-tag.running {
-    border-color: rgba(73, 220, 171, 0.42) !important;
-    background: linear-gradient(180deg, rgba(15, 84, 68, 0.9), rgba(10, 57, 46, 0.96)) !important;
-    color: #8df6d1 !important;
+    --instance-tag-border: rgba(73, 220, 171, 0.42);
+    --instance-tag-bg: linear-gradient(180deg, rgba(15, 84, 68, 0.9), rgba(10, 57, 46, 0.96));
+    --instance-tag-color: #8df6d1;
 }
 
 .metric-instance-tag.stopped {
-    border-color: rgba(255, 127, 145, 0.38) !important;
-    background: linear-gradient(180deg, rgba(84, 28, 40, 0.9), rgba(58, 18, 28, 0.96)) !important;
-    color: #ffb2be !important;
+    --instance-tag-border: rgba(255, 127, 145, 0.38);
+    --instance-tag-bg: linear-gradient(180deg, rgba(84, 28, 40, 0.9), rgba(58, 18, 28, 0.96));
+    --instance-tag-color: #ffb2be;
 }
 
 .metric-instance-tag.unknown {
-    border-color: rgba(255, 201, 112, 0.4) !important;
-    background: linear-gradient(180deg, rgba(81, 56, 20, 0.92), rgba(57, 39, 13, 0.96)) !important;
-    color: #ffd79b !important;
+    --instance-tag-border: rgba(255, 201, 112, 0.4);
+    --instance-tag-bg: linear-gradient(180deg, rgba(81, 56, 20, 0.92), rgba(57, 39, 13, 0.96));
+    --instance-tag-color: #ffd79b;
 }
 
 .metric-instance-tag.unconfigured {
-    border-color: rgba(133, 182, 214, 0.32) !important;
-    background: linear-gradient(180deg, rgba(29, 54, 74, 0.9), rgba(18, 39, 56, 0.96)) !important;
-    color: #a8c7db !important;
+    --instance-tag-border: rgba(133, 182, 214, 0.32);
+    --instance-tag-bg: linear-gradient(180deg, rgba(29, 54, 74, 0.9), rgba(18, 39, 56, 0.96));
+    --instance-tag-color: #a8c7db;
 }
 
 .metric-instance-detail {
     color: #8fb7d2 !important;
 }
 
-#log .log-line {
+.log-stream {
+    --log-line-bg: rgba(9, 27, 42, 0.42);
+    --log-line-hover-bg: rgba(13, 36, 56, 0.68);
+    --log-line-hit-bg: rgba(86, 60, 21, 0.7);
+    --log-line-current-bg: rgba(103, 71, 24, 0.82);
+    --log-line-hit-shadow: inset 3px 0 0 rgba(255, 202, 111, 0.82);
+    --log-line-current-shadow:
+        inset 3px 0 0 rgba(255, 221, 146, 0.96),
+        0 8px 20px rgba(40, 27, 9, 0.32);
+}
+
+.log-stream .log-line {
     border: none !important;
     border-radius: 6px !important;
-    background: rgba(9, 27, 42, 0.42) !important;
+    background: var(--log-line-bg) !important;
     padding-top: 3px !important;
     padding-bottom: 3px !important;
     margin-bottom: 1px !important;
     box-shadow: none !important;
 }
 
-#log .log-line:hover {
+.log-stream .log-line:hover {
     border: none !important;
-    background: rgba(13, 36, 56, 0.68) !important;
+    background: var(--log-line-hover-bg) !important;
     box-shadow: none !important;
 }
 
-#log .log-line.line-search-hit {
+.log-stream .log-line.line-search-hit {
     border: none !important;
-    background: rgba(86, 60, 21, 0.7) !important;
-    box-shadow: inset 3px 0 0 rgba(255, 202, 111, 0.82) !important;
+    background: var(--log-line-hit-bg) !important;
+    box-shadow: var(--log-line-hit-shadow) !important;
 }
 
-#log .log-line.line-search-current {
+.log-stream .log-line.line-search-current {
     border: none !important;
-    background: rgba(103, 71, 24, 0.82) !important;
-    box-shadow:
-        inset 3px 0 0 rgba(255, 221, 146, 0.96),
-        0 8px 20px rgba(40, 27, 9, 0.32) !important;
+    background: var(--log-line-current-bg) !important;
+    box-shadow: var(--log-line-current-shadow) !important;
+}
+
+/* ==================== Maintainability Layer: 工具栏布局 ==================== */
+body:not(.center-view-jvm) .toolbar-panel .row-primary {
+    --toolbar-primary-gap: 8px;
+    --toolbar-primary-columns: repeat(3, minmax(0, 1fr));
+    grid-template-columns: var(--toolbar-primary-columns) !important;
+    align-items: end !important;
+    gap: var(--toolbar-primary-gap) !important;
+}
+
+body:not(.center-view-jvm) .toolbar-panel .row-primary .group-service,
+body:not(.center-view-jvm) .toolbar-panel .row-primary .toolbar-action-bar {
+    min-width: 0 !important;
+}
+
+body:not(.center-view-jvm) .toolbar-panel .row-primary .toolbar-action-bar {
+    grid-column: 1 / -1 !important;
+    width: 100% !important;
+    overflow: visible !important;
+    display: flex !important;
+    flex-wrap: wrap !important;
+    justify-content: flex-start !important;
+    row-gap: 6px !important;
+    column-gap: 6px !important;
+}
+
+body:not(.center-view-jvm) .toolbar-panel .row-primary .toolbar-action-bar .action-separator {
+    display: none !important;
+}
+
+body:not(.center-view-jvm) .toolbar-panel .row-primary .toolbar-toggle {
+    flex: 0 0 auto !important;
+}
+
+body:not(.center-view-jvm) .toolbar-panel .row-primary .toolbar-toggle .read-mode-btn {
+    min-width: 50px !important;
+}
+
+@media (max-width: 1320px) {
+    body:not(.center-view-jvm) .toolbar-panel .row-primary {
+        --toolbar-primary-columns: repeat(2, minmax(0, 1fr));
+    }
+    body:not(.center-view-jvm) .toolbar-panel .row-primary .group-service,
+    body:not(.center-view-jvm) .toolbar-panel .row-primary .toolbar-action-bar {
+        grid-column: 1 / -1 !important;
+    }
+}
+
+@media (max-width: 760px) {
+    body:not(.center-view-jvm) .toolbar-panel .row-primary {
+        --toolbar-primary-columns: 1fr;
+    }
+    body:not(.center-view-jvm) .toolbar-panel .row-primary .group-service,
+    body:not(.center-view-jvm) .toolbar-panel .row-primary .toolbar-action-bar {
+        grid-column: auto !important;
+    }
 }

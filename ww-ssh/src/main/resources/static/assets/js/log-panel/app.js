@@ -117,6 +117,66 @@ const CAT_WS_HARD_TIMEOUT_MS = 6000;
 const SHARED_FILE_KEY = 'file';
 
 /**
+ * URL 分享状态字段集合。
+ */
+const SHARED_STATE_KEYS = Object.freeze([
+    'project',
+    'env',
+    'service',
+    'file',
+    'lines',
+    'level',
+    'autoScroll',
+    'autoReconnect',
+    'showSystem',
+    'uiDensity',
+    'readMode',
+    'logSearch',
+    'rules'
+]);
+
+/**
+ * 沉浸模式按钮集合。
+ */
+const IMMERSIVE_BUTTON_IDS = Object.freeze(['btnImmersive', 'btnImmersiveHeader']);
+
+/**
+ * 沉浸模式按钮文案与图标配置。
+ */
+const IMMERSIVE_BUTTON_META = Object.freeze({
+    active: Object.freeze({
+        label: '退出',
+        title: '退出沉浸模式',
+        icon: 'icon-contract'
+    }),
+    inactive: Object.freeze({
+        label: '沉浸',
+        title: '进入沉浸模式',
+        icon: 'icon-expand'
+    })
+});
+
+const READ_MODE_BUTTON_META = Object.freeze({
+    [READ_MODE_TAIL]: Object.freeze({
+        startLabel: '开始',
+        startIcon: 'icon-play',
+        startTitle: '开始实时监听（tail）',
+        startAriaLabel: '开始实时监听',
+        stopTitle: '结束查看'
+    }),
+    [READ_MODE_CAT]: Object.freeze({
+        startLabel: '快照',
+        startIcon: 'icon-snapshot',
+        startTitle: '读取一次快照（cat）',
+        startAriaLabel: '读取一次快照',
+        stopTitle: '停止实时监听'
+    })
+});
+
+const CONTEXT_CONTROL_IDS = Object.freeze(['project', 'env', 'service']);
+const CAT_BUSY_CONTROL_IDS = Object.freeze(['btnReadTail', 'btnReadCat']);
+
+/**
  * 分享链接恢复的状态。
  */
 const sharedState = parseSharedStateFromUrl();
@@ -1635,7 +1695,9 @@ function setReadMode(mode, persist) {
  * 刷新读取模式按钮与开始按钮文案。
  */
 function renderReadModeButtons() {
-    const tailMode = isTailMode();
+    const mode = getReadMode();
+    const tailMode = mode === READ_MODE_TAIL;
+    const modeMeta = READ_MODE_BUTTON_META[mode] || READ_MODE_BUTTON_META[READ_MODE_TAIL];
     const tailButton = el('btnReadTail');
     const catButton = el('btnReadCat');
     const startButton = el('btnStart');
@@ -1647,12 +1709,12 @@ function renderReadModeButtons() {
         catButton.classList.toggle('active', !tailMode);
     }
     if (startButton) {
-        setButtonVisual(startButton, tailMode ? '开始' : '快照', tailMode ? 'icon-play' : 'icon-snapshot');
-        startButton.title = tailMode ? '开始实时监听（tail）' : '读取一次快照（cat）';
-        startButton.setAttribute('aria-label', tailMode ? '开始实时监听' : '读取一次快照');
+        setButtonVisual(startButton, modeMeta.startLabel, modeMeta.startIcon);
+        startButton.title = modeMeta.startTitle;
+        startButton.setAttribute('aria-label', modeMeta.startAriaLabel);
     }
     if (stopButton) {
-        stopButton.title = tailMode ? '结束查看' : '停止实时监听';
+        stopButton.title = modeMeta.stopTitle;
     }
 }
 
@@ -1725,13 +1787,10 @@ function toggleImmersiveMode() {
 function setImmersiveMode(enabled, persist) {
     const active = !!enabled;
     document.body.classList.toggle('immersive-mode', active);
-    const immersiveButtons = [el('btnImmersive'), el('btnImmersiveHeader')].filter(Boolean);
-    immersiveButtons.forEach(button => {
-        button.classList.toggle('active', active);
-        setButtonVisual(button, active ? '退出' : '沉浸', active ? 'icon-contract' : 'icon-expand');
-        button.title = active ? '退出沉浸模式' : '进入沉浸模式';
-        button.setAttribute('aria-label', active ? '退出沉浸模式' : '进入沉浸模式');
-    });
+    IMMERSIVE_BUTTON_IDS
+        .map(buttonId => el(buttonId))
+        .filter(Boolean)
+        .forEach(button => applyImmersiveButtonState(button, active));
     if (active) {
         closeSettingsDrawer();
     }
@@ -1799,26 +1858,31 @@ function updateControls() {
     const tailLocked = wsActive && tailMode;
     const catBusy = !!state.catLoading;
     statusBar.setLatencyEnabled(tailLocked);
-    el('project').disabled = tailLocked || catBusy;
-    el('env').disabled = tailLocked || catBusy;
-    el('service').disabled = tailLocked || catBusy;
-    el('lines').disabled = catBusy;
-    const decreaseLinesButton = el('btnLinesDecrease');
-    if (decreaseLinesButton) {
-        decreaseLinesButton.disabled = catBusy;
-    }
-    const increaseLinesButton = el('btnLinesIncrease');
-    if (increaseLinesButton) {
-        increaseLinesButton.disabled = catBusy;
-    }
-    el('btnReadTail').disabled = catBusy;
-    el('btnReadCat').disabled = catBusy;
-    el('btnStart').disabled = catBusy || tailLocked;
-    el('btnStop').disabled = !tailLocked;
-    el('btnPause').disabled = !tailLocked;
+    CONTEXT_CONTROL_IDS.forEach(controlId => setElementDisabled(controlId, tailLocked || catBusy));
+    setElementDisabled('lines', catBusy);
+    setElementDisabled('btnLinesDecrease', catBusy);
+    setElementDisabled('btnLinesIncrease', catBusy);
+    CAT_BUSY_CONTROL_IDS.forEach(controlId => setElementDisabled(controlId, catBusy));
+    setElementDisabled('btnStart', catBusy || tailLocked);
+    setElementDisabled('btnStop', !tailLocked);
+    setElementDisabled('btnPause', !tailLocked);
     filterChainManager.setDisabled(catBusy);
     renderReadModeButtons();
     updateFileMode();
+}
+
+/**
+ * 安全设置元素禁用状态；元素不存在时静默跳过。
+ *
+ * @param {string} elementId 元素 ID
+ * @param {boolean} disabled 是否禁用
+ */
+function setElementDisabled(elementId, disabled) {
+    const target = el(elementId);
+    if (!target) {
+        return;
+    }
+    target.disabled = !!disabled;
 }
 
 /**
@@ -2016,21 +2080,27 @@ function parseSharedStateFromUrl() {
     if (params.get('share') !== '1') {
         return null;
     }
-    return {
-        project: params.get('project') || '',
-        env: params.get('env') || '',
-        service: params.get('service') || '',
-        file: params.get('file') || '',
-        lines: params.get('lines') || '',
-        level: params.get('level') || '',
-        autoScroll: params.get('autoScroll') || '',
-        autoReconnect: params.get('autoReconnect') || '',
-        showSystem: params.get('showSystem') || '',
-        uiDensity: params.get('uiDensity') || '',
-        readMode: params.get('readMode') || '',
-        logSearch: params.get('logSearch') || '',
-        rules: params.get('rules') || ''
-    };
+    return SHARED_STATE_KEYS.reduce((result, key) => {
+        result[key] = params.get(key) || '';
+        return result;
+    }, {});
+}
+
+/**
+ * 根据沉浸模式状态刷新按钮文案、图标与可访问性属性。
+ *
+ * @param {HTMLButtonElement} button 按钮节点
+ * @param {boolean} active 是否启用沉浸模式
+ */
+function applyImmersiveButtonState(button, active) {
+    if (!button) {
+        return;
+    }
+    const meta = active ? IMMERSIVE_BUTTON_META.active : IMMERSIVE_BUTTON_META.inactive;
+    button.classList.toggle('active', !!active);
+    setButtonVisual(button, meta.label, meta.icon);
+    button.title = meta.title;
+    button.setAttribute('aria-label', meta.title);
 }
 
 /**
