@@ -74,18 +74,22 @@ public class SshLogService {
 
     /**
      * 启动/重启动作状态校验最大重试次数。
+     * <p>
+     * Spring Boot 服务异步启动，JVM 冷启动通常需要 15~30 秒，
+     * 20 次 × 2s = 40s，覆盖大多数服务启动耗时。
+     * </p>
      */
-    private static final int OP_VERIFY_RETRY_START = 6;
+    private static final int OP_VERIFY_RETRY_START = 20;
 
     /**
      * 停止动作状态校验最大重试次数。
      */
-    private static final int OP_VERIFY_RETRY_STOP = 4;
+    private static final int OP_VERIFY_RETRY_STOP = 6;
 
     /**
      * 状态校验重试间隔（毫秒）。
      */
-    private static final long OP_VERIFY_SLEEP_MS = 1200L;
+    private static final long OP_VERIFY_SLEEP_MS = 2000L;
 
     /**
      * JVM GC 命令输出标记前缀。

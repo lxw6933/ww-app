@@ -387,7 +387,7 @@ public class SshCommandBuilder {
                 + "&& { [ \"$CMD_ACTION\" = \"start\" ] || [ \"$CMD_ACTION\" = \"restart\" ]; }; then "
                 + "RUNNING=0; "
                 + "CHECK_COUNT=0; "
-                + "while [ \"$CHECK_COUNT\" -lt 6 ]; do "
+                + "while [ \"$CHECK_COUNT\" -lt 15 ]; do "
                 + "RUNNING=0; "
                 + "if [ -d \"./pid\" ]; then "
                 + "for PID_FILE in ./pid/*.pid; do "
