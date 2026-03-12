@@ -5356,6 +5356,80 @@ body:not(.center-view-jvm) .toolbar-panel .row-primary .toolbar-toggle .read-mod
     justify-content: center !important;
 }
 
+/* ==================== 指标进度条压缩 + 系统负载进度条 ==================== */
+/* 进度条高度压缩：从 28px → 20px，更紧凑 */
+.metric-progress {
+    height: 20px !important;
+    border-radius: 6px !important;
+}
+
+.metric-progress-text {
+    font-size: 11px !important;
+    padding: 0 7px !important;
+}
+
+.metric-progress-left {
+    font-size: 11px !important;
+}
+
+.metric-progress-right {
+    font-size: 10px !important;
+}
+
+/* kpi 行间距压缩 */
+.metric-kpi-grid {
+    gap: 3px !important;
+}
+
+.metric-kpi-line {
+    gap: 3px !important;
+}
+
+.metric-kpi-label {
+    font-size: 11px !important;
+    min-width: 24px !important;
+}
+
+/* 负载进度条：单条，与 CPU/内存等宽 */
+.metric-progress.is-load {
+    height: 16px !important;
+    border-radius: 5px !important;
+}
+
+.metric-progress.is-load .metric-progress-text {
+    font-size: 10px !important;
+    padding: 0 6px !important;
+}
+
+.metric-progress.is-load .metric-progress-left {
+    font-size: 10px !important;
+}
+
+/* 负载条颜色：默认青绿，warn 黄，error 红 */
+.metric-progress.is-load .metric-progress-fill {
+    background: linear-gradient(90deg, rgba(56, 210, 180, 0.88), rgba(28, 168, 140, 0.92)) !important;
+}
+
+.metric-progress.is-load .metric-progress-fill.warn {
+    background: linear-gradient(90deg, rgba(255, 193, 100, 0.9), rgba(220, 150, 40, 0.92)) !important;
+}
+
+.metric-progress.is-load .metric-progress-fill.error {
+    background: linear-gradient(90deg, rgba(255, 120, 140, 0.9), rgba(210, 60, 80, 0.92)) !important;
+}
+
+/* 负载行 label 宽度 */
+.metric-load-bars .metric-kpi-label {
+    min-width: 22px !important;
+    font-size: 10px !important;
+    color: #8abfd8 !important;
+}
+
+/* 兼容：旧版 metric-load-block 不再使用但保留类名防止报错 */
+.metric-load-block {
+    display: none !important;
+}
+
 /* ==================== 终极单行覆盖（覆盖所有 data-read-mode 与三列残留规则） ==================== */
 /* 使用与竞争规则相同特异性 + 位置靠后策略，强制四列单行布局 */
 body[data-read-mode='tail']:not(.center-view-jvm) .toolbar-panel .row-primary,

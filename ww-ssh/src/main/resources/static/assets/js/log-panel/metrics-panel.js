@@ -1231,27 +1231,63 @@ function createUsageVisual(label, percent, valueText, extraText) {
 }
 
 /**
- * 创建系统负载展示块。
+ * 将负载值映射为百分比（以 4.0 为 100% 基准）。
+ *
+ * @param {number} value 负载值
+ * @returns {number} 百分比 0~100
+ */
+function loadToPercent(value) {
+    if (value === null || value === undefined || Number.isNaN(Number(value))) {
+        return 0;
+    }
+    return Math.min(Math.max(0, Number(value) / 4.0 * 100), 100);
+}
+
+/**
+ * 创建系统负载进度条块（以 1m 负载为主条，右侧显示 1m/5m/15m 三值）。
  *
  * @param {Object} item 指标对象
  * @returns {HTMLDivElement} 节点
  */
 function createLoadBlock(item) {
-    const loadBlockEl = document.createElement('div');
-    loadBlockEl.className = 'metric-load-block';
+    const load1m = item && item.load1m;
+    const level = loadLevelClass(load1m);
+    const pct = loadToPercent(load1m);
+    const allText = formatLoad(item);
 
-    const loadLevel = loadLevelClass(item && item.load1m);
-    const loadTitleEl = document.createElement('span');
-    loadTitleEl.className = 'metric-load-label';
-    loadTitleEl.textContent = '系统负载(1/5/15m)';
+    const rowEl = document.createElement('div');
+    rowEl.className = 'metric-kpi-line';
 
-    const loadValueEl = document.createElement('span');
-    loadValueEl.className = loadLevel ? `metric-load-value ${loadLevel}` : 'metric-load-value';
-    loadValueEl.textContent = formatLoad(item);
+    const labelEl = document.createElement('span');
+    labelEl.className = 'metric-kpi-label';
+    labelEl.textContent = '负载';
+    rowEl.appendChild(labelEl);
 
-    loadBlockEl.appendChild(loadTitleEl);
-    loadBlockEl.appendChild(loadValueEl);
-    return loadBlockEl;
+    const barEl = document.createElement('div');
+    barEl.className = 'metric-progress is-load is-memory';
+    const fillEl = document.createElement('span');
+    fillEl.className = level ? `metric-progress-fill ${level}` : 'metric-progress-fill';
+    fillEl.style.width = `${pct}%`;
+    barEl.appendChild(fillEl);
+
+    const textEl = document.createElement('span');
+    textEl.className = 'metric-progress-text';
+
+    const leftEl = document.createElement('span');
+    leftEl.className = 'metric-progress-left';
+    const load1Text = (load1m === null || load1m === undefined || Number.isNaN(Number(load1m)))
+        ? '--' : Number(load1m).toFixed(2);
+    leftEl.textContent = load1Text;
+    textEl.appendChild(leftEl);
+
+    const rightEl = document.createElement('span');
+    rightEl.className = 'metric-progress-right';
+    rightEl.textContent = allText;
+    textEl.appendChild(rightEl);
+
+    barEl.appendChild(textEl);
+    rowEl.appendChild(barEl);
+    return rowEl;
 }
 
 /**
