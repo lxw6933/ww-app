@@ -564,6 +564,51 @@ public class SshCommandBuilder {
     }
 
     /**
+     * 构建合并主机指标采集命令（CPU + 内存 + 交换 + 磁盘 + 负载，一次 SSH 完成）。
+     * <p>
+     * 将原本需要5次 SSH 连接的指标采集合并为单次命令，输出格式每行一个指标：
+     * <pre>
+     * WW_CPU:85.23
+     * WW_MEM:65.12 8192 12288
+     * WW_SWAP:0 0 0
+     * WW_DISK:45.00 50000 110000
+     * WW_LOAD:0.80 0.90 1.00
+     * </pre>
+     * 上层通过行前缀解析各字段，保持与原单条命令输出格式完全一致。
+     * </p>
+     *
+     * @return Shell 命令
+     */
+    public String buildCombinedHostMetricsCommand() {
+        // CPU：优先 top 解析空闲率，失败则回退 /proc/stat
+        String cpuCapture = "_CPU=$(top -bn1 2>/dev/null"
+                + " | awk -F',' '/Cpu|CPU:/ {for(i=1;i<=NF;i++){if($i~/id/)"
+                + "{gsub(/[^0-9.]/,\"\",$i);if($i!=\"\"){printf \"%.2f\",100-$i;exit}}}}');"
+                + " [ -n \"$_CPU\" ] || _CPU=$(awk '/^cpu /{idle=$5;total=0;"
+                + "for(i=2;i<=NF;i++){total+=$i};"
+                + "if(total>0){printf \"%.2f\",(total-idle)*100/total}else{print \"0\"}}"
+                + "' /proc/stat 2>/dev/null);";
+        // 内存：格式 使用率% 已用MB 总MB
+        String memCapture = "_MEM=$(awk '/MemTotal:/{t=$2}/MemAvailable:/{a=$2}"
+                + "END{if(t>0){u=t-a;printf \"%.2f %d %d\",(u*100/t),int(u/1024),int(t/1024)}}'"
+                + " /proc/meminfo 2>/dev/null);";
+        // 交换内存：格式 使用率% 已用MB 总MB
+        String swapCapture = "_SWAP=$(awk '/SwapTotal:/{t=$2}/SwapFree:/{f=$2}"
+                + "END{if(t>0){u=t-f;printf \"%.2f %d %d\",(u*100/t),int(u/1024),int(t/1024)}"
+                + "else{printf \"0 0 0\"}}' /proc/meminfo 2>/dev/null);";
+        // 磁盘（根分区）：格式 使用率% 已用MB 总MB
+        String diskCapture = "_DISK=$(df -Pm / 2>/dev/null"
+                + " | awk 'NR==2{gsub(/%/,\"\",$5);printf \"%s %s %s\",$5,$3,$2}');";
+        // 系统负载：格式 1m 5m 15m
+        String loadCapture = "_LOAD=$(awk '{print $1\" \"$2\" \"$3}' /proc/loadavg 2>/dev/null);";
+        // 输出带前缀的多行结果
+        String printAll = "printf 'WW_CPU:%s\\nWW_MEM:%s\\nWW_SWAP:%s\\nWW_DISK:%s\\nWW_LOAD:%s\\n'"
+                + " \"$_CPU\" \"$_MEM\" \"$_SWAP\" \"$_DISK\" \"$_LOAD\"";
+        return cpuCapture + " " + memCapture + " " + swapCapture + " "
+                + diskCapture + " " + loadCapture + " " + printAll;
+    }
+
+    /**
      * 构建 JVM GC 指标采集命令。
      * <p>
      * 采集策略：

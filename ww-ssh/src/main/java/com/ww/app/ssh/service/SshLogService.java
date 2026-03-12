@@ -190,10 +190,36 @@ public class SshLogService {
     }
 
     /**
+     * 合并指标命令输出中各指标行的键前缀。
+     */
+    private static final String COMBINED_METRIC_CPU = "WW_CPU:";
+
+    /**
+     * 合并指标命令输出：内存行前缀。
+     */
+    private static final String COMBINED_METRIC_MEM = "WW_MEM:";
+
+    /**
+     * 合并指标命令输出：交换内存行前缀。
+     */
+    private static final String COMBINED_METRIC_SWAP = "WW_SWAP:";
+
+    /**
+     * 合并指标命令输出：磁盘行前缀。
+     */
+    private static final String COMBINED_METRIC_DISK = "WW_DISK:";
+
+    /**
+     * 合并指标命令输出：负载行前缀。
+     */
+    private static final String COMBINED_METRIC_LOAD = "WW_LOAD:";
+
+    /**
      * 采集目标主机实时指标。
      * <p>
-     * 该方法会通过 SSH 分别执行 CPU、内存、负载采集命令，
-     * 并将结果转换为统一快照对象返回。
+     * 优化策略：将 CPU、内存、交换、磁盘、负载5项指标合并为一次 SSH 执行，
+     * 再分别调用 JVM GC 与实例状态采集（共3次 SSH，原为7次），
+     * 大幅降低多服务场景下的采集延迟。
      * 若任一步骤失败，不抛出异常，而是返回 status=error 的结果，
      * 避免单个节点失败影响整个页面展示。
      * </p>
@@ -204,17 +230,16 @@ public class SshLogService {
     public HostMetricSnapshot queryHostMetric(LogTarget target) {
         HostMetricSnapshot snapshot = initMetricSnapshot(target);
         try {
-            String cpuLine = firstLine(executeCommandForLines(target, sshCommandBuilder.buildCpuUsageCommand(), 1));
-            String memoryLine = firstLine(executeCommandForLines(target, sshCommandBuilder.buildMemoryUsageCommand(), 1));
-            String swapLine = firstLine(executeCommandForLines(target, sshCommandBuilder.buildSwapUsageCommand(), 1));
-            String diskLine = firstLine(executeCommandForLines(target, sshCommandBuilder.buildDiskUsageCommand(), 1));
-            String loadLine = firstLine(executeCommandForLines(target, sshCommandBuilder.buildLoadAverageCommand(), 1));
+            // 一次 SSH 采集 CPU + 内存 + 交换 + 磁盘 + 负载（原5次，优化为1次）
+            List<String> combinedLines = executeCommandForLines(
+                    target, sshCommandBuilder.buildCombinedHostMetricsCommand(), 10);
+            Map<String, String> metricValues = parseCombinedMetricLines(combinedLines);
 
-            snapshot.setCpuUsagePercent(normalizePercent(parseDouble(cpuLine)));
-            applyMemoryMetrics(snapshot, memoryLine);
-            applySwapMetrics(snapshot, swapLine);
-            applyDiskMetrics(snapshot, diskLine);
-            applyLoadMetrics(snapshot, loadLine);
+            snapshot.setCpuUsagePercent(normalizePercent(parseDouble(metricValues.get(COMBINED_METRIC_CPU))));
+            applyMemoryMetrics(snapshot, metricValues.get(COMBINED_METRIC_MEM));
+            applySwapMetrics(snapshot, metricValues.get(COMBINED_METRIC_SWAP));
+            applyDiskMetrics(snapshot, metricValues.get(COMBINED_METRIC_DISK));
+            applyLoadMetrics(snapshot, metricValues.get(COMBINED_METRIC_LOAD));
             applyJvmGcMetrics(snapshot, target);
             applyInstanceStatus(snapshot, target);
             snapshot.setStatus("ok");
@@ -229,6 +254,38 @@ public class SshLogService {
             snapshot.setMessage(limitMessage(ex.getMessage()));
         }
         return snapshot;
+    }
+
+    /**
+     * 解析合并指标命令的输出行，提取各指标值。
+     * <p>
+     * 输出格式每行一个指标，如 {@code WW_CPU:85.23}，
+     * 解析后以前缀（含冒号）为 key，值为 value 存入 Map。
+     * </p>
+     *
+     * @param lines 命令输出行
+     * @return 前缀→值的映射
+     */
+    private Map<String, String> parseCombinedMetricLines(List<String> lines) {
+        Map<String, String> result = new java.util.HashMap<>(8);
+        if (lines == null || lines.isEmpty()) {
+            return result;
+        }
+        for (String line : lines) {
+            String trimmed = trimToEmpty(line);
+            if (trimmed.isEmpty()) {
+                continue;
+            }
+            int colonIndex = trimmed.indexOf(':');
+            if (colonIndex <= 0) {
+                continue;
+            }
+            // key 带冒号，便于直接与常量比较
+            String key = trimmed.substring(0, colonIndex + 1);
+            String value = trimmed.substring(colonIndex + 1);
+            result.put(key, value);
+        }
+        return result;
     }
 
     /**
