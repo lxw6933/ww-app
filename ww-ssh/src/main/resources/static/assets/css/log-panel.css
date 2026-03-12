@@ -5227,29 +5227,72 @@ body.immersive-mode:not(.center-view-jvm) .toolbar-action-bar .toolbar-action-an
     box-shadow: var(--log-line-current-shadow) !important;
 }
 
-/* ==================== Maintainability Layer: 工具栏布局 ==================== */
-body:not(.center-view-jvm) .toolbar-panel .row-primary {
-    --toolbar-primary-gap: 8px;
-    --toolbar-primary-columns: repeat(3, minmax(0, 1fr));
-    grid-template-columns: var(--toolbar-primary-columns) !important;
-    align-items: end !important;
-    gap: var(--toolbar-primary-gap) !important;
+/* ==================== 去除项目/环境/服务/按钮区包含框 ==================== */
+/* 彻底清除 group-env、group-service、group-action（toolbar-action-bar）的边框、背景、阴影，
+   回归纯粹的无框布局，保留 grid/flex 排版即可。 */
+body:not(.center-view-jvm) .toolbar .row-primary .group-env,
+body:not(.center-view-jvm) .toolbar .row-primary .group-service,
+body:not(.center-view-jvm) .toolbar .row-primary .group-env::after,
+body:not(.center-view-jvm) .toolbar .row-primary .group-service::after {
+    border: none !important;
+    background: transparent !important;
+    box-shadow: none !important;
+    padding: 0 !important;
+    overflow: visible !important;
 }
 
+body:not(.center-view-jvm) .toolbar .row-primary .group-env label,
+body:not(.center-view-jvm) .toolbar .row-primary .group-service label {
+    font-size: 13px !important;
+    font-weight: 600 !important;
+    letter-spacing: 0 !important;
+    text-transform: none !important;
+    color: #9ec7e2 !important;
+    margin-bottom: 0 !important;
+    white-space: nowrap;
+}
+
+body:not(.center-view-jvm) .toolbar .row-primary .group-env select,
+body:not(.center-view-jvm) .toolbar .row-primary .group-service select {
+    height: 36px !important;
+}
+
+body:not(.center-view-jvm) .toolbar .row-primary .group-action,
+body:not(.center-view-jvm) .toolbar .row-primary .toolbar-action-bar {
+    border: none !important;
+    background: transparent !important;
+    box-shadow: none !important;
+    padding: 0 !important;
+}
+
+/* ==================== Maintainability Layer: 工具栏布局（单行四列：项目+环境+服务+按钮） ==================== */
+/* 项目、环境、服务、按钮区四列同行展示，按钮区占剩余空间 */
+body:not(.center-view-jvm) .toolbar-panel .row-primary {
+    grid-template-columns:
+        minmax(120px, 0.88fr)
+        minmax(120px, 0.88fr)
+        minmax(140px, 1fr)
+        minmax(0, 2.4fr) !important;
+    align-items: center !important;
+    gap: 10px !important;
+}
+
+body:not(.center-view-jvm) .toolbar-panel .row-primary .group-env,
 body:not(.center-view-jvm) .toolbar-panel .row-primary .group-service,
 body:not(.center-view-jvm) .toolbar-panel .row-primary .toolbar-action-bar {
     min-width: 0 !important;
+    /* 重置各类强制 grid-column 覆盖，保持单行 */
+    grid-column: auto !important;
 }
 
 body:not(.center-view-jvm) .toolbar-panel .row-primary .toolbar-action-bar {
-    grid-column: 1 / -1 !important;
     width: 100% !important;
     overflow: visible !important;
     display: flex !important;
-    flex-wrap: wrap !important;
+    flex-wrap: nowrap !important;
+    align-items: center !important;
     justify-content: flex-start !important;
-    row-gap: 6px !important;
-    column-gap: 6px !important;
+    gap: 6px !important;
 }
 
 body:not(.center-view-jvm) .toolbar-panel .row-primary .toolbar-action-bar .action-separator {
@@ -5261,25 +5304,121 @@ body:not(.center-view-jvm) .toolbar-panel .row-primary .toolbar-toggle {
 }
 
 body:not(.center-view-jvm) .toolbar-panel .row-primary .toolbar-toggle .read-mode-btn {
-    min-width: 50px !important;
+    min-width: 46px !important;
 }
 
-@media (max-width: 1320px) {
+/* 中等屏幕：服务下折，按钮区独占一行 */
+@media (max-width: 1260px) {
     body:not(.center-view-jvm) .toolbar-panel .row-primary {
-        --toolbar-primary-columns: repeat(2, minmax(0, 1fr));
+        grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
     }
-    body:not(.center-view-jvm) .toolbar-panel .row-primary .group-service,
+    body:not(.center-view-jvm) .toolbar-panel .row-primary .group-service {
+        grid-column: 1 / -1 !important;
+    }
     body:not(.center-view-jvm) .toolbar-panel .row-primary .toolbar-action-bar {
         grid-column: 1 / -1 !important;
+        flex-wrap: wrap !important;
     }
 }
 
 @media (max-width: 760px) {
     body:not(.center-view-jvm) .toolbar-panel .row-primary {
-        --toolbar-primary-columns: 1fr;
+        grid-template-columns: 1fr !important;
     }
     body:not(.center-view-jvm) .toolbar-panel .row-primary .group-service,
     body:not(.center-view-jvm) .toolbar-panel .row-primary .toolbar-action-bar {
         grid-column: auto !important;
+    }
+}
+
+/* ==================== 日志头部：搜索框靠右 + 导航按钮纯图标 ==================== */
+/* 搜索框连同三个按钮整体推到右侧 */
+.log-search-box {
+    margin-left: auto !important;
+    flex: 0 1 auto !important;
+    min-width: 0;
+}
+
+/* 上条/下条/清空 隐藏文字，保留图标 */
+#btnSearchPrev .btn-label,
+#btnSearchNext .btn-label,
+#btnClear .btn-label {
+    display: none !important;
+}
+
+/* 三个按钮缩为方形图标按钮 */
+#btnSearchPrev,
+#btnSearchNext,
+#btnClear {
+    width: 30px !important;
+    min-width: 30px !important;
+    padding: 0 !important;
+    justify-content: center !important;
+}
+
+/* ==================== 终极单行覆盖（覆盖所有 data-read-mode 与三列残留规则） ==================== */
+/* 使用与竞争规则相同特异性 + 位置靠后策略，强制四列单行布局 */
+body[data-read-mode='tail']:not(.center-view-jvm) .toolbar-panel .row-primary,
+body[data-read-mode='cat']:not(.center-view-jvm) .toolbar-panel .row-primary,
+body:not([data-read-mode]):not(.center-view-jvm) .toolbar-panel .row-primary {
+    grid-template-columns:
+        minmax(110px, 0.82fr)
+        minmax(110px, 0.82fr)
+        minmax(128px, 0.96fr)
+        minmax(0, 2.5fr) !important;
+    align-items: center !important;
+    gap: 10px !important;
+}
+
+body[data-read-mode='tail']:not(.center-view-jvm) .toolbar-panel .row-primary .group-action,
+body[data-read-mode='tail']:not(.center-view-jvm) .toolbar-panel .row-primary .toolbar-action-bar,
+body[data-read-mode='cat']:not(.center-view-jvm) .toolbar-panel .row-primary .group-action,
+body[data-read-mode='cat']:not(.center-view-jvm) .toolbar-panel .row-primary .toolbar-action-bar,
+body:not([data-read-mode]):not(.center-view-jvm) .toolbar-panel .row-primary .group-action,
+body:not([data-read-mode]):not(.center-view-jvm) .toolbar-panel .row-primary .toolbar-action-bar {
+    grid-column: auto !important;
+    flex-wrap: nowrap !important;
+    overflow: visible !important;
+    width: 100% !important;
+    gap: 6px !important;
+}
+
+body[data-read-mode='tail']:not(.center-view-jvm) .toolbar-panel .row-primary .group-service,
+body[data-read-mode='cat']:not(.center-view-jvm) .toolbar-panel .row-primary .group-service,
+body:not([data-read-mode]):not(.center-view-jvm) .toolbar-panel .row-primary .group-service {
+    grid-column: auto !important;
+}
+
+@media (max-width: 1260px) {
+    body[data-read-mode='tail']:not(.center-view-jvm) .toolbar-panel .row-primary,
+    body[data-read-mode='cat']:not(.center-view-jvm) .toolbar-panel .row-primary,
+    body:not([data-read-mode]):not(.center-view-jvm) .toolbar-panel .row-primary {
+        grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    }
+    body[data-read-mode='tail']:not(.center-view-jvm) .toolbar-panel .row-primary .group-service,
+    body[data-read-mode='cat']:not(.center-view-jvm) .toolbar-panel .row-primary .group-service,
+    body:not([data-read-mode]):not(.center-view-jvm) .toolbar-panel .row-primary .group-service,
+    body[data-read-mode='tail']:not(.center-view-jvm) .toolbar-panel .row-primary .toolbar-action-bar,
+    body[data-read-mode='cat']:not(.center-view-jvm) .toolbar-panel .row-primary .toolbar-action-bar,
+    body:not([data-read-mode]):not(.center-view-jvm) .toolbar-panel .row-primary .toolbar-action-bar {
+        grid-column: 1 / -1 !important;
+        flex-wrap: wrap !important;
+    }
+}
+
+@media (max-width: 760px) {
+    body[data-read-mode='tail']:not(.center-view-jvm) .toolbar-panel .row-primary,
+    body[data-read-mode='cat']:not(.center-view-jvm) .toolbar-panel .row-primary,
+    body:not([data-read-mode]):not(.center-view-jvm) .toolbar-panel .row-primary {
+        grid-template-columns: 1fr !important;
+    }
+    body[data-read-mode='tail']:not(.center-view-jvm) .toolbar-panel .row-primary .group-service,
+    body[data-read-mode='cat']:not(.center-view-jvm) .toolbar-panel .row-primary .group-service,
+    body:not([data-read-mode]):not(.center-view-jvm) .toolbar-panel .row-primary .group-service,
+    body[data-read-mode='tail']:not(.center-view-jvm) .toolbar-panel .row-primary .toolbar-action-bar,
+    body[data-read-mode='cat']:not(.center-view-jvm) .toolbar-panel .row-primary .toolbar-action-bar,
+    body:not([data-read-mode]):not(.center-view-jvm) .toolbar-panel .row-primary .toolbar-action-bar {
+        grid-column: auto !important;
+        flex-wrap: wrap !important;
     }
 }
