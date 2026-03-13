@@ -5304,7 +5304,7 @@ body:not(.center-view-jvm) .toolbar-panel .row-primary .toolbar-toggle {
 }
 
 body:not(.center-view-jvm) .toolbar-panel .row-primary .toolbar-toggle .read-mode-btn {
-    min-width: 46px !important;
+    min-width: 52px !important;
 }
 
 /* 中等屏幕：服务下折，按钮区独占一行 */
