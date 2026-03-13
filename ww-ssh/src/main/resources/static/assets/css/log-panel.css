@@ -878,36 +878,6 @@ body.settings-drawer-open {
     font-weight: 700;
     text-overflow: clip;
 }
-.read-mode-switch {
-    display: grid;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: 2px;
-    padding: 2px;
-    border-radius: 999px;
-    border: 1px solid #c8d9ea;
-    background: #e9f2fb;
-    flex: 0 0 auto;
-}
-.read-mode-btn {
-    min-width: 30px !important;
-    width: 30px;
-    height: 30px;
-    border-radius: 999px;
-    border-color: transparent !important;
-    background: transparent !important;
-    color: #3e5d79 !important;
-    font-size: 12px;
-    font-weight: 700;
-    padding: 0;
-}
-.read-mode-btn:hover:not(:disabled) {
-    background: rgba(66, 109, 145, 0.16) !important;
-}
-.read-mode-btn.active {
-    background: linear-gradient(180deg, #2d8ae0 0%, #1f79cb 100%) !important;
-    color: #ffffff !important;
-    box-shadow: 0 3px 8px rgba(31, 121, 203, 0.3);
-}
 body[data-read-mode='cat'] #btnStop,
 body[data-read-mode='cat'] #btnPause,
 body[data-read-mode='cat'] #btnBreak,
@@ -2373,23 +2343,14 @@ input,
 textarea,
 button.secondary,
 .read-mode-btn {
-    background: linear-gradient(180deg, rgba(16, 46, 70, 0.9), rgba(12, 34, 54, 0.92)) !important;
-    border-color: rgba(98, 179, 236, 0.45) !important;
-    color: #d5efff !important;
 }
 select option {
     background: #0a2236;
     color: #d5efff;
 }
 .read-mode-switch {
-    border-color: rgba(112, 194, 246, 0.5) !important;
-    background: rgba(12, 36, 57, 0.9) !important;
 }
 .read-mode-btn.active {
-    background: linear-gradient(180deg, #34d6ff 0%, #1698df 100%) !important;
-    border-color: rgba(130, 225, 255, 0.62) !important;
-    color: #eefcff !important;
-    box-shadow: 0 0 0 1px rgba(135, 227, 255, 0.32) inset, 0 6px 16px rgba(8, 55, 89, 0.5);
 }
 .metrics-skeleton-card {
     border-color: rgba(106, 186, 240, 0.38) !important;
@@ -4174,24 +4135,6 @@ body.immersive-mode .group-action .action-separator {
 body.immersive-mode #log {
     min-height: calc(100vh - 190px) !important;
 }
-.read-mode-switch {
-    display: inline-grid !important;
-    grid-auto-flow: column;
-    grid-auto-columns: 30px;
-    grid-template-columns: none !important;
-    width: auto !important;
-    min-width: fit-content;
-    gap: 1px !important;
-    padding: 1px !important;
-}
-.read-mode-switch .read-mode-btn {
-    width: 30px !important;
-    min-width: 30px !important;
-    height: 30px !important;
-    margin: 0 !important;
-    padding: 0 !important;
-    border-radius: 8px !important;
-}
 .group-action {
     gap: 5px !important;
 }
@@ -4726,10 +4669,8 @@ body[data-read-mode='tail']:not(.center-view-jvm) .toolbar .row-primary .group-a
     padding: 0 9px !important;
 }
 body[data-read-mode='tail']:not(.center-view-jvm) .toolbar .row-primary .group-action .read-mode-switch {
-    flex: 0 0 auto !important;
 }
 body[data-read-mode='tail']:not(.center-view-jvm) .toolbar .row-primary .group-action .read-mode-switch .read-mode-btn {
-    min-width: 50px !important;
 }
 
 @media (min-width: 1680px) {
@@ -4785,7 +4726,6 @@ body[data-read-mode='tail']:not(.center-view-jvm) .toolbar .row-primary .group-a
         column-gap: 4px !important;
     }
     body[data-read-mode='tail']:not(.center-view-jvm) .toolbar .row-primary .group-action .read-mode-switch .read-mode-btn {
-        min-width: 48px !important;
     }
 }
 
@@ -4803,8 +4743,6 @@ body[data-read-mode='tail']:not(.center-view-jvm) .toolbar .row-primary .group-a
         font-size: 11px !important;
     }
     body[data-read-mode='tail']:not(.center-view-jvm) .toolbar .row-primary .group-action .read-mode-switch .read-mode-btn {
-        min-width: 46px !important;
-        height: 30px !important;
     }
 }
 
@@ -4974,17 +4912,10 @@ body:not(.center-view-jvm) .toolbar .row-primary .group-action {
 }
 
 body:not(.center-view-jvm) .toolbar .row-primary .group-action .read-mode-switch {
-    border-radius: 999px !important;
-    border: 1px solid rgba(112, 193, 243, 0.46) !important;
-    background: rgba(13, 39, 61, 0.92) !important;
-    padding: 2px !important;
 }
 
 body:not(.center-view-jvm) .toolbar .row-primary .group-action .read-mode-switch .read-mode-btn,
 body:not(.center-view-jvm) .toolbar .row-primary .group-action .icon-btn {
-    height: 32px !important;
-    border-radius: 10px !important;
-    clip-path: none !important;
 }
 
 body:not(.center-view-jvm) .toolbar .row-primary .group-action #btnStart,
@@ -5060,17 +4991,9 @@ body:not(.center-view-jvm) .toolbar .row-primary .group-action {
 }
 
 body:not(.center-view-jvm) .toolbar .row-primary .group-action .read-mode-switch {
-    border: 1px solid rgba(110, 201, 251, 0.56) !important;
-    background: linear-gradient(180deg, rgba(15, 47, 72, 0.94), rgba(10, 33, 53, 0.96)) !important;
-    box-shadow: inset 0 1px 0 rgba(173, 235, 255, 0.14) !important;
 }
 
 body:not(.center-view-jvm) .toolbar .row-primary .group-action .read-mode-switch .read-mode-btn.active {
-    background: linear-gradient(180deg, #39dbff 0%, #168fd6 100%) !important;
-    color: #f3fcff !important;
-    box-shadow:
-        0 0 0 1px rgba(155, 231, 255, 0.36) inset,
-        0 8px 16px rgba(8, 61, 96, 0.42) !important;
 }
 
 body:not(.center-view-jvm) .toolbar .row-primary .group-action .icon-btn {
@@ -5299,11 +5222,11 @@ body:not(.center-view-jvm) .toolbar-panel .row-primary .toolbar-action-bar .acti
     display: none !important;
 }
 
-body:not(.center-view-jvm) .toolbar-panel .row-primary .toolbar-toggle {
+.toolbar-panel .row-primary .toolbar-toggle {
     flex: 0 0 auto !important;
 }
 
-body:not(.center-view-jvm) .toolbar-panel .row-primary .toolbar-toggle .read-mode-btn {
+.toolbar-panel .row-primary .toolbar-toggle .read-mode-btn {
     min-width: 52px !important;
 }
 
