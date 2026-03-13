@@ -439,6 +439,9 @@ export class JvmViewController {
             snapshot && snapshot.jvmSurvivorUsedMb,
             snapshot && snapshot.jvmSurvivorCapacityMb
         );
+        const cpuUsage = normalizePercent(snapshot && snapshot.cpuUsagePercent);
+        const load1m = normalizeNumber(snapshot && snapshot.load1m);
+        const gcHealth = buildGcHealthItem(stats, heapUsage, oldUsage, load1m);
         const gctTone = stats.gctDelta === null ? 'unknown' : (stats.gctDelta > 0.6 ? 'warn' : 'ok');
         const ygcTone = stats.ygcPerMin === null ? 'unknown' : (stats.ygcPerMin >= 6 ? 'warn' : 'ok');
         const fgcTone = stats.fgcPerMin === null ? 'unknown' : (stats.fgcPerMin >= 0.8 ? 'warn' : 'ok');
@@ -447,6 +450,22 @@ export class JvmViewController {
             : (stats.ygcPerMin === null && stats.fgcPerMin === null ? 'unknown' : 'ok');
         const items = [
             {key: 'jvm-status', label: 'JVM 状态', value: statusInfo.text, tip: snapshot && snapshot.jvmGcMessage ? snapshot.jvmGcMessage : '等待采样', tone: statusInfo.level},
+            gcHealth,
+            {
+                key: 'cpu-usage',
+                label: 'CPU 使用率',
+                value: percentOrDash(cpuUsage),
+                tip: '宿主机整体 CPU 使用率',
+                tone: percentTone(cpuUsage),
+                usagePercent: cpuUsage
+            },
+            {
+                key: 'load-1m',
+                label: '1 分钟负载',
+                value: numberOrDash(load1m),
+                tip: 'load1m：反映短期内系统整体压力',
+                tone: resolveLoadTone(load1m)
+            },
             {key: 'jvm-pid', label: '进程 PID', value: integerOrDash(snapshot && snapshot.jvmPid), tip: '目标 Java 进程号', tone: 'unknown'},
             {
                 key: 'heap-occupancy',
@@ -492,14 +511,14 @@ export class JvmViewController {
                 key: 'ygc-total',
                 label: 'YGC 累计',
                 value: integerOrDash(snapshot && snapshot.jvmYoungGcCount),
-                tip: `本轮 +${integerOrDash(stats.ygcDelta)} | ${numberOrDash(stats.ygcPerMin)} /min`,
+                tip: `本轮 +${integerOrDash(stats.ygcDelta)} | ${numberOrDash(stats.ygcPerMin)} /min | 平均 ${secondsOrDash(stats.avgYoungPause)} /YGC`,
                 tone: ygcTone
             },
             {
                 key: 'fgc-total',
                 label: 'FGC 累计',
                 value: integerOrDash(snapshot && snapshot.jvmFullGcCount),
-                tip: `本轮 +${integerOrDash(stats.fgcDelta)} | ${numberOrDash(stats.fgcPerMin)} /min`,
+                tip: `本轮 +${integerOrDash(stats.fgcDelta)} | ${numberOrDash(stats.fgcPerMin)} /min | 平均 ${secondsOrDash(stats.avgFullPause)} /FGC`,
                 tone: fgcTone
             },
             {
@@ -537,8 +556,19 @@ export class JvmViewController {
         const groupDefs = [
             {
                 key: 'memory',
-                title: '内存与进程',
-                itemKeys: ['jvm-status', 'jvm-pid', 'heap-occupancy', 'eden-occupancy', 'survivor-occupancy', 'old-occupancy', 'meta-occupancy']
+                title: '运行总览与内存',
+                itemKeys: [
+                    'jvm-status',
+                    'gc-health',
+                    'cpu-usage',
+                    'load-1m',
+                    'jvm-pid',
+                    'heap-occupancy',
+                    'old-occupancy',
+                    'meta-occupancy',
+                    'eden-occupancy',
+                    'survivor-occupancy'
+                ]
             },
             {
                 key: 'gc',
@@ -1173,7 +1203,9 @@ function createEmptyStats() {
         fgcDelta: null,
         ygctDelta: null,
         fgctDelta: null,
-        gctDelta: null
+        gctDelta: null,
+        avgYoungPause: null,
+        avgFullPause: null
     };
 }
 
@@ -1193,6 +1225,12 @@ function calculateDeltaStats(current, previous) {
     const ygctDelta = safeDelta(current && current.ygct, previous && previous.ygct);
     const fgctDelta = safeDelta(current && current.fgct, previous && previous.fgct);
     const gctDelta = safeDelta(current && current.gct, previous && previous.gct);
+    const avgYoungPause = (ygcDelta !== null && ygctDelta !== null && ygcDelta > 0)
+        ? (ygctDelta / ygcDelta)
+        : null;
+    const avgFullPause = (fgcDelta !== null && fgctDelta !== null && fgcDelta > 0)
+        ? (fgctDelta / fgcDelta)
+        : null;
     return {
         ygcPerMin: ygcDelta === null ? null : ygcDelta * 60 / deltaSeconds,
         fgcPerMin: fgcDelta === null ? null : fgcDelta * 60 / deltaSeconds,
@@ -1200,7 +1238,9 @@ function calculateDeltaStats(current, previous) {
         fgcDelta: fgcDelta,
         ygctDelta: ygctDelta,
         fgctDelta: fgctDelta,
-        gctDelta: gctDelta
+        gctDelta: gctDelta,
+        avgYoungPause: avgYoungPause,
+        avgFullPause: avgFullPause
     };
 }
 
@@ -1262,6 +1302,109 @@ function resolveGcStatus(status) {
         return {text: '采集异常', level: 'error'};
     }
     return {text: '待采集', level: 'unknown'};
+}
+
+/**
+ * 构建 GC 健康度总览指标。
+ *
+ * @param {Object} stats GC 增量统计
+ * @param {number|null} heapUsage 堆使用率%
+ * @param {number|null} oldUsage Old 区使用率%
+ * @param {number|null} load1m 1 分钟系统负载
+ * @returns {{key:string,label:string,value:string,tip:string,tone:string}} 健康度指标项
+ */
+function buildGcHealthItem(stats, heapUsage, oldUsage, load1m) {
+    const heap = normalizeNumber(heapUsage);
+    const old = normalizeNumber(oldUsage);
+    const yRate = normalizeNumber(stats && stats.ygcPerMin);
+    const fRate = normalizeNumber(stats && stats.fgcPerMin);
+    const gctDelta = normalizeNumber(stats && stats.gctDelta);
+    let level = 'ok';
+    const reasons = [];
+
+    if (heap !== null && heap >= 90) {
+        level = 'error';
+        reasons.push('Heap 使用率 ≥ 90%');
+    } else if (heap !== null && heap >= 80) {
+        level = 'warn';
+        reasons.push('Heap 使用率 ≥ 80%');
+    }
+
+    if (old !== null && old >= 92) {
+        level = 'error';
+        reasons.push('Old 使用率 ≥ 92%');
+    } else if (old !== null && old >= 85 && level !== 'error') {
+        level = 'warn';
+        reasons.push('Old 使用率 ≥ 85%');
+    }
+
+    if (fRate !== null && fRate >= 1) {
+        level = 'error';
+        reasons.push('Full GC 频率 ≥ 1 次/分');
+    } else if (fRate !== null && fRate >= 0.5 && level !== 'error') {
+        level = 'warn';
+        reasons.push('Full GC 频率 ≥ 0.5 次/分');
+    }
+
+    if (gctDelta !== null && gctDelta > 1.2 && level !== 'error') {
+        level = 'warn';
+        reasons.push('本轮 GC 总耗时 > 1.2s');
+    }
+
+    const load = normalizeNumber(load1m);
+    if (load !== null && load >= 8) {
+        level = 'error';
+        reasons.push('系统负载过高');
+    } else if (load !== null && load >= 4 && level !== 'error') {
+        level = 'warn';
+        reasons.push('系统负载偏高');
+    }
+
+    let value = '健康';
+    if (level === 'warn') {
+        value = '关注';
+    } else if (level === 'error') {
+        value = '告警';
+    }
+
+    const tipParts = [];
+    tipParts.push(`Heap ${percentOrDash(heap)} / Old ${percentOrDash(old)}`);
+    tipParts.push(`YGC ${numberOrDash(yRate)} /min, FGC ${numberOrDash(fRate)} /min`);
+    tipParts.push(`本轮 ΔGCT ${numberOrDash(gctDelta)}s`);
+    if (load !== null) {
+        tipParts.push(`load1m ${numberOrDash(load)}`);
+    }
+    if (reasons.length) {
+        tipParts.push(`触发条件: ${reasons.join('；')}`);
+    }
+
+    return {
+        key: 'gc-health',
+        label: 'GC 健康度',
+        value: value,
+        tip: tipParts.join(' | '),
+        tone: level
+    };
+}
+
+/**
+ * 根据 1 分钟负载估算压力等级。
+ *
+ * @param {number|null} load1m 1 分钟负载
+ * @returns {'ok'|'warn'|'error'|'unknown'} 负载等级
+ */
+function resolveLoadTone(load1m) {
+    const value = normalizeNumber(load1m);
+    if (value === null) {
+        return 'unknown';
+    }
+    if (value >= 8) {
+        return 'error';
+    }
+    if (value >= 4) {
+        return 'warn';
+    }
+    return 'ok';
 }
 
 function percentTone(value) {
