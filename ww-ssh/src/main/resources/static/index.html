@@ -283,16 +283,48 @@
                 <label for="file">日志文件（单服务必选）</label>
                 <select id="file" class="control-xl"></select>
             </div>
-            <div class="group group-lines settings-field-group">
-                <label for="lines">初始加载行数</label>
-                <div class="line-count-stepper">
-                    <button id="btnLinesDecrease" type="button" class="secondary line-step-btn" aria-label="减少初始加载行数">
-                        <span class="btn-label">-</span>
-                    </button>
-                    <input id="lines" type="number" min="10" max="5000" value="200" data-step="50" class="control-sm">
-                    <button id="btnLinesIncrease" type="button" class="secondary line-step-btn" aria-label="增加初始加载行数">
-                        <span class="btn-label">+</span>
-                    </button>
+            <div class="group group-lines-context settings-field-group">
+                <div class="lines-context-tip-row">
+                    <span class="lines-context-section-label">行数设置</span>
+                    <p class="group-tip">前后文仅在"内容过滤"存在【包含】条件且填写了关键词时生效（纯排除/未填写关键词不会产生前后文）。</p>
+                </div>
+                <div class="lines-context-row">
+                    <div class="lines-context-item lines-item-init">
+                        <label for="lines">初始加载行数</label>
+                        <div class="line-count-stepper lines-context-stepper">
+                            <button id="btnLinesDecrease" type="button" class="secondary line-step-btn" aria-label="减少初始加载行数">
+                                <span class="btn-label">-</span>
+                            </button>
+                            <input id="lines" type="number" min="10" max="5000" value="200" data-step="50" class="control-sm">
+                            <button id="btnLinesIncrease" type="button" class="secondary line-step-btn" aria-label="增加初始加载行数">
+                                <span class="btn-label">+</span>
+                            </button>
+                        </div>
+                    </div>
+                    <div class="lines-context-item lines-item-before">
+                        <label for="beforeLines">前文行数</label>
+                        <div class="line-count-stepper lines-context-stepper context-stepper">
+                            <button id="btnBeforeLinesDecrease" type="button" class="secondary line-step-btn context-step-btn" aria-label="减少前文行数" title="减少前文行数">
+                                <span class="btn-label">-</span>
+                            </button>
+                            <input id="beforeLines" type="number" min="0" max="200" value="0" data-step="5" class="control-sm context-lines-input">
+                            <button id="btnBeforeLinesIncrease" type="button" class="secondary line-step-btn context-step-btn" aria-label="增加前文行数" title="增加前文行数">
+                                <span class="btn-label">+</span>
+                            </button>
+                        </div>
+                    </div>
+                    <div class="lines-context-item lines-item-after">
+                        <label for="afterLines">后文行数</label>
+                        <div class="line-count-stepper lines-context-stepper context-stepper">
+                            <button id="btnAfterLinesDecrease" type="button" class="secondary line-step-btn context-step-btn" aria-label="减少后文行数" title="减少后文行数">
+                                <span class="btn-label">-</span>
+                            </button>
+                            <input id="afterLines" type="number" min="0" max="200" value="0" data-step="5" class="control-sm context-lines-input">
+                            <button id="btnAfterLinesIncrease" type="button" class="secondary line-step-btn context-step-btn" aria-label="增加后文行数" title="增加后文行数">
+                                <span class="btn-label">+</span>
+                            </button>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>

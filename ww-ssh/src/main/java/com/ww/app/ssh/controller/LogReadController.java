@@ -4,6 +4,9 @@ import com.ww.app.ssh.model.LogStreamRequest;
 import com.ww.app.ssh.model.LogTarget;
 import com.ww.app.ssh.service.LogPanelQueryService;
 import com.ww.app.ssh.service.SshLogService;
+import org.springframework.http.CacheControl;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.ResponseEntity;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -52,7 +55,7 @@ public class LogReadController {
      * @return 日志文本行集合
      */
     @PostMapping("/cat")
-    public List<String> readByCat(@RequestBody LogStreamRequest request) {
+    public ResponseEntity<List<String>> readByCat(@RequestBody LogStreamRequest request) {
         try {
             validateFilePathPolicy(request);
             List<LogTarget> targets = logPanelQueryService.resolveTargets(request);
@@ -64,11 +67,23 @@ public class LogReadController {
                     rows.add("[系统提示] 读取失败 " + target.displayName() + ": " + ex.getMessage());
                 }
             }
-            int keep = request.normalizedLines();
-            if (rows.size() <= keep) {
-                return rows;
+            // 说明：
+            // - 单服务/单文件：每个目标内部已按 requested lines 做尾部窗口裁剪，直接返回即可；
+            // - 全部服务聚合：若直接拼接所有目标窗口，页面会混入大量“很久没产生日志”的实例尾巴，
+            //   视觉上会表现为“cat 查到的都是旧日志”。因此聚合场景保留“全局取最新 N 行”行为。
+            if (request.isAllService()) {
+                int keep = request.normalizedLines();
+                if (rows.size() > keep) {
+                    rows = new ArrayList<>(rows.subList(rows.size() - keep, rows.size()));
+                }
             }
-            return new ArrayList<>(rows.subList(rows.size() - keep, rows.size()));
+            HttpHeaders headers = new HttpHeaders();
+            // 明确告知客户端/代理不要缓存，避免出现“cat 总是旧数据”的误判。
+            // 兼容部分代理对 POST 的异常缓存行为。
+            headers.setCacheControl(CacheControl.noStore().mustRevalidate().getHeaderValue());
+            headers.add(HttpHeaders.PRAGMA, "no-cache");
+            headers.add(HttpHeaders.EXPIRES, "0");
+            return ResponseEntity.ok().headers(headers).body(rows);
         } catch (IllegalArgumentException ex) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, ex.getMessage(), ex);
         } catch (Exception ex) {

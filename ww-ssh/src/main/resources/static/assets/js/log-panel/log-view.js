@@ -36,6 +36,7 @@ export class LogView {
         this.maxLines = maxLines;
         this.highlightKeywords = [];
         this.filterRules = [];
+        this.ruleFilterEnabled = true;
         this.levelFilter = 'ALL';
         this.deferredSearchTimer = null;
         this.deferMs = 300;
@@ -441,7 +442,7 @@ export class LogView {
         // 常见路径：未启用级别筛选、未隐藏系统消息、无过滤规则时，可直接使用总行数，避免全量扫描。
         const canUseTotalDirectly = this.levelFilter === 'ALL'
             && checked('showSystem')
-            && (!this.filterRules || this.filterRules.length === 0);
+            && (!this.ruleFilterEnabled || !this.filterRules || this.filterRules.length === 0);
         const visible = canUseTotalDirectly
             ? total
             : this.countVisibleLines(logEl);
@@ -506,6 +507,20 @@ export class LogView {
     }
 
     /**
+     * 设置“按规则隐藏非命中行”的开关。
+     * <p>
+     * 当后端启用了“命中行±上下文行数”模式时，前端不应再按 include 规则隐藏上下文行，
+     * 否则用户会误以为 -A/-B 无效。
+     * </p>
+     *
+     * @param {boolean} enabled 是否启用前端规则过滤
+     */
+    setRuleFilterEnabled(enabled) {
+        this.ruleFilterEnabled = !!enabled;
+        this.refreshExistingHighlights();
+    }
+
+    /**
      * 从规则表达式中提取用于高亮的关键词。
      * <p>
      * 支持按 && 与 || 拆分，忽略空白词。
@@ -550,6 +565,10 @@ export class LogView {
      */
     applyRuleFilterForLine(lineEl) {
         if (!lineEl) {
+            return;
+        }
+        if (!this.ruleFilterEnabled) {
+            lineEl.classList.remove('line-filter-hidden');
             return;
         }
         if (lineEl.classList.contains('line-system-msg') || lineEl.classList.contains('line-manual-break')) {

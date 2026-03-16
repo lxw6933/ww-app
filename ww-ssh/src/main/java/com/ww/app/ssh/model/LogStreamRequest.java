@@ -70,6 +70,22 @@ public class LogStreamRequest {
     private Integer lines = 200;
 
     /**
+     * 命中行之前的上下文行数（对应 grep 的 -B）。
+     * <p>
+     * 仅在启用“包含（include）过滤规则”时建议使用，用于补足命中行前的上下文。
+     * </p>
+     */
+    private Integer beforeLines = 0;
+
+    /**
+     * 命中行之后的上下文行数（对应 grep 的 -A）。
+     * <p>
+     * 仅在启用“包含（include）过滤规则”时建议使用，用于补足命中行后的上下文。
+     * </p>
+     */
+    private Integer afterLines = 0;
+
+    /**
      * 读取模式，支持 tail/cat，默认 tail。
      */
     private String readMode = READ_MODE_TAIL;
@@ -131,6 +147,32 @@ public class LogStreamRequest {
             return 10;
         }
         return Math.min(resolved, 5000);
+    }
+
+    /**
+     * 获取规范化后的前向上下文行数。
+     *
+     * @return 限制在 [0, 200] 范围内的行数
+     */
+    public int normalizedBeforeLines() {
+        int resolved = beforeLines == null ? 0 : beforeLines;
+        if (resolved < 0) {
+            return 0;
+        }
+        return Math.min(resolved, 200);
+    }
+
+    /**
+     * 获取规范化后的后向上下文行数。
+     *
+     * @return 限制在 [0, 200] 范围内的行数
+     */
+    public int normalizedAfterLines() {
+        int resolved = afterLines == null ? 0 : afterLines;
+        if (resolved < 0) {
+            return 0;
+        }
+        return Math.min(resolved, 200);
     }
 
     /**

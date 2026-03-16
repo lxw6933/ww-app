@@ -105,6 +105,62 @@ public class SshCommandBuilder {
     }
 
     /**
+     * 构建 cat 模式“全文过滤 + 上下文窗口”读取命令（grep -B/-A）。
+     * <p>
+     * 目标语义：
+     * <ul>
+     *     <li>无过滤词：直接读取文件尾部最新 N 行（由服务层调用 {@link #buildCatCommand(String, int)} 实现）；</li>
+     *     <li>有过滤词且启用上下文窗口：对<strong>全文件</strong>执行 grep，输出命中行及其前后文（-B/-A）。</li>
+     * </ul>
+     * 说明：
+     * <ol>
+     *     <li>仅适用于存在 include 规则的场景；纯排除规则无法建立“命中锚点”，不适合上下文窗口；</li>
+     *     <li>为避免命中密集导致回传过大，可通过 {@code capLines} 将输出限制在最后 CAP 行（保持顺序）。</li>
+     * </ol>
+     * </p>
+     *
+     * @param filePath    日志文件路径
+     * @param filterRules 过滤规则（仅使用 include 规则做 grep 预筛）
+     * @param beforeLines 命中前上下文行数（-B）
+     * @param afterLines  命中后上下文行数（-A）
+     * @param capLines    最大输出行数（只保留尾部 CAP 行）
+     * @return Shell 命令
+     */
+    public String buildCatGrepContextWindowCommand(String filePath,
+                                                  List<LogStreamRequest.FilterRule> filterRules,
+                                                  int beforeLines,
+                                                  int afterLines,
+                                                  int capLines) {
+        String quotedPath = shellQuote(filePath);
+        int resolvedBefore = Math.max(0, beforeLines);
+        int resolvedAfter = Math.max(0, afterLines);
+        int resolvedCap = Math.max(100, capLines);
+
+        StringBuilder command = new StringBuilder("cat " + quotedPath);
+        List<List<String>> includeRuleTerms = resolveIncludeRuleTerms(filterRules);
+        boolean hasGrepPipe = false;
+        for (List<String> terms : includeRuleTerms) {
+            if (terms == null || terms.isEmpty()) {
+                continue;
+            }
+            command.append(" | grep -a -F");
+            for (String term : terms) {
+                command.append(" -e ").append(shellQuote(term));
+            }
+            hasGrepPipe = true;
+        }
+        // 仅在存在 grep 管道时才追加上下文窗口参数（-B/-A 是 grep 的参数，不能追加到 cat 后面）
+        if (hasGrepPipe) {
+            command.append(" -B ").append(resolvedBefore).append(" -A ").append(resolvedAfter);
+        }
+        // 回传体积保护：只保留尾部 CAP 行（顺序不变）
+        command.append(" | tail -n ").append(resolvedCap);
+
+        String fallback = "cat " + quotedPath + " 2>&1";
+        return "if [ -f " + quotedPath + " ]; then " + command + " 2>&1; else " + fallback + "; fi";
+    }
+
+    /**
      * 构建 cat 模式 grep 预筛命令（全文件扫描）。
      * <p>
      * 该命令只应用“包含规则”的必要条件，避免遗漏真实命中；
@@ -128,6 +184,94 @@ public class SshCommandBuilder {
                 command.append(" -e ").append(shellQuote(term));
             }
         }
+        String fallback = "cat " + quotedPath + " 2>&1";
+        return "if [ -f " + quotedPath + " ]; then " + command + " 2>&1; else " + fallback + "; fi";
+    }
+
+    /**
+     * 构建 cat 模式“全文件上下文窗口”读取命令（含 -B/-A 语义）。
+     * <p>
+     * 目标语义：对<strong>全文件</strong>执行过滤匹配，当某行命中 include/exclude 规则后，
+     * 输出该命中行及其前后文窗口（命中行前 B 行、命中行后 A 行）。<br>
+     * <br>
+     * 说明：
+     * 1. 该命令会扫描全文件一次（O(n)），相比 tail 截断窗口更慢，但符合“cat + 过滤 = 全文件检索”的预期；<br>
+     * 2. 为避免命中过多导致回传爆量，命令内部会将输出限制在最后 CAP 行（保持顺序）；<br>
+     * 3. 仅适用于包含规则存在的场景（纯排除无命中锚点，不适合构建上下文窗口）。<br>
+     * </p>
+     *
+     * @param filePath    日志文件路径
+     * @param filterRules 过滤规则
+     * @param beforeLines 命中前上下文行数（-B）
+     * @param afterLines  命中后上下文行数（-A）
+     * @param capLines    最大输出行数（只保留尾部 CAP 行）
+     * @return Shell 命令
+     */
+    public String buildCatContextWindowCommand(String filePath,
+                                               List<LogStreamRequest.FilterRule> filterRules,
+                                               int beforeLines,
+                                               int afterLines,
+                                               int capLines) {
+        String quotedPath = shellQuote(filePath);
+        int resolvedBefore = Math.max(0, beforeLines);
+        int resolvedAfter = Math.max(0, afterLines);
+        int resolvedCap = Math.max(100, capLines);
+
+        String matchExpression = buildAwkRuleMatchExpression(filterRules);
+        // awk 脚本：扫描全文件，按“命中行±上下文”输出，并用环形缓冲保留最后 CAP 行。
+        String awkProgram =
+                "BEGIN{"
+                        + "B=(B<0?0:B);A=(A<0?0:A);CAP=(CAP<1?1:CAP);"
+                        + "bufSize=0;bufIdx=0;afterLeft=0;"
+                        + "outCount=0;outIdx=0;"
+                        + "}"
+                        + "function emit(line,  i,start,need){"
+                        + "outCount++;outIdx=(outIdx%CAP)+1;out[outIdx]=line;"
+                        + "}"
+                        + "function flushBefore(  i,start){"
+                        + "if(B<=0||bufSize<=0){return;}"
+                        + "start=(bufIdx-bufSize+1);"
+                        + "for(i=0;i<bufSize;i++){"
+                        + "idx=start+i;"
+                        + "while(idx<=0){idx+=B;}"
+                        + "emit(buf[idx]);"
+                        + "}"
+                        + "bufSize=0;"
+                        + "}"
+                        + "{"
+                        + "line=$0;"
+                        + "hit=(" + matchExpression + ");"
+                        + "if(hit){"
+                        + "flushBefore();"
+                        + "emit(line);"
+                        + "if(A>afterLeft){afterLeft=A;}"
+                        + "next;"
+                        + "}"
+                        + "if(afterLeft>0){"
+                        + "emit(line);"
+                        + "afterLeft--; "
+                        + "next;"
+                        + "}"
+                        + "if(B>0){"
+                        + "bufIdx=(bufIdx%B)+1;buf[bufIdx]=line;"
+                        + "if(bufSize<B){bufSize++;}"
+                        + "}"
+                        + "}"
+                        + "END{"
+                        + "need=(outCount<CAP?outCount:CAP);"
+                        + "start=(outIdx-need+1);"
+                        + "for(i=0;i<need;i++){"
+                        + "idx=start+i;"
+                        + "while(idx<=0){idx+=CAP;}"
+                        + "print out[idx];"
+                        + "}"
+                        + "}";
+
+        String command = "awk -v B=" + resolvedBefore
+                + " -v A=" + resolvedAfter
+                + " -v CAP=" + resolvedCap
+                + " " + shellQuote(awkProgram)
+                + " " + quotedPath;
         String fallback = "cat " + quotedPath + " 2>&1";
         return "if [ -f " + quotedPath + " ]; then " + command + " 2>&1; else " + fallback + "; fi";
     }
@@ -781,6 +925,105 @@ public class SshCommandBuilder {
      */
     private String trimToEmpty(String source) {
         return source == null ? "" : source.trim();
+    }
+
+    /**
+     * 构建 awk 环境下的规则匹配表达式。
+     * <p>
+     * 语义与 {@link com.ww.app.ssh.service.support.LogLineFilterMatcher} 保持一致：
+     * 多 include 为 AND，多 exclude 为 OR（命中任一即排除）；单条规则内部支持 && / ||（先与后或）。
+     * </p>
+     *
+     * @param filterRules 过滤规则
+     * @return awk 表达式（使用 $0 作为输入行）
+     */
+    private String buildAwkRuleMatchExpression(List<LogStreamRequest.FilterRule> filterRules) {
+        if (filterRules == null || filterRules.isEmpty()) {
+            return "1==1";
+        }
+        List<String> includeExpr = new ArrayList<>();
+        List<String> excludeExpr = new ArrayList<>();
+        for (LogStreamRequest.FilterRule rule : filterRules) {
+            if (rule == null) {
+                continue;
+            }
+            String type = trimToEmpty(rule.getType()).toLowerCase();
+            String data = trimToEmpty(rule.getData());
+            if (data.isEmpty()) {
+                continue;
+            }
+            String expr = buildAwkKeywordExpression(data);
+            if (expr.isEmpty()) {
+                continue;
+            }
+            if (LogStreamRequest.FILTER_TYPE_INCLUDE.equalsIgnoreCase(type)) {
+                includeExpr.add("(" + expr + ")");
+            } else if (LogStreamRequest.FILTER_TYPE_EXCLUDE.equalsIgnoreCase(type)) {
+                excludeExpr.add("(" + expr + ")");
+            }
+        }
+        String includePart = includeExpr.isEmpty()
+                ? "1==1"
+                : String.join(" && ", includeExpr);
+        String excludePart = excludeExpr.isEmpty()
+                ? "1==0"
+                : String.join(" || ", excludeExpr);
+        // 命中条件：满足全部 include 且不命中任一 exclude
+        return "(" + includePart + ") && !(" + excludePart + ")";
+    }
+
+    /**
+     * 将关键字表达式转换为 awk 可执行的布尔表达式。
+     * <p>
+     * 仅使用 index($0,"term")>0 的固定字符串包含判断，不做正则匹配，避免误伤与性能问题。
+     * </p>
+     *
+     * @param expression 关键字表达式（支持 && / ||）
+     * @return awk 表达式
+     */
+    private String buildAwkKeywordExpression(String expression) {
+        String normalized = trimToEmpty(expression);
+        if (normalized.isEmpty()) {
+            return "";
+        }
+        String[] orGroups = normalized.split("\\|\\|");
+        List<String> orExpr = new ArrayList<>();
+        for (String group : orGroups) {
+            String groupText = trimToEmpty(group);
+            if (groupText.isEmpty()) {
+                continue;
+            }
+            String[] andTerms = groupText.split("&&");
+            List<String> andExpr = new ArrayList<>();
+            for (String term : andTerms) {
+                String value = trimToEmpty(term);
+                if (value.isEmpty()) {
+                    continue;
+                }
+                andExpr.add("index($0," + toAwkStringLiteral(value) + ")>0");
+            }
+            if (!andExpr.isEmpty()) {
+                orExpr.add("(" + String.join(" && ", andExpr) + ")");
+            }
+        }
+        if (orExpr.isEmpty()) {
+            return "";
+        }
+        return String.join(" || ", orExpr);
+    }
+
+    /**
+     * 转换为 awk 双引号字符串字面量，并做必要转义。
+     *
+     * @param raw 原始字符串
+     * @return awk 字符串字面量（含双引号）
+     */
+    private String toAwkStringLiteral(String raw) {
+        String value = raw == null ? "" : raw;
+        String escaped = value
+                .replace("\\", "\\\\")
+                .replace("\"", "\\\"");
+        return "\"" + escaped + "\"";
     }
 
     /**

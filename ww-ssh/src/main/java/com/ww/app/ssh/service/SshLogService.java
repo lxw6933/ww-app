@@ -145,6 +145,15 @@ public class SshLogService {
     private static final int CAT_FILTER_MAX_SCAN_LINES = 5000;
 
     /**
+     * cat + 上下文窗口（-B/-A）模式的最大输出行数。
+     * <p>
+     * 全文件扫描在命中密集场景下可能产生大量上下文输出，这里对回传结果做硬上限，
+     * 并在服务端继续按用户 requested lines 做最终裁剪。
+     * </p>
+     */
+    private static final int CAT_CONTEXT_MAX_OUTPUT_LINES = 12000;
+
+    /**
      * SSH 命令构建器。
      */
     private final SshCommandBuilder sshCommandBuilder;
@@ -376,6 +385,10 @@ public class SshLogService {
         String resolvedFile = resolveLogFilePath(target, request.normalizedFilePath());
         List<LogStreamRequest.FilterRule> filterRules = resolveEffectiveRules(request);
         boolean hasIncludeRule = hasIncludeFilterRule(filterRules);
+        int beforeLines = request.normalizedBeforeLines();
+        int afterLines = request.normalizedAfterLines();
+        boolean hasContextWindow = hasIncludeRule && (beforeLines > 0 || afterLines > 0);
+
         if (hasIncludeRule) {
             try {
                 List<String> bootstrapLines = readByCatByGrepPrefilter(
@@ -387,9 +400,14 @@ public class SshLogService {
                 lineConsumer.accept("[系统提示] 历史命中预读失败，已切换到实时追踪: " + ex.getMessage());
             }
         }
-        String command = hasIncludeRule
-                ? sshCommandBuilder.buildTailFollowGrepPrefilterCommand(resolvedFile, filterRules)
-                : sshCommandBuilder.buildTailCommand(resolvedFile, request.normalizedLines());
+
+        // 存在上下文窗口时，需要保留完整 tail 输出，由本地 matcher 负责命中与上下文控制；
+        // 否则可继续使用远端 grep 预筛，降低网络与解析开销。
+        String command = hasContextWindow
+                ? sshCommandBuilder.buildTailCommand(resolvedFile, request.normalizedLines())
+                : (hasIncludeRule
+                    ? sshCommandBuilder.buildTailFollowGrepPrefilterCommand(resolvedFile, filterRules)
+                    : sshCommandBuilder.buildTailCommand(resolvedFile, request.normalizedLines()));
         Session session = null;
         ChannelExec channel = null;
         try {
@@ -404,7 +422,10 @@ public class SshLogService {
             Session finalSession = session;
             ChannelExec finalChannel = channel;
             List<LogStreamRequest.FilterRule> finalFilterRules = filterRules;
-            Future<?> streamTask = streamExecutor.submit(() -> readStreamLoop(inputStream, finalFilterRules, lineConsumer));
+            int finalBeforeLines = beforeLines;
+            int finalAfterLines = afterLines;
+            Future<?> streamTask = streamExecutor.submit(
+                    () -> readStreamLoop(inputStream, finalFilterRules, finalBeforeLines, finalAfterLines, lineConsumer));
             return new StreamHandle(target, resolvedFile, streamTask, finalChannel, finalSession);
         } catch (Exception ex) {
             disconnectQuietly(channel);
@@ -427,22 +448,71 @@ public class SshLogService {
         String resolvedFile = resolveLogFilePath(target, request.normalizedFilePath());
         int lines = request.normalizedLines();
         List<LogStreamRequest.FilterRule> filterRules = resolveEffectiveRules(request);
-        if (hasIncludeFilterRule(filterRules)) {
+        int beforeLines = request.normalizedBeforeLines();
+        int afterLines = request.normalizedAfterLines();
+        boolean hasIncludeRule = hasIncludeFilterRule(filterRules);
+        boolean hasContextWindow = hasIncludeRule && (beforeLines > 0 || afterLines > 0);
+
+        // 无过滤词：直接读取文件末尾最新 N 行。
+        // 使用直接 channel 管理方式（而非 executeCommandForLines），规避 PTY 模式下命令执行完毕后
+        // channel 尾部可能追加 shell 提示符/ANSI 控制字符行的问题：
+        // 若这些非日志行混入 rawLines 末尾，trimToWindow 取最后 N 行时会将其误判为最新内容，
+        // 导致返回的日志不是最新时间。
+        if (filterRules == null || filterRules.isEmpty()) {
+            return readByCatNoFilter(target, resolvedFile, lines);
+        }
+
+        // 无上下文窗口时，保持原有行为：有 include 规则走远端 grep 预筛，减少扫描量和回传量。
+        if (hasIncludeRule && !hasContextWindow) {
             return readByCatByGrepPrefilter(target, resolvedFile, filterRules, lines);
         }
-        int scanLines = resolveCatScanLines(lines, filterRules);
+
+        // 有上下文窗口且存在 include 过滤词时：按“全文 cat | grep 过滤词 -B/-A”的语义执行。
+        if (hasContextWindow) {
+            int capLines = resolveCatContextOutputCap(lines, beforeLines, afterLines);
+            String fullScanCommand = sshCommandBuilder.buildCatGrepContextWindowCommand(
+                    resolvedFile, filterRules, beforeLines, afterLines, capLines);
+            List<String> windowLines = executeCommandForLines(target, fullScanCommand, capLines + 20);
+            return trimToWindow(windowLines, lines);
+        }
+
+        int scanLines = resolveCatScanLines(lines + beforeLines + afterLines, filterRules);
         String command = sshCommandBuilder.buildCatCommand(resolvedFile, scanLines);
         List<String> rawLines = executeCommandForLines(target, command, scanLines + 20);
-        if (filterRules.isEmpty()) {
-            return trimToWindow(rawLines, lines);
-        }
-        List<String> filtered = new ArrayList<>();
-        for (String line : rawLines) {
-            if (logLineFilterMatcher.matches(line, filterRules)) {
-                filtered.add(line);
+        List<String> effectiveLines;
+        if (hasContextWindow) {
+            // 本地按“命中行 ± 上下文行数”裁剪窗口。
+            effectiveLines = applyContextWindow(rawLines, filterRules, beforeLines, afterLines);
+        } else {
+            List<String> filtered = new ArrayList<>();
+            for (String line : rawLines) {
+                if (logLineFilterMatcher.matches(line, filterRules)) {
+                    filtered.add(line);
+                }
             }
+            effectiveLines = filtered;
         }
-        return trimToWindow(filtered, lines);
+        return trimToWindow(effectiveLines, lines);
+    }
+
+    /**
+     * 计算 cat + 上下文窗口模式的最大输出行数上限。
+     * <p>
+     * 该上限用于约束“全文件扫描 + 上下文窗口”在命中密集时的回传体积。
+     * </p>
+     *
+     * @param requestedLines 用户期望最终展示行数
+     * @param beforeLines    前向上下文行数
+     * @param afterLines     后向上下文行数
+     * @return 输出上限行数
+     */
+    private int resolveCatContextOutputCap(int requestedLines, int beforeLines, int afterLines) {
+        int base = Math.max(200, requestedLines);
+        int context = Math.max(0, beforeLines) + Math.max(0, afterLines);
+        long cap = (long) base + (long) context * 6L;
+        cap = Math.max(cap, base * 3L);
+        cap = Math.min(cap, CAT_CONTEXT_MAX_OUTPUT_LINES);
+        return (int) cap;
     }
 
     /**
@@ -456,18 +526,61 @@ public class SshLogService {
     /**
      * 循环读取远程日志流并转发。
      *
-     * @param inputStream 远程输入流
-     * @param filterRules 过滤规则
-     * @param consumer    行消费回调
+     * @param inputStream  远程输入流
+     * @param filterRules  过滤规则
+     * @param beforeLines  命中前需额外保留的上下文行数
+     * @param afterLines   命中后需额外保留的上下文行数
+     * @param consumer     行消费回调
      */
     private void readStreamLoop(InputStream inputStream,
                                 List<LogStreamRequest.FilterRule> filterRules,
+                                int beforeLines,
+                                int afterLines,
                                 Consumer<String> consumer) {
         try (BufferedReader reader = new BufferedReader(new InputStreamReader(inputStream, StandardCharsets.UTF_8))) {
             String line;
+            boolean enableContext = filterRules != null
+                    && !filterRules.isEmpty()
+                    && (beforeLines > 0 || afterLines > 0);
+            Deque<String> previousLines = enableContext && beforeLines > 0 ? new ArrayDeque<>() : null;
+            int remainingAfter = 0;
+
             while (!Thread.currentThread().isInterrupted() && (line = reader.readLine()) != null) {
-                if (logLineFilterMatcher.matches(line, filterRules)) {
+                if (!enableContext) {
+                    if (logLineFilterMatcher.matches(line, filterRules)) {
+                        consumer.accept(line);
+                    }
+                    continue;
+                }
+
+                boolean hit = logLineFilterMatcher.matches(line, filterRules);
+
+                if (hit) {
+                    // 命中前的上下文行：发送尚未下发的前 N 行
+                    if (previousLines != null && !previousLines.isEmpty()) {
+                        for (String ctxLine : previousLines) {
+                            consumer.accept(ctxLine);
+                        }
+                        previousLines.clear();
+                    }
                     consumer.accept(line);
+                    remainingAfter = Math.max(remainingAfter, afterLines);
+                    continue;
+                }
+
+                // 命中后的后续上下文行
+                if (remainingAfter > 0) {
+                    consumer.accept(line);
+                    remainingAfter--;
+                    continue;
+                }
+
+                // 非命中、非后续上下文：仅在需要前向上下文时缓存在窗口中
+                if (previousLines != null) {
+                    previousLines.addLast(line);
+                    while (previousLines.size() > beforeLines) {
+                        previousLines.pollFirst();
+                    }
                 }
             }
         } catch (IOException ex) {
@@ -590,6 +703,54 @@ public class SshLogService {
     }
 
     /**
+     * 无过滤词的 cat 快照读取（直接 channel 管理，规避 PTY 尾部字符干扰）。
+     * <p>
+     * 使用与 {@link #readByCatByGrepPrefilter} 相同的直接 channel 管理方式，
+     * 通过 {@code Deque} 滑动窗口始终保留最新 keepLines 行，
+     * 彻底规避 {@code executeCommandForLines} 在 PTY 模式下因 channel 尾部追加
+     * shell 提示符/ANSI 控制字符行而导致 {@code trimToWindow} 截取错误内容的问题。
+     * </p>
+     *
+     * @param target       目标服务节点
+     * @param resolvedFile 已解析日志文件路径
+     * @param keepLines    最终保留行数
+     * @return 最新的 keepLines 行日志
+     */
+    private List<String> readByCatNoFilter(LogTarget target, String resolvedFile, int keepLines) {
+        String command = sshCommandBuilder.buildCatCommand(resolvedFile, keepLines);
+        Deque<String> window = new ArrayDeque<>();
+        Session session = null;
+        ChannelExec channel = null;
+        try {
+            session = openSession(target.getServerNode());
+            channel = (ChannelExec) session.openChannel("exec");
+            channel.setInputStream(null);
+            channel.setPty(true);
+            channel.setCommand(command);
+            InputStream inputStream = channel.getInputStream();
+            channel.connect(resolveTimeout(target.getServerNode()));
+            try (BufferedReader reader = new BufferedReader(
+                    new InputStreamReader(inputStream, StandardCharsets.UTF_8))) {
+                String line;
+                while ((line = reader.readLine()) != null) {
+                    // 过滤纯 ANSI 转义字符行（PTY 控制序列）及空白行，避免污染尾部窗口
+                    String stripped = line.replaceAll("\u001B\\[[0-9;]*[A-Za-z]", "").trim();
+                    if (!stripped.isEmpty()) {
+                        appendTailWindow(window, line, keepLines);
+                    }
+                }
+            }
+            return new ArrayList<>(window);
+        } catch (Exception ex) {
+            throw new IllegalStateException(
+                    "日志快照读取失败: " + target.displayName() + " - " + ex.getMessage(), ex);
+        } finally {
+            disconnectQuietly(channel);
+            disconnectQuietly(session);
+        }
+    }
+
+    /**
      * 向尾部窗口追加一行，并按容量上限淘汰最旧元素。
      *
      * @param window    尾部窗口
@@ -648,12 +809,61 @@ public class SshLogService {
     }
 
     /**
+     * 在快照结果中应用“命中 + 上下文行”窗口裁剪。
+     * <p>
+     * 仅用于 cat 快照模式，避免影响 tail 实时流的性能与语义。
+     * </p>
+     *
+     * @param rawLines    原始窗口行（按时间倒序窗口截取）
+     * @param filterRules 生效过滤规则
+     * @param beforeLines 命中前需额外保留的行数
+     * @param afterLines  命中后需额外保留的行数
+     * @return 命中及其前后文组成的行列表（保持原顺序）
+     */
+    private List<String> applyContextWindow(List<String> rawLines,
+                                            List<LogStreamRequest.FilterRule> filterRules,
+                                            int beforeLines,
+                                            int afterLines) {
+        if (rawLines == null || rawLines.isEmpty()
+                || filterRules == null || filterRules.isEmpty()
+                || (beforeLines <= 0 && afterLines <= 0)) {
+            return new ArrayList<>();
+        }
+        int size = rawLines.size();
+        boolean[] hitFlags = new boolean[size];
+        for (int i = 0; i < size; i++) {
+            String line = rawLines.get(i);
+            if (logLineFilterMatcher.matches(line, filterRules)) {
+                hitFlags[i] = true;
+            }
+        }
+        boolean[] keepFlags = new boolean[size];
+        for (int i = 0; i < size; i++) {
+            if (!hitFlags[i]) {
+                continue;
+            }
+            int start = Math.max(0, i - beforeLines);
+            int end = Math.min(size - 1, i + afterLines);
+            for (int index = start; index <= end; index++) {
+                keepFlags[index] = true;
+            }
+        }
+        List<String> result = new ArrayList<>();
+        for (int i = 0; i < size; i++) {
+            if (keepFlags[i]) {
+                result.add(rawLines.get(i));
+            }
+        }
+        return result;
+    }
+
+    /**
      * 自动解析真实日志文件路径。
      * <p>
      * 规则：
      * 1. 前端显式传入 filePath 时直接使用；<br>
-     * 2. 未指定 filePath 时，优先按“info 文件优先 + 路径倒序”选择，和单服务模式保持一致；<br>
-     * 3. 若候选列表为空，再回退到“最新文件”探测，保证旧行为兼容。<br>
+     * 2. 未指定 filePath 时，优先按“最新修改时间”选择默认文件，确保 cat/tail 在未显式选择文件时更贴近“最新日志”语义；<br>
+     * 3. 若探测失败，再回退到“info 文件优先 + 路径倒序”的旧逻辑兜底。<br>
      * </p>
      *
      * @param target        目标服务节点
@@ -669,16 +879,8 @@ public class SshLogService {
             throw new IllegalArgumentException("未配置默认日志目录，且请求未指定 filePath");
         }
 
-        String preferredPath = "";
-        try {
-            preferredPath = resolvePreferredLogFilePath(listLogFiles(target));
-        } catch (Exception ignored) {
-            // 候选文件列表探测失败时回退到旧版 latest 兜底逻辑，避免影响在线可用性。
-        }
-        if (!preferredPath.isEmpty()) {
-            return preferredPath;
-        }
-
+        // 优先按“最新修改时间”选择默认文件，确保 cat/tail 在未显式选择文件时更贴近“最新日志”语义。
+        // （旧版按文件名优先级挑选 info 文件，容易在多文件/滚动场景下选到较旧文件。）
         String command = sshCommandBuilder.buildLatestFileCommand(configuredPath);
         List<String> lines = executeCommandForLines(target, command, 5);
         for (String line : lines) {
@@ -686,6 +888,16 @@ public class SshLogService {
             if (!trimmed.isEmpty()) {
                 return trimmed;
             }
+        }
+
+        // latest 命令未命中时，再回退到“info 文件优先 + 路径倒序”的旧逻辑兜底。
+        try {
+            String preferredPath = resolvePreferredLogFilePath(listLogFiles(target));
+            if (!preferredPath.isEmpty()) {
+                return preferredPath;
+            }
+        } catch (Exception ignored) {
+            // ignore
         }
         throw new IllegalStateException("未发现可读取的日志文件: " + target.displayName());
     }

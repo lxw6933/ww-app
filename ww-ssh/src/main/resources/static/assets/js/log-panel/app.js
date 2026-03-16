@@ -112,6 +112,16 @@ const CAT_WS_IDLE_TIMEOUT_MS = 1200;
 const CAT_WS_HARD_TIMEOUT_MS = 6000;
 
 /**
+ * cat 快照模式：慢查询提示阈值（毫秒）。
+ */
+const CAT_SLOW_HINT_THRESHOLD_MS = 2000;
+
+/**
+ * cat 快照模式：状态提示刷新间隔（毫秒）。
+ */
+const CAT_PROGRESS_TICK_MS = 1000;
+
+/**
  * URL 分享参数中的文件键名。
  */
 const SHARED_FILE_KEY = 'file';
@@ -125,6 +135,8 @@ const SHARED_STATE_KEYS = Object.freeze([
     'service',
     'file',
     'lines',
+    'beforeLines',
+    'afterLines',
     'level',
     'autoScroll',
     'autoReconnect',
@@ -175,6 +187,7 @@ const READ_MODE_BUTTON_META = Object.freeze({
 
 const CONTEXT_CONTROL_IDS = Object.freeze(['project', 'env', 'service']);
 const CAT_BUSY_CONTROL_IDS = Object.freeze(['btnReadTail', 'btnReadCat']);
+const CONTEXT_LINE_CONTROL_IDS = Object.freeze(['beforeLines', 'afterLines']);
 
 /**
  * 分享链接恢复的状态。
@@ -213,9 +226,44 @@ function beforeUnloadCleanup() {
     clearTailRefreshTimer();
     closeSocket(true);
     clearReconnectTimer();
+    clearCatProgressTimer();
     statusBar.stop();
     metricsPanel.stopPolling();
     jvmView.stop();
+}
+
+/**
+ * 启动 cat 快照读取的进度提示。
+ * <p>
+ * cat 在启用“前后文行数（-B/-A）”时可能触发后端全文件扫描，耗时相对较长；
+ * 这里在前端提供“等待中”反馈，减少误判为无效/卡死。
+ * </p>
+ */
+function startCatProgressHint() {
+    clearCatProgressTimer();
+    const startedAt = Date.now();
+    state.catProgressTimer = window.setInterval(() => {
+        if (!state.catLoading) {
+            clearCatProgressTimer();
+            return;
+        }
+        const elapsedMs = Date.now() - startedAt;
+        if (elapsedMs < CAT_SLOW_HINT_THRESHOLD_MS) {
+            return;
+        }
+        const seconds = Math.max(1, Math.round(elapsedMs / 1000));
+        logView.setStatus(`快照扫描中… 已等待 ${seconds}s`, 'var(--warn)');
+    }, CAT_PROGRESS_TICK_MS);
+}
+
+/**
+ * 清理 cat 快照读取进度提示计时器。
+ */
+function clearCatProgressTimer() {
+    if (state.catProgressTimer) {
+        window.clearInterval(state.catProgressTimer);
+        state.catProgressTimer = null;
+    }
 }
 
 /**
@@ -255,6 +303,20 @@ function bindEvents() {
         preferenceStore.set('lines', parseLines(value('lines')));
         scheduleTailSubscriptionRefresh();
     });
+    const beforeLinesEl = el('beforeLines');
+    if (beforeLinesEl) {
+        beforeLinesEl.addEventListener('change', () => {
+            preferenceStore.set('beforeLines', clampContextLines(value('beforeLines')));
+            scheduleTailSubscriptionRefresh();
+        });
+    }
+    const afterLinesEl = el('afterLines');
+    if (afterLinesEl) {
+        afterLinesEl.addEventListener('change', () => {
+            preferenceStore.set('afterLines', clampContextLines(value('afterLines')));
+            scheduleTailSubscriptionRefresh();
+        });
+    }
     const decreaseLinesButton = el('btnLinesDecrease');
     if (decreaseLinesButton) {
         decreaseLinesButton.addEventListener('click', () => adjustLinesByStep(-1));
@@ -262,6 +324,22 @@ function bindEvents() {
     const increaseLinesButton = el('btnLinesIncrease');
     if (increaseLinesButton) {
         increaseLinesButton.addEventListener('click', () => adjustLinesByStep(1));
+    }
+    const decreaseBeforeButton = el('btnBeforeLinesDecrease');
+    if (decreaseBeforeButton) {
+        decreaseBeforeButton.addEventListener('click', () => adjustContextLinesByStep('beforeLines', -1));
+    }
+    const increaseBeforeButton = el('btnBeforeLinesIncrease');
+    if (increaseBeforeButton) {
+        increaseBeforeButton.addEventListener('click', () => adjustContextLinesByStep('beforeLines', 1));
+    }
+    const decreaseAfterButton = el('btnAfterLinesDecrease');
+    if (decreaseAfterButton) {
+        decreaseAfterButton.addEventListener('click', () => adjustContextLinesByStep('afterLines', -1));
+    }
+    const increaseAfterButton = el('btnAfterLinesIncrease');
+    if (increaseAfterButton) {
+        increaseAfterButton.addEventListener('click', () => adjustContextLinesByStep('afterLines', 1));
     }
 
     el('autoScroll').addEventListener('change', () => {
@@ -331,7 +409,7 @@ function bindEvents() {
 }
 
 /**
- * 按固定步进调整“初始加载行数”，并复用既有 change 流程同步偏好与订阅。
+ * 按固定步进调整"初始加载行数"，并复用既有 change 流程同步偏好与订阅。
  *
  * @param {number} direction 调整方向：正数增加，负数减少
  */
@@ -350,6 +428,29 @@ function adjustLinesByStep(direction) {
     const next = parseLines(String(current + (normalizedDirection > 0 ? step : -step)));
     linesEl.value = String(next);
     linesEl.dispatchEvent(new Event('change'));
+}
+
+/**
+ * 按固定步进调整前文/后文行数，并同步偏好与订阅刷新。
+ *
+ * @param {string} inputId  输入框 ID（beforeLines 或 afterLines）
+ * @param {number} direction 调整方向：正数增加，负数减少
+ */
+function adjustContextLinesByStep(inputId, direction) {
+    const inputEl = el(inputId);
+    if (!inputEl || inputEl.disabled) {
+        return;
+    }
+    const normalizedDirection = Number(direction);
+    if (!Number.isFinite(normalizedDirection) || normalizedDirection === 0) {
+        return;
+    }
+    const rawStep = Number(inputEl.getAttribute('data-step') || '5');
+    const step = Number.isFinite(rawStep) && rawStep > 0 ? rawStep : 5;
+    const current = clampContextLines(inputEl.value);
+    const next = clampContextLines(String(current + (normalizedDirection > 0 ? step : -step)));
+    inputEl.value = String(next);
+    inputEl.dispatchEvent(new Event('change'));
 }
 
 /**
@@ -715,6 +816,8 @@ function buildShareLink() {
     params.set('service', value('service'));
     params.set('file', value('file'));
     params.set('lines', String(parseLines(value('lines'))));
+    params.set('beforeLines', String(clampContextLines(value('beforeLines'))));
+    params.set('afterLines', String(clampContextLines(value('afterLines'))));
     params.set('level', preferenceStore.getString('logLevelFilter', 'ALL'));
     params.set('autoScroll', checked('autoScroll') ? '1' : '0');
     params.set('autoReconnect', checked('autoReconnect') ? '1' : '0');
@@ -934,6 +1037,14 @@ function appendInstanceOutputToLog(service, action, output) {
  */
 function restoreLocalPreferences() {
     el('lines').value = String(getSharedNumber('lines', preferenceStore.getNumber('lines', 200)));
+    const beforeEl = el('beforeLines');
+    if (beforeEl) {
+        beforeEl.value = String(getSharedNumber('beforeLines', preferenceStore.getNumber('beforeLines', 0)));
+    }
+    const afterEl = el('afterLines');
+    if (afterEl) {
+        afterEl.value = String(getSharedNumber('afterLines', preferenceStore.getNumber('afterLines', 0)));
+    }
     el('autoScroll').checked = getSharedBoolean('autoScroll', preferenceStore.getBoolean('autoScroll', true));
     el('autoReconnect').checked = getSharedBoolean('autoReconnect', preferenceStore.getBoolean('autoReconnect', true));
     el('showSystem').checked = getSharedBoolean('showSystem', preferenceStore.getBoolean('showSystem', true));
@@ -1140,13 +1251,50 @@ function connect() {
         requestCatSnapshot();
         return;
     }
+    if (!isContextWindowEnabled()
+        && (clampContextLines(value('beforeLines')) > 0 || clampContextLines(value('afterLines')) > 0)) {
+        logView.appendSystem('提示：前后文行数（-B/-A）仅对“内容过滤”存在【包含】关键词时生效；当前未启用包含过滤，已忽略前后文设置。');
+    }
     connectTail();
+}
+
+/**
+ * 判断“前后文行数（-B/-A）”是否应启用。
+ * <p>
+ * 后端仅在存在 include 规则时才会按“命中行 ± 上下文”输出窗口；
+ * 因此当规则链为空或仅有排除规则时，这两个输入应视为无效。
+ * </p>
+ *
+ * @returns {boolean} true 表示启用
+ */
+function isContextWindowEnabled() {
+    const rules = filterChainManager.getRules();
+    if (!rules || !rules.length) {
+        return false;
+    }
+    return rules.some(rule => {
+        const type = rule && rule.type ? String(rule.type).trim().toLowerCase() : '';
+        const data = rule && rule.data ? String(rule.data).trim() : '';
+        return type === 'include' && !!data;
+    });
+}
+
+/**
+ * 判断当前是否处于“上下文窗口”模式（include + -A/-B 任一大于0）。
+ *
+ * @returns {boolean} true 表示启用上下文窗口
+ */
+function isContextWindowActive() {
+    if (!isContextWindowEnabled()) {
+        return false;
+    }
+    return clampContextLines(value('beforeLines')) > 0 || clampContextLines(value('afterLines')) > 0;
 }
 
 /**
  * 构建日志读取请求体（WebSocket 与 cat 接口共用）。
  *
- * @returns {{project:string,env:string,service:string,filePath:string,lines:number,includeKeyword:string,excludeKeyword:string,filterRules:Array}} 请求体
+ * @returns {{project:string,env:string,service:string,filePath:string,lines:number,includeKeyword:string,excludeKeyword:string,filterRules:Array,beforeLines:number,afterLines:number}} 请求体
  */
 function buildLogRequestPayload() {
     return {
@@ -1155,10 +1303,31 @@ function buildLogRequestPayload() {
         service: value('service') || ALL,
         filePath: value('file'),
         lines: parseLines(value('lines')),
+        readMode: getReadMode(),
         includeKeyword: '',
         excludeKeyword: '',
-        filterRules: getActiveFilterRules()
+        filterRules: getActiveFilterRules(),
+        beforeLines: clampContextLines(value('beforeLines')),
+        afterLines: clampContextLines(value('afterLines'))
     };
+}
+
+/**
+ * 规范化上下文行数输入，限制在 [0, 200]。
+ *
+ * @param {*} raw 输入值
+ * @returns {number} 规范化结果
+ */
+function clampContextLines(raw) {
+    const text = String(raw || '').trim();
+    if (!text) {
+        return 0;
+    }
+    const value = parseInt(text, 10);
+    if (Number.isNaN(value)) {
+        return 0;
+    }
+    return Math.max(0, Math.min(200, value));
 }
 
 /**
@@ -1233,6 +1402,7 @@ function requestCatSnapshot() {
     }
     const payload = buildLogRequestPayload();
     state.catLoading = true;
+    startCatProgressHint();
     clearReconnectTimer();
     closeSocket(true);
     closeSettingsDrawer();
@@ -1242,8 +1412,10 @@ function requestCatSnapshot() {
     logView.setStatus('快照读取中...', 'var(--warn)');
     updateControls();
 
-    return fetch('/api/log/cat', {
+    // 追加时间戳参数，规避某些代理/浏览器对 POST 的异常缓存或复用。
+    return fetch(`/api/log/cat?ts=${Date.now()}`, {
         method: 'POST',
+        cache: 'no-store',
         headers: {'Content-Type': 'application/json'},
         body: JSON.stringify(payload)
     })
@@ -1276,6 +1448,7 @@ function requestCatSnapshot() {
         })
         .finally(() => {
             state.catLoading = false;
+            clearCatProgressTimer();
             updateControls();
         });
 }
@@ -1857,12 +2030,18 @@ function updateControls() {
     const tailMode = isTailMode();
     const tailLocked = wsActive && tailMode;
     const catBusy = !!state.catLoading;
+    const contextEnabled = isContextWindowEnabled();
     statusBar.setLatencyEnabled(tailLocked);
     CONTEXT_CONTROL_IDS.forEach(controlId => setElementDisabled(controlId, tailLocked || catBusy));
     setElementDisabled('lines', catBusy);
     setElementDisabled('btnLinesDecrease', catBusy);
     setElementDisabled('btnLinesIncrease', catBusy);
     CAT_BUSY_CONTROL_IDS.forEach(controlId => setElementDisabled(controlId, catBusy));
+    CONTEXT_LINE_CONTROL_IDS.forEach(controlId => setElementDisabled(controlId, catBusy || !contextEnabled));
+    setElementDisabled('btnBeforeLinesDecrease', catBusy || !contextEnabled);
+    setElementDisabled('btnBeforeLinesIncrease', catBusy || !contextEnabled);
+    setElementDisabled('btnAfterLinesDecrease', catBusy || !contextEnabled);
+    setElementDisabled('btnAfterLinesIncrease', catBusy || !contextEnabled);
     setElementDisabled('btnStart', catBusy || tailLocked);
     setElementDisabled('btnStop', !tailLocked);
     setElementDisabled('btnPause', !tailLocked);
@@ -1929,9 +2108,34 @@ function onFilterRuleChanged() {
     preferenceStore.set('filterRules', JSON.stringify(rules));
     updateSettingsSummary();
     renderActiveFilterExpression();
+    updateContextLineControls();
     scheduleTailSubscriptionRefresh();
 }
 
+/**
+ * 同步前后文行数输入框可用性。
+ * <p>
+ * 仅当存在 include 过滤条件时启用，避免用户误以为 -A/-B 在“无包含关键词”场景也会生效。
+ * </p>
+ */
+function updateContextLineControls() {
+    const enabled = isContextWindowEnabled();
+    CONTEXT_LINE_CONTROL_IDS.forEach(controlId => {
+        const node = el(controlId);
+        if (!node) {
+            return;
+        }
+        node.disabled = !enabled;
+        node.title = enabled ? '' : '仅在“内容过滤”存在【包含】关键词时生效';
+    });
+
+    // 当启用了“前后文行数”，后端会输出“命中行±上下文”；此时前端不应再按 include 规则隐藏上下文行。
+    setElementDisabled('btnBeforeLinesDecrease', !enabled);
+    setElementDisabled('btnBeforeLinesIncrease', !enabled);
+    setElementDisabled('btnAfterLinesDecrease', !enabled);
+    setElementDisabled('btnAfterLinesIncrease', !enabled);
+    logView.setRuleFilterEnabled(!isContextWindowActive());
+}
 /**
  * 渲染实时日志窗口下方的过滤表达式摘要。
  * <p>

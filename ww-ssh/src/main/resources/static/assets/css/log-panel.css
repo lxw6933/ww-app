@@ -1062,6 +1062,343 @@ button.danger:hover:not(:disabled) {
     gap: 6px;
     min-width: 0;
 }
+
+/* ==================== 过滤上下文行数（-A / -B） ==================== */
+.context-line-grid {
+    display: flex;
+    flex-wrap: nowrap;
+    gap: 10px;
+    align-items: stretch;
+    padding: 0;
+    border-radius: 0;
+    border: none;
+    background: transparent;
+}
+
+.context-line-item {
+    flex: 1 1 0;
+    min-width: 0;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    padding: 6px 8px;
+    border-radius: 12px;
+    border: 1px solid #d8e4f1;
+    background: #f8fbff;
+}
+
+.context-line-text {
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    line-height: 1.1;
+}
+
+.context-line-title {
+    font-size: 12px;
+    font-weight: 800;
+    color: #3a4f65;
+}
+
+.context-line-sub {
+    font-size: 11px;
+    font-weight: 600;
+    color: #6b8298;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.context-stepper {
+    flex: 0 0 auto;
+}
+
+.context-stepper input.control-sm {
+    width: 72px;
+    height: 30px;
+    padding: 0 10px;
+    border-radius: 10px;
+    text-align: center;
+    font-variant-numeric: tabular-nums;
+}
+
+.context-stepper input.control-sm:disabled {
+    opacity: 0.72;
+}
+
+.context-stepper input.control-sm:focus {
+    border-color: #5ba3e9;
+    box-shadow: 0 0 0 3px rgba(31, 128, 216, 0.16);
+}
+
+@media (max-width: 760px) {
+    .context-line-grid {
+        flex-wrap: wrap;
+    }
+    .context-line-item {
+        width: 100%;
+    }
+}
+
+/* 兼容旧结构（已废弃，保留但不再使用） */
+.context-line-field {
+    display: none;
+}
+
+/* ==================== 前后文行数区块：科技主题重构 ==================== */
+
+/* 容器：独占一行，匹配深色主题 */
+.group-context-lines {
+    grid-column: 1 / -1 !important;
+    background: linear-gradient(180deg, rgba(11, 33, 52, 0.88), rgba(8, 25, 40, 0.92)) !important;
+    border: 1px solid rgba(96, 179, 238, 0.38) !important;
+    border-radius: 12px !important;
+    padding: 10px 12px !important;
+    gap: 8px !important;
+}
+
+.group-context-lines > label {
+    font-size: 12px !important;
+    font-weight: 700 !important;
+    letter-spacing: 0.3px !important;
+    color: #a9d6f0 !important;
+    text-transform: uppercase !important;
+}
+
+.group-context-lines .group-tip {
+    font-size: 11px !important;
+    color: #7fa8c6 !important;
+    line-height: 1.5 !important;
+    margin: 0 !important;
+    padding: 6px 8px !important;
+    border-radius: 8px !important;
+    border: 1px solid rgba(98, 170, 218, 0.24) !important;
+    background: rgba(8, 26, 42, 0.58) !important;
+}
+
+/* 两列网格布局 */
+.context-line-grid {
+    display: grid !important;
+    grid-template-columns: repeat(2, 1fr) !important;
+    gap: 10px !important;
+    padding: 0 !important;
+    border: none !important;
+    background: transparent !important;
+}
+
+/* 每个 item：纵向排列，上部 header + 下部 stepper */
+.context-line-item {
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: stretch !important;
+    justify-content: space-between !important;
+    gap: 8px !important;
+    padding: 10px 12px !important;
+    border-radius: 10px !important;
+    border: 1px solid rgba(100, 180, 236, 0.36) !important;
+    background: linear-gradient(180deg, rgba(13, 38, 58, 0.9), rgba(9, 27, 43, 0.94)) !important;
+    box-shadow:
+        inset 0 1px 0 rgba(168, 232, 255, 0.1),
+        0 6px 16px rgba(2, 14, 24, 0.28) !important;
+    transition: border-color 0.18s ease, box-shadow 0.18s ease !important;
+}
+
+.context-line-item:hover {
+    border-color: rgba(130, 210, 255, 0.55) !important;
+    box-shadow:
+        inset 0 1px 0 rgba(182, 240, 255, 0.16),
+        0 8px 20px rgba(2, 14, 24, 0.38) !important;
+}
+
+/* -B 前文：蓝青色调 */
+.context-line-before {
+    border-color: rgba(86, 187, 253, 0.42) !important;
+}
+
+.context-line-before:hover {
+    border-color: rgba(112, 210, 255, 0.62) !important;
+}
+
+/* -A 后文：青绿色调 */
+.context-line-after {
+    border-color: rgba(72, 210, 175, 0.4) !important;
+}
+
+.context-line-after:hover {
+    border-color: rgba(96, 235, 196, 0.6) !important;
+}
+
+/* header 行：badge + 文字说明横向排布 */
+.context-line-header {
+    display: flex !important;
+    align-items: center !important;
+    gap: 10px !important;
+    min-width: 0 !important;
+}
+
+/* Badge 标识 */
+.context-line-badge {
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    flex: 0 0 auto !important;
+    width: 36px !important;
+    height: 36px !important;
+    border-radius: 8px !important;
+    font-size: 13px !important;
+    font-weight: 900 !important;
+    letter-spacing: 0.5px !important;
+    font-family: "JetBrains Mono", "Consolas", "Courier New", monospace !important;
+    line-height: 1 !important;
+    box-shadow:
+        inset 0 1px 0 rgba(255, 255, 255, 0.18),
+        0 4px 10px rgba(2, 14, 24, 0.3) !important;
+}
+
+/* -B badge：蓝色 */
+.context-badge-b {
+    color: #c6ebff !important;
+    border: 1px solid rgba(88, 196, 255, 0.56) !important;
+    background: linear-gradient(145deg, rgba(22, 82, 136, 0.94), rgba(12, 54, 96, 0.98)) !important;
+    text-shadow: 0 0 8px rgba(88, 196, 255, 0.6) !important;
+}
+
+/* -A badge：青绿色 */
+.context-badge-a {
+    color: #c0f7e4 !important;
+    border: 1px solid rgba(72, 218, 178, 0.54) !important;
+    background: linear-gradient(145deg, rgba(16, 88, 74, 0.94), rgba(10, 62, 52, 0.98)) !important;
+    text-shadow: 0 0 8px rgba(72, 218, 178, 0.58) !important;
+}
+
+/* 文字区：标题 + 副标题纵向排列 */
+.context-line-text {
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 3px !important;
+    min-width: 0 !important;
+    line-height: 1.2 !important;
+}
+
+.context-line-title {
+    font-size: 13px !important;
+    font-weight: 700 !important;
+    color: #d2eeff !important;
+    letter-spacing: 0.2px !important;
+    white-space: nowrap !important;
+}
+
+.context-line-sub {
+    font-size: 11px !important;
+    font-weight: 500 !important;
+    color: #7aadcc !important;
+    white-space: nowrap !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+}
+
+/* stepper 区域：整行宽度 */
+.context-stepper {
+    display: grid !important;
+    grid-template-columns: 30px minmax(0, 1fr) 30px !important;
+    align-items: center !important;
+    gap: 6px !important;
+    width: 100% !important;
+}
+
+.context-stepper input.control-sm {
+    width: 100% !important;
+    min-width: 0 !important;
+    max-width: none !important;
+    height: 30px !important;
+    padding: 0 8px !important;
+    border-radius: 8px !important;
+    text-align: center !important;
+    font-variant-numeric: tabular-nums !important;
+    font-size: 14px !important;
+    font-weight: 700 !important;
+    color: #d8f3ff !important;
+    border: 1px solid rgba(102, 186, 240, 0.44) !important;
+    background: linear-gradient(180deg, rgba(9, 30, 48, 0.96), rgba(6, 20, 34, 0.98)) !important;
+    box-shadow: inset 0 1px 0 rgba(164, 232, 255, 0.1) !important;
+}
+
+.context-stepper input.control-sm:focus {
+    border-color: rgba(140, 228, 255, 0.8) !important;
+    box-shadow:
+        0 0 0 2px rgba(39, 198, 255, 0.2),
+        inset 0 1px 0 rgba(180, 240, 255, 0.14) !important;
+    outline: none !important;
+}
+
+.context-stepper input.control-sm:disabled {
+    opacity: 0.52 !important;
+}
+
+/* 步进按钮 */
+.context-stepper .line-step-btn {
+    width: 30px !important;
+    min-width: 30px !important;
+    height: 30px !important;
+    padding: 0 !important;
+    border-radius: 7px !important;
+    font-size: 16px !important;
+    font-weight: 700 !important;
+    line-height: 1 !important;
+    border: 1px solid rgba(102, 186, 240, 0.44) !important;
+    background: linear-gradient(180deg, rgba(18, 56, 86, 0.92), rgba(11, 38, 60, 0.96)) !important;
+    color: #a9d8f5 !important;
+    box-shadow:
+        inset 0 1px 0 rgba(168, 230, 255, 0.16),
+        0 4px 10px rgba(2, 14, 24, 0.24) !important;
+    clip-path: none !important;
+}
+
+.context-stepper .line-step-btn:hover:not(:disabled) {
+    border-color: rgba(136, 218, 255, 0.68) !important;
+    color: #d6f1ff !important;
+    background: linear-gradient(180deg, rgba(24, 72, 108, 0.96), rgba(14, 48, 76, 0.98)) !important;
+    box-shadow:
+        inset 0 1px 0 rgba(184, 240, 255, 0.22),
+        0 6px 14px rgba(2, 14, 24, 0.32) !important;
+    transform: translateY(-1px) !important;
+}
+
+.context-stepper .line-step-btn:disabled {
+    opacity: 0.44 !important;
+    transform: none !important;
+}
+
+/* -B 步进器色调：蓝色 */
+.context-line-before .context-stepper .line-step-btn {
+    border-color: rgba(88, 196, 255, 0.48) !important;
+    color: #b4e0ff !important;
+}
+
+.context-line-before .context-stepper input.control-sm {
+    border-color: rgba(88, 196, 255, 0.44) !important;
+    color: #d0eeff !important;
+}
+
+/* -A 步进器色调：青绿 */
+.context-line-after .context-stepper .line-step-btn {
+    border-color: rgba(72, 218, 178, 0.48) !important;
+    color: #a4f0d4 !important;
+}
+
+.context-line-after .context-stepper input.control-sm {
+    border-color: rgba(72, 218, 178, 0.42) !important;
+    color: #c4f5e4 !important;
+}
+
+/* 响应式：屏幕较窄时单列 */
+@media (max-width: 560px) {
+    .context-line-grid {
+        grid-template-columns: 1fr !important;
+    }
+}
 .line-count-stepper #lines {
     min-width: 104px;
     max-width: 118px;
@@ -1337,6 +1674,18 @@ body.settings-drawer-open .settings-drawer {
     border-radius: 8px;
     font-variant-numeric: tabular-nums;
     white-space: nowrap;
+}
+
+/* 日志级别按钮 hover 态保持与 secondary 按钮一致 */
+.level-btn:hover:not(:disabled):not(.active) {
+    background: #e2edf9;
+    color: #34556f;
+    border-color: #c7d6e6;
+}
+
+.level-btn:focus-visible {
+    border-color: #5ba3e9;
+    box-shadow: 0 0 0 3px rgba(31, 128, 216, 0.16);
 }
 .level-btn.active {
     color: #ffffff;
@@ -5418,4 +5767,186 @@ body:not([data-read-mode]):not(.center-view-jvm) .toolbar-panel .row-primary .gr
         grid-column: auto !important;
         flex-wrap: wrap !important;
     }
+}
+
+/* ==================== 行数设置：同行两列 + 原生箭头去除 + hover 颜色统一 ==================== */
+
+/* 1. row-file 两列：第一行 file-search|file-select，第二行 lines-context 独占全宽 */
+#settingsDrawer .row-file {
+    grid-template-columns: 1fr 1fr !important;
+}
+
+#settingsDrawer .row-file .group-file-search {
+    grid-column: 1 !important;
+    grid-row: 1 !important;
+}
+
+#settingsDrawer .row-file .group-file-select {
+    grid-column: 2 !important;
+    grid-row: 1 !important;
+}
+
+#settingsDrawer .row-file .group-lines-context {
+    grid-column: 1 / -1 !important;
+    grid-row: 2 !important;
+}
+
+/* 2. 行数设置三列：文字在上，输入在下 */
+#settingsDrawer .group-lines-context .lines-context-row {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 10px;
+    align-items: stretch;
+}
+
+#settingsDrawer .group-lines-context .lines-context-item {
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+#settingsDrawer .group-lines-context .lines-context-item label {
+    margin: 0;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+#settingsDrawer .group-lines-context .lines-context-stepper {
+    width: 100%;
+}
+
+/* lines-context-stepper 仅输入框时也保持布局稳定 */
+#settingsDrawer .group-lines-context .lines-context-stepper input.control-sm {
+    flex: 1 1 auto;
+}
+
+#settingsDrawer .group-lines-context .lines-context-divider {
+    display: none !important;
+}
+
+/* 3. 去除 beforeLines / afterLines 的 number 原生上下箭头 */
+#beforeLines::-webkit-outer-spin-button,
+#beforeLines::-webkit-inner-spin-button,
+#afterLines::-webkit-outer-spin-button,
+#afterLines::-webkit-inner-spin-button {
+    -webkit-appearance: none !important;
+    margin: 0;
+}
+
+#beforeLines[type='number'],
+#afterLines[type='number'] {
+    -moz-appearance: textfield !important;
+}
+
+/* 4. 初始加载行数加减按钮 hover — 与 context-stepper 保持一致 */
+#settingsDrawer .group-lines .line-step-btn:hover:not(:disabled) {
+    border-color: rgba(136, 218, 255, 0.68) !important;
+    color: #d6f1ff !important;
+    background: linear-gradient(180deg, rgba(24, 72, 108, 0.96), rgba(14, 48, 76, 0.98)) !important;
+    box-shadow:
+        inset 0 1px 0 rgba(184, 240, 255, 0.22),
+        0 6px 14px rgba(2, 14, 24, 0.32) !important;
+    transform: translateY(-1px) !important;
+}
+
+/* 5. 日志级别按钮（非激活态）hover — 与 context-stepper 保持一致 */
+.level-btn:hover:not(:disabled):not(.active) {
+    border-color: rgba(136, 218, 255, 0.68) !important;
+    color: #d6f1ff !important;
+    background: linear-gradient(180deg, rgba(24, 72, 108, 0.96), rgba(14, 48, 76, 0.98)) !important;
+    box-shadow:
+        inset 0 1px 0 rgba(184, 240, 255, 0.22),
+        0 4px 10px rgba(2, 14, 24, 0.28) !important;
+}
+
+/* 窄屏时回退单列 */
+@media (max-width: 560px) {
+    #settingsDrawer .row-file {
+        grid-template-columns: 1fr !important;
+    }
+    #settingsDrawer .row-file .group-file-search,
+    #settingsDrawer .row-file .group-file-select,
+    #settingsDrawer .row-file .group-lines-context {
+        grid-column: 1 !important;
+        grid-row: auto !important;
+    }
+    #settingsDrawer .group-lines-context .lines-context-row {
+        grid-template-columns: 1fr;
+    }
+}
+
+/* ==================== 前后文行数步进器：专用类样式（context-step-btn / context-lines-input） ==================== */
+
+/* lines-context-stepper（仅有 context-stepper 类时）：确保三列 grid，适用于 beforeLines/afterLines */
+/* 注意：初始行数步进器仅有 lines-context-stepper 类而无 context-stepper，不受此规则影响 */
+.lines-context-stepper.context-stepper {
+    display: grid !important;
+    grid-template-columns: 30px minmax(0, 1fr) 30px !important;
+    align-items: center !important;
+    gap: 6px !important;
+    width: 100% !important;
+}
+
+/* 初始行数步进器（有 lines-context-stepper 但无 context-stepper）：保持 flex 布局，宽度撑满 */
+#settingsDrawer .group-lines-context .lines-context-stepper:not(.context-stepper) {
+    display: flex !important;
+    align-items: center !important;
+    gap: 6px !important;
+    width: 100% !important;
+}
+
+#settingsDrawer .group-lines-context .lines-context-stepper:not(.context-stepper) input.control-sm {
+    flex: 1 1 auto !important;
+    min-width: 0 !important;
+    max-width: none !important;
+    text-align: center !important;
+}
+
+/* context-lines-input：去掉原生 number 上下箭头，统一居中与字体 */
+.context-lines-input {
+    text-align: center !important;
+    font-variant-numeric: tabular-nums !important;
+}
+
+.context-lines-input::-webkit-outer-spin-button,
+.context-lines-input::-webkit-inner-spin-button {
+    -webkit-appearance: none !important;
+    margin: 0;
+}
+
+.context-lines-input[type='number'] {
+    -moz-appearance: textfield !important;
+}
+
+/* context-step-btn：专用类，尺寸与风格同 line-step-btn 一致 */
+.context-step-btn {
+    width: 30px !important;
+    min-width: 30px !important;
+    height: 30px !important;
+    padding: 0 !important;
+    border-radius: 7px !important;
+    font-size: 16px !important;
+    font-weight: 700 !important;
+    line-height: 1 !important;
+    clip-path: none !important;
+}
+
+/* context-step-btn hover 态：与 context-stepper .line-step-btn 保持一致 */
+.context-step-btn:hover:not(:disabled) {
+    border-color: rgba(136, 218, 255, 0.68) !important;
+    color: #d6f1ff !important;
+    background: linear-gradient(180deg, rgba(24, 72, 108, 0.96), rgba(14, 48, 76, 0.98)) !important;
+    box-shadow:
+        inset 0 1px 0 rgba(184, 240, 255, 0.22),
+        0 6px 14px rgba(2, 14, 24, 0.32) !important;
+    transform: translateY(-1px) !important;
+}
+
+/* context-step-btn disabled 态 */
+.context-step-btn:disabled {
+    opacity: 0.44 !important;
+    transform: none !important;
+    cursor: not-allowed !important;
 }
