@@ -46,11 +46,17 @@ public class GroupInstanceVO {
     @Schema(description = "拼团价格", example = "99.00")
     private BigDecimal groupPrice;
 
-    @Schema(description = "商品SPU ID", example = "1001")
+    @Schema(description = "分享商品SPU ID", example = "1001")
     private Long spuId;
 
-    @Schema(description = "商品SKU ID", example = "2001")
+    @Schema(description = "团内已成交SKU列表", example = "[2001,2002]")
+    private List<Long> skuIds;
+
+    @Schema(description = "兼容字段：默认SKU ID", example = "2001")
     private Long skuId;
+
+    @Schema(description = "失败原因", example = "团长售后导致拼团关闭")
+    private String failReason;
 
     @Schema(description = "成员列表")
     private List<MemberInfo> members;
@@ -63,12 +69,24 @@ public class GroupInstanceVO {
         
         @Schema(description = "订单ID", example = "ORDER20251208123456")
         private String orderId;
+
+        @Schema(description = "实际成交SKU ID", example = "2001")
+        private Long skuId;
         
         @Schema(description = "加入时间", example = "2025-12-08 12:00:00")
         private Date joinTime;
         
         @Schema(description = "是否团长", example = "true")
         private Boolean isLeader;
+
+        @Schema(description = "成员状态", example = "JOINED")
+        private String memberStatus;
+
+        @Schema(description = "最近轨迹节点", example = "PAY_SUCCESS")
+        private String latestTrajectory;
+
+        @Schema(description = "最近轨迹时间", example = "2026-03-17 12:00:00")
+        private Date latestTrajectoryTime;
     }
 
 }

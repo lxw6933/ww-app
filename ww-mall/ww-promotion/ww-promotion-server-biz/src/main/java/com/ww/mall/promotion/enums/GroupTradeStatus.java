@@ -13,11 +13,6 @@ import lombok.Getter;
 public enum GroupTradeStatus {
 
     /**
-     * 待处理。
-     */
-    WAITING,
-
-    /**
      * 处理中。
      */
     PROCESSING,

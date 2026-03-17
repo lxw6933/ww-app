@@ -23,6 +23,26 @@ public class GroupMqConstant {
     public static final String GROUP_SUCCESS_KEY = "group.success";
 
     /**
+     * 支付成功驱动拼团的队列。
+     */
+    public static final String GROUP_ORDER_PAID_QUEUE = "group.order.paid.queue";
+
+    /**
+     * 支付成功驱动拼团的路由键。
+     */
+    public static final String GROUP_ORDER_PAID_KEY = "group.order.paid";
+
+    /**
+     * 售后成功驱动拼团回退名额的队列。
+     */
+    public static final String GROUP_AFTER_SALE_QUEUE = "group.after.sale.queue";
+
+    /**
+     * 售后成功驱动拼团回退名额的路由键。
+     */
+    public static final String GROUP_AFTER_SALE_KEY = "group.after.sale.success";
+
+    /**
      * 拼团失败队列
      */
     public static final String GROUP_FAILED_QUEUE = "group.failed.queue";

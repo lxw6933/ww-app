@@ -3,6 +3,7 @@ package com.ww.mall.promotion.entity.group;
 import com.ww.app.mongodb.common.BaseDoc;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
+import org.springframework.data.mongodb.core.index.CompoundIndex;
 import org.springframework.data.mongodb.core.mapping.Document;
 import org.springframework.data.mongodb.core.query.Criteria;
 import org.springframework.data.mongodb.core.query.Query;
@@ -10,6 +11,7 @@ import org.springframework.data.mongodb.core.query.Update;
 
 import java.math.BigDecimal;
 import java.util.Date;
+import java.util.List;
 
 /**
  * @author ww
@@ -19,6 +21,7 @@ import java.util.Date;
 @EqualsAndHashCode(callSuper = true)
 @Data
 @Document("group_activity")
+@CompoundIndex(name = "idx_group_activity_spu_status", def = "{'spuId': 1, 'status': 1, 'enabled': 1}")
 public class GroupActivity extends BaseDoc {
 
     /**
@@ -37,19 +40,29 @@ public class GroupActivity extends BaseDoc {
     private Long spuId;
 
     /**
-     * 商品SKU ID
+     * 兼容字段：默认SKU ID。
+     * <p>
+     * 新模型下拼团按 SPU 维度分享，支持同一团内购买不同 SKU，
+     * 实际可售 SKU 由 {@link #skuRules} 决定。
      */
     private Long skuId;
 
     /**
-     * 拼团价格
+     * 兼容字段：默认拼团价格。
+     * <p>
+     * 新模型下展示价取 skuRules 中最小拼团价。
      */
     private BigDecimal groupPrice;
 
     /**
-     * 原价
+     * 兼容字段：默认原价。
      */
     private BigDecimal originalPrice;
+
+    /**
+     * SKU 规则列表。
+     */
+    private List<GroupSkuRule> skuRules;
 
     /**
      * 拼团人数要求
@@ -107,6 +120,33 @@ public class GroupActivity extends BaseDoc {
     private Integer sortWeight;
 
     /**
+     * SKU 规则。
+     */
+    @Data
+    public static class GroupSkuRule {
+
+        /**
+         * SKU ID。
+         */
+        private Long skuId;
+
+        /**
+         * SKU 拼团价。
+         */
+        private BigDecimal groupPrice;
+
+        /**
+         * SKU 原价。
+         */
+        private BigDecimal originalPrice;
+
+        /**
+         * 是否启用：1-启用，0-禁用。
+         */
+        private Integer enabled;
+    }
+
+    /**
      * 构建根据ID查询
      */
     public static Query buildIdQuery(String id) {
@@ -138,6 +178,7 @@ public class GroupActivity extends BaseDoc {
         return new Query().addCriteria(
                 Criteria.where("spuId").is(spuId)
                         .and("status").is(status)
+                        .and("enabled").is(1)
         );
     }
 

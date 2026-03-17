@@ -1,8 +1,11 @@
 package com.ww.mall.promotion.entity.group;
 
 import com.ww.app.mongodb.common.BaseDoc;
+import com.ww.mall.promotion.enums.GroupStatus;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
+import org.springframework.data.domain.Sort;
+import org.springframework.data.mongodb.core.index.CompoundIndex;
 import org.springframework.data.mongodb.core.mapping.Document;
 import org.springframework.data.mongodb.core.query.Criteria;
 import org.springframework.data.mongodb.core.query.Query;
@@ -20,6 +23,7 @@ import java.util.List;
 @EqualsAndHashCode(callSuper = true)
 @Data
 @Document("group_instance")
+@CompoundIndex(name = "idx_group_instance_activity_status", def = "{'activityId': 1, 'status': 1, 'expireTime': 1}")
 public class GroupInstance extends BaseDoc {
 
     /**
@@ -78,9 +82,19 @@ public class GroupInstance extends BaseDoc {
     private Long spuId;
 
     /**
-     * 商品SKU ID
+     * 兼容字段：首个或默认SKU ID。
      */
     private Long skuId;
+
+    /**
+     * 团内已成交SKU列表。
+     */
+    private List<Long> skuIds;
+
+    /**
+     * 失败原因。
+     */
+    private String failReason;
 
     /**
      * 成员列表（冗余存储，便于查询）
@@ -103,6 +117,11 @@ public class GroupInstance extends BaseDoc {
         private String orderId;
 
         /**
+         * SKU ID。
+         */
+        private Long skuId;
+
+        /**
          * 加入时间
          */
         private Date joinTime;
@@ -111,6 +130,21 @@ public class GroupInstance extends BaseDoc {
          * 是否团长
          */
         private Boolean isLeader;
+
+        /**
+         * 成员状态。
+         */
+        private String memberStatus;
+
+        /**
+         * 最近轨迹编码。
+         */
+        private String latestTrajectory;
+
+        /**
+         * 最近轨迹时间。
+         */
+        private Date latestTrajectoryTime;
     }
 
     /**
@@ -124,10 +158,11 @@ public class GroupInstance extends BaseDoc {
      * 构建根据活动ID和状态查询
      */
     public static Query buildActivityIdAndStatusQuery(String activityId, String status) {
-        return new Query().addCriteria(
-                Criteria.where("activityId").is(activityId)
-                        .and("status").is(status)
-        );
+        Criteria criteria = Criteria.where("activityId").is(activityId);
+        if (status != null && !status.trim().isEmpty()) {
+            criteria.and("status").is(status);
+        }
+        return new Query().addCriteria(criteria).with(Sort.by(Sort.Direction.DESC, "createTime", "id"));
     }
 
     /**
@@ -163,9 +198,9 @@ public class GroupInstance extends BaseDoc {
     public static Update buildStatusUpdate(String status) {
         Update update = new Update();
         update.set("status", status);
-        if ("SUCCESS".equals(status)) {
+        if (GroupStatus.SUCCESS.getCode().equals(status)) {
             update.set("completeTime", new Date());
-        } else if ("FAILED".equals(status)) {
+        } else if (GroupStatus.FAILED.getCode().equals(status)) {
             update.set("failedTime", new Date());
         }
         return update;

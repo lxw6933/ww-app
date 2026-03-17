@@ -12,6 +12,7 @@
 --   [4] ordersKey        - 订单信息Hash键 (group:instance:orders:{groupId})
 --   [5] userGroupKey    - 用户拼团Set键 (group:user:group:{userId})
 --   [6] expiryIndexKey  - 过期索引Sorted Set键 (group:expiry)
+--   [7] orderMappingKey - 订单与拼团映射键 (group:order:mapping:{orderId})
 --
 -- ARGV（参数列表）:
 --   [1] status          - 拼团状态 (OPEN)
@@ -23,11 +24,12 @@
 --   [7] slotsAfterLeader- 剩余名额（requiredSize - 1）
 --   [8] activityId      - 活动ID
 --   [9] groupId         - 拼团ID（用于过期索引）
+--   [10] retainSeconds  - Redis键保留秒数
 --
 -- 返回值（Long类型）:
 --   1   - 创建成功
 --   -1  - 拼团已存在（幂等性：groupId已存在）
---   -2  - 订单已存在（幂等性：订单ID已在ordersKey中）
+--   -2  - 订单已存在（幂等性：订单ID已处理）
 -- ============================================================================
 
 -- ============================================================================
@@ -47,7 +49,7 @@ end
 -- ============================================================================
 -- 步骤2：幂等性校验 - 检查订单是否已存在
 -- ============================================================================
-local orderExists = redis.call("HEXISTS", KEYS[4], ARGV[5])
+local orderExists = redis.call("EXISTS", KEYS[7])
 if orderExists == 1 then
     return -2  -- 订单已存在（幂等性），返回-2
 end
@@ -75,6 +77,7 @@ redis.call("SET", KEYS[2], ARGV[7])
 -- ============================================================================
 redis.call("ZADD", KEYS[3], nowMillis, ARGV[4])
 redis.call("HSET", KEYS[4], ARGV[5], ARGV[6])
+redis.call("SET", KEYS[7], ARGV[9])
 
 -- ============================================================================
 -- 步骤6：添加用户到用户拼团Set
@@ -89,12 +92,13 @@ redis.call("ZADD", KEYS[6], ARGV[3], ARGV[9])
 -- ============================================================================
 -- 步骤8：设置键的过期时间
 -- ============================================================================
-local expireSeconds = 3600 * 24 * 2  -- 2天缓冲时间
+local expireSeconds = tonumber(ARGV[10]) or (3600 * 24 * 2)
 redis.call("EXPIRE", KEYS[1], expireSeconds)
 redis.call("EXPIRE", KEYS[2], expireSeconds)
 redis.call("EXPIRE", KEYS[3], expireSeconds)
 redis.call("EXPIRE", KEYS[4], expireSeconds)
 redis.call("EXPIRE", KEYS[5], expireSeconds)
+redis.call("EXPIRE", KEYS[7], expireSeconds)
 
 -- ============================================================================
 -- 返回成功标识

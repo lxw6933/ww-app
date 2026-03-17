@@ -22,6 +22,16 @@ public enum GroupFlowStage {
     PAY_CALLBACK(true),
 
     /**
+     * 支付成功消息消费。
+     */
+    PAY_ORDER_MQ(true),
+
+    /**
+     * 售后成功消息消费。
+     */
+    AFTER_SALE_MQ(true),
+
+    /**
      * 开团请求。
      */
     CREATE_GROUP(true),
@@ -40,6 +50,16 @@ public enum GroupFlowStage {
      * 失败状态流转。
      */
     GROUP_FAILED(true),
+
+    /**
+     * 团内成员售后释放名额。
+     */
+    MEMBER_RELEASE(true),
+
+    /**
+     * 拼团过期关闭。
+     */
+    GROUP_EXPIRE(true),
 
     /**
      * 成团通知 MQ。

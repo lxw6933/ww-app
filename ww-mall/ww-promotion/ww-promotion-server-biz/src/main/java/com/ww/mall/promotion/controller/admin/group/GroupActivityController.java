@@ -2,6 +2,7 @@ package com.ww.mall.promotion.controller.admin.group;
 
 import com.ww.mall.promotion.controller.admin.group.req.GroupActivityBO;
 import com.ww.mall.promotion.entity.group.GroupActivity;
+import com.ww.mall.promotion.enums.GroupEnabledStatus;
 import com.ww.mall.promotion.service.group.GroupActivityService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
@@ -62,8 +63,9 @@ public class GroupActivityController {
     @Operation(summary = "启用/禁用活动", description = "启用或禁用拼团活动，禁用后活动将不可见")
     public void enableActivity(
             @Parameter(description = "活动ID", required = true) @PathVariable String activityId,
-            @Parameter(description = "启用状态：1-启用，0-禁用", required = true) @RequestParam Integer enabled) {
-        activityService.enableActivity(activityId, enabled);
+            @Parameter(description = "启用状态：ENABLED-启用，DISABLED-禁用", required = true)
+            @RequestParam GroupEnabledStatus enabledStatus) {
+        activityService.enableActivity(activityId, enabledStatus);
     }
 
 }

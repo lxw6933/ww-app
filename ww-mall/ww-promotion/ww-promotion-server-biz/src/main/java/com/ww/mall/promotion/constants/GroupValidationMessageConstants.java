@@ -29,6 +29,11 @@ public final class GroupValidationMessageConstants {
     public static final String SKU_ID_REQUIRED = "商品SKU ID不能为空";
 
     /**
+     * SKU 规则不能为空。
+     */
+    public static final String SKU_RULES_REQUIRED = "SKU规则不能为空";
+
+    /**
      * 拼团价格不能为空。
      */
     public static final String GROUP_PRICE_REQUIRED = "拼团价格不能为空";
@@ -107,6 +112,11 @@ public final class GroupValidationMessageConstants {
      * 支付流水ID不能为空。
      */
     public static final String PAY_TRANS_ID_REQUIRED = "支付流水ID不能为空";
+
+    /**
+     * 售后单号不能为空。
+     */
+    public static final String AFTER_SALE_ID_REQUIRED = "售后单号不能为空";
 
     private GroupValidationMessageConstants() {
     }

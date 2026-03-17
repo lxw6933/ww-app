@@ -22,11 +22,26 @@ public final class GroupBizConstants {
     public static final long PAY_CALLBACK_LOCK_SECONDS = 30L;
 
     /**
+     * 拼团业务锁等待时间，单位秒。
+     */
+    public static final long GROUP_LOCK_WAIT_SECONDS = 1L;
+
+    /**
+     * 拼团业务锁租约时间，单位秒。
+     */
+    public static final long GROUP_LOCK_LEASE_SECONDS = 10L;
+
+    /**
      * Redis 拼团数据兜底保留时长，单位秒。
      * <p>
      * 拼团过期或成功后仍保留两天，便于查询回放、补偿和排障。
      */
     public static final int REDIS_GROUP_DATA_RETAIN_SECONDS = 2 * 24 * 60 * 60;
+
+    /**
+     * 团内轨迹保留的最大节点数。
+     */
+    public static final int MEMBER_TRAJECTORY_MAX_SIZE = 20;
 
     /**
      * Disruptor 处理器单批次大小。

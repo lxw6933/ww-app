@@ -15,7 +15,7 @@ import java.util.Date;
 /**
  * 拼团支付回调交易单。
  * <p>
- * 用于承接支付服务的异步回调，记录 payTransId、orderId 与 groupId 的映射，
+ * 用于承接支付服务的异步回调，记录 orderId 与 groupId 的映射，
  * 避免支付重复通知时重复开团或重复参团。
  *
  * @author ww
@@ -61,20 +61,22 @@ public class GroupTrade extends BaseDoc {
     private Long userId;
 
     /**
+     * 分享SPU ID。
+     */
+    private Long spuId;
+
+    /**
+     * 实际成交SKU ID。
+     */
+    private Long skuId;
+
+    /**
      * 订单ID。
      * <p>
      * 业务订单在拼团域内要求全局唯一，重复回调时优先作为幂等兜底键。
      */
     @Indexed(unique = true)
     private String orderId;
-
-    /**
-     * 支付流水ID。
-     * <p>
-     * 支付服务异步回调的首选幂等键，应保持全局唯一。
-     */
-    @Indexed(unique = true)
-    private String payTransId;
 
     /**
      * 订单信息快照。
@@ -90,16 +92,6 @@ public class GroupTrade extends BaseDoc {
      * 失败原因。
      */
     private String failReason;
-
-    /**
-     * 按支付流水ID查询。
-     *
-     * @param payTransId 支付流水ID
-     * @return 查询对象
-     */
-    public static Query buildPayTransIdQuery(String payTransId) {
-        return new Query().addCriteria(Criteria.where("payTransId").is(payTransId));
-    }
 
     /**
      * 按订单ID查询。

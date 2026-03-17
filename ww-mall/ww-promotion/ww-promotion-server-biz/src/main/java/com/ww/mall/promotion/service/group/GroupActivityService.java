@@ -2,6 +2,7 @@ package com.ww.mall.promotion.service.group;
 
 import com.ww.mall.promotion.controller.admin.group.req.GroupActivityBO;
 import com.ww.mall.promotion.entity.group.GroupActivity;
+import com.ww.mall.promotion.enums.GroupEnabledStatus;
 
 import java.util.List;
 
@@ -38,9 +39,11 @@ public interface GroupActivityService {
     List<GroupActivity> getActivitiesBySpuId(Long spuId);
 
     /**
-     * 启用/禁用活动
+     * 启用/禁用活动。
+     *
+     * @param activityId 活动ID
+     * @param enabledStatus 启用状态枚举
      */
-    void enableActivity(String activityId, Integer enabled);
+    void enableActivity(String activityId, GroupEnabledStatus enabledStatus);
 
 }
-

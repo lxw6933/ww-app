@@ -1,8 +1,9 @@
 package com.ww.mall.promotion.service.group;
 
-import com.ww.mall.promotion.controller.app.group.req.CreateGroupRequest;
-import com.ww.mall.promotion.controller.app.group.req.JoinGroupRequest;
 import com.ww.mall.promotion.controller.app.group.res.GroupInstanceVO;
+import com.ww.mall.promotion.mq.GroupAfterSaleSuccessMessage;
+import com.ww.mall.promotion.service.group.command.CreateGroupCommand;
+import com.ww.mall.promotion.service.group.command.JoinGroupCommand;
 
 import java.util.List;
 
@@ -16,12 +17,12 @@ public interface GroupInstanceService {
     /**
      * 创建拼团
      */
-    GroupInstanceVO createGroup(CreateGroupRequest request);
+    GroupInstanceVO createGroup(CreateGroupCommand command);
 
     /**
      * 加入拼团
      */
-    GroupInstanceVO joinGroup(JoinGroupRequest request);
+    GroupInstanceVO joinGroup(JoinGroupCommand command);
 
     /**
      * 查询拼团详情
@@ -48,5 +49,11 @@ public interface GroupInstanceService {
      */
     void handleGroupFailed(String groupId);
 
-}
+    /**
+     * 处理售后成功并归还名额。
+     *
+     * @param message 售后成功消息
+     */
+    void handleAfterSaleSuccess(GroupAfterSaleSuccessMessage message);
 
+}

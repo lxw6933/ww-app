@@ -17,11 +17,18 @@ public class GroupRedisKeyBuilder extends RedisKeyBuilder {
     private static final String META = "meta";
     private static final String SLOTS = "slots";
     private static final String MEMBERS = "members";
+    private static final String MEMBER_DETAIL = "member:detail";
     private static final String ORDERS = "orders";
     private static final String EXPIRY = "expiry";
     private static final String STOCK = "stock";
+    private static final String OPEN = "open";
     private static final String USER_GROUP = "user:group";
     private static final String USER_COUNT = "user:count";
+    private static final String ORDER_MAPPING = "order:mapping";
+    private static final String CALLBACK = "callback";
+    private static final String TRADE = "trade";
+    private static final String AFTER_SALE = "after:sale";
+    private static final String LOCK = "lock";
 
     /**
      * 拼团实例元数据Key
@@ -45,6 +52,14 @@ public class GroupRedisKeyBuilder extends RedisKeyBuilder {
      */
     public String buildGroupMembersKey(String groupId) {
         return join(GROUP, INSTANCE, MEMBERS, groupId);
+    }
+
+    /**
+     * 拼团成员详情Key（Hash）。
+     * 示例：{prefix}group:instance:member:detail:{groupId}
+     */
+    public String buildGroupMemberDetailKey(String groupId) {
+        return join(GROUP, INSTANCE, MEMBER_DETAIL, groupId);
     }
 
     /**
@@ -72,6 +87,14 @@ public class GroupRedisKeyBuilder extends RedisKeyBuilder {
     }
 
     /**
+     * 活动可参团开放索引。
+     * 示例：{prefix}group:activity:open:{activityId}
+     */
+    public String buildActivityOpenGroupKey(String activityId) {
+        return join(GROUP, ACTIVITY, OPEN, activityId);
+    }
+
+    /**
      * 用户参与的拼团Key（Set）
      * 示例：{prefix}group:user:group:{userId}
      */
@@ -85,6 +108,46 @@ public class GroupRedisKeyBuilder extends RedisKeyBuilder {
      */
     public String buildUserActivityCountKey(String activityId) {
         return join(GROUP, ACTIVITY, USER_COUNT, activityId);
+    }
+
+    /**
+     * 订单与拼团映射Key。
+     * 示例：{prefix}group:order:mapping:{orderId}
+     */
+    public String buildOrderMappingKey(String orderId) {
+        return join(GROUP, ORDER_MAPPING, orderId);
+    }
+
+    /**
+     * 支付回调锁Key。
+     * 示例：{prefix}group:callback:lock:{bizKey}
+     */
+    public String buildPaymentCallbackLockKey(String bizKey) {
+        return join(GROUP, CALLBACK, LOCK, bizKey);
+    }
+
+    /**
+     * 订单处理锁Key。
+     * 示例：{prefix}group:trade:lock:{bizKey}
+     */
+    public String buildTradeLockKey(String bizKey) {
+        return join(GROUP, TRADE, LOCK, bizKey);
+    }
+
+    /**
+     * 售后处理锁Key。
+     * 示例：{prefix}group:after:sale:lock:{bizKey}
+     */
+    public String buildAfterSaleLockKey(String bizKey) {
+        return join(GROUP, AFTER_SALE, LOCK, bizKey);
+    }
+
+    /**
+     * 拼团实例锁Key。
+     * 示例：{prefix}group:instance:lock:{groupId}
+     */
+    public String buildGroupLockKey(String groupId) {
+        return join(GROUP, INSTANCE, LOCK, groupId);
     }
 
     /**

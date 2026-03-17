@@ -30,5 +30,10 @@ public enum GroupFlowSource {
     /**
      * 拼团 MQ 消费者。
      */
-    GROUP_MQ_CONSUMER
+    GROUP_MQ_CONSUMER,
+
+    /**
+     * 拼团定时任务。
+     */
+    GROUP_JOB
 }

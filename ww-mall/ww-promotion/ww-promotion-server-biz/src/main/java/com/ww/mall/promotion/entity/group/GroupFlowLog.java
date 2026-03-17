@@ -3,7 +3,11 @@ package com.ww.mall.promotion.entity.group;
 import com.ww.app.mongodb.common.BaseDoc;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
+import org.springframework.data.domain.Sort;
+import org.springframework.data.mongodb.core.index.CompoundIndex;
 import org.springframework.data.mongodb.core.mapping.Document;
+import org.springframework.data.mongodb.core.query.Criteria;
+import org.springframework.data.mongodb.core.query.Query;
 
 /**
  * 拼团链路日志。
@@ -19,6 +23,7 @@ import org.springframework.data.mongodb.core.mapping.Document;
 @Data
 @EqualsAndHashCode(callSuper = true)
 @Document("group_flow_log")
+@CompoundIndex(name = "idx_group_id_create_time", def = "{'groupId': 1, 'createTime': 1}")
 public class GroupFlowLog extends BaseDoc {
 
     /**
@@ -47,7 +52,7 @@ public class GroupFlowLog extends BaseDoc {
     private String orderId;
 
     /**
-     * 事件类型，例如 CREATE_GROUP、SAVE_MEMBER、GROUP_SUCCESS_MQ。
+     * 事件阶段，例如 CREATE_GROUP、SAVE_MEMBER、GROUP_SUCCESS_MQ。
      */
     private String eventType;
 
@@ -80,4 +85,16 @@ public class GroupFlowLog extends BaseDoc {
      * 请求/事件快照，使用 JSON 字符串存储。
      */
     private String payloadSnapshot;
+
+    /**
+     * 构建按拼团ID查询并按发生时间正序排序的查询条件。
+     *
+     * @param groupId 拼团实例ID
+     * @return Mongo 查询对象
+     */
+    public static Query buildGroupIdOrderByCreateTimeQuery(String groupId) {
+        return new Query()
+                .addCriteria(Criteria.where("groupId").is(groupId))
+                .with(Sort.by(Sort.Direction.ASC, "createTime", "id"));
+    }
 }

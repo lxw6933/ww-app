@@ -3,15 +3,17 @@ package com.ww.mall.promotion.service;
 import com.ww.app.common.common.ClientUser;
 import com.ww.app.common.context.AuthorizationContext;
 import com.ww.app.common.exception.ApiException;
-import com.ww.mall.promotion.controller.app.group.req.CreateGroupRequest;
-import com.ww.mall.promotion.controller.app.group.req.JoinGroupRequest;
 import com.ww.mall.promotion.controller.app.group.res.GroupInstanceVO;
 import com.ww.mall.promotion.entity.group.GroupActivity;
 import com.ww.mall.promotion.entity.group.GroupInstance;
 import com.ww.mall.promotion.entity.group.GroupMember;
+import com.ww.mall.promotion.enums.GroupActivityStatus;
+import com.ww.mall.promotion.enums.GroupEnabledStatus;
 import com.ww.mall.promotion.enums.GroupStatus;
 import com.ww.mall.promotion.key.GroupRedisKeyBuilder;
 import com.ww.mall.promotion.service.group.GroupInstanceService;
+import com.ww.mall.promotion.service.group.command.CreateGroupCommand;
+import com.ww.mall.promotion.service.group.command.JoinGroupCommand;
 import lombok.extern.slf4j.Slf4j;
 import org.junit.jupiter.api.*;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -106,7 +108,7 @@ class GroupInstanceServiceTest {
         log.info("创建测试活动成功: activityId={}", testActivityId);
 
         // 2. 创建拼团请求
-        CreateGroupRequest request = buildCreateRequest(testActivityId, testUserId1, testOrderId1);
+        CreateGroupCommand request = buildCreateRequest(testActivityId, testUserId1, testOrderId1);
 
         // 3. 执行创建拼团
         GroupInstanceVO vo = groupInstanceService.createGroup(request);
@@ -142,10 +144,11 @@ class GroupInstanceServiceTest {
         GroupActivity activity = createTestActivity();
 
         // 2. 创建拼团请求（订单号为空）
-        CreateGroupRequest request = new CreateGroupRequest();
+        CreateGroupCommand request = new CreateGroupCommand();
         request.setActivityId(activity.getId());
         request.setUserId(testUserId1);
         request.setOrderId(""); // 空订单号
+        request.setSkuId(2001L);
         request.setOrderInfo("{}");
 
         // 3. 验证异常
@@ -169,7 +172,7 @@ class GroupInstanceServiceTest {
         setClientUser(testUserId1);
 
         // 1. 创建拼团请求（活动ID不存在）
-        CreateGroupRequest request = buildCreateRequest("NON_EXIST_ACTIVITY", testUserId1, testOrderId1);
+        CreateGroupCommand request = buildCreateRequest("NON_EXIST_ACTIVITY", testUserId1, testOrderId1);
 
         // 2. 验证异常
         ApiException exception = assertThrows(ApiException.class, () -> groupInstanceService.createGroup(request), "应该抛出活动不存在的异常");
@@ -201,7 +204,7 @@ class GroupInstanceServiceTest {
         stringRedisTemplate.opsForValue().set(stockKey, "0");
 
         // 3. 创建拼团请求
-        CreateGroupRequest request = buildCreateRequest(activity.getId(), testUserId1, testOrderId1);
+        CreateGroupCommand request = buildCreateRequest(activity.getId(), testUserId1, testOrderId1);
 
         // 4. 创建拼团并验证成功
         GroupInstanceVO groupInstanceVO = groupInstanceService.createGroup(request);
@@ -225,7 +228,7 @@ class GroupInstanceServiceTest {
 
         // 2. 创建拼团
         setClientUser(testUserId1);
-        CreateGroupRequest createRequest = buildCreateRequest(testActivityId, testUserId1, testOrderId1);
+        CreateGroupCommand createRequest = buildCreateRequest(testActivityId, testUserId1, testOrderId1);
 
         GroupInstanceVO createdGroup = groupInstanceService.createGroup(createRequest);
         testGroupId = createdGroup.getId();
@@ -233,7 +236,7 @@ class GroupInstanceServiceTest {
 
         // 3. 加入拼团
         setClientUser(testUserId2);
-        JoinGroupRequest joinRequest = buildJoinRequest(testGroupId, testUserId2, testOrderId2);
+        JoinGroupCommand joinRequest = buildJoinRequest(testGroupId, testUserId2, testOrderId2);
 
         GroupInstanceVO joinedGroup = groupInstanceService.joinGroup(joinRequest);
 
@@ -261,16 +264,17 @@ class GroupInstanceServiceTest {
         // 1. 创建测试活动并拼团
         GroupActivity activity = createTestActivity();
         setClientUser(testUserId1);
-        CreateGroupRequest createRequest = buildCreateRequest(activity.getId(), testUserId1, testOrderId1);
+        CreateGroupCommand createRequest = buildCreateRequest(activity.getId(), testUserId1, testOrderId1);
         GroupInstanceVO createdGroup = groupInstanceService.createGroup(createRequest);
         
         setClientUser(testUserId2);
 
         // 2. 加入拼团请求（订单号为空）
-        JoinGroupRequest joinRequest = new JoinGroupRequest();
+        JoinGroupCommand joinRequest = new JoinGroupCommand();
         joinRequest.setGroupId(createdGroup.getId());
         joinRequest.setUserId(testUserId2);
         joinRequest.setOrderId(""); // 空订单号
+        joinRequest.setSkuId(2002L);
         joinRequest.setOrderInfo("{}");
 
         // 3. 验证异常
@@ -294,10 +298,11 @@ class GroupInstanceServiceTest {
         setClientUser(testUserId2);
 
         // 1. 加入拼团请求（拼团ID不存在）
-        JoinGroupRequest joinRequest = new JoinGroupRequest();
+        JoinGroupCommand joinRequest = new JoinGroupCommand();
         joinRequest.setGroupId("NON_EXIST_GROUP");
         joinRequest.setUserId(testUserId2);
         joinRequest.setOrderId(testOrderId2);
+        joinRequest.setSkuId(2002L);
         joinRequest.setOrderInfo("{}");
 
         // 2. 验证异常
@@ -320,12 +325,12 @@ class GroupInstanceServiceTest {
         // 1. 创建测试活动并拼团
         GroupActivity activity = createTestActivity();
         setClientUser(testUserId1);
-        CreateGroupRequest createRequest = buildCreateRequest(activity.getId(), testUserId1, testOrderId1);
+        CreateGroupCommand createRequest = buildCreateRequest(activity.getId(), testUserId1, testOrderId1);
         GroupInstanceVO createdGroup = groupInstanceService.createGroup(createRequest);
 
         // 2. 第一次加入拼团
         setClientUser(testUserId2);
-        JoinGroupRequest joinRequest = buildJoinRequest(createdGroup.getId(), testUserId2, testOrderId2);
+        JoinGroupCommand joinRequest = buildJoinRequest(createdGroup.getId(), testUserId2, testOrderId2);
 
         GroupInstanceVO firstJoin = groupInstanceService.joinGroup(joinRequest);
         assertEquals(GroupStatus.SUCCESS.getCode(), firstJoin.getStatus(), 
@@ -351,17 +356,17 @@ class GroupInstanceServiceTest {
         // 1. 创建测试活动（2人拼团）
         GroupActivity activity = createTestActivity();
         setClientUser(testUserId1);
-        CreateGroupRequest createRequest = buildCreateRequest(activity.getId(), testUserId1, testOrderId1);
+        CreateGroupCommand createRequest = buildCreateRequest(activity.getId(), testUserId1, testOrderId1);
         GroupInstanceVO createdGroup = groupInstanceService.createGroup(createRequest);
 
         // 2. 第一个用户加入（拼团完成）
         setClientUser(testUserId2);
-        JoinGroupRequest joinRequest1 = buildJoinRequest(createdGroup.getId(), testUserId2, testOrderId2);
+        JoinGroupCommand joinRequest1 = buildJoinRequest(createdGroup.getId(), testUserId2, testOrderId2);
         groupInstanceService.joinGroup(joinRequest1);
 
         // 3. 第二个用户尝试加入（应该失败）
         setClientUser(testUserId3);
-        JoinGroupRequest joinRequest2 = buildJoinRequest(createdGroup.getId(), testUserId3, testOrderId3);
+        JoinGroupCommand joinRequest2 = buildJoinRequest(createdGroup.getId(), testUserId3, testOrderId3);
 
         ApiException exception = assertThrows(ApiException.class, () -> groupInstanceService.joinGroup(joinRequest2), "应该抛出拼团已满的异常");
 
@@ -383,7 +388,7 @@ class GroupInstanceServiceTest {
         // 1. 创建测试活动并拼团
         GroupActivity activity = createTestActivity();
         setClientUser(testUserId1);
-        CreateGroupRequest createRequest = buildCreateRequest(activity.getId(), testUserId1, testOrderId1);
+        CreateGroupCommand createRequest = buildCreateRequest(activity.getId(), testUserId1, testOrderId1);
         GroupInstanceVO createdGroup = groupInstanceService.createGroup(createRequest);
 
         // 2. 查询拼团详情
@@ -415,7 +420,7 @@ class GroupInstanceServiceTest {
 
         // 2. 用户1创建拼团
         setClientUser(testUserId1);
-        CreateGroupRequest createRequest = buildCreateRequest(activity.getId(), testUserId1, testOrderId1);
+        CreateGroupCommand createRequest = buildCreateRequest(activity.getId(), testUserId1, testOrderId1);
         GroupInstanceVO createdGroup = groupInstanceService.createGroup(createRequest);
 
         // 3. 查询用户1的拼团列表
@@ -446,7 +451,7 @@ class GroupInstanceServiceTest {
         // 2. 创建多个拼团
         for (int i = 1; i <= 3; i++) {
             setClientUser(testUserId1 + i);
-            CreateGroupRequest createRequest = buildCreateRequest(activity.getId(), testUserId1 + i, "ORDER_TEST_" + i);
+            CreateGroupCommand createRequest = buildCreateRequest(activity.getId(), testUserId1 + i, "ORDER_TEST_" + i);
             groupInstanceService.createGroup(createRequest);
         }
 
@@ -476,7 +481,7 @@ class GroupInstanceServiceTest {
 
         // 2. 用户1创建拼团
         setClientUser(testUserId1);
-        CreateGroupRequest createRequest = buildCreateRequest(activity.getId(), testUserId1, testOrderId1);
+        CreateGroupCommand createRequest = buildCreateRequest(activity.getId(), testUserId1, testOrderId1);
         
         GroupInstanceVO createdGroup = groupInstanceService.createGroup(createRequest);
         assertEquals(GroupStatus.OPEN.getCode(), createdGroup.getStatus(), 
@@ -487,7 +492,7 @@ class GroupInstanceServiceTest {
 
         // 3. 用户2加入拼团
         setClientUser(testUserId2);
-        JoinGroupRequest joinRequest = buildJoinRequest(createdGroup.getId(), testUserId2, testOrderId2);
+        JoinGroupCommand joinRequest = buildJoinRequest(createdGroup.getId(), testUserId2, testOrderId2);
 
         GroupInstanceVO completedGroup = groupInstanceService.joinGroup(joinRequest);
         assertEquals(GroupStatus.SUCCESS.getCode(), completedGroup.getStatus(), 
@@ -520,11 +525,11 @@ class GroupInstanceServiceTest {
         activity.setExpireHours(24); // 24小时有效期
         activity.setStartTime(new Date());
         activity.setEndTime(new Date(System.currentTimeMillis() + 7 * 24 * 3600 * 1000L)); // 7天后结束
-        activity.setStatus(1); // 进行中
+        activity.setStatus(GroupActivityStatus.ACTIVE.getCode());
         activity.setTotalStock(1000);
         activity.setSoldCount(0);
         activity.setLimitPerUser(1);
-        activity.setEnabled(1);
+        activity.setEnabled(GroupEnabledStatus.ENABLED.getCode());
         activity.setImageUrl("https://example.com/test.jpg");
         activity.setSortWeight(100);
 
@@ -537,20 +542,22 @@ class GroupInstanceServiceTest {
         return activity;
     }
 
-    private CreateGroupRequest buildCreateRequest(String activityId, Long userId, String orderId) {
-        CreateGroupRequest request = new CreateGroupRequest();
+    private CreateGroupCommand buildCreateRequest(String activityId, Long userId, String orderId) {
+        CreateGroupCommand request = new CreateGroupCommand();
         request.setActivityId(activityId);
         request.setUserId(userId);
         request.setOrderId(orderId);
+        request.setSkuId(2001L);
         request.setOrderInfo("{\"amount\":99.00,\"quantity\":1,\"spuId\":1001,\"skuId\":2001}");
         return request;
     }
 
-    private JoinGroupRequest buildJoinRequest(String groupId, Long userId, String orderId) {
-        JoinGroupRequest request = new JoinGroupRequest();
+    private JoinGroupCommand buildJoinRequest(String groupId, Long userId, String orderId) {
+        JoinGroupCommand request = new JoinGroupCommand();
         request.setGroupId(groupId);
         request.setUserId(userId);
         request.setOrderId(orderId);
+        request.setSkuId(2002L);
         request.setOrderInfo("{\"amount\":99.00,\"quantity\":1,\"spuId\":1001,\"skuId\":2002}");
         return request;
     }
@@ -582,6 +589,15 @@ class GroupInstanceServiceTest {
                 stringRedisTemplate.delete(slotsKey);
                 stringRedisTemplate.delete(membersKey);
                 stringRedisTemplate.delete(ordersKey);
+            }
+            if (testOrderId1 != null) {
+                stringRedisTemplate.delete(groupRedisKeyBuilder.buildOrderMappingKey(testOrderId1));
+            }
+            if (testOrderId2 != null) {
+                stringRedisTemplate.delete(groupRedisKeyBuilder.buildOrderMappingKey(testOrderId2));
+            }
+            if (testOrderId3 != null) {
+                stringRedisTemplate.delete(groupRedisKeyBuilder.buildOrderMappingKey(testOrderId3));
             }
             if (testActivityId != null) {
                 String stockKey = groupRedisKeyBuilder.buildActivityStockKey(testActivityId);

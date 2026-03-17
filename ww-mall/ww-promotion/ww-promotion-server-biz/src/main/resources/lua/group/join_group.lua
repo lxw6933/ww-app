@@ -12,6 +12,7 @@
 --   [4] ordersKey       - 订单信息Hash键 (group:instance:orders:{groupId})
 --   [5] expiryIndexKey  - 过期索引Sorted Set键 (group:expiry)
 --   [6] userGroupKey    - 用户拼团Set键 (group:user:group:{userId})
+--   [7] orderMappingKey - 订单与拼团映射键 (group:order:mapping:{orderId})
 --
 -- ARGV（参数列表）:
 --   [1] userId          - 用户ID
@@ -27,7 +28,7 @@
 --       -2  - 拼团未开放（状态不是OPEN）
 --       -3  - 拼团已过期
 --       -4  - 用户已在拼团中
---       -5  - 订单已存在（幂等性：订单ID已在ordersKey中）
+--       -5  - 订单已存在（幂等性：订单ID已处理）
 --       -6  - 没有剩余名额
 --   [2] newSlots（仅当结果码>0 时返回，表示扣减后的剩余名额）
 --   [3] completeTime（仅当拼团完成时返回，毫秒时间戳）
@@ -35,7 +36,7 @@
 --   -2  - 拼团未开放（状态不是OPEN）
 --   -3  - 拼团已过期
 --   -4  - 用户已在拼团中
---   -5  - 订单已存在（幂等性：订单ID已在ordersKey中）
+--   -5  - 订单已存在（幂等性：订单ID已处理）
 --   -6  - 没有剩余名额
 -- ============================================================================
 
@@ -55,7 +56,7 @@ end
 -- ============================================================================
 -- 步骤2：幂等性校验 - 检查订单是否已存在
 -- ============================================================================
-local orderExists = redis.call('HEXISTS', KEYS[4], ARGV[2])
+local orderExists = redis.call('EXISTS', KEYS[7])
 if orderExists == 1 then
     return {-5}
 end
@@ -96,6 +97,11 @@ end
 local newSlots = redis.call('DECR', KEYS[2])
 redis.call('ZADD', KEYS[3], nowMillis, ARGV[1])
 redis.call('HSET', KEYS[4], ARGV[2], ARGV[3])
+redis.call('SET', KEYS[7], ARGV[4])
+local retainSeconds = redis.call('TTL', KEYS[1])
+if retainSeconds and retainSeconds > 0 then
+    redis.call('EXPIRE', KEYS[7], retainSeconds)
+end
 
 -- ============================================================================
 -- 步骤7：更新当前人数

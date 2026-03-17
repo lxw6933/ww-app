@@ -1,14 +1,11 @@
 package com.ww.mall.promotion.controller.app.group;
 
-import com.ww.mall.promotion.controller.app.group.req.CreateGroupRequest;
-import com.ww.mall.promotion.controller.app.group.req.JoinGroupRequest;
-import com.ww.mall.promotion.service.group.GroupInstanceService;
 import com.ww.mall.promotion.controller.app.group.res.GroupInstanceVO;
+import com.ww.mall.promotion.service.group.GroupInstanceService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
 import javax.annotation.Resource;
@@ -17,28 +14,16 @@ import java.util.List;
 /**
  * @author ww
  * @create 2025-12-08 18:00
- * @description: 拼团实例控制器
+ * @description: 仅保留拼团查询能力，对外不再暴露直接开团、参团和支付回调入口
  */
 @Slf4j
 @RestController
 @RequestMapping("/promotion/group/instance/app")
-@Tag(name = "拼团实例管理", description = "拼团实例相关接口，包括创建拼团、加入拼团、查询拼团等")
+@Tag(name = "拼团实例查询", description = "拼团实例查询接口")
 public class GroupInstanceController {
 
     @Resource
     private GroupInstanceService instanceService;
-
-    @PostMapping("/create")
-    @Operation(summary = "创建拼团", description = "用户发起拼团，创建新的拼团实例。需要先创建订单，然后调用此接口创建拼团")
-    public GroupInstanceVO createGroup(@RequestBody @Validated CreateGroupRequest request) {
-        return instanceService.createGroup(request);
-    }
-
-    @PostMapping("/join")
-    @Operation(summary = "加入拼团", description = "用户加入已存在的拼团。需要先创建订单，然后调用此接口加入拼团")
-    public GroupInstanceVO joinGroup(@RequestBody @Validated JoinGroupRequest request) {
-        return instanceService.joinGroup(request);
-    }
 
     @GetMapping("/detail/{groupId}")
     @Operation(summary = "查询拼团详情", description = "根据拼团ID查询拼团的详细信息，包括成员列表、状态、剩余名额等")
