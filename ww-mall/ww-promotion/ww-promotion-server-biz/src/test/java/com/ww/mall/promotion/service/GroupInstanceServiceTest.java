@@ -180,13 +180,13 @@ class GroupInstanceServiceTest {
     }
 
     /**
-     * 测试创建拼团 - 库存不足
+     * 测试创建拼团 - 支付后发起不校验库存
      */
     @Test
     @Order(4)
-    @DisplayName("测试创建拼团 - 库存不足")
-    void testCreateGroup_StockInsufficient() {
-        log.info("========== 测试创建拼团 - 库存不足 ==========");
+    @DisplayName("测试创建拼团 - 支付后发起不校验库存")
+    void testCreateGroup_IgnoreStockCheckAfterPaid() {
+        log.info("========== 测试创建拼团 - 支付后发起不校验库存 ==========");
 
         // 设置用户上下文
         setClientUser(testUserId1);
@@ -196,19 +196,18 @@ class GroupInstanceServiceTest {
         activity.setTotalStock(1);
         mongoTemplate.save(activity);
 
-        // 2. 初始化Redis库存为0
+        // 2. 初始化Redis库存为0，验证仍允许创建
         String stockKey = groupRedisKeyBuilder.buildActivityStockKey(activity.getId());
         stringRedisTemplate.opsForValue().set(stockKey, "0");
 
         // 3. 创建拼团请求
         CreateGroupRequest request = buildCreateRequest(activity.getId(), testUserId1, testOrderId1);
 
-        // 4. 验证异常
-        ApiException exception = assertThrows(ApiException.class, () -> groupInstanceService.createGroup(request), "应该抛出库存不足的异常");
-
-        assertTrue(exception.getMessage().contains("库存"), 
-                "异常信息应包含库存相关提示");
-        log.info("库存不足测试通过，异常信息: {}", exception.getMessage());
+        // 4. 创建拼团并验证成功
+        GroupInstanceVO groupInstanceVO = groupInstanceService.createGroup(request);
+        assertNotNull(groupInstanceVO, "拼团实例不能为空");
+        assertEquals(GroupStatus.OPEN.getCode(), groupInstanceVO.getStatus(), "拼团状态应为OPEN");
+        log.info("库存为0时创建拼团成功: groupId={}", groupInstanceVO.getId());
     }
 
     /**
@@ -543,7 +542,7 @@ class GroupInstanceServiceTest {
         request.setActivityId(activityId);
         request.setUserId(userId);
         request.setOrderId(orderId);
-        request.setOrderInfo("{\"amount\":99.00,\"quantity\":1}");
+        request.setOrderInfo("{\"amount\":99.00,\"quantity\":1,\"spuId\":1001,\"skuId\":2001}");
         return request;
     }
 
@@ -552,7 +551,7 @@ class GroupInstanceServiceTest {
         request.setGroupId(groupId);
         request.setUserId(userId);
         request.setOrderId(orderId);
-        request.setOrderInfo("{\"amount\":99.00,\"quantity\":1}");
+        request.setOrderInfo("{\"amount\":99.00,\"quantity\":1,\"spuId\":1001,\"skuId\":2002}");
         return request;
     }
 
@@ -616,4 +615,3 @@ class GroupInstanceServiceTest {
     }
 
 }
-

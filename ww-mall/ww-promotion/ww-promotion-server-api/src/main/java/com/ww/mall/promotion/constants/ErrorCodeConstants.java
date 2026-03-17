@@ -25,4 +25,6 @@ public interface ErrorCodeConstants {
     ResCode GROUP_RECORD_ORDER_CODE_NOT_EXISTS = new ResCode(1_013_011_012, "拼团失败，订单信息不存在");
 
 
+    ResCode GROUP_RECORD_ORDER_DUPLICATED = new ResCode(1_013_011_013, "拼团失败，订单已重复处理");
+
 }

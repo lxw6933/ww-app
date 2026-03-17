@@ -47,9 +47,19 @@ public class GroupEvent implements Serializable {
     private EventType eventType;
 
     /**
+     * 链路追踪ID。
+     */
+    private String traceId;
+
+    /**
      * 拼团ID
      */
     private String groupId;
+
+    /**
+     * 事件来源。
+     */
+    private String source;
 
     /**
      * 活动ID
@@ -115,4 +125,3 @@ public class GroupEvent implements Serializable {
         return extInfo != null ? extInfo.get(key) : null;
     }
 }
-

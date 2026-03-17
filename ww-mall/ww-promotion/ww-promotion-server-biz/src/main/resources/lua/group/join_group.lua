@@ -3,7 +3,7 @@
 -- ============================================================================
 -- 功能：原子性地加入拼团，包括校验、扣减名额、更新状态等
 -- 特点：保证原子性操作，防止并发加入，通过订单ID存在性实现幂等性校验，自动判断拼团是否完成
--- 优化：将用户组Set、用户计数等操作合并到Lua脚本中，减少Redis往返次数
+-- 优化：将用户组Set等操作合并到Lua脚本中，减少Redis往返次数
 --
 -- KEYS（Redis键列表）:
 --   [1] metaKey         - 拼团元数据Hash键 (group:instance:meta:{groupId})
@@ -12,7 +12,6 @@
 --   [4] ordersKey       - 订单信息Hash键 (group:instance:orders:{groupId})
 --   [5] expiryIndexKey  - 过期索引Sorted Set键 (group:expiry)
 --   [6] userGroupKey    - 用户拼团Set键 (group:user:group:{userId})
---   [7] userCountKey    - 用户活动计数Hash键 (group:activity:user:count:{activityId})
 --
 -- ARGV（参数列表）:
 --   [1] userId          - 用户ID
@@ -104,13 +103,9 @@ redis.call('HSET', KEYS[4], ARGV[2], ARGV[3])
 redis.call('HINCRBY', KEYS[1], 'currentSize', 1)
 
 -- ============================================================================
--- 步骤8：添加用户到用户拼团Set并更新用户活动计数
+-- 步骤8：添加用户到用户拼团Set
 -- ============================================================================
 redis.call('SADD', KEYS[6], ARGV[4])
-local activityId = redis.call('HGET', KEYS[1], 'activityId')
-if activityId then
-    redis.call('HINCRBY', KEYS[7], ARGV[1], 1)
-end
 
 -- ============================================================================
 -- 步骤9：检查拼团是否完成
