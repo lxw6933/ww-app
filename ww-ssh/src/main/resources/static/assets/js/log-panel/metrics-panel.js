@@ -106,6 +106,7 @@ export class MetricsPanelController {
         this.activeRequestController = null;
         this.activeQueryKey = '';
         this.requestInFlight = false;
+        this.pollingEnabled = true;
     }
 
     /**
@@ -117,9 +118,41 @@ export class MetricsPanelController {
     }
 
     /**
+     * 设置轮询启用状态。
+     * <p>
+     * JVM 中央视图会复用同一指标接口做高频采样；
+     * 此时暂停左侧面板的后台轮询，避免同页重复压测后端 SSH 采集。
+     * </p>
+     *
+     * @param {boolean} enabled 是否启用轮询
+     * @param {boolean} refreshNow 恢复后是否立即刷新一次
+     */
+    setPollingEnabled(enabled, refreshNow) {
+        const nextEnabled = !!enabled;
+        if (this.pollingEnabled === nextEnabled) {
+            if (nextEnabled && refreshNow) {
+                this.refresh(true);
+            }
+            return;
+        }
+        this.pollingEnabled = nextEnabled;
+        if (nextEnabled) {
+            this.startPolling();
+            if (refreshNow) {
+                this.refresh(true);
+            }
+            return;
+        }
+        this.stopPolling();
+    }
+
+    /**
      * 启动轮询任务。
      */
     startPolling() {
+        if (!this.pollingEnabled) {
+            return;
+        }
         this.stopPolling();
         this.timer = window.setInterval(() => this.refresh(false), this.refreshMs);
     }
@@ -142,6 +175,9 @@ export class MetricsPanelController {
      * @param {boolean} manual 是否手动刷新
      */
     refresh(manual) {
+        if (!this.pollingEnabled && !manual) {
+            return;
+        }
         const project = this.getProject();
         const env = this.getEnv();
         const service = this.getService();

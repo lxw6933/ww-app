@@ -72,6 +72,11 @@ public class LogStreamWebSocketHandler extends TextWebSocketHandler {
     private static final String STAGE_SUBSCRIBE_FAILED = "subscribe-failed";
 
     /**
+     * 日志阶段：发送失败。
+     */
+    private static final String STAGE_SEND_FAILED = "send-failed";
+
+    /**
      * 日志阶段：传输异常。
      */
     private static final String STAGE_TRANSPORT_ERROR = "transport-error";
@@ -198,20 +203,36 @@ public class LogStreamWebSocketHandler extends TextWebSocketHandler {
                 request.normalizedReadMode());
         List<LogTarget> targets = logPanelQueryService.resolveTargets(request);
         List<SshLogService.StreamHandle> handles = new ArrayList<>();
+        streamContexts.put(session.getId(), new StreamContext(handles));
         for (LogTarget target : targets) {
             try {
-                SshLogService.StreamHandle handle = sshLogService.startStreaming(target, request, line ->
-                        sendLogLine(session, line));
+                SshLogService.StreamHandle handle = sshLogService.startStreaming(target, request, line -> {
+                    if (!sendLogLine(session, line)) {
+                        throw new SessionClosedException("WebSocket连接已不可用");
+                    }
+                });
                 handles.add(handle);
-                sendSystemMessage(session, "已连接 " + target.displayName() + " -> " + handle.getFilePath());
+                if (!sendSystemMessage(session, "已连接 " + target.displayName() + " -> " + handle.getFilePath())) {
+                    throw new SessionClosedException("WebSocket连接已不可用");
+                }
+            } catch (SessionClosedException ex) {
+                closeContext(session.getId());
+                throw new IllegalStateException(ex.getMessage(), ex);
             } catch (Exception ex) {
-                sendSystemMessage(session, "连接失败 " + target.displayName() + ": " + ex.getMessage());
+                if (!session.isOpen()) {
+                    closeContext(session.getId());
+                    throw new IllegalStateException("WebSocket连接已断开", ex);
+                }
+                if (!sendSystemMessage(session, "连接失败 " + target.displayName() + ": " + ex.getMessage())) {
+                    closeContext(session.getId());
+                    throw new IllegalStateException("WebSocket连接已断开", ex);
+                }
             }
         }
         if (handles.isEmpty()) {
+            closeContext(session.getId());
             throw new IllegalStateException("没有可用日志流，请检查环境/服务或连接配置");
         }
-        streamContexts.put(session.getId(), new StreamContext(handles));
         log.info("event={} stage={} sessionId={} ip={} streamCount={}",
                 EVENT_WS_STREAM, STAGE_SUBSCRIBE_SUCCESS, session.getId(), clientIp, handles.size());
         sendSystemMessage(session, "已启动 " + handles.size() + " 个日志流");
@@ -240,8 +261,8 @@ public class LogStreamWebSocketHandler extends TextWebSocketHandler {
      * @param session WebSocket 会话
      * @param content 日志内容
      */
-    private void sendLogLine(WebSocketSession session, String content) {
-        sendText(session, content);
+    private boolean sendLogLine(WebSocketSession session, String content) {
+        return sendText(session, content);
     }
 
     /**
@@ -250,8 +271,8 @@ public class LogStreamWebSocketHandler extends TextWebSocketHandler {
      * @param session WebSocket 会话
      * @param content 提示内容
      */
-    private void sendSystemMessage(WebSocketSession session, String content) {
-        sendText(session, "[系统提示] " + content);
+    private boolean sendSystemMessage(WebSocketSession session, String content) {
+        return sendText(session, "[系统提示] " + content);
     }
 
     /**
@@ -260,19 +281,47 @@ public class LogStreamWebSocketHandler extends TextWebSocketHandler {
      * @param session WebSocket 会话
      * @param content 文本内容
      */
-    private void sendText(WebSocketSession session, String content) {
-        if (session == null || !session.isOpen()) {
-            return;
+    private boolean sendText(WebSocketSession session, String content) {
+        if (session == null) {
+            return false;
+        }
+        if (!session.isOpen()) {
+            closeContext(session.getId());
+            return false;
         }
         synchronized (session) {
             if (!session.isOpen()) {
-                return;
+                closeContext(session.getId());
+                return false;
             }
             try {
                 session.sendMessage(new TextMessage(content + "\n"));
-            } catch (IOException ignored) {
-                // ignore
+                return true;
+            } catch (IOException ex) {
+                log.warn("event={} stage={} sessionId={} ip={} error={}",
+                        EVENT_WS_STREAM, STAGE_SEND_FAILED, session.getId(), resolveClientIp(session), ex.getMessage());
+                closeContext(session.getId());
+                closeSessionQuietly(session);
+                return false;
             }
+        }
+    }
+
+    /**
+     * 安静关闭 WebSocket 会话。
+     *
+     * @param session WebSocket 会话
+     */
+    private void closeSessionQuietly(WebSocketSession session) {
+        if (session == null) {
+            return;
+        }
+        try {
+            if (session.isOpen()) {
+                session.close(CloseStatus.SERVER_ERROR);
+            }
+        } catch (Exception ignored) {
+            // ignore
         }
     }
 
@@ -338,6 +387,16 @@ public class LogStreamWebSocketHandler extends TextWebSocketHandler {
                     // ignore
                 }
             }
+        }
+    }
+
+    /**
+     * WebSocket 会话已不可用异常。
+     */
+    private static class SessionClosedException extends RuntimeException {
+
+        private SessionClosedException(String message) {
+            super(message);
         }
     }
 }

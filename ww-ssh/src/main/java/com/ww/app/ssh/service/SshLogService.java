@@ -23,6 +23,7 @@ import java.util.*;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Consumer;
 
 /**
@@ -41,6 +42,20 @@ public class SshLogService {
      * </p>
      */
     private static final long LOG_FILE_CACHE_TTL_MS = 60_000L;
+
+    /**
+     * SSH 会话空闲回收阈值（毫秒）。
+     * <p>
+     * 会话仅用于降低短时间内的重复建连开销；
+     * 长时间闲置后主动回收，避免连接与认证资源无限堆积。
+     * </p>
+     */
+    private static final long SESSION_IDLE_TTL_MS = 5 * 60_000L;
+
+    /**
+     * SSH 会话空闲扫描最小间隔（毫秒）。
+     */
+    private static final long SESSION_CLEANUP_INTERVAL_MS = 60_000L;
 
     /**
      * 实例运维命令退出码回显标记。
@@ -170,6 +185,11 @@ public class SshLogService {
      * </p>
      */
     private final Map<String, SessionHolder> sessionCache = new java.util.concurrent.ConcurrentHashMap<>();
+
+    /**
+     * 上次 SSH 会话清理时间。
+     */
+    private final AtomicLong lastSessionCleanupAt = new AtomicLong(0L);
 
     /**
      * 流式读取线程池。
@@ -1657,6 +1677,7 @@ public class SshLogService {
      */
     private ExecChannelContext openExecChannel(LogPanelProperties.ServerNode node, String command)
             throws JSchException, IOException {
+        cleanupIdleSessionsIfNeeded(System.currentTimeMillis());
         SessionHolder sessionHolder = sessionCache.computeIfAbsent(
                 buildSessionCacheKey(node), cacheKey -> new SessionHolder(cacheKey, node));
         boolean retried = false;
@@ -1711,6 +1732,28 @@ public class SshLogService {
             sessionHolder.setSession(created);
             sessionHolder.touch(System.currentTimeMillis());
             return created;
+        }
+    }
+
+    /**
+     * 按固定间隔清理空闲 SSH 会话。
+     *
+     * @param currentTimeMillis 当前时间
+     */
+    private void cleanupIdleSessionsIfNeeded(long currentTimeMillis) {
+        long lastCleanupAt = lastSessionCleanupAt.get();
+        if (currentTimeMillis - lastCleanupAt < SESSION_CLEANUP_INTERVAL_MS) {
+            return;
+        }
+        if (!lastSessionCleanupAt.compareAndSet(lastCleanupAt, currentTimeMillis)) {
+            return;
+        }
+        for (SessionHolder sessionHolder : new ArrayList<>(sessionCache.values())) {
+            if (sessionHolder == null || !sessionHolder.isIdleExpired(currentTimeMillis, SESSION_IDLE_TTL_MS)) {
+                continue;
+            }
+            invalidateSession(sessionHolder);
+            sessionCache.remove(sessionHolder.getCacheKey(), sessionHolder);
         }
     }
 
@@ -2401,6 +2444,20 @@ public class SshLogService {
 
         private void touch(long currentTimeMillis) {
             this.lastAccessAt = currentTimeMillis;
+        }
+
+        /**
+         * 判断当前会话是否已空闲超时。
+         *
+         * @param currentTimeMillis 当前时间
+         * @param ttlMillis 空闲超时时间
+         * @return true 表示应回收
+         */
+        private boolean isIdleExpired(long currentTimeMillis, long ttlMillis) {
+            if (ttlMillis <= 0L) {
+                return false;
+            }
+            return currentTimeMillis - lastAccessAt >= ttlMillis;
         }
     }
 

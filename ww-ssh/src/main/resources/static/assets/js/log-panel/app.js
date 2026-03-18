@@ -289,7 +289,7 @@ function bindEvents() {
         }
         preferenceStore.set('service', value('service'));
         loadFiles();
-        metricsPanel.refresh(false);
+        refreshMetricsPanel(false);
         jvmView.handleContextChanged();
     });
 
@@ -483,6 +483,7 @@ function setCenterView(view, persist) {
     }
     document.body.classList.toggle('center-view-jvm', jvmActive);
     syncServiceAggregateOptionState(jvmActive);
+    metricsPanel.setPollingEnabled(!jvmActive, !jvmActive);
     if (jvmActive) {
         enforceJvmSingleServiceSelection(true);
     }
@@ -495,6 +496,22 @@ function setCenterView(view, persist) {
     if (persist) {
         preferenceStore.set('centerView', normalized);
     }
+}
+
+/**
+ * 刷新左侧服务器指标面板。
+ * <p>
+ * JVM 视图会单独拉取同一指标接口，因此在该视图下跳过普通面板刷新，
+ * 避免同页对后端产生重复采样请求。
+ * </p>
+ *
+ * @param {boolean} manual 是否手动刷新
+ */
+function refreshMetricsPanel(manual) {
+    if (isJvmCenterViewActive() && !manual) {
+        return;
+    }
+    metricsPanel.refresh(manual);
 }
 
 /**
@@ -557,7 +574,7 @@ function enforceJvmSingleServiceSelection(showTip) {
     serviceEl.value = fallbackOption.value;
     preferenceStore.set('service', fallbackOption.value);
     loadFiles();
-    metricsPanel.refresh(false);
+    refreshMetricsPanel(false);
     jvmView.handleContextChanged();
     if (showTip) {
         logView.appendSystem('JVM 模式不支持“全部服务”，已自动切换到单服务');
@@ -750,7 +767,7 @@ function openJvmMonitorInline(instanceService) {
         serviceEl.value = targetService;
         preferenceStore.set('service', targetService);
         loadFiles();
-        metricsPanel.refresh(false);
+        refreshMetricsPanel(false);
     }
 
     if (normalizedInstance && normalizedInstance.indexOf('@') > 0) {
@@ -1152,7 +1169,7 @@ function loadServices() {
     syncServiceAggregateOptionState(isJvmCenterViewActive());
     if (!enforceJvmSingleServiceSelection(false)) {
         loadFiles();
-        metricsPanel.refresh(false);
+        refreshMetricsPanel(false);
         jvmView.handleContextChanged();
     }
 }
@@ -1174,14 +1191,24 @@ function loadFiles() {
     }
 
     fetch(`/api/config/files?project=${encodeURIComponent(project)}&env=${encodeURIComponent(env)}&service=${encodeURIComponent(service)}`)
-        .then(response => response.ok ? response.json() : [])
+        .then(async response => {
+            if (!response.ok) {
+                throw new Error(`状态码 ${response.status}`);
+            }
+            const partialFailureCount = Number(response.headers.get('X-WW-Partial-Failure-Count') || '0');
+            if (Number.isFinite(partialFailureCount) && partialFailureCount > 0) {
+                logView.appendSystem(`日志文件列表已返回，但有 ${partialFailureCount} 个实例加载失败，请关注目标节点连通性`);
+            }
+            return response.json();
+        })
         .then(list => {
             state.fileOptions = Array.isArray(list) ? sortFileOptions(list) : [];
             renderFileOptions();
             updateFileMode();
         })
-        .catch(() => {
-            logView.appendSystem('日志文件列表加载失败');
+        .catch(error => {
+            const message = error && error.message ? String(error.message) : '网络异常';
+            logView.appendSystem(`日志文件列表加载失败: ${message}`);
             state.fileOptions = [];
             renderFileOptions();
             updateFileMode();
