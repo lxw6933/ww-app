@@ -1,5 +1,6 @@
 package com.ww.app.ssh.service;
 
+import com.ww.app.ssh.config.LogPanelProperties;
 import com.ww.app.ssh.model.LogStreamRequest;
 import com.ww.app.ssh.service.support.LogLineFilterMatcher;
 import com.ww.app.ssh.service.support.SshCommandBuilder;
@@ -113,6 +114,95 @@ class SshLogServiceTest {
     }
 
     /**
+     * 校验日志文件列表缓存键会同时区分节点身份与日志路径，避免不同来源误复用。
+     *
+     * @throws Exception 反射调用异常
+     */
+    @Test
+    void shouldSeparateLogFileCacheByNodeAndPath() throws Exception {
+        LogPanelProperties.ServerNode nodeA = buildServerNode("10.0.0.1", 22, "app", "pwd-a");
+        LogPanelProperties.ServerNode nodeB = buildServerNode("10.0.0.2", 22, "app", "pwd-a");
+        String keyA = invokeBuildLogFileCacheKey(nodeA, "/data/logs");
+        String keyB = invokeBuildLogFileCacheKey(nodeA, "/data/logs/archive");
+        String keyC = invokeBuildLogFileCacheKey(nodeB, "/data/logs");
+        Assertions.assertNotEquals(keyA, keyB);
+        Assertions.assertNotEquals(keyA, keyC);
+    }
+
+    /**
+     * 校验 SSH 会话缓存键会区分凭证摘要，避免同主机改密后误用旧会话。
+     *
+     * @throws Exception 反射调用异常
+     */
+    @Test
+    void shouldSeparateSessionCacheKeyByCredentialDigest() throws Exception {
+        LogPanelProperties.ServerNode nodeA = buildServerNode("10.0.0.1", 22, "app", "pwd-a");
+        LogPanelProperties.ServerNode nodeB = buildServerNode("10.0.0.1", 22, "app", "pwd-b");
+        String keyA = invokeBuildSessionCacheKey(nodeA);
+        String keyB = invokeBuildSessionCacheKey(nodeB);
+        Assertions.assertNotEquals(keyA, keyB);
+    }
+
+    /**
+     * 校验当 logPath 本身就是单文件时，允许精确命中该文件。
+     *
+     * @throws Exception 反射调用异常
+     */
+    @Test
+    void shouldAllowRequestedPathWhenConfiguredAsSingleFile() throws Exception {
+        String resolved = invokeValidateRequestedLogFilePath(
+                "/data/logs/app.log",
+                Collections.emptyList(),
+                "/data/logs/app.log");
+        Assertions.assertEquals("/data/logs/app.log", resolved);
+    }
+
+    /**
+     * 校验目录模式下仅允许读取候选文件列表中的日志文件。
+     *
+     * @throws Exception 反射调用异常
+     */
+    @Test
+    void shouldAllowRequestedPathWhenItExistsInCandidateFiles() throws Exception {
+        String resolved = invokeValidateRequestedLogFilePath(
+                "/data/logs",
+                Arrays.asList("/data/logs/app.log", "/data/logs/app-error.log"),
+                "/data/logs/app-error.log");
+        Assertions.assertEquals("/data/logs/app-error.log", resolved);
+    }
+
+    /**
+     * 校验目录模式下会拒绝不在候选列表内的任意文件。
+     *
+     * @throws Exception 反射调用异常
+     */
+    @Test
+    void shouldRejectRequestedPathOutsideCandidateFiles() throws Exception {
+        IllegalArgumentException exception = Assertions.assertThrows(
+                IllegalArgumentException.class,
+                () -> invokeValidateRequestedLogFilePath(
+                        "/data/logs",
+                        Collections.singletonList("/data/logs/app.log"),
+                        "/etc/passwd"));
+        Assertions.assertTrue(exception.getMessage().contains("不在当前服务允许范围内"));
+    }
+
+    /**
+     * 校验包含路径回退片段的 filePath 会被拒绝，避免越权读取。
+     *
+     */
+    @Test
+    void shouldRejectRequestedPathContainingParentTraversal() {
+        IllegalArgumentException exception = Assertions.assertThrows(
+                IllegalArgumentException.class,
+                () -> invokeValidateRequestedLogFilePath(
+                        "/data/logs",
+                        Collections.singletonList("/data/logs/app.log"),
+                        "/data/logs/../secret.txt"));
+        Assertions.assertTrue(exception.getMessage().contains("路径非法"));
+    }
+
+    /**
      * 通过反射调用私有方法，验证 cat 扫描窗口计算结果。
      *
      * @param requestedLines 请求展示行数
@@ -155,6 +245,61 @@ class SshLogServiceTest {
     }
 
     /**
+     * 通过反射调用日志文件缓存键构建方法。
+     *
+     * @param node    节点配置
+     * @param logPath 日志路径
+     * @return 缓存键
+     * @throws Exception 反射调用异常
+     */
+    private String invokeBuildLogFileCacheKey(LogPanelProperties.ServerNode node, String logPath) throws Exception {
+        Method method = SshLogService.class.getDeclaredMethod(
+                "buildLogFileCacheKey", LogPanelProperties.ServerNode.class, String.class);
+        method.setAccessible(true);
+        return (String) method.invoke(sshLogService, node, logPath);
+    }
+
+    /**
+     * 通过反射调用 SSH 会话缓存键构建方法。
+     *
+     * @param node 节点配置
+     * @return 会话缓存键
+     * @throws Exception 反射调用异常
+     */
+    private String invokeBuildSessionCacheKey(LogPanelProperties.ServerNode node) throws Exception {
+        Method method = SshLogService.class.getDeclaredMethod(
+                "buildSessionCacheKey", LogPanelProperties.ServerNode.class);
+        method.setAccessible(true);
+        return (String) method.invoke(sshLogService, node);
+    }
+
+    /**
+     * 通过反射调用日志文件路径校验方法。
+     *
+     * @param configuredPath 配置日志目录或文件
+     * @param candidateFiles 候选日志文件
+     * @param requestedPath  前端请求文件
+     * @return 规范化后的文件路径
+     * @throws Exception 反射调用异常
+     */
+    private String invokeValidateRequestedLogFilePath(String configuredPath,
+                                                      List<String> candidateFiles,
+                                                      String requestedPath) throws Exception {
+        Method method = SshLogService.class.getDeclaredMethod(
+                "validateRequestedLogFilePath", String.class, List.class, String.class);
+        method.setAccessible(true);
+        try {
+            return (String) method.invoke(sshLogService, configuredPath, candidateFiles, requestedPath);
+        } catch (Exception ex) {
+            Throwable cause = ex.getCause();
+            if (cause instanceof Exception) {
+                throw (Exception) cause;
+            }
+            throw ex;
+        }
+    }
+
+    /**
      * 构建过滤规则对象。
      *
      * @param type 规则类型
@@ -166,5 +311,23 @@ class SshLogServiceTest {
         filterRule.setType(type);
         filterRule.setData(data);
         return filterRule;
+    }
+
+    /**
+     * 构建测试节点配置。
+     *
+     * @param host     主机地址
+     * @param port     SSH 端口
+     * @param username 用户名
+     * @param password 密码
+     * @return 节点配置
+     */
+    private LogPanelProperties.ServerNode buildServerNode(String host, Integer port, String username, String password) {
+        LogPanelProperties.ServerNode serverNode = new LogPanelProperties.ServerNode();
+        serverNode.setHost(host);
+        serverNode.setPort(port);
+        serverNode.setUsername(username);
+        serverNode.setPassword(password);
+        return serverNode;
     }
 }

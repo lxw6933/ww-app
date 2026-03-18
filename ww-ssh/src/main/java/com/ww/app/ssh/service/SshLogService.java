@@ -16,25 +16,11 @@ import lombok.NonNull;
 import org.springframework.stereotype.Service;
 
 import javax.annotation.PreDestroy;
-import java.io.BufferedReader;
-import java.io.Closeable;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.InputStreamReader;
+import java.io.*;
 import java.nio.charset.StandardCharsets;
-import java.util.ArrayDeque;
-import java.util.ArrayList;
-import java.util.Deque;
-import java.util.LinkedHashMap;
-import java.util.LinkedHashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Properties;
-import java.util.Set;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.Future;
-import java.util.concurrent.ThreadFactory;
+import java.util.*;
+import java.util.concurrent.*;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
 
@@ -46,6 +32,22 @@ import java.util.function.Consumer;
  */
 @Service
 public class SshLogService {
+
+    /**
+     * 日志文件列表缓存有效期（毫秒）。
+     * <p>
+     * 文件列表主要用于前端下拉框展示，允许短时间内复用，减少频繁 SSH 扫目录。
+     * </p>
+     */
+    private static final long LOG_FILE_CACHE_TTL_MS = 60_000L;
+
+    /**
+     * 单机可同时承载的实时 tail 流上限。
+     * <p>
+     * tail 流属于长连接任务，线程会长期占用；这里做全局限流，避免单机线程被日志面板打满。
+     * </p>
+     */
+    private static final int MAX_CONCURRENT_STREAMS = 48;
 
     /**
      * 实例运维命令退出码回显标记。
@@ -164,9 +166,40 @@ public class SshLogService {
     private final LogLineFilterMatcher logLineFilterMatcher;
 
     /**
+     * 日志文件列表缓存。
+     */
+    private final Map<String, LogFileCacheEntry> logFileCache = new java.util.concurrent.ConcurrentHashMap<>();
+
+    /**
+     * SSH 会话缓存。
+     * <p>
+     * 单体部署场景下按“主机 + 端口 + 用户 + 认证方式”复用会话，减少高频建连开销。
+     * </p>
+     */
+    private final Map<String, SessionHolder> sessionCache = new java.util.concurrent.ConcurrentHashMap<>();
+
+    /**
      * 流式读取线程池。
      */
-    private final ExecutorService streamExecutor = Executors.newCachedThreadPool(new NamedThreadFactory());
+    private final ExecutorService streamExecutor = new ThreadPoolExecutor(
+            0,
+            MAX_CONCURRENT_STREAMS,
+            60L,
+            TimeUnit.SECONDS,
+            new SynchronousQueue<>(),
+            new NamedThreadFactory(),
+            new ThreadPoolExecutor.AbortPolicy()
+    );
+
+    /**
+     * 实时日志流并发信号量。
+     */
+    private final Semaphore streamPermits = new Semaphore(MAX_CONCURRENT_STREAMS);
+
+    /**
+     * 当前活跃 tail 流数量。
+     */
+    private final AtomicInteger activeStreamCount = new AtomicInteger(0);
 
     /**
      * 构造方法。
@@ -186,9 +219,19 @@ public class SshLogService {
      * @return 日志文件路径列表
      */
     public List<String> listLogFiles(LogTarget target) {
-        String logPath = trimToEmpty(target.getServerNode().getLogPath());
+        if (target == null || target.getServerNode() == null) {
+            return new ArrayList<>();
+        }
+        LogPanelProperties.ServerNode serverNode = target.getServerNode();
+        String logPath = trimToEmpty(serverNode.getLogPath());
         if (logPath.isEmpty()) {
             return new ArrayList<>();
+        }
+        long now = System.currentTimeMillis();
+        String cacheKey = buildLogFileCacheKey(serverNode, logPath);
+        LogFileCacheEntry cachedEntry = logFileCache.get(cacheKey);
+        if (cachedEntry != null && !cachedEntry.isExpired(now)) {
+            return cachedEntry.copyFiles();
         }
         String command = sshCommandBuilder.buildListFilesCommand(logPath);
         List<String> rawLines = executeCommandForLines(target, command, 300);
@@ -199,7 +242,9 @@ public class SshLogService {
                 deduplicated.add(trimmed);
             }
         }
-        return new ArrayList<>(deduplicated);
+        List<String> files = new ArrayList<>(deduplicated);
+        logFileCache.put(cacheKey, new LogFileCacheEntry(files, now + LOG_FILE_CACHE_TTL_MS));
+        return new ArrayList<>(files);
     }
 
     /**
@@ -416,30 +461,40 @@ public class SshLogService {
         String command = hasContextWindow
                 ? sshCommandBuilder.buildTailFollowCommand(resolvedFile)
                 : (hasIncludeRule
-                    ? sshCommandBuilder.buildTailFollowGrepPrefilterCommand(resolvedFile, filterRules)
-                    : sshCommandBuilder.buildTailCommand(resolvedFile, request.normalizedLines()));
-        Session session = null;
-        ChannelExec channel = null;
+                ? sshCommandBuilder.buildTailFollowGrepPrefilterCommand(resolvedFile, filterRules)
+                : sshCommandBuilder.buildTailCommand(resolvedFile, request.normalizedLines()));
+        if (!streamPermits.tryAcquire()) {
+            throw new IllegalStateException("当前实时日志订阅数已达上限(" + MAX_CONCURRENT_STREAMS + ")，请稍后重试");
+        }
+        activeStreamCount.incrementAndGet();
+        AtomicBoolean streamReleased = new AtomicBoolean(false);
+        ExecChannelContext channelContext = null;
         try {
-            session = openSession(target.getServerNode());
-            channel = (ChannelExec) session.openChannel("exec");
-            channel.setInputStream(null);
-            channel.setPty(true);
-            channel.setCommand(command);
-            InputStream inputStream = channel.getInputStream();
-            channel.connect(resolveTimeout(target.getServerNode()));
-
-            Session finalSession = session;
-            ChannelExec finalChannel = channel;
+            channelContext = openExecChannel(target, command);
+            ChannelExec finalChannel = channelContext.getChannel();
+            InputStream finalInputStream = channelContext.getInputStream();
             List<LogStreamRequest.FilterRule> finalFilterRules = filterRules;
             int finalBeforeLines = beforeLines;
             int finalAfterLines = afterLines;
             Future<?> streamTask = streamExecutor.submit(
-                    () -> readStreamLoop(inputStream, finalFilterRules, finalBeforeLines, finalAfterLines, lineConsumer));
-            return new StreamHandle(target, resolvedFile, streamTask, finalChannel, finalSession);
+                    () -> {
+                        try {
+                            readStreamLoop(finalInputStream, finalFilterRules, finalBeforeLines, finalAfterLines,
+                                    lineConsumer);
+                        } finally {
+                            disconnectQuietly(finalChannel);
+                            releaseStreamSlot(streamReleased);
+                        }
+                    });
+            return new StreamHandle(target, resolvedFile, streamTask, finalChannel,
+                    () -> releaseStreamSlot(streamReleased));
+        } catch (RejectedExecutionException ex) {
+            disconnectQuietly(channelContext == null ? null : channelContext.getChannel());
+            releaseStreamSlot(streamReleased);
+            throw new IllegalStateException("当前实时日志订阅数已达上限(" + MAX_CONCURRENT_STREAMS + ")，请稍后重试", ex);
         } catch (Exception ex) {
-            disconnectQuietly(channel);
-            disconnectQuietly(session);
+            disconnectQuietly(channelContext == null ? null : channelContext.getChannel());
+            releaseStreamSlot(streamReleased);
             throw new IllegalStateException("启动日志流失败: " + target.displayName() + " - " + ex.getMessage(), ex);
         }
     }
@@ -531,16 +586,21 @@ public class SshLogService {
     @PreDestroy
     public void shutdown() {
         streamExecutor.shutdownNow();
+        for (SessionHolder sessionHolder : new ArrayList<>(sessionCache.values())) {
+            invalidateSession(sessionHolder);
+        }
+        sessionCache.clear();
+        logFileCache.clear();
     }
 
     /**
      * 循环读取远程日志流并转发。
      *
-     * @param inputStream  远程输入流
-     * @param filterRules  过滤规则
-     * @param beforeLines  命中前需额外保留的上下文行数
-     * @param afterLines   命中后需额外保留的上下文行数
-     * @param consumer     行消费回调
+     * @param inputStream 远程输入流
+     * @param filterRules 过滤规则
+     * @param beforeLines 命中前需额外保留的上下文行数
+     * @param afterLines  命中后需额外保留的上下文行数
+     * @param consumer    行消费回调
      */
     private void readStreamLoop(InputStream inputStream,
                                 List<LogStreamRequest.FilterRule> filterRules,
@@ -673,29 +733,23 @@ public class SshLogService {
      * 3. 仅保留最后 keepLines 条，控制内存占用。<br>
      * </p>
      *
-     * @param target      目标服务节点
+     * @param target       目标服务节点
      * @param resolvedFile 已解析日志路径
-     * @param filterRules 生效过滤规则
-     * @param keepLines   最终保留行数
+     * @param filterRules  生效过滤规则
+     * @param keepLines    最终保留行数
      * @return 过滤后的尾部窗口
      */
     private List<String> readByCatByGrepPrefilter(LogTarget target,
-                                                   String resolvedFile,
-                                                   List<LogStreamRequest.FilterRule> filterRules,
-                                                   int keepLines) {
+                                                  String resolvedFile,
+                                                  List<LogStreamRequest.FilterRule> filterRules,
+                                                  int keepLines) {
         String command = sshCommandBuilder.buildCatGrepPrefilterCommand(resolvedFile, filterRules);
         Deque<String> window = new ArrayDeque<>();
-        Session session = null;
-        ChannelExec channel = null;
+        ExecChannelContext channelContext = null;
         try {
-            session = openSession(target.getServerNode());
-            channel = (ChannelExec) session.openChannel("exec");
-            channel.setInputStream(null);
-            channel.setPty(true);
-            channel.setCommand(command);
-            InputStream inputStream = channel.getInputStream();
-            channel.connect(resolveTimeout(target.getServerNode()));
-            try (BufferedReader reader = new BufferedReader(new InputStreamReader(inputStream, StandardCharsets.UTF_8))) {
+            channelContext = openExecChannel(target, command);
+            try (BufferedReader reader = new BufferedReader(
+                    new InputStreamReader(channelContext.getInputStream(), StandardCharsets.UTF_8))) {
                 String line;
                 while ((line = reader.readLine()) != null) {
                     if (logLineFilterMatcher.matches(line, filterRules)) {
@@ -707,8 +761,7 @@ public class SshLogService {
         } catch (Exception ex) {
             throw new IllegalStateException("日志快照读取失败: " + target.displayName() + " - " + ex.getMessage(), ex);
         } finally {
-            disconnectQuietly(channel);
-            disconnectQuietly(session);
+            disconnectQuietly(channelContext == null ? null : channelContext.getChannel());
         }
     }
 
@@ -729,18 +782,11 @@ public class SshLogService {
     private List<String> readByCatNoFilter(LogTarget target, String resolvedFile, int keepLines) {
         String command = sshCommandBuilder.buildCatCommand(resolvedFile, keepLines);
         Deque<String> window = new ArrayDeque<>();
-        Session session = null;
-        ChannelExec channel = null;
+        ExecChannelContext channelContext = null;
         try {
-            session = openSession(target.getServerNode());
-            channel = (ChannelExec) session.openChannel("exec");
-            channel.setInputStream(null);
-            channel.setPty(true);
-            channel.setCommand(command);
-            InputStream inputStream = channel.getInputStream();
-            channel.connect(resolveTimeout(target.getServerNode()));
+            channelContext = openExecChannel(target, command);
             try (BufferedReader reader = new BufferedReader(
-                    new InputStreamReader(inputStream, StandardCharsets.UTF_8))) {
+                    new InputStreamReader(channelContext.getInputStream(), StandardCharsets.UTF_8))) {
                 String line;
                 while ((line = reader.readLine()) != null) {
                     // 过滤纯 ANSI 转义字符行（PTY 控制序列）及空白行，避免污染尾部窗口
@@ -755,8 +801,7 @@ public class SshLogService {
             throw new IllegalStateException(
                     "日志快照读取失败: " + target.displayName() + " - " + ex.getMessage(), ex);
         } finally {
-            disconnectQuietly(channel);
-            disconnectQuietly(session);
+            disconnectQuietly(channelContext == null ? null : channelContext.getChannel());
         }
     }
 
@@ -882,7 +927,7 @@ public class SshLogService {
      */
     private String resolveLogFilePath(LogTarget target, String requestedPath) {
         if (!requestedPath.isEmpty()) {
-            return requestedPath;
+            return validateRequestedLogFilePath(target, requestedPath);
         }
         String configuredPath = trimToEmpty(target.getServerNode().getLogPath());
         if (configuredPath.isEmpty()) {
@@ -910,6 +955,137 @@ public class SshLogService {
             // ignore
         }
         throw new IllegalStateException("未发现可读取的日志文件: " + target.displayName());
+    }
+
+    /**
+     * 校验前端显式指定的日志文件路径是否合法。
+     * <p>
+     * 安全策略：
+     * 1. 仅允许读取当前目标服务 {@code logPath} 配置范围内发现出来的候选日志文件；
+     * 2. 显式拒绝包含空字节、换行、回车与路径回退片段（..）的输入；
+     * 3. 若 {@code logPath} 本身配置为单个文件，则仅允许精确命中该文件。
+     * </p>
+     *
+     * @param target        目标服务节点
+     * @param requestedPath 前端指定路径
+     * @return 规范化后的合法日志文件路径
+     */
+    private String validateRequestedLogFilePath(LogTarget target, String requestedPath) {
+        if (target == null || target.getServerNode() == null) {
+            throw new IllegalArgumentException("目标节点不存在，无法校验日志路径");
+        }
+        String configuredPath = trimToEmpty(target.getServerNode().getLogPath());
+        return validateRequestedLogFilePath(configuredPath, listLogFiles(target), requestedPath);
+    }
+
+    /**
+     * 根据配置路径与候选文件列表校验用户选择的日志文件。
+     *
+     * @param configuredPath 服务配置中的日志目录或日志文件
+     * @param candidateFiles 候选日志文件列表
+     * @param requestedPath  前端指定路径
+     * @return 规范化后的合法日志文件路径
+     */
+    private String validateRequestedLogFilePath(String configuredPath,
+                                                List<String> candidateFiles,
+                                                String requestedPath) {
+        String normalizedConfiguredInput = trimToEmpty(configuredPath);
+        if (normalizedConfiguredInput.isEmpty()) {
+            throw new IllegalArgumentException("当前服务未配置可访问日志目录，禁止直接指定 filePath");
+        }
+        String normalizedRequestedPath = normalizeRemotePath(requestedPath);
+        if (normalizedRequestedPath.isEmpty() || containsIllegalPathFragment(requestedPath)) {
+            throw new IllegalArgumentException("日志文件路径非法: " + requestedPath);
+        }
+        String normalizedConfiguredPath = normalizeRemotePath(normalizedConfiguredInput);
+        if (normalizedRequestedPath.equals(normalizedConfiguredPath)) {
+            return normalizedRequestedPath;
+        }
+
+        if (candidateFiles != null) {
+            for (String candidateFile : candidateFiles) {
+                String normalizedCandidateFile = normalizeRemotePath(candidateFile);
+                if (normalizedRequestedPath.equals(normalizedCandidateFile)) {
+                    return normalizedCandidateFile;
+                }
+            }
+        }
+        throw new IllegalArgumentException("所选日志文件不在当前服务允许范围内: " + requestedPath);
+    }
+
+    /**
+     * 规范化远端日志路径。
+     * <p>
+     * 仅做词法级归一化，不访问远端文件系统：
+     * 1. 统一分隔符为 {@code /}；
+     * 2. 去除重复斜杠与 {@code .} 片段；
+     * 3. 遇到非法 {@code ..} 回退时直接返回空串，交由上层视为非法输入。
+     * </p>
+     *
+     * @param rawPath 原始路径
+     * @return 规范化后的路径；非法时返回空串
+     */
+    private String normalizeRemotePath(String rawPath) {
+        String normalized = trimToEmpty(rawPath).replace('\\', '/');
+        if (normalized.isEmpty()) {
+            return "";
+        }
+        boolean absolute = normalized.startsWith("/");
+        String[] segments = normalized.split("/+");
+        Deque<String> normalizedSegments = new ArrayDeque<>();
+        for (String segment : segments) {
+            String current = trimToEmpty(segment);
+            if (current.isEmpty() || ".".equals(current)) {
+                continue;
+            }
+            if ("..".equals(current)) {
+                if (normalizedSegments.isEmpty()) {
+                    return "";
+                }
+                normalizedSegments.removeLast();
+                continue;
+            }
+            normalizedSegments.addLast(current);
+        }
+        if (normalizedSegments.isEmpty()) {
+            return absolute ? "/" : "";
+        }
+        StringBuilder builder = new StringBuilder();
+        if (absolute) {
+            builder.append('/');
+        }
+        boolean first = true;
+        for (String segment : normalizedSegments) {
+            if (!first) {
+                builder.append('/');
+            }
+            builder.append(segment);
+            first = false;
+        }
+        return builder.toString();
+    }
+
+    /**
+     * 判断路径中是否包含明显非法片段。
+     *
+     * @param rawPath 原始路径
+     * @return true 表示存在非法片段
+     */
+    private boolean containsIllegalPathFragment(String rawPath) {
+        String normalized = trimToEmpty(rawPath);
+        if (normalized.isEmpty()) {
+            return true;
+        }
+        if (normalized.indexOf('\0') >= 0 || normalized.indexOf('\n') >= 0 || normalized.indexOf('\r') >= 0) {
+            return true;
+        }
+        String[] segments = normalized.replace('\\', '/').split("/+");
+        for (String segment : segments) {
+            if ("..".equals(trimToEmpty(segment))) {
+                return true;
+            }
+        }
+        return false;
     }
 
     /**
@@ -1290,18 +1466,11 @@ public class SshLogService {
         boolean markerDetected = false;
         String normalizedMarker = trimToEmpty(markerPrefix);
         boolean detectMarker = !normalizedMarker.isEmpty();
-        Session session = null;
-        ChannelExec channel = null;
+        ExecChannelContext channelContext = null;
         try {
-            session = openSession(target.getServerNode());
-            channel = (ChannelExec) session.openChannel("exec");
-            channel.setInputStream(null);
-            channel.setPty(true);
-            channel.setCommand(command);
-            InputStream inputStream = channel.getInputStream();
-            channel.connect(resolveTimeout(target.getServerNode()));
-
-            try (BufferedReader reader = new BufferedReader(new InputStreamReader(inputStream, StandardCharsets.UTF_8))) {
+            channelContext = openExecChannel(target, command);
+            try (BufferedReader reader = new BufferedReader(
+                    new InputStreamReader(channelContext.getInputStream(), StandardCharsets.UTF_8))) {
                 String line;
                 while ((line = reader.readLine()) != null) {
                     String trimmed = trimToEmpty(line);
@@ -1326,8 +1495,7 @@ public class SshLogService {
         } catch (Exception ex) {
             throw new IllegalStateException("执行远程命令失败: " + target.displayName() + " - " + ex.getMessage(), ex);
         } finally {
-            disconnectQuietly(channel);
-            disconnectQuietly(session);
+            disconnectQuietly(channelContext == null ? null : channelContext.getChannel());
         }
     }
 
@@ -1399,7 +1567,158 @@ public class SshLogService {
      * @return 已连接 Session
      * @throws JSchException 建连失败
      */
-    private Session openSession(LogPanelProperties.ServerNode node) throws JSchException {
+    private String buildLogFileCacheKey(LogPanelProperties.ServerNode node, String logPath) {
+        return buildSessionCacheKey(node) + "|logPath=" + trimToEmpty(logPath);
+    }
+
+    /**
+     * 构建 SSH 会话缓存键。
+     *
+     * @param node 节点配置
+     * @return 缓存键
+     */
+    private String buildSessionCacheKey(LogPanelProperties.ServerNode node) {
+        return trimToEmpty(node.getUsername()) + "@"
+                + trimToEmpty(node.getHost()) + ":" + resolvePort(node)
+                + "|auth=" + trimToEmpty(node.getPreferredAuthentications())
+                + "|pk=" + trimToEmpty(node.getPrivateKeyPath())
+                + "|pwd=" + hashCacheSegment(node.getPassword())
+                + "|pp=" + hashCacheSegment(node.getPrivateKeyPassphrase());
+    }
+
+    /**
+     * 对敏感字段做轻量摘要，避免将明文直接放入缓存键。
+     *
+     * @param source 原始字段
+     * @return 摘要文本
+     */
+    private String hashCacheSegment(String source) {
+        return Integer.toHexString(trimToEmpty(source).hashCode());
+    }
+
+    /**
+     * 打开可复用的 SSH 执行通道。
+     *
+     * @param target  目标服务节点
+     * @param command 待执行命令
+     * @return 已连接的执行通道上下文
+     * @throws JSchException SSH 通道创建失败
+     * @throws IOException   输入流读取失败
+     */
+    private ExecChannelContext openExecChannel(LogTarget target, String command) throws JSchException, IOException {
+        if (target == null || target.getServerNode() == null) {
+            throw new IllegalArgumentException("目标节点不存在，无法建立 SSH 通道");
+        }
+        return openExecChannel(target.getServerNode(), command);
+    }
+
+    /**
+     * 打开可复用的 SSH 执行通道。
+     * <p>
+     * 当检测到缓存会话失效时，会自动清理并重试一次，减少偶发断链带来的失败。
+     * </p>
+     *
+     * @param node    节点配置
+     * @param command 待执行命令
+     * @return 已连接的执行通道上下文
+     * @throws JSchException SSH 通道创建失败
+     * @throws IOException   输入流读取失败
+     */
+    private ExecChannelContext openExecChannel(LogPanelProperties.ServerNode node, String command)
+            throws JSchException, IOException {
+        SessionHolder sessionHolder = sessionCache.computeIfAbsent(
+                buildSessionCacheKey(node), cacheKey -> new SessionHolder(cacheKey, node));
+        boolean retried = false;
+        while (true) {
+            ChannelExec channel = null;
+            try {
+                Session session = getOrCreateSession(sessionHolder);
+                synchronized (sessionHolder.getMonitor()) {
+                    if (sessionHolder.getSession() != session || session == null || !session.isConnected()) {
+                        continue;
+                    }
+                    channel = (ChannelExec) session.openChannel("exec");
+                    channel.setInputStream(null);
+                    channel.setPty(true);
+                    channel.setCommand(command);
+                    InputStream inputStream = channel.getInputStream();
+                    channel.connect(resolveTimeout(node));
+                    sessionHolder.touch(System.currentTimeMillis());
+                    return new ExecChannelContext(sessionHolder, channel, inputStream);
+                }
+            } catch (JSchException | IOException ex) {
+                disconnectQuietly(channel);
+                invalidateSession(sessionHolder);
+                if (!retried) {
+                    retried = true;
+                    continue;
+                }
+                throw ex;
+            } catch (RuntimeException ex) {
+                disconnectQuietly(channel);
+                throw ex;
+            }
+        }
+    }
+
+    /**
+     * 获取或重建缓存中的 SSH 会话。
+     *
+     * @param sessionHolder 会话持有者
+     * @return 已连接会话
+     * @throws JSchException 建连失败
+     */
+    private Session getOrCreateSession(SessionHolder sessionHolder) throws JSchException {
+        synchronized (sessionHolder.getMonitor()) {
+            Session current = sessionHolder.getSession();
+            if (current != null && current.isConnected()) {
+                sessionHolder.touch(System.currentTimeMillis());
+                return current;
+            }
+            disconnectQuietly(current);
+            Session created = createSession(sessionHolder.getNode());
+            sessionHolder.setSession(created);
+            sessionHolder.touch(System.currentTimeMillis());
+            return created;
+        }
+    }
+
+    /**
+     * 使缓存中的 SSH 会话失效并关闭底层连接。
+     *
+     * @param sessionHolder 会话持有者
+     */
+    private void invalidateSession(SessionHolder sessionHolder) {
+        if (sessionHolder == null) {
+            return;
+        }
+        synchronized (sessionHolder.getMonitor()) {
+            Session current = sessionHolder.getSession();
+            sessionHolder.setSession(null);
+            disconnectQuietly(current);
+        }
+    }
+
+    /**
+     * 释放一个实时日志流并发槽位。
+     *
+     * @param released 释放标记
+     */
+    private void releaseStreamSlot(AtomicBoolean released) {
+        if (released != null && released.compareAndSet(false, true)) {
+            streamPermits.release();
+            activeStreamCount.updateAndGet(current -> current <= 0 ? 0 : current - 1);
+        }
+    }
+
+    /**
+     * 建立新的 SSH Session 连接。
+     *
+     * @param node 节点配置
+     * @return 已连接 Session
+     * @throws JSchException 建连失败
+     */
+    private Session createSession(LogPanelProperties.ServerNode node) throws JSchException {
         JSch jsch = new JSch();
         if (!trimToEmpty(node.getPrivateKeyPath()).isEmpty()) {
             if (!trimToEmpty(node.getPrivateKeyPassphrase()).isEmpty()) {
@@ -1988,6 +2307,102 @@ public class SshLogService {
     /**
      * 实例状态探测结果。
      */
+    private static class LogFileCacheEntry {
+
+        private final List<String> files;
+
+        private final long expireAt;
+
+        private LogFileCacheEntry(List<String> files, long expireAt) {
+            this.files = files == null ? new ArrayList<>() : new ArrayList<>(files);
+            this.expireAt = expireAt;
+        }
+
+        private boolean isExpired(long currentTimeMillis) {
+            return currentTimeMillis >= expireAt;
+        }
+
+        private List<String> copyFiles() {
+            return new ArrayList<>(files);
+        }
+    }
+
+    /**
+     * SSH 会话持有者。
+     */
+    private static class SessionHolder {
+
+        private final String cacheKey;
+
+        private final LogPanelProperties.ServerNode node;
+
+        private final Object monitor = new Object();
+
+        private volatile Session session;
+
+        private volatile long lastAccessAt;
+
+        private SessionHolder(String cacheKey, LogPanelProperties.ServerNode node) {
+            this.cacheKey = cacheKey;
+            this.node = node;
+            this.lastAccessAt = System.currentTimeMillis();
+        }
+
+        private String getCacheKey() {
+            return cacheKey;
+        }
+
+        private LogPanelProperties.ServerNode getNode() {
+            return node;
+        }
+
+        private Object getMonitor() {
+            return monitor;
+        }
+
+        private Session getSession() {
+            return session;
+        }
+
+        private void setSession(Session session) {
+            this.session = session;
+        }
+
+        private void touch(long currentTimeMillis) {
+            this.lastAccessAt = currentTimeMillis;
+        }
+    }
+
+    /**
+     * SSH 执行通道上下文。
+     */
+    private static class ExecChannelContext {
+
+        private final SessionHolder sessionHolder;
+
+        private final ChannelExec channel;
+
+        private final InputStream inputStream;
+
+        private ExecChannelContext(SessionHolder sessionHolder, ChannelExec channel, InputStream inputStream) {
+            this.sessionHolder = sessionHolder;
+            this.channel = channel;
+            this.inputStream = inputStream;
+        }
+
+        private SessionHolder getSessionHolder() {
+            return sessionHolder;
+        }
+
+        private ChannelExec getChannel() {
+            return channel;
+        }
+
+        private InputStream getInputStream() {
+            return inputStream;
+        }
+    }
+
     private static class InstanceStatusProbe {
 
         /**
@@ -2050,7 +2465,7 @@ public class SshLogService {
         /**
          * 目标服务。
          * -- GETTER --
-         *  获取目标服务。
+         * 获取目标服务。
          */
         @Getter
         private final LogTarget target;
@@ -2058,7 +2473,7 @@ public class SshLogService {
         /**
          * 实际读取的日志文件。
          * -- GETTER --
-         *  获取日志文件路径。
+         * 获取日志文件路径。
          */
         @Getter
         private final String filePath;
@@ -2076,23 +2491,27 @@ public class SshLogService {
         /**
          * SSH 会话。
          */
-        private final Session session;
+        private final Runnable closeAction;
 
         /**
          * 构造方法。
          *
-         * @param target     目标服务
-         * @param filePath   日志文件路径
-         * @param streamTask 异步任务
-         * @param channel    SSH 通道
-         * @param session    SSH 会话
+         * @param target      目标服务
+         * @param filePath    日志文件路径
+         * @param streamTask  异步任务
+         * @param channel     SSH 通道
+         * @param closeAction SSH 会话
          */
-        public StreamHandle(LogTarget target, String filePath, Future<?> streamTask, ChannelExec channel, Session session) {
+        public StreamHandle(LogTarget target,
+                            String filePath,
+                            Future<?> streamTask,
+                            ChannelExec channel,
+                            Runnable closeAction) {
             this.target = target;
             this.filePath = filePath;
             this.streamTask = streamTask;
             this.channel = channel;
-            this.session = session;
+            this.closeAction = closeAction;
         }
 
         /**
@@ -2105,8 +2524,8 @@ public class SshLogService {
             if (channel != null) {
                 channel.disconnect();
             }
-            if (session != null) {
-                session.disconnect();
+            if (closeAction != null) {
+                closeAction.run();
             }
         }
     }

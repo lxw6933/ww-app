@@ -113,9 +113,6 @@ class SshCommandBuilderTest {
     }
 
     /**
-     * 校验磁盘指标采集命令包含根分区采集与百分比处理逻辑。
-     */
-    /**
      * 校验 cat 上下文窗口命令会基于完整过滤规则生成 awk 命中条件，
      * 先识别 include && !exclude 的命中行，再围绕命中行输出原始上下文。
      */
@@ -158,7 +155,7 @@ class SshCommandBuilderTest {
         SshCommandBuilder builder = new SshCommandBuilder();
         String command = builder.buildJvmGcStatsCommand("/data/app/mall-basic/bin/server.sh", "mall-basic@node1");
         Assertions.assertTrue(command.contains("__WW_JVM_GC__"));
-        Assertions.assertTrue(command.contains("jstat -gcutil"));
+        Assertions.assertTrue(command.contains("jstat -gc"));
         Assertions.assertTrue(command.contains("NO_PID"));
         Assertions.assertTrue(command.contains("SERVICE_GROUP"));
         Assertions.assertTrue(command.contains("collect_pid_from_file"));
