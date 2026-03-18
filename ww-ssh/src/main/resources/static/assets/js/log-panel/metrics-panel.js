@@ -96,7 +96,10 @@ export class MetricsPanelController {
         this.operateInstance = typeof options.operateInstance === 'function' ? options.operateInstance : null;
         this.openJvmMonitor = typeof options.openJvmMonitor === 'function' ? options.openJvmMonitor : null;
         this.refreshMs = 15000;
+        this.registerIntervalMs = 30000;
+        this.bootstrapRetryMs = 1200;
         this.timer = null;
+        this.bootstrapRetryTimer = null;
         this.token = 0;
         this.lastMetrics = [];
         this.operationStates = new Map();
@@ -107,6 +110,9 @@ export class MetricsPanelController {
         this.activeQueryKey = '';
         this.requestInFlight = false;
         this.pollingEnabled = true;
+        this.registeredQueryKey = '';
+        this.lastRegisterAt = 0;
+        this.visibilityEventsBound = false;
     }
 
     /**
@@ -114,6 +120,7 @@ export class MetricsPanelController {
      */
     init() {
         this.renderEmpty('请选择项目、环境与服务后查看服务器指标');
+        this.bindVisibilityEvents();
         this.startPolling();
     }
 
@@ -150,7 +157,7 @@ export class MetricsPanelController {
      * 启动轮询任务。
      */
     startPolling() {
-        if (!this.pollingEnabled) {
+        if (!this.pollingEnabled || this.isPageHidden()) {
             return;
         }
         this.stopPolling();
@@ -165,6 +172,7 @@ export class MetricsPanelController {
             window.clearInterval(this.timer);
             this.timer = null;
         }
+        this.clearBootstrapRetry();
         this.cancelActiveRequest();
         this.setLoading(false);
     }
@@ -175,13 +183,15 @@ export class MetricsPanelController {
      * @param {boolean} manual 是否手动刷新
      */
     refresh(manual) {
-        if (!this.pollingEnabled && !manual) {
+        if ((!this.pollingEnabled && !manual) || this.isPageHidden()) {
             return;
         }
         const project = this.getProject();
         const env = this.getEnv();
         const service = this.getService();
         if (!project || !env || !service) {
+            this.resetRegistrationState();
+            this.clearBootstrapRetry();
             this.cancelActiveRequest();
             this.renderEmpty('请选择项目、环境与服务后查看服务器指标');
             return;
@@ -201,18 +211,25 @@ export class MetricsPanelController {
         this.requestInFlight = true;
         const options = controller ? {signal: controller.signal} : undefined;
 
-        fetch(`/api/metrics/hosts?project=${encodeURIComponent(project)}&env=${encodeURIComponent(env)}&service=${encodeURIComponent(service)}`, options)
-            .then(response => {
-                if (!response.ok) {
-                    throw new Error(`状态码 ${response.status}`);
-                }
-                return response.json();
-            })
-            .then(list => {
+        this.ensureActiveRegistration(project, env, service, options)
+            .then(() => this.fetchMetrics(project, env, service, options))
+            .then(payload => {
                 if (currentToken !== this.token) {
                     return;
                 }
-                this.renderMetrics(Array.isArray(list) ? list : []);
+                const snapshotPayload = this.normalizeSnapshotPayload(payload);
+                if (!snapshotPayload.ready) {
+                    if (snapshotPayload.lastError) {
+                        this.renderError(`指标采集失败：${snapshotPayload.lastError}`);
+                    } else {
+                        this.renderEmpty('指标正在准备中，请稍后自动刷新');
+                    }
+                    this.scheduleBootstrapRetry(queryKey);
+                    this.setLoading(false);
+                    return;
+                }
+                this.clearBootstrapRetry();
+                this.renderMetrics(snapshotPayload.metrics, snapshotPayload);
                 this.setLoading(false);
             })
             .catch(error => {
@@ -222,6 +239,7 @@ export class MetricsPanelController {
                 if (error && error.name === 'AbortError') {
                     return;
                 }
+                this.clearBootstrapRetry();
                 this.renderError(`指标加载失败：${error.message || '网络异常'}`);
                 this.setLoading(false);
             })
@@ -232,6 +250,166 @@ export class MetricsPanelController {
                 this.activeRequestController = null;
                 this.requestInFlight = false;
             });
+    }
+
+    /**
+     * 确保当前维度已完成活跃心跳登记。
+     *
+     * @param {string} project 项目
+     * @param {string} env 环境
+     * @param {string} service 服务
+     * @param {Object} options fetch 配置
+     * @returns {Promise<void>} 注册结果
+     */
+    ensureActiveRegistration(project, env, service, options) {
+        const queryKey = `${String(project)}#${String(env)}#${String(service)}`;
+        const now = Date.now();
+        if (this.registeredQueryKey === queryKey && now - this.lastRegisterAt < this.registerIntervalMs) {
+            return Promise.resolve();
+        }
+        return this.registerActiveQuery(project, env, service, options).then(() => {
+            this.registeredQueryKey = queryKey;
+            this.lastRegisterAt = Date.now();
+        });
+    }
+
+    /**
+     * 注册当前正在浏览的指标维度。
+     *
+     * @param {string} project 项目
+     * @param {string} env 环境
+     * @param {string} service 服务
+     * @param {Object} options fetch 配置
+     * @returns {Promise<void>} 注册结果
+     */
+    registerActiveQuery(project, env, service, options) {
+        return fetch('/api/metrics/active/register', Object.assign({
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                project: project,
+                env: env,
+                service: service,
+                source: 'panel'
+            })
+        }, options)).then(response => {
+            if (!response.ok) {
+                throw new Error(`状态码 ${response.status}`);
+            }
+        });
+    }
+
+    /**
+     * 读取主机指标快照。
+     *
+     * @param {string} project 项目
+     * @param {string} env 环境
+     * @param {string} service 服务
+     * @param {Object} options fetch 配置
+     * @returns {Promise<Object>} 指标响应
+     */
+    fetchMetrics(project, env, service, options) {
+        return fetch(`/api/metrics/hosts?project=${encodeURIComponent(project)}&env=${encodeURIComponent(env)}&service=${encodeURIComponent(service)}`, options)
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error(`状态码 ${response.status}`);
+                }
+                return response.json();
+            });
+    }
+
+    /**
+     * 规范化后端快照响应。
+     *
+     * @param {Object} payload 原始响应
+     * @returns {{ready:boolean,stale:boolean,updatedAt:number|null,lastAttemptAt:number|null,lastError:string,metrics:Array<Object>}} 规范化结果
+     */
+    normalizeSnapshotPayload(payload) {
+        const source = payload && typeof payload === 'object' ? payload : {};
+        return {
+            ready: !!source.ready,
+            stale: !!source.stale,
+            updatedAt: Number.isFinite(Number(source.updatedAt)) ? Number(source.updatedAt) : null,
+            lastAttemptAt: Number.isFinite(Number(source.lastAttemptAt)) ? Number(source.lastAttemptAt) : null,
+            lastError: source.lastError ? String(source.lastError) : '',
+            metrics: Array.isArray(source.metrics) ? source.metrics : []
+        };
+    }
+
+    /**
+     * 重置当前维度的注册状态。
+     */
+    resetRegistrationState() {
+        this.registeredQueryKey = '';
+        this.lastRegisterAt = 0;
+    }
+
+    /**
+     * 为首屏“准备中”状态安排一次短间隔补拉。
+     *
+     * @param {string} queryKey 当前查询键
+     */
+    scheduleBootstrapRetry(queryKey) {
+        if (!queryKey || this.isPageHidden() || !this.pollingEnabled) {
+            return;
+        }
+        if (this.bootstrapRetryTimer) {
+            return;
+        }
+        this.bootstrapRetryTimer = window.setTimeout(() => {
+            this.bootstrapRetryTimer = null;
+            if (this.activeQueryKey !== queryKey || this.isPageHidden() || !this.pollingEnabled) {
+                return;
+            }
+            this.refresh(true);
+        }, this.bootstrapRetryMs);
+    }
+
+    /**
+     * 清理首屏补拉定时器。
+     */
+    clearBootstrapRetry() {
+        if (!this.bootstrapRetryTimer) {
+            return;
+        }
+        window.clearTimeout(this.bootstrapRetryTimer);
+        this.bootstrapRetryTimer = null;
+    }
+
+    /**
+     * 绑定页面显隐事件。
+     * <p>
+     * 页面处于后台标签页时暂停轮询与请求，
+     * 恢复可见后再立即补一次刷新。
+     * </p>
+     */
+    bindVisibilityEvents() {
+        if (this.visibilityEventsBound || typeof document === 'undefined') {
+            return;
+        }
+        this.visibilityEventsBound = true;
+        document.addEventListener('visibilitychange', () => {
+            if (this.isPageHidden()) {
+                this.stopPolling();
+                return;
+            }
+            if (!this.pollingEnabled) {
+                return;
+            }
+            this.startPolling();
+            this.refresh(true);
+        });
+    }
+
+    /**
+     * 判断页面当前是否处于后台不可见状态。
+     *
+     * @returns {boolean} true 表示不可见
+     */
+    isPageHidden() {
+        return typeof document !== 'undefined' && !!document.hidden;
     }
 
     /**
@@ -289,7 +467,7 @@ export class MetricsPanelController {
      *
      * @param {Array<Object>} list 指标集合
      */
-    renderMetrics(list) {
+    renderMetrics(list, snapshotPayload) {
         this.lastMetrics = Array.isArray(list) ? list.slice() : [];
         const listEl = el('metricsList');
         listEl.innerHTML = '';
@@ -312,14 +490,14 @@ export class MetricsPanelController {
         const avgDisk = average(okServerMetrics.map(item => item.diskUsagePercent));
 
         this.renderSummary({
-            statusText: '采集正常',
+            statusText: snapshotPayload && snapshotPayload.stale ? '缓存数据' : '采集正常',
             healthyServers: healthyServers,
             totalServers: totalServers,
             unhealthyServers: unhealthyServers,
             avgCpu: avgCpu,
             avgMem: avgMem,
             avgDisk: avgDisk,
-            timeText: formatTime(Date.now())
+            timeText: formatTime(snapshotPayload && snapshotPayload.updatedAt ? snapshotPayload.updatedAt : Date.now())
         });
 
         hostGroups.forEach(group => {

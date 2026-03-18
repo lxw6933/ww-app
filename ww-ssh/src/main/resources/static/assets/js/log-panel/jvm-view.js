@@ -32,14 +32,20 @@ export class JvmViewController {
 
         this.active = false;
         this.pollMs = DEFAULT_POLL_MS;
+        this.registerIntervalMs = 30000;
+        this.bootstrapRetryMs = 1200;
         this.chartWindowSize = DEFAULT_CHART_WINDOW;
         this.timer = null;
+        this.bootstrapRetryTimer = null;
         this.requestToken = 0;
         this.controller = null;
         this.metrics = [];
         this.history = new Map();
         this.kpiUsageCache = new Map();
         this.preferredInstance = '';
+        this.registeredQueryKey = '';
+        this.lastRegisterAt = 0;
+        this.visibilityEventsBound = false;
     }
 
     /**
@@ -50,6 +56,7 @@ export class JvmViewController {
             return;
         }
         this.bindEvents();
+        this.bindVisibilityEvents();
         this.clearInstanceOptions();
         this.renderEmptyState();
         this.setStatus('请先选择项目/环境/服务，再切换到 JVM 视图', 'unknown');
@@ -75,6 +82,7 @@ export class JvmViewController {
             return;
         }
         this.stopPolling();
+        this.clearBootstrapRetry();
         this.abortRequest();
     }
 
@@ -94,6 +102,8 @@ export class JvmViewController {
         this.metrics = [];
         this.history.clear();
         this.kpiUsageCache.clear();
+        this.clearBootstrapRetry();
+        this.resetRegistrationState();
         if (this.active) {
             this.refresh(true);
             return;
@@ -116,10 +126,15 @@ export class JvmViewController {
      * @param {boolean} manual 是否手动刷新
      */
     refresh(manual) {
+        if (this.isPageHidden()) {
+            return;
+        }
         const project = String(this.getProject() || '').trim();
         const env = String(this.getEnv() || '').trim();
         const service = normalizeServiceGroup(String(this.getService() || '').trim());
         if (!project || !env || !service || this.isAggregate(project, env, service)) {
+            this.clearBootstrapRetry();
+            this.resetRegistrationState();
             this.setStatus('JVM 监控仅支持具体服务，请先选择单个服务', 'warn');
             this.renderEmptyState();
             return;
@@ -135,29 +150,47 @@ export class JvmViewController {
             this.setStatus('JVM 指标刷新中...', 'unknown');
         }
 
-        fetch(`/api/metrics/hosts?project=${encodeURIComponent(project)}&env=${encodeURIComponent(env)}&service=${encodeURIComponent(service)}`, options)
-            .then(response => {
-                if (!response.ok) {
-                    throw new Error(`状态码 ${response.status}`);
-                }
-                return response.json();
-            })
-            .then(list => {
+        this.ensureActiveRegistration(project, env, service, options)
+            .then(() => this.fetchMetrics(project, env, service, options))
+            .then(payload => {
                 if (token !== this.requestToken) {
                     return;
                 }
-                this.metrics = Array.isArray(list) ? list : [];
+                const snapshotPayload = this.normalizeSnapshotPayload(payload);
+                if (!snapshotPayload.ready) {
+                    this.metrics = [];
+                    this.updateInstanceOptions([]);
+                    this.renderAll();
+                    if (snapshotPayload.lastError) {
+                        this.setStatus(`JVM 采样失败: ${snapshotPayload.lastError}`, 'error');
+                    } else {
+                        this.setStatus('JVM 指标准备中，请稍后自动刷新', 'unknown');
+                    }
+                    this.scheduleBootstrapRetry(`${project}#${env}#${service}`);
+                    this.setLastUpdate(snapshotPayload.lastAttemptAt || Date.now());
+                    return;
+                }
+
+                this.clearBootstrapRetry();
+                this.metrics = snapshotPayload.metrics;
                 this.updateInstanceOptions(this.metrics);
                 this.appendHistories(this.metrics);
                 this.renderAll();
+                if (!this.metrics.length) {
+                    this.setStatus('JVM 指标准备中，请稍后自动刷新', 'unknown');
+                    this.setLastUpdate(snapshotPayload.updatedAt || snapshotPayload.lastAttemptAt || Date.now());
+                    return;
+                }
                 const snapshot = this.getSelectedSnapshot();
-                if (snapshot) {
+                if (snapshotPayload.stale && snapshotPayload.lastError) {
+                    this.setStatus(`显示缓存数据，最新采集失败: ${snapshotPayload.lastError}`, 'warn');
+                } else if (snapshot) {
                     const tone = String(snapshot.jvmGcStatus || '').trim().toLowerCase() === 'ok' ? 'ok' : 'warn';
                     this.setStatus(`采样成功: ${String(snapshot.service || '--')}`, tone);
                 } else {
                     this.setStatus('当前实例暂无 JVM 采样数据', 'warn');
                 }
-                this.setLastUpdate(Date.now());
+                this.setLastUpdate(snapshotPayload.updatedAt || snapshotPayload.lastAttemptAt || Date.now());
             })
             .catch(error => {
                 if (token !== this.requestToken) {
@@ -166,6 +199,7 @@ export class JvmViewController {
                 if (error && error.name === 'AbortError') {
                     return;
                 }
+                this.clearBootstrapRetry();
                 this.setStatus(`JVM 采样失败: ${error.message || '网络异常'}`, 'error');
                 this.renderAll();
             })
@@ -175,6 +209,136 @@ export class JvmViewController {
                 }
                 this.controller = null;
             });
+    }
+
+    /**
+     * 确保当前维度已完成活跃心跳登记。
+     *
+     * @param {string} project 项目
+     * @param {string} env 环境
+     * @param {string} service 服务
+     * @param {Object} options fetch 配置
+     * @returns {Promise<void>} 注册结果
+     */
+    ensureActiveRegistration(project, env, service, options) {
+        const queryKey = `${String(project)}#${String(env)}#${String(service)}`;
+        const now = Date.now();
+        if (this.registeredQueryKey === queryKey && now - this.lastRegisterAt < this.registerIntervalMs) {
+            return Promise.resolve();
+        }
+        return this.registerActiveQuery(project, env, service, options).then(() => {
+            this.registeredQueryKey = queryKey;
+            this.lastRegisterAt = Date.now();
+        });
+    }
+
+    /**
+     * 注册当前正在浏览的指标维度。
+     *
+     * @param {string} project 项目
+     * @param {string} env 环境
+     * @param {string} service 服务
+     * @param {Object} options fetch 配置
+     * @returns {Promise<void>} 注册结果
+     */
+    registerActiveQuery(project, env, service, options) {
+        return fetch('/api/metrics/active/register', Object.assign({
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                project: project,
+                env: env,
+                service: service,
+                source: 'jvm'
+            })
+        }, options)).then(response => {
+            if (!response.ok) {
+                throw new Error(`状态码 ${response.status}`);
+            }
+        });
+    }
+
+    /**
+     * 读取主机指标快照。
+     *
+     * @param {string} project 项目
+     * @param {string} env 环境
+     * @param {string} service 服务
+     * @param {Object} options fetch 配置
+     * @returns {Promise<Object>} 指标响应
+     */
+    fetchMetrics(project, env, service, options) {
+        return fetch(`/api/metrics/hosts?project=${encodeURIComponent(project)}&env=${encodeURIComponent(env)}&service=${encodeURIComponent(service)}`, options)
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error(`状态码 ${response.status}`);
+                }
+                return response.json();
+            });
+    }
+
+    /**
+     * 规范化后端快照响应。
+     *
+     * @param {Object} payload 原始响应
+     * @returns {{ready:boolean,stale:boolean,updatedAt:number|null,lastAttemptAt:number|null,lastError:string,metrics:Array<Object>}} 规范化结果
+     */
+    normalizeSnapshotPayload(payload) {
+        const source = payload && typeof payload === 'object' ? payload : {};
+        return {
+            ready: !!source.ready,
+            stale: !!source.stale,
+            updatedAt: Number.isFinite(Number(source.updatedAt)) ? Number(source.updatedAt) : null,
+            lastAttemptAt: Number.isFinite(Number(source.lastAttemptAt)) ? Number(source.lastAttemptAt) : null,
+            lastError: source.lastError ? String(source.lastError) : '',
+            metrics: Array.isArray(source.metrics) ? source.metrics : []
+        };
+    }
+
+    /**
+     * 重置当前维度的注册状态。
+     */
+    resetRegistrationState() {
+        this.registeredQueryKey = '';
+        this.lastRegisterAt = 0;
+    }
+
+    /**
+     * 为首屏“准备中”状态安排一次短间隔补拉。
+     *
+     * @param {string} queryKey 当前查询键
+     */
+    scheduleBootstrapRetry(queryKey) {
+        if (!queryKey || this.isPageHidden() || !this.active) {
+            return;
+        }
+        if (this.bootstrapRetryTimer) {
+            return;
+        }
+        this.bootstrapRetryTimer = window.setTimeout(() => {
+            this.bootstrapRetryTimer = null;
+            const currentProject = String(this.getProject() || '').trim();
+            const currentEnv = String(this.getEnv() || '').trim();
+            const currentService = normalizeServiceGroup(String(this.getService() || '').trim());
+            const currentKey = `${currentProject}#${currentEnv}#${currentService}`;
+            if (!this.active || this.isPageHidden() || currentKey !== queryKey) {
+                return;
+            }
+            this.refresh(true);
+        }, this.bootstrapRetryMs);
+    }
+
+    /**
+     * 清理首屏补拉定时器。
+     */
+    clearBootstrapRetry() {
+        if (!this.bootstrapRetryTimer) {
+            return;
+        }
+        window.clearTimeout(this.bootstrapRetryTimer);
+        this.bootstrapRetryTimer = null;
     }
 
     /**
@@ -222,6 +386,9 @@ export class JvmViewController {
      * 启动轮询。
      */
     startPolling() {
+        if (this.isPageHidden()) {
+            return;
+        }
         this.stopPolling();
         this.timer = window.setInterval(() => this.refresh(false), this.pollMs);
     }
@@ -234,6 +401,38 @@ export class JvmViewController {
             window.clearInterval(this.timer);
             this.timer = null;
         }
+        this.clearBootstrapRetry();
+    }
+
+    /**
+     * 绑定页面显隐事件。
+     */
+    bindVisibilityEvents() {
+        if (this.visibilityEventsBound || typeof document === 'undefined') {
+            return;
+        }
+        this.visibilityEventsBound = true;
+        document.addEventListener('visibilitychange', () => {
+            if (this.isPageHidden()) {
+                this.stopPolling();
+                this.abortRequest();
+                return;
+            }
+            if (!this.active) {
+                return;
+            }
+            this.startPolling();
+            this.refresh(true);
+        });
+    }
+
+    /**
+     * 判断页面当前是否处于后台不可见状态。
+     *
+     * @returns {boolean} true 表示不可见
+     */
+    isPageHidden() {
+        return typeof document !== 'undefined' && !!document.hidden;
     }
 
     /**
@@ -283,7 +482,7 @@ export class JvmViewController {
         });
         instanceEl.innerHTML = '';
         if (!options.length) {
-            instanceEl.add(new Option('当前无实例', ''));
+            instanceEl.add(new Option('指标准备中...', ''));
             return;
         }
         options.forEach(instance => instanceEl.add(new Option(instance, instance)));
