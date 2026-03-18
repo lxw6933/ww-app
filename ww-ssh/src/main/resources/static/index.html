@@ -20,6 +20,10 @@
                             <svg class="btn-icon" aria-hidden="true"><use href="/assets/icons/button-icons.svg#icon-share"></use></svg>
                             <span class="btn-label">分享</span>
                         </button>
+                        <button id="btnConcurrentStreams" type="button" class="secondary icon-btn hidden" title="查看流占用情况" aria-label="查看流占用情况" data-default-label="流占用" data-default-icon="icon-monitor">
+                            <svg class="btn-icon" aria-hidden="true"><use href="/assets/icons/button-icons.svg#icon-monitor"></use></svg>
+                            <span class="btn-label">流占用</span>
+                        </button>
                         <button id="btnImmersiveHeader" type="button" class="secondary icon-btn" title="切换沉浸模式" aria-label="切换沉浸模式" data-default-label="沉浸" data-default-icon="icon-expand">
                             <svg class="btn-icon" aria-hidden="true"><use href="/assets/icons/button-icons.svg#icon-expand"></use></svg>
                             <span class="btn-label">沉浸</span>
@@ -352,6 +356,24 @@
     </div>
 </aside>
 <button id="btnBottom" class="secondary">查看最新</button>
+
+<div id="concurrentStreamsMask" class="stream-usage-mask hidden"></div>
+<section id="concurrentStreamsDialog" class="stream-usage-dialog hidden" aria-hidden="true">
+    <div class="stream-usage-head">
+        <div class="stream-usage-head-copy">
+            <h3>流占用概览</h3>
+            <p>按访问来源 IP 分组展示当前活跃流占用情况</p>
+        </div>
+        <button id="btnCloseConcurrentStreams" type="button" class="secondary settings-action-btn">
+            <svg class="btn-icon" aria-hidden="true"><use href="/assets/icons/button-icons.svg#icon-close"></use></svg>
+            <span class="btn-label">关闭</span>
+        </button>
+    </div>
+    <div id="concurrentStreamsBody" class="stream-usage-body">
+        <div id="concurrentStreamsSummary" class="stream-usage-summary"></div>
+        <div id="concurrentStreamsGroups" class="stream-usage-groups"></div>
+    </div>
+</section>
 
 <script type="module" src="/assets/js/log-panel/app.js"></script>
 </body>

@@ -1,7 +1,9 @@
 package com.ww.app.ssh.service;
 
 import com.ww.app.ssh.config.LogPanelProperties;
+import com.ww.app.ssh.model.ConcurrentStreamUsageSnapshot;
 import com.ww.app.ssh.model.LogStreamRequest;
+import com.ww.app.ssh.model.LogTarget;
 import com.ww.app.ssh.service.support.LogLineFilterMatcher;
 import com.ww.app.ssh.service.support.SshCommandBuilder;
 import org.junit.jupiter.api.Assertions;
@@ -11,6 +13,7 @@ import java.lang.reflect.Method;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
+import java.util.stream.Collectors;
 
 /**
  * {@link SshLogService} cat 快照扫描窗口策略测试。
@@ -229,6 +232,47 @@ class SshLogServiceTest {
     }
 
     /**
+     * 校验并发流概览会按来源 IP 分组，并汇总总量、剩余量与会话数。
+     *
+     * @throws Exception 反射调用异常
+     */
+    @Test
+    void shouldGroupConcurrentStreamUsageByClientIp() throws Exception {
+        LogPanelProperties properties = new LogPanelProperties();
+        properties.setMaxConcurrentStreams(4);
+        SshLogService service = new SshLogService(new SshCommandBuilder(), new LogLineFilterMatcher(), properties);
+
+        invokeRegisterActiveStream(service, "stream-1", "10.0.0.10", "session-a",
+                buildLogTarget("mall", "prod", "mall-basic@node1", "192.168.1.11"),
+                "/data/logs/mall-basic-info.log", "tail");
+        invokeRegisterActiveStream(service, "stream-2", "10.0.0.10", "session-a",
+                buildLogTarget("mall", "prod", "mall-basic@node2", "192.168.1.12"),
+                "/data/logs/mall-basic-error.log", "tail");
+        invokeRegisterActiveStream(service, "stream-3", "10.0.0.11", "session-b",
+                buildLogTarget("mall", "prod", "mall-order@node1", "192.168.1.21"),
+                "/data/logs/mall-order-info.log", "tail");
+
+        ConcurrentStreamUsageSnapshot snapshot = service.getConcurrentStreamUsageSnapshot();
+        Assertions.assertEquals(4, snapshot.getMaxConcurrentStreams());
+        Assertions.assertEquals(3, snapshot.getActiveConcurrentStreams());
+        Assertions.assertEquals(1, snapshot.getRemainingConcurrentStreams());
+        Assertions.assertEquals(2, snapshot.getActiveClientIpCount());
+        Assertions.assertEquals(2, snapshot.getIpGroups().size());
+        Assertions.assertEquals("10.0.0.10", snapshot.getIpGroups().get(0).getClientIp());
+        Assertions.assertEquals(2, snapshot.getIpGroups().get(0).getStreamCount());
+        Assertions.assertEquals(1, snapshot.getIpGroups().get(0).getSessionCount());
+        Assertions.assertEquals("10.0.0.11", snapshot.getIpGroups().get(1).getClientIp());
+        Assertions.assertEquals(1, snapshot.getIpGroups().get(1).getStreamCount());
+        Assertions.assertEquals(1, snapshot.getIpGroups().get(1).getSessionCount());
+
+        List<String> services = snapshot.getIpGroups().get(0).getStreams().stream()
+                .map(ConcurrentStreamUsageSnapshot.StreamUsageItem::getService)
+                .collect(Collectors.toList());
+        Assertions.assertTrue(services.contains("mall-basic@node1"));
+        Assertions.assertTrue(services.contains("mall-basic@node2"));
+    }
+
+    /**
      * 通过反射调用私有方法，验证 cat 扫描窗口计算结果。
      *
      * @param requestedLines 请求展示行数
@@ -339,6 +383,31 @@ class SshLogServiceTest {
     }
 
     /**
+     * 通过反射登记一条活跃并发流。
+     *
+     * @param service 被测服务
+     * @param streamId 流唯一标识
+     * @param clientIp 客户端来源 IP
+     * @param sessionId WebSocket 会话 ID
+     * @param target 目标服务
+     * @param filePath 实际读取的文件路径
+     * @param readMode 读取模式
+     * @throws Exception 反射调用异常
+     */
+    private void invokeRegisterActiveStream(SshLogService service,
+                                            String streamId,
+                                            String clientIp,
+                                            String sessionId,
+                                            LogTarget target,
+                                            String filePath,
+                                            String readMode) throws Exception {
+        Method method = SshLogService.class.getDeclaredMethod("registerActiveStream",
+                String.class, String.class, String.class, LogTarget.class, String.class, String.class);
+        method.setAccessible(true);
+        method.invoke(service, streamId, clientIp, sessionId, target, filePath, readMode);
+    }
+
+    /**
      * 构建过滤规则对象。
      *
      * @param type 规则类型
@@ -368,5 +437,18 @@ class SshLogServiceTest {
         serverNode.setUsername(username);
         serverNode.setPassword(password);
         return serverNode;
+    }
+
+    /**
+     * 构建测试用日志目标。
+     *
+     * @param project 项目名称
+     * @param env 环境名称
+     * @param service 服务名称
+     * @param host 目标主机地址
+     * @return 日志目标
+     */
+    private LogTarget buildLogTarget(String project, String env, String service, String host) {
+        return new LogTarget(project, env, service, buildServerNode(host, 22, "app", "pwd"));
     }
 }

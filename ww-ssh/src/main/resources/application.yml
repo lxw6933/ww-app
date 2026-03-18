@@ -34,7 +34,7 @@ bcm:
 app:
   # 单实例允许同时承载的实时日志流上限。
   # 每个被订阅的实例日志会占用 1 条流，例如“全部服务”订阅会按命中的实例数累加占用。
-  maxConcurrentStreams: 2
+  maxConcurrentStreams: 96
   # 推荐结构：app.projects.<project>.<env>.<service>。
   # 兼容说明：若仍使用 app.servers，系统会自动归并到 default 项目。
   projects:

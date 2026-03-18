@@ -5,6 +5,7 @@ import com.jcraft.jsch.JSch;
 import com.jcraft.jsch.JSchException;
 import com.jcraft.jsch.Session;
 import com.ww.app.ssh.config.LogPanelProperties;
+import com.ww.app.ssh.model.ConcurrentStreamUsageSnapshot;
 import com.ww.app.ssh.model.HostMetricSnapshot;
 import com.ww.app.ssh.model.InstanceOperationRequest;
 import com.ww.app.ssh.model.LogStreamRequest;
@@ -205,6 +206,15 @@ public class SshLogService {
      * 当前活跃 tail 流数量。
      */
     private final AtomicInteger activeStreamCount = new AtomicInteger(0);
+
+    /**
+     * 当前活跃并发流登记表。
+     * <p>
+     * 该表以“单条实际占用的日志流”为粒度登记，便于按客户端 IP、
+     * WebSocket 会话和目标服务进行分组展示。
+     * </p>
+     */
+    private final Map<String, ActiveStreamRegistration> activeStreamRegistry = new java.util.concurrent.ConcurrentHashMap<>();
 
     /**
      * 单实例允许同时承载的实时日志流上限。
@@ -478,6 +488,24 @@ public class SshLogService {
      * @return 可关闭的流句柄
      */
     public StreamHandle startStreaming(LogTarget target, LogStreamRequest request, Consumer<String> lineConsumer) {
+        return startStreaming(target, request, "unknown", "", lineConsumer);
+    }
+
+    /**
+     * 启动单个目标的实时日志流。
+     *
+     * @param target       目标服务节点
+     * @param request      日志订阅请求
+     * @param clientIp     客户端来源 IP
+     * @param sessionId    WebSocket 会话 ID
+     * @param lineConsumer 日志行消费回调
+     * @return 可关闭的流句柄
+     */
+    public StreamHandle startStreaming(LogTarget target,
+                                       LogStreamRequest request,
+                                       String clientIp,
+                                       String sessionId,
+                                       Consumer<String> lineConsumer) {
         String resolvedFile = resolveLogFilePath(target, request.normalizedFilePath());
         List<LogStreamRequest.FilterRule> filterRules = resolveEffectiveRules(request);
         boolean hasIncludeRule = hasIncludeFilterRule(filterRules);
@@ -520,8 +548,10 @@ public class SshLogService {
         activeStreamCount.incrementAndGet();
         AtomicBoolean streamReleased = new AtomicBoolean(false);
         ExecChannelContext channelContext = null;
+        String streamId = UUID.randomUUID().toString();
         try {
             channelContext = openExecChannel(target, command);
+            registerActiveStream(streamId, clientIp, sessionId, target, resolvedFile, request.normalizedReadMode());
             ChannelExec finalChannel = channelContext.getChannel();
             InputStream finalInputStream = channelContext.getInputStream();
             List<LogStreamRequest.FilterRule> finalFilterRules = filterRules;
@@ -534,20 +564,98 @@ public class SshLogService {
                                     lineConsumer);
                         } finally {
                             disconnectQuietly(finalChannel);
-                            releaseStreamSlot(streamReleased);
+                            releaseStreamSlot(streamReleased, streamId);
                         }
                     });
             return new StreamHandle(target, resolvedFile, streamTask, finalChannel,
-                    () -> releaseStreamSlot(streamReleased));
+                    () -> releaseStreamSlot(streamReleased, streamId));
         } catch (RejectedExecutionException ex) {
             disconnectQuietly(channelContext == null ? null : channelContext.getChannel());
-            releaseStreamSlot(streamReleased);
+            releaseStreamSlot(streamReleased, streamId);
             throw new IllegalStateException("当前实时日志订阅数已达上限(" + maxConcurrentStreams + ")，请稍后重试", ex);
         } catch (Exception ex) {
             disconnectQuietly(channelContext == null ? null : channelContext.getChannel());
-            releaseStreamSlot(streamReleased);
+            releaseStreamSlot(streamReleased, streamId);
             throw new IllegalStateException("启动日志流失败: " + target.displayName() + " - " + ex.getMessage(), ex);
         }
+    }
+
+    /**
+     * 构建当前实时并发流使用快照。
+     * <p>
+     * 快照结果按客户端 IP 聚合，并包含每条活跃流的基础定位信息，
+     * 便于快速判断是谁占用了并发流槽位、占用了哪些目标服务。
+     * </p>
+     *
+     * @return 当前并发流使用快照
+     */
+    public ConcurrentStreamUsageSnapshot getConcurrentStreamUsageSnapshot() {
+        List<ActiveStreamRegistration> registrations = new ArrayList<>(activeStreamRegistry.values());
+        registrations.sort(Comparator.comparing(ActiveStreamRegistration::getClientIp)
+                .thenComparingLong(ActiveStreamRegistration::getStartedAt)
+                .thenComparing(ActiveStreamRegistration::getStreamId));
+
+        Map<String, List<ActiveStreamRegistration>> grouped = new LinkedHashMap<>();
+        for (ActiveStreamRegistration registration : registrations) {
+            grouped.computeIfAbsent(registration.getClientIp(), key -> new ArrayList<>()).add(registration);
+        }
+
+        List<Map.Entry<String, List<ActiveStreamRegistration>>> groupEntries = new ArrayList<>(grouped.entrySet());
+        groupEntries.sort((left, right) -> {
+            int countCompare = Integer.compare(right.getValue().size(), left.getValue().size());
+            if (countCompare != 0) {
+                return countCompare;
+            }
+            return left.getKey().compareTo(right.getKey());
+        });
+
+        List<ConcurrentStreamUsageSnapshot.IpUsageGroup> groups = new ArrayList<>();
+        for (Map.Entry<String, List<ActiveStreamRegistration>> entry : groupEntries) {
+            List<ActiveStreamRegistration> groupRegistrations = entry.getValue();
+            groupRegistrations.sort(Comparator.comparingLong(ActiveStreamRegistration::getStartedAt)
+                    .thenComparing(ActiveStreamRegistration::getStreamId));
+
+            ConcurrentStreamUsageSnapshot.IpUsageGroup group = new ConcurrentStreamUsageSnapshot.IpUsageGroup();
+            group.setClientIp(entry.getKey());
+            group.setStreamCount(groupRegistrations.size());
+
+            Set<String> sessionIds = new LinkedHashSet<>();
+            long firstStartedAt = 0L;
+            List<ConcurrentStreamUsageSnapshot.StreamUsageItem> items = new ArrayList<>();
+            for (ActiveStreamRegistration registration : groupRegistrations) {
+                if (!trimToEmpty(registration.getSessionId()).isEmpty()) {
+                    sessionIds.add(registration.getSessionId());
+                }
+                if (firstStartedAt <= 0L || registration.getStartedAt() < firstStartedAt) {
+                    firstStartedAt = registration.getStartedAt();
+                }
+                ConcurrentStreamUsageSnapshot.StreamUsageItem item =
+                        new ConcurrentStreamUsageSnapshot.StreamUsageItem();
+                item.setStreamId(registration.getStreamId());
+                item.setSessionId(registration.getSessionId());
+                item.setProject(registration.getProject());
+                item.setEnv(registration.getEnv());
+                item.setService(registration.getService());
+                item.setHost(registration.getHost());
+                item.setFilePath(registration.getFilePath());
+                item.setReadMode(registration.getReadMode());
+                item.setStartedAt(registration.getStartedAt());
+                items.add(item);
+            }
+            group.setSessionCount(sessionIds.size());
+            group.setFirstStartedAt(firstStartedAt);
+            group.setStreams(items);
+            groups.add(group);
+        }
+
+        ConcurrentStreamUsageSnapshot snapshot = new ConcurrentStreamUsageSnapshot();
+        snapshot.setMaxConcurrentStreams(maxConcurrentStreams);
+        snapshot.setActiveConcurrentStreams(registrations.size());
+        snapshot.setRemainingConcurrentStreams(Math.max(0, maxConcurrentStreams - registrations.size()));
+        snapshot.setActiveClientIpCount(groups.size());
+        snapshot.setUpdatedAt(System.currentTimeMillis());
+        snapshot.setIpGroups(groups);
+        return snapshot;
     }
 
     /**
@@ -1778,11 +1886,48 @@ public class SshLogService {
      *
      * @param released 释放标记
      */
-    private void releaseStreamSlot(AtomicBoolean released) {
+    private void releaseStreamSlot(AtomicBoolean released, String streamId) {
         if (released != null && released.compareAndSet(false, true)) {
+            if (!trimToEmpty(streamId).isEmpty()) {
+                activeStreamRegistry.remove(streamId);
+            }
             streamPermits.release();
             activeStreamCount.updateAndGet(current -> current <= 0 ? 0 : current - 1);
         }
+    }
+
+    /**
+     * 登记一条活跃并发流。
+     *
+     * @param streamId 流唯一标识
+     * @param clientIp 客户端来源 IP
+     * @param sessionId WebSocket 会话 ID
+     * @param target 目标服务节点
+     * @param filePath 实际读取的日志文件路径
+     * @param readMode 读取模式
+     */
+    private void registerActiveStream(String streamId,
+                                      String clientIp,
+                                      String sessionId,
+                                      LogTarget target,
+                                      String filePath,
+                                      String readMode) {
+        if (trimToEmpty(streamId).isEmpty() || target == null) {
+            return;
+        }
+        ActiveStreamRegistration registration = new ActiveStreamRegistration(
+                streamId,
+                trimToEmpty(clientIp).isEmpty() ? "unknown" : trimToEmpty(clientIp),
+                trimToEmpty(sessionId),
+                trimToEmpty(target.getProject()),
+                trimToEmpty(target.getEnv()),
+                trimToEmpty(target.getService()),
+                target.getServerNode() == null ? "" : trimToEmpty(target.getServerNode().getHost()),
+                trimToEmpty(filePath),
+                trimToEmpty(readMode),
+                System.currentTimeMillis()
+        );
+        activeStreamRegistry.put(streamId, registration);
     }
 
     /**
@@ -2488,6 +2633,188 @@ public class SshLogService {
 
         private InputStream getInputStream() {
             return inputStream;
+        }
+    }
+
+    /**
+     * 活跃并发流登记信息。
+     */
+    private static class ActiveStreamRegistration {
+
+        /**
+         * 流唯一标识。
+         */
+        private final String streamId;
+
+        /**
+         * 客户端来源 IP。
+         */
+        private final String clientIp;
+
+        /**
+         * WebSocket 会话 ID。
+         */
+        private final String sessionId;
+
+        /**
+         * 项目名称。
+         */
+        private final String project;
+
+        /**
+         * 环境名称。
+         */
+        private final String env;
+
+        /**
+         * 服务名称或实例键。
+         */
+        private final String service;
+
+        /**
+         * 目标主机地址。
+         */
+        private final String host;
+
+        /**
+         * 实际读取的日志文件路径。
+         */
+        private final String filePath;
+
+        /**
+         * 读取模式。
+         */
+        private final String readMode;
+
+        /**
+         * 流开始时间戳。
+         */
+        private final long startedAt;
+
+        /**
+         * 构造方法。
+         *
+         * @param streamId 流唯一标识
+         * @param clientIp 客户端来源 IP
+         * @param sessionId WebSocket 会话 ID
+         * @param project 项目名称
+         * @param env 环境名称
+         * @param service 服务名称或实例键
+         * @param host 目标主机地址
+         * @param filePath 实际读取的日志文件路径
+         * @param readMode 读取模式
+         * @param startedAt 流开始时间戳
+         */
+        private ActiveStreamRegistration(String streamId,
+                                         String clientIp,
+                                         String sessionId,
+                                         String project,
+                                         String env,
+                                         String service,
+                                         String host,
+                                         String filePath,
+                                         String readMode,
+                                         long startedAt) {
+            this.streamId = streamId;
+            this.clientIp = clientIp;
+            this.sessionId = sessionId;
+            this.project = project;
+            this.env = env;
+            this.service = service;
+            this.host = host;
+            this.filePath = filePath;
+            this.readMode = readMode;
+            this.startedAt = startedAt;
+        }
+
+        /**
+         * 获取流唯一标识。
+         *
+         * @return 流唯一标识
+         */
+        private String getStreamId() {
+            return streamId;
+        }
+
+        /**
+         * 获取客户端来源 IP。
+         *
+         * @return 客户端来源 IP
+         */
+        private String getClientIp() {
+            return clientIp;
+        }
+
+        /**
+         * 获取 WebSocket 会话 ID。
+         *
+         * @return WebSocket 会话 ID
+         */
+        private String getSessionId() {
+            return sessionId;
+        }
+
+        /**
+         * 获取项目名称。
+         *
+         * @return 项目名称
+         */
+        private String getProject() {
+            return project;
+        }
+
+        /**
+         * 获取环境名称。
+         *
+         * @return 环境名称
+         */
+        private String getEnv() {
+            return env;
+        }
+
+        /**
+         * 获取服务名称或实例键。
+         *
+         * @return 服务名称或实例键
+         */
+        private String getService() {
+            return service;
+        }
+
+        /**
+         * 获取目标主机地址。
+         *
+         * @return 目标主机地址
+         */
+        private String getHost() {
+            return host;
+        }
+
+        /**
+         * 获取实际读取的日志文件路径。
+         *
+         * @return 日志文件路径
+         */
+        private String getFilePath() {
+            return filePath;
+        }
+
+        /**
+         * 获取读取模式。
+         *
+         * @return 读取模式
+         */
+        private String getReadMode() {
+            return readMode;
+        }
+
+        /**
+         * 获取流开始时间戳。
+         *
+         * @return 流开始时间戳
+         */
+        private long getStartedAt() {
+            return startedAt;
         }
     }
 

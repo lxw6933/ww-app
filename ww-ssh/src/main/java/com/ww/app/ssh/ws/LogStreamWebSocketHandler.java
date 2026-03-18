@@ -206,7 +206,12 @@ public class LogStreamWebSocketHandler extends TextWebSocketHandler {
         streamContexts.put(session.getId(), new StreamContext(handles));
         for (LogTarget target : targets) {
             try {
-                SshLogService.StreamHandle handle = sshLogService.startStreaming(target, request, line -> {
+                SshLogService.StreamHandle handle = sshLogService.startStreaming(
+                        target,
+                        request,
+                        clientIp,
+                        session.getId(),
+                        line -> {
                     if (!sendLogLine(session, line)) {
                         throw new SessionClosedException("WebSocket连接已不可用");
                     }
