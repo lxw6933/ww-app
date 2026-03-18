@@ -203,6 +203,32 @@ class SshLogServiceTest {
     }
 
     /**
+     * 校验未配置或配置非法时，会回退到默认实时流上限 48。
+     *
+     * @throws Exception 反射调用异常
+     */
+    @Test
+    void shouldFallbackToDefaultMaxConcurrentStreamsWhenConfigInvalid() throws Exception {
+        LogPanelProperties properties = new LogPanelProperties();
+        properties.setMaxConcurrentStreams(0);
+        SshLogService service = new SshLogService(new SshCommandBuilder(), new LogLineFilterMatcher(), properties);
+        Assertions.assertEquals(48, invokeReadMaxConcurrentStreams(service));
+    }
+
+    /**
+     * 校验可通过配置覆盖实时流上限。
+     *
+     * @throws Exception 反射调用异常
+     */
+    @Test
+    void shouldUseConfiguredMaxConcurrentStreams() throws Exception {
+        LogPanelProperties properties = new LogPanelProperties();
+        properties.setMaxConcurrentStreams(96);
+        SshLogService service = new SshLogService(new SshCommandBuilder(), new LogLineFilterMatcher(), properties);
+        Assertions.assertEquals(96, invokeReadMaxConcurrentStreams(service));
+    }
+
+    /**
      * 通过反射调用私有方法，验证 cat 扫描窗口计算结果。
      *
      * @param requestedLines 请求展示行数
@@ -297,6 +323,19 @@ class SshLogServiceTest {
             }
             throw ex;
         }
+    }
+
+    /**
+     * 通过反射读取实时流上限字段。
+     *
+     * @param service 被测服务
+     * @return 实时流上限
+     * @throws Exception 反射调用异常
+     */
+    private int invokeReadMaxConcurrentStreams(SshLogService service) throws Exception {
+        java.lang.reflect.Field field = SshLogService.class.getDeclaredField("maxConcurrentStreams");
+        field.setAccessible(true);
+        return (Integer) field.get(service);
     }
 
     /**

@@ -13,6 +13,7 @@ import com.ww.app.ssh.service.support.LogLineFilterMatcher;
 import com.ww.app.ssh.service.support.SshCommandBuilder;
 import lombok.Getter;
 import lombok.NonNull;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import javax.annotation.PreDestroy;
@@ -40,14 +41,6 @@ public class SshLogService {
      * </p>
      */
     private static final long LOG_FILE_CACHE_TTL_MS = 60_000L;
-
-    /**
-     * 单机可同时承载的实时 tail 流上限。
-     * <p>
-     * tail 流属于长连接任务，线程会长期占用；这里做全局限流，避免单机线程被日志面板打满。
-     * </p>
-     */
-    private static final int MAX_CONCURRENT_STREAMS = 48;
 
     /**
      * 实例运维命令退出码回显标记。
@@ -181,20 +174,12 @@ public class SshLogService {
     /**
      * 流式读取线程池。
      */
-    private final ExecutorService streamExecutor = new ThreadPoolExecutor(
-            0,
-            MAX_CONCURRENT_STREAMS,
-            60L,
-            TimeUnit.SECONDS,
-            new SynchronousQueue<>(),
-            new NamedThreadFactory(),
-            new ThreadPoolExecutor.AbortPolicy()
-    );
+    private final ExecutorService streamExecutor;
 
     /**
      * 实时日志流并发信号量。
      */
-    private final Semaphore streamPermits = new Semaphore(MAX_CONCURRENT_STREAMS);
+    private final Semaphore streamPermits;
 
     /**
      * 当前活跃 tail 流数量。
@@ -202,14 +187,43 @@ public class SshLogService {
     private final AtomicInteger activeStreamCount = new AtomicInteger(0);
 
     /**
+     * 单实例允许同时承载的实时日志流上限。
+     */
+    private final int maxConcurrentStreams;
+
+    /**
      * 构造方法。
      *
      * @param sshCommandBuilder    SSH 命令构建器
      * @param logLineFilterMatcher 日志行过滤匹配器
      */
-    public SshLogService(SshCommandBuilder sshCommandBuilder, LogLineFilterMatcher logLineFilterMatcher) {
+    @Autowired
+    public SshLogService(SshCommandBuilder sshCommandBuilder,
+                         LogLineFilterMatcher logLineFilterMatcher,
+                         LogPanelProperties logPanelProperties) {
         this.sshCommandBuilder = sshCommandBuilder;
         this.logLineFilterMatcher = logLineFilterMatcher;
+        this.maxConcurrentStreams = resolveMaxConcurrentStreams(logPanelProperties);
+        this.streamExecutor = new ThreadPoolExecutor(
+                0,
+                this.maxConcurrentStreams,
+                60L,
+                TimeUnit.SECONDS,
+                new SynchronousQueue<>(),
+                new NamedThreadFactory(),
+                new ThreadPoolExecutor.AbortPolicy()
+        );
+        this.streamPermits = new Semaphore(this.maxConcurrentStreams);
+    }
+
+    /**
+     * 供单元测试使用的简化构造方法。
+     *
+     * @param sshCommandBuilder    SSH 命令构建器
+     * @param logLineFilterMatcher 日志行过滤匹配器
+     */
+    SshLogService(SshCommandBuilder sshCommandBuilder, LogLineFilterMatcher logLineFilterMatcher) {
+        this(sshCommandBuilder, logLineFilterMatcher, new LogPanelProperties());
     }
 
     /**
@@ -245,6 +259,23 @@ public class SshLogService {
         List<String> files = new ArrayList<>(deduplicated);
         logFileCache.put(cacheKey, new LogFileCacheEntry(files, now + LOG_FILE_CACHE_TTL_MS));
         return new ArrayList<>(files);
+    }
+
+    /**
+     * 解析实时日志流并发上限。
+     * <p>
+     * 当配置值为空或小于 1 时，回退到默认值 48，避免错误配置导致服务不可用。
+     * </p>
+     *
+     * @param properties 配置属性
+     * @return 实际生效的并发上限
+     */
+    private int resolveMaxConcurrentStreams(LogPanelProperties properties) {
+        if (properties == null || properties.getMaxConcurrentStreams() == null
+                || properties.getMaxConcurrentStreams() <= 0) {
+            return 48;
+        }
+        return properties.getMaxConcurrentStreams();
     }
 
     /**
@@ -461,10 +492,10 @@ public class SshLogService {
         String command = hasContextWindow
                 ? sshCommandBuilder.buildTailFollowCommand(resolvedFile)
                 : (hasIncludeRule
-                ? sshCommandBuilder.buildTailFollowGrepPrefilterCommand(resolvedFile, filterRules)
-                : sshCommandBuilder.buildTailCommand(resolvedFile, request.normalizedLines()));
+                    ? sshCommandBuilder.buildTailFollowGrepPrefilterCommand(resolvedFile, filterRules)
+                    : sshCommandBuilder.buildTailCommand(resolvedFile, request.normalizedLines()));
         if (!streamPermits.tryAcquire()) {
-            throw new IllegalStateException("当前实时日志订阅数已达上限(" + MAX_CONCURRENT_STREAMS + ")，请稍后重试");
+            throw new IllegalStateException("当前实时日志订阅数已达上限(" + maxConcurrentStreams + ")，请稍后重试");
         }
         activeStreamCount.incrementAndGet();
         AtomicBoolean streamReleased = new AtomicBoolean(false);
@@ -491,7 +522,7 @@ public class SshLogService {
         } catch (RejectedExecutionException ex) {
             disconnectQuietly(channelContext == null ? null : channelContext.getChannel());
             releaseStreamSlot(streamReleased);
-            throw new IllegalStateException("当前实时日志订阅数已达上限(" + MAX_CONCURRENT_STREAMS + ")，请稍后重试", ex);
+            throw new IllegalStateException("当前实时日志订阅数已达上限(" + maxConcurrentStreams + ")，请稍后重试", ex);
         } catch (Exception ex) {
             disconnectQuietly(channelContext == null ? null : channelContext.getChannel());
             releaseStreamSlot(streamReleased);

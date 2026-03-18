@@ -26,6 +26,16 @@ public class LogPanelProperties {
     public static final String DEFAULT_PROJECT = "default";
 
     /**
+     * 单实例允许同时承载的实时日志流上限。
+     * <p>
+     * 每个被订阅的实例日志会占用 1 条实时流，
+     * 例如“全部服务”订阅会按命中的实例数叠加占用。
+     * 该值越大，对本机线程与 SSH 长连接的占用越高。
+     * </p>
+     */
+    private Integer maxConcurrentStreams = 48;
+
+    /**
      * 兼容旧版配置：环境 -> 服务 -> 节点。
      * <p>
      * 当未配置 {@link #projects} 时，系统会将该映射自动归并到
