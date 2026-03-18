@@ -89,6 +89,24 @@ public class SshCommandBuilder {
     }
 
     /**
+     * 构建 tail 从“当前时刻开始”实时跟随的命令。
+     * <p>
+     * 该命令不回放历史窗口，仅订阅连接建立后的新增日志。
+     * 主要用于“已通过 cat/快照完成历史预读，再切换到 tail 持续追踪”的场景，
+     * 避免重复输出最后 N 行历史内容。
+     * </p>
+     *
+     * @param filePath 日志文件路径
+     * @return Shell 命令
+     */
+    public String buildTailFollowCommand(String filePath) {
+        String quotedPath = shellQuote(filePath);
+        String commandWithF = "tail -n 0 -F " + quotedPath + " 2>&1";
+        String commandWithf = "tail -n 0 -f " + quotedPath + " 2>&1";
+        return "(" + commandWithF + " || " + commandWithf + ")";
+    }
+
+    /**
      * 构建 cat 快照读取命令（一次性输出并结束）。
      * <p>
      * 为了避免读取超大文件造成阻塞，实际采用 {@code tail -n} 截取最新 N 行，

@@ -307,6 +307,7 @@ function bindEvents() {
     if (beforeLinesEl) {
         beforeLinesEl.addEventListener('change', () => {
             preferenceStore.set('beforeLines', clampContextLines(value('beforeLines')));
+            updateContextLineControls();
             scheduleTailSubscriptionRefresh();
         });
     }
@@ -314,6 +315,7 @@ function bindEvents() {
     if (afterLinesEl) {
         afterLinesEl.addEventListener('change', () => {
             preferenceStore.set('afterLines', clampContextLines(value('afterLines')));
+            updateContextLineControls();
             scheduleTailSubscriptionRefresh();
         });
     }

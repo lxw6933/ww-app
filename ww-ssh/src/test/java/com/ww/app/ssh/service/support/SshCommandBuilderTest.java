@@ -50,6 +50,18 @@ class SshCommandBuilderTest {
     }
 
     /**
+     * 校验 tail 实时跟随命令会从当前时刻开始订阅，避免重复回放历史窗口。
+     */
+    @Test
+    void shouldBuildTailFollowCommandFromCurrentTime() {
+        SshCommandBuilder builder = new SshCommandBuilder();
+        String command = builder.buildTailFollowCommand("/data/logs/app.log");
+        Assertions.assertTrue(command.contains("tail -n 0 -F"));
+        Assertions.assertTrue(command.contains("||"));
+        Assertions.assertTrue(command.contains("tail -n 0 -f"));
+    }
+
+    /**
      * 校验 cat grep 预筛命令会基于包含规则拼接 grep 条件。
      */
     @Test
@@ -103,6 +115,32 @@ class SshCommandBuilderTest {
     /**
      * 校验磁盘指标采集命令包含根分区采集与百分比处理逻辑。
      */
+    /**
+     * 校验 cat 上下文窗口命令会基于完整过滤规则生成 awk 命中条件，
+     * 先识别 include && !exclude 的命中行，再围绕命中行输出原始上下文。
+     */
+    @Test
+    void shouldBuildCatContextWindowCommandWithFullRuleSemantics() {
+        SshCommandBuilder builder = new SshCommandBuilder();
+
+        LogStreamRequest.FilterRule include = new LogStreamRequest.FilterRule();
+        include.setType(LogStreamRequest.FILTER_TYPE_INCLUDE);
+        include.setData("ERROR&&orderId");
+
+        LogStreamRequest.FilterRule exclude = new LogStreamRequest.FilterRule();
+        exclude.setType(LogStreamRequest.FILTER_TYPE_EXCLUDE);
+        exclude.setData("DEBUG");
+
+        String command = builder.buildCatContextWindowCommand(
+                "/data/logs/app.log", Arrays.asList(include, exclude), 10, 10, 200);
+        Assertions.assertTrue(command.contains("awk -v B=10 -v A=10 -v CAP=200"));
+        Assertions.assertTrue(command.contains("index($0,\"ERROR\")>0"));
+        Assertions.assertTrue(command.contains("index($0,\"orderId\")>0"));
+        Assertions.assertTrue(command.contains("index($0,\"DEBUG\")>0"));
+        Assertions.assertTrue(command.contains("&& !("));
+        Assertions.assertTrue(command.contains("cat '/data/logs/app.log' 2>&1"));
+    }
+
     @Test
     void shouldBuildDiskUsageCommand() {
         SshCommandBuilder builder = new SshCommandBuilder();

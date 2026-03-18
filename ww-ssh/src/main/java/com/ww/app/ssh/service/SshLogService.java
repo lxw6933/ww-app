@@ -389,7 +389,16 @@ public class SshLogService {
         int afterLines = request.normalizedAfterLines();
         boolean hasContextWindow = hasIncludeRule && (beforeLines > 0 || afterLines > 0);
 
-        if (hasIncludeRule) {
+        if (hasContextWindow) {
+            try {
+                List<String> bootstrapLines = readByCat(target, request);
+                for (String line : bootstrapLines) {
+                    lineConsumer.accept(line);
+                }
+            } catch (Exception ex) {
+                lineConsumer.accept("[系统提示] 历史前后文预读失败，已切换到实时追踪: " + ex.getMessage());
+            }
+        } else if (hasIncludeRule) {
             try {
                 List<String> bootstrapLines = readByCatByGrepPrefilter(
                         target, resolvedFile, filterRules, request.normalizedLines());
@@ -401,10 +410,11 @@ public class SshLogService {
             }
         }
 
-        // 存在上下文窗口时，需要保留完整 tail 输出，由本地 matcher 负责命中与上下文控制；
-        // 否则可继续使用远端 grep 预筛，降低网络与解析开销。
+        // 存在上下文窗口时，历史部分已通过 cat 预读完成，此处仅从“当前时刻”继续跟随新增日志，
+        // 避免重复回放最后 N 行历史窗口。
+        // 否则可继续使用原有 tail 回放/远端 grep 预筛策略，降低网络与解析开销。
         String command = hasContextWindow
-                ? sshCommandBuilder.buildTailCommand(resolvedFile, request.normalizedLines())
+                ? sshCommandBuilder.buildTailFollowCommand(resolvedFile)
                 : (hasIncludeRule
                     ? sshCommandBuilder.buildTailFollowGrepPrefilterCommand(resolvedFile, filterRules)
                     : sshCommandBuilder.buildTailCommand(resolvedFile, request.normalizedLines()));
@@ -470,7 +480,7 @@ public class SshLogService {
         // 有上下文窗口且存在 include 过滤词时：按“全文 cat | grep 过滤词 -B/-A”的语义执行。
         if (hasContextWindow) {
             int capLines = resolveCatContextOutputCap(lines, beforeLines, afterLines);
-            String fullScanCommand = sshCommandBuilder.buildCatGrepContextWindowCommand(
+            String fullScanCommand = sshCommandBuilder.buildCatContextWindowCommand(
                     resolvedFile, filterRules, beforeLines, afterLines, capLines);
             List<String> windowLines = executeCommandForLines(target, fullScanCommand, capLines + 20);
             return trimToWindow(windowLines, lines);
