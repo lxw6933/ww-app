@@ -3,6 +3,7 @@ package com.ww.mall.promotion.engine;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.ww.app.common.exception.ApiException;
 import com.ww.mall.promotion.engine.model.GroupCacheSnapshot;
+import com.ww.mall.promotion.engine.model.GroupMemberCacheSnapshot;
 import com.ww.mall.promotion.entity.group.GroupInstance;
 import com.ww.mall.promotion.entity.group.GroupMember;
 import com.ww.mall.promotion.key.GroupRedisKeyBuilder;
@@ -10,7 +11,6 @@ import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Component;
 
 import javax.annotation.Resource;
-import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
@@ -117,11 +117,8 @@ public class GroupRedisStateReader {
         instance.setExpireTime(getDate(metaMap, "expireTime"));
         instance.setCompleteTime(getDate(metaMap, "completeTime"));
         instance.setFailedTime(getDate(metaMap, "failedTime"));
-        instance.setGroupPrice(getDecimal(metaMap, "groupPrice"));
         instance.setSpuId(getLong(metaMap, "spuId"));
-        instance.setSkuId(getLong(metaMap, "skuId"));
         instance.setFailReason(getString(metaMap, "failReason"));
-        instance.setLastEventId(getString(metaMap, "lastEventId"));
         instance.setCreateTime(getDate(metaMap, "createTime"));
         instance.setUpdateTime(getDate(metaMap, "updateTime"));
         instance.setSkuIds(members.stream()
@@ -143,7 +140,22 @@ public class GroupRedisStateReader {
      */
     private GroupMember buildMember(String memberJson) {
         try {
-            return objectMapper.readValue(memberJson, GroupMember.class);
+            GroupMemberCacheSnapshot cacheSnapshot = objectMapper.readValue(memberJson, GroupMemberCacheSnapshot.class);
+            GroupMember member = new GroupMember();
+            member.setGroupInstanceId(cacheSnapshot.getGroupInstanceId());
+            member.setUserId(cacheSnapshot.getUserId());
+            member.setOrderId(cacheSnapshot.getOrderId());
+            member.setIsLeader(cacheSnapshot.getIsLeader());
+            member.setJoinTime(toDate(cacheSnapshot.getJoinTime()));
+            member.setPayAmount(cacheSnapshot.getPayAmount());
+            member.setSkuId(cacheSnapshot.getSkuId());
+            member.setMemberStatus(cacheSnapshot.getMemberStatus());
+            member.setAfterSaleId(cacheSnapshot.getAfterSaleId());
+            member.setLatestTrajectory(cacheSnapshot.getLatestTrajectory());
+            member.setLatestTrajectoryTime(toDate(cacheSnapshot.getLatestTrajectoryTime()));
+            member.setCreateTime(member.getJoinTime());
+            member.setUpdateTime(member.getLatestTrajectoryTime() != null ? member.getLatestTrajectoryTime() : member.getJoinTime());
+            return member;
         } catch (Exception e) {
             throw new IllegalStateException("拼团成员缓存反序列化失败", e);
         }
@@ -179,6 +191,16 @@ public class GroupRedisStateReader {
         Date leftValue = left != null ? left : new Date(0L);
         Date rightValue = right != null ? right : new Date(0L);
         return leftValue.compareTo(rightValue);
+    }
+
+    /**
+     * 毫秒值转日期。
+     *
+     * @param millis 毫秒值
+     * @return 日期
+     */
+    private Date toDate(Long millis) {
+        return millis == null || millis <= 0 ? null : new Date(millis);
     }
 
     /**
@@ -227,18 +249,6 @@ public class GroupRedisStateReader {
     private Date getDate(Map<Object, Object> map, String key) {
         Long millis = getLong(map, key);
         return millis == null || millis <= 0 ? null : new Date(millis);
-    }
-
-    /**
-     * 读取金额。
-     *
-     * @param map 数据Map
-     * @param key 字段名
-     * @return 金额
-     */
-    private BigDecimal getDecimal(Map<Object, Object> map, String key) {
-        String value = getString(map, key);
-        return hasText(value) ? new BigDecimal(value) : null;
     }
 
     /**

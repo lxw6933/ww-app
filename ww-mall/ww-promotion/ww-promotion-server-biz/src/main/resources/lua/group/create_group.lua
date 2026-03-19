@@ -22,18 +22,16 @@ ARGV:
 3. userId
 4. orderId
 5. requiredSize
-6. groupPrice
-7. spuId
-8. skuId
-9. memberJson
-10. nowMillis
-11. expireTimeMillis
-12. limitPerUser
-13. activityUserCountField，例如 ACT_1001:20001
-14. retainSeconds
+6. spuId
+7. memberJson
+8. nowMillis
+9. expireTimeMillis
+10. limitPerUser
+11. activityUserCountField，例如 ACT_1001:20001
+12. retainSeconds
 
 memberJson 样例：
-{"groupInstanceId":"67dd3ac8f5a6f80001a10001","userId":20001,"orderId":"ORDER_10001","memberStatus":"JOINED","payAmount":99.00}
+{"groupInstanceId":"67dd3ac8f5a6f80001a10001","userId":20001,"orderId":"ORDER_10001","skuId":30001,"memberStatus":"JOINED","payAmount":99.00}
 
 事件样例：
 eventType=GROUP_CREATED,groupId=67dd3ac8f5a6f80001a10001,orderId=ORDER_10001
@@ -43,8 +41,8 @@ if existingGroupId then
     return {2, existingGroupId}
 end
 
-local activeCount = tonumber(redis.call('HGET', KEYS[5], ARGV[13]) or '0')
-local limitPerUser = tonumber(ARGV[12] or '0')
+local activeCount = tonumber(redis.call('HGET', KEYS[5], ARGV[11]) or '0')
+local limitPerUser = tonumber(ARGV[10] or '0')
 if limitPerUser > 0 and activeCount >= limitPerUser then
     return {-3}
 end
@@ -56,26 +54,23 @@ redis.call('HSET', KEYS[1],
         'requiredSize', ARGV[5],
         'currentSize', '1',
         'remainingSlots', tostring(tonumber(ARGV[5]) - 1),
-        'expireTime', ARGV[11],
+        'expireTime', ARGV[9],
         'completeTime', '',
         'failedTime', '',
-        'groupPrice', ARGV[6],
-        'spuId', ARGV[7],
-        'skuId', ARGV[8],
+        'spuId', ARGV[6],
         'failReason', '',
-        'lastEventId', '',
-        'createTime', ARGV[10],
-        'updateTime', ARGV[10]
+        'createTime', ARGV[8],
+        'updateTime', ARGV[8]
 )
 
-redis.call('HSET', KEYS[2], ARGV[4], ARGV[9])
+redis.call('HSET', KEYS[2], ARGV[4], ARGV[7])
 redis.call('HSET', KEYS[3], ARGV[3], ARGV[4])
 redis.call('HSET', KEYS[4], ARGV[4], ARGV[1])
-redis.call('HINCRBY', KEYS[5], ARGV[13], 1)
-redis.call('EXPIRE', KEYS[1], tonumber(ARGV[14]))
-redis.call('EXPIRE', KEYS[2], tonumber(ARGV[14]))
-redis.call('EXPIRE', KEYS[3], tonumber(ARGV[14]))
-redis.call('ZADD', KEYS[6], tonumber(ARGV[11]), ARGV[1])
+redis.call('HINCRBY', KEYS[5], ARGV[11], 1)
+redis.call('EXPIRE', KEYS[1], tonumber(ARGV[12]))
+redis.call('EXPIRE', KEYS[2], tonumber(ARGV[12]))
+redis.call('EXPIRE', KEYS[3], tonumber(ARGV[12]))
+redis.call('ZADD', KEYS[6], tonumber(ARGV[9]), ARGV[1])
 redis.call('XADD', KEYS[7], '*',
         'eventType', 'GROUP_CREATED',
         'groupId', ARGV[1],
@@ -83,7 +78,7 @@ redis.call('XADD', KEYS[7], '*',
         'userId', ARGV[3],
         'orderId', ARGV[4],
         'reason', '',
-        'occurredAt', ARGV[10]
+        'occurredAt', ARGV[8]
 )
 
 return {1, ARGV[1]}

@@ -2,7 +2,7 @@
 拼团售后成功脚本。
 
 功能：
-1. 基于订单定位成员，记录 afterSaleId/afterSaleTime。
+1. 基于订单定位成员，记录 afterSaleId 并刷新最近轨迹。
 2. 团仍 OPEN 时：
    普通成员售后 -> 释放名额；
    团长售后 -> 整团关闭并标记其他成员待退款。
@@ -25,9 +25,8 @@ ARGV:
 5. nowMillis
 6. failReason
 7. reason
-8. exitedStatusCode
-9. retainSeconds
-10. activityUserCountFieldPrefix，例如 ACT_1001:
+8. retainSeconds
+9. activityUserCountFieldPrefix，例如 ACT_1001:
 
 事件样例：
 GROUP_MEMBER_AFTER_SALE_RELEASED
@@ -50,10 +49,8 @@ if target.afterSaleId and target.afterSaleId ~= '' then
 end
 
 target.afterSaleId = ARGV[3]
-target.afterSaleTime = tonumber(ARGV[5])
 target.latestTrajectory = 'AFTER_SALE_SUCCESS'
 target.latestTrajectoryTime = tonumber(ARGV[5])
-target.updateTime = tonumber(ARGV[5])
 redis.call('HSET', KEYS[2], ARGV[4], cjson.encode(target))
 
 if currentStatus ~= 'OPEN' then
@@ -70,7 +67,7 @@ if currentStatus ~= 'OPEN' then
 end
 
 local function release_activity_count(userId)
-    local countField = ARGV[10] .. tostring(userId)
+    local countField = ARGV[9] .. tostring(userId)
     local latestCount = redis.call('HINCRBY', KEYS[4], countField, -1)
     if latestCount <= 0 then
         redis.call('HDEL', KEYS[4], countField)
@@ -86,18 +83,12 @@ if tonumber(target.isLeader or 0) == 1 then
         local active = memberStatus == 'JOINED' or memberStatus == 'SUCCESS'
         if orderId == ARGV[4] then
             member.memberStatus = 'LEADER_AFTER_SALE_CLOSED'
-            member.status = tonumber(ARGV[8])
-            member.releaseTime = tonumber(ARGV[5])
             member.latestTrajectory = 'GROUP_FAILED'
             member.latestTrajectoryTime = tonumber(ARGV[5])
-            member.updateTime = tonumber(ARGV[5])
         elseif active then
             member.memberStatus = 'FAILED_REFUND_PENDING'
-            member.status = tonumber(ARGV[8])
-            member.releaseTime = tonumber(ARGV[5])
             member.latestTrajectory = 'GROUP_FAILED'
             member.latestTrajectoryTime = tonumber(ARGV[5])
-            member.updateTime = tonumber(ARGV[5])
         end
         if active then
             redis.call('HDEL', KEYS[3], tostring(member.userId))
@@ -114,9 +105,9 @@ if tonumber(target.isLeader or 0) == 1 then
             'updateTime', ARGV[5]
     )
     redis.call('ZREM', KEYS[5], ARGV[1])
-    redis.call('EXPIRE', KEYS[1], tonumber(ARGV[9]))
-    redis.call('EXPIRE', KEYS[2], tonumber(ARGV[9]))
-    redis.call('EXPIRE', KEYS[3], tonumber(ARGV[9]))
+    redis.call('EXPIRE', KEYS[1], tonumber(ARGV[8]))
+    redis.call('EXPIRE', KEYS[2], tonumber(ARGV[8]))
+    redis.call('EXPIRE', KEYS[3], tonumber(ARGV[8]))
     redis.call('XADD', KEYS[6], '*',
             'eventType', 'GROUP_FAILED',
             'groupId', ARGV[1],
@@ -132,11 +123,8 @@ end
 local memberStatus = target.memberStatus
 if memberStatus == 'JOINED' or memberStatus == 'SUCCESS' then
     target.memberStatus = 'AFTER_SALE_RELEASED'
-    target.status = tonumber(ARGV[8])
-    target.releaseTime = tonumber(ARGV[5])
     target.latestTrajectory = 'SEAT_RELEASED'
     target.latestTrajectoryTime = tonumber(ARGV[5])
-    target.updateTime = tonumber(ARGV[5])
     redis.call('HSET', KEYS[2], ARGV[4], cjson.encode(target))
     redis.call('HDEL', KEYS[3], tostring(target.userId))
     release_activity_count(target.userId)

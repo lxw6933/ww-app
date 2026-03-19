@@ -196,7 +196,7 @@ public class GroupDomainEventProjector {
         GroupRefundMessage.RefundOrder refundOrder = new GroupRefundMessage.RefundOrder();
         refundOrder.setUserId(member.getUserId());
         refundOrder.setOrderId(member.getOrderId());
-        refundOrder.setRefundAmount(member.getPayAmount() != null ? member.getPayAmount() : defaultAmount(member.getGroupPrice()));
+        refundOrder.setRefundAmount(member.getPayAmount() != null ? member.getPayAmount() : BigDecimal.ZERO);
         refundOrder.setIsLeader(member.getIsLeader() != null && member.getIsLeader() == 1);
         return refundOrder;
     }
@@ -284,13 +284,4 @@ public class GroupDomainEventProjector {
         return value != null && !value.trim().isEmpty();
     }
 
-    /**
-     * 金额兜底。
-     *
-     * @param amount 金额
-     * @return 金额
-     */
-    private BigDecimal defaultAmount(BigDecimal amount) {
-        return amount == null ? BigDecimal.ZERO : amount;
-    }
 }

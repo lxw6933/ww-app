@@ -3,7 +3,6 @@ package com.ww.mall.promotion.controller.app.group.res;
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Data;
 
-import java.math.BigDecimal;
 import java.util.Date;
 import java.util.List;
 
@@ -43,17 +42,11 @@ public class GroupInstanceVO {
     @Schema(description = "完成时间", example = "2025-12-08 15:30:00")
     private Date completeTime;
 
-    @Schema(description = "拼团价格", example = "99.00")
-    private BigDecimal groupPrice;
-
     @Schema(description = "分享商品SPU ID", example = "1001")
     private Long spuId;
 
     @Schema(description = "团内已成交SKU列表", example = "[2001,2002]")
     private List<Long> skuIds;
-
-    @Schema(description = "兼容字段：默认SKU ID", example = "2001")
-    private Long skuId;
 
     @Schema(description = "失败原因", example = "团长售后导致拼团关闭")
     private String failReason;

@@ -11,7 +11,6 @@ import org.springframework.data.mongodb.core.query.Criteria;
 import org.springframework.data.mongodb.core.query.Query;
 import org.springframework.data.mongodb.core.query.Update;
 
-import java.math.BigDecimal;
 import java.util.Date;
 import java.util.List;
 
@@ -72,19 +71,9 @@ public class GroupInstance extends BaseDoc {
     private Date failedTime;
 
     /**
-     * 拼团价格
-     */
-    private BigDecimal groupPrice;
-
-    /**
      * 商品SPU ID
      */
     private Long spuId;
-
-    /**
-     * 兼容字段：首个或默认SKU ID。
-     */
-    private Long skuId;
 
     /**
      * 团内已成交SKU列表。

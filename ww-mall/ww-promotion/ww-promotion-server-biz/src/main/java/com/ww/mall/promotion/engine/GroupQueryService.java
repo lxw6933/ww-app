@@ -157,9 +157,7 @@ public class GroupQueryService {
         vo.setRemainingSlots(instance.getRemainingSlots());
         vo.setExpireTime(instance.getExpireTime());
         vo.setCompleteTime(instance.getCompleteTime());
-        vo.setGroupPrice(instance.getGroupPrice());
         vo.setSpuId(instance.getSpuId());
-        vo.setSkuId(instance.getSkuId());
         vo.setSkuIds(instance.getSkuIds());
         vo.setFailReason(instance.getFailReason());
         List<GroupInstanceVO.MemberInfo> memberInfos = new ArrayList<>();

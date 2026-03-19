@@ -41,7 +41,6 @@ public class GroupAdminServiceImpl implements GroupAdminService {
         detail.setActivityId(instance.getActivityId());
         detail.setStatus(instance.getStatus());
         detail.setSpuId(instance.getSpuId());
-        detail.setGroupPrice(instance.getGroupPrice());
         detail.setLeaderUserId(instance.getLeaderUserId());
         detail.setCurrentSize(instance.getCurrentSize());
         detail.setRequiredSize(instance.getRequiredSize());
@@ -64,17 +63,8 @@ public class GroupAdminServiceImpl implements GroupAdminService {
         trajectoryVO.setLeader(member.getIsLeader() != null && member.getIsLeader() == 1);
         trajectoryVO.setMemberStatus(member.getMemberStatus());
         trajectoryVO.setJoinTime(member.getJoinTime());
-        if (member.getTrajectories() != null) {
-            trajectoryVO.setTrajectories(member.getTrajectories().stream().map(node -> {
-                GroupAdminDetailVO.TrajectoryVO item = new GroupAdminDetailVO.TrajectoryVO();
-                item.setCode(node.getCode());
-                item.setDescription(node.getDescription());
-                item.setSource(node.getSource());
-                item.setEventTime(node.getEventTime());
-                item.setRemark(node.getRemark());
-                return item;
-            }).collect(Collectors.toList()));
-        }
+        trajectoryVO.setLatestTrajectory(member.getLatestTrajectory());
+        trajectoryVO.setLatestTrajectoryTime(member.getLatestTrajectoryTime());
         return trajectoryVO;
     }
 }

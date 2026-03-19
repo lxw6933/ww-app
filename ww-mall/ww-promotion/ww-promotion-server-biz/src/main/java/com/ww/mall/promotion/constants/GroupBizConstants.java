@@ -12,11 +12,6 @@ package com.ww.mall.promotion.constants;
 public final class GroupBizConstants {
 
     /**
-     * 空订单信息 JSON。
-     */
-    public static final String EMPTY_ORDER_INFO_JSON = "{}";
-
-    /**
      * Redis 拼团数据兜底保留时长，单位秒。
      * <p>
      * 拼团过期或成功后仍保留两天，便于查询回放、补偿和排障。

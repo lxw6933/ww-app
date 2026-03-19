@@ -9,11 +9,9 @@ import org.springframework.data.mongodb.core.index.CompoundIndexes;
 import org.springframework.data.mongodb.core.mapping.Document;
 import org.springframework.data.mongodb.core.query.Criteria;
 import org.springframework.data.mongodb.core.query.Query;
-import org.springframework.data.mongodb.core.query.Update;
 
 import java.math.BigDecimal;
 import java.util.Date;
-import java.util.List;
 
 /**
  * @author ww
@@ -24,9 +22,9 @@ import java.util.List;
 @Data
 @Document("group_member")
 @CompoundIndexes({
-        @CompoundIndex(name = "idx_group_member_group_user", def = "{'groupInstanceId': 1, 'userId': 1}", unique = true),
+        @CompoundIndex(name = "idx_group_member_group_user", def = "{'groupInstanceId': 1, 'userId': 1, 'joinTime': 1}"),
         @CompoundIndex(name = "idx_group_member_group_join_time", def = "{'groupInstanceId': 1, 'joinTime': 1}"),
-        @CompoundIndex(name = "idx_group_member_user_activity", def = "{'userId': 1, 'activityId': 1, 'memberStatus': 1}"),
+        @CompoundIndex(name = "idx_group_member_user_join_time", def = "{'userId': 1, 'joinTime': -1}"),
         @CompoundIndex(name = "idx_group_member_order", def = "{'orderId': 1}", unique = true)
 })
 public class GroupMember extends BaseDoc {
@@ -35,11 +33,6 @@ public class GroupMember extends BaseDoc {
      * 拼团实例ID
      */
     private String groupInstanceId;
-
-    /**
-     * 活动ID
-     */
-    private String activityId;
 
     /**
      * 用户ID
@@ -62,21 +55,11 @@ public class GroupMember extends BaseDoc {
     private Date joinTime;
 
     /**
-     * 拼团价格
-     */
-    private BigDecimal groupPrice;
-
-    /**
      * 实际支付金额。
      * <p>
-     * 退款补偿优先使用该字段，避免后续仅依赖活动价格导致金额失真。
+     * 新版状态机要求支付消息显式透传该值，退款补偿直接使用该字段。
      */
     private BigDecimal payAmount;
-
-    /**
-     * 商品SPU ID
-     */
-    private Long spuId;
 
     /**
      * 商品SKU ID
@@ -84,39 +67,14 @@ public class GroupMember extends BaseDoc {
     private Long skuId;
 
     /**
-     * 兼容字段：1-正常，0-已退出。
-     */
-    private Integer status;
-
-    /**
      * 成员生命周期状态。
      */
     private String memberStatus;
 
     /**
-     * 订单快照。
-     */
-    private String orderInfo;
-
-    /**
      * 售后单号。
      */
     private String afterSaleId;
-
-    /**
-     * 售后成功时间。
-     */
-    private Date afterSaleTime;
-
-    /**
-     * 名额归还时间。
-     */
-    private Date releaseTime;
-
-    /**
-     * 成团时间。
-     */
-    private Date successTime;
 
     /**
      * 最近一次轨迹编码。
@@ -127,63 +85,6 @@ public class GroupMember extends BaseDoc {
      * 最近一次轨迹时间。
      */
     private Date latestTrajectoryTime;
-
-    /**
-     * 成员轨迹。
-     */
-    private List<TrajectoryNode> trajectories;
-
-    /**
-     * 轨迹节点。
-     */
-    @Data
-    public static class TrajectoryNode {
-
-        /**
-         * 轨迹编码。
-         */
-        private String code;
-
-        /**
-         * 轨迹说明。
-         */
-        private String description;
-
-        /**
-         * 轨迹来源。
-         */
-        private String source;
-
-        /**
-         * 轨迹时间。
-         */
-        private Date eventTime;
-
-        /**
-         * 备注。
-         */
-        private String remark;
-    }
-
-    /**
-     * 构建根据拼团实例ID和状态查询
-     */
-    public static Query buildGroupInstanceIdAndStatusQuery(String groupInstanceId, Integer status) {
-        return new Query().addCriteria(
-                Criteria.where("groupInstanceId").is(groupInstanceId)
-                        .and("status").is(status)
-        );
-    }
-
-    /**
-     * 构建根据用户ID和状态查询
-     */
-    public static Query buildUserIdAndStatusQuery(Long userId, Integer status) {
-        return new Query().addCriteria(
-                Criteria.where("userId").is(userId)
-                        .and("status").is(status)
-        );
-    }
 
     /**
      * 构建根据拼团实例ID和用户ID查询
@@ -209,23 +110,4 @@ public class GroupMember extends BaseDoc {
         return new Query().addCriteria(Criteria.where("groupInstanceId").is(groupInstanceId))
                 .with(Sort.by(Sort.Direction.ASC, "joinTime", "id"));
     }
-
-    /**
-     * 构建按用户和活动查询当前有效成员。
-     */
-    public static Query buildUserIdAndActivityIdQuery(Long userId, String activityId, List<String> activeStatuses) {
-        return new Query().addCriteria(
-                Criteria.where("userId").is(userId)
-                        .and("activityId").is(activityId)
-                        .and("memberStatus").in(activeStatuses)
-        );
-    }
-
-    /**
-     * 构建状态更新
-     */
-    public static Update buildStatusUpdate(Integer status) {
-        return new Update().set("status", status);
-    }
-
 }

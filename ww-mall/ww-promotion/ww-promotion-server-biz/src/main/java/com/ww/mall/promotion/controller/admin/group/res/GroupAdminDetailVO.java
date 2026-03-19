@@ -3,7 +3,6 @@ package com.ww.mall.promotion.controller.admin.group.res;
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Data;
 
-import java.math.BigDecimal;
 import java.util.Date;
 import java.util.List;
 
@@ -29,9 +28,6 @@ public class GroupAdminDetailVO {
 
     @Schema(description = "分享商品SPU ID")
     private Long spuId;
-
-    @Schema(description = "团展示价格")
-    private BigDecimal groupPrice;
 
     @Schema(description = "团长用户ID")
     private Long leaderUserId;
@@ -82,30 +78,10 @@ public class GroupAdminDetailVO {
         @Schema(description = "加入时间")
         private Date joinTime;
 
-        @Schema(description = "轨迹节点")
-        private List<TrajectoryVO> trajectories;
-    }
+        @Schema(description = "最近轨迹编码")
+        private String latestTrajectory;
 
-    /**
-     * 轨迹节点。
-     */
-    @Data
-    @Schema(description = "成员轨迹节点")
-    public static class TrajectoryVO {
-
-        @Schema(description = "轨迹编码")
-        private String code;
-
-        @Schema(description = "轨迹描述")
-        private String description;
-
-        @Schema(description = "轨迹来源")
-        private String source;
-
-        @Schema(description = "轨迹时间")
-        private Date eventTime;
-
-        @Schema(description = "备注")
-        private String remark;
+        @Schema(description = "最近轨迹时间")
+        private Date latestTrajectoryTime;
     }
 }

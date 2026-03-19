@@ -38,11 +38,6 @@ public class CreateGroupCommand {
     private Long skuId;
 
     /**
-     * 订单快照。
-     */
-    private String orderInfo;
-
-    /**
      * 支付金额。
      */
     private BigDecimal payAmount;

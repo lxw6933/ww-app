@@ -20,9 +20,8 @@ ARGV:
 1. groupId
 2. reason
 3. nowMillis
-4. exitedStatusCode
-5. retainSeconds
-6. activityUserCountFieldPrefix，例如 ACT_1001:
+4. retainSeconds
+5. activityUserCountFieldPrefix，例如 ACT_1001:
 
 失败事件样例：
 eventType=GROUP_FAILED,groupId=67dd3ac8f5a6f80001a10001,reason=拼团过期未成团
@@ -49,14 +48,11 @@ for i = 1, #memberEntries, 2 do
     local memberStatus = member.memberStatus
     if memberStatus == 'JOINED' or memberStatus == 'SUCCESS' then
         member.memberStatus = 'FAILED_REFUND_PENDING'
-        member.status = tonumber(ARGV[4])
-        member.releaseTime = tonumber(ARGV[3])
         member.latestTrajectory = 'GROUP_FAILED'
         member.latestTrajectoryTime = tonumber(ARGV[3])
-        member.updateTime = tonumber(ARGV[3])
         redis.call('HSET', KEYS[2], orderId, cjson.encode(member))
         redis.call('HDEL', KEYS[3], tostring(member.userId))
-        local countField = ARGV[6] .. tostring(member.userId)
+        local countField = ARGV[5] .. tostring(member.userId)
         local latestCount = redis.call('HINCRBY', KEYS[4], countField, -1)
         if latestCount <= 0 then
             redis.call('HDEL', KEYS[4], countField)
@@ -73,9 +69,9 @@ redis.call('HSET', KEYS[1],
         'updateTime', ARGV[3]
 )
 redis.call('ZREM', KEYS[6], ARGV[1])
-redis.call('EXPIRE', KEYS[1], tonumber(ARGV[5]))
-redis.call('EXPIRE', KEYS[2], tonumber(ARGV[5]))
-redis.call('EXPIRE', KEYS[3], tonumber(ARGV[5]))
+redis.call('EXPIRE', KEYS[1], tonumber(ARGV[4]))
+redis.call('EXPIRE', KEYS[2], tonumber(ARGV[4]))
+redis.call('EXPIRE', KEYS[3], tonumber(ARGV[4]))
 redis.call('XADD', KEYS[5], '*',
         'eventType', 'GROUP_FAILED',
         'groupId', ARGV[1],

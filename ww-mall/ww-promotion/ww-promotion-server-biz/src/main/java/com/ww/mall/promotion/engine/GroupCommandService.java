@@ -7,11 +7,11 @@ import com.ww.mall.promotion.constants.GroupBizConstants;
 import com.ww.mall.promotion.controller.app.group.res.GroupInstanceVO;
 import com.ww.mall.promotion.engine.model.GroupCacheSnapshot;
 import com.ww.mall.promotion.engine.model.GroupCommandResult;
+import com.ww.mall.promotion.engine.model.GroupMemberCacheSnapshot;
 import com.ww.mall.promotion.entity.group.GroupActivity;
 import com.ww.mall.promotion.entity.group.GroupMember;
 import com.ww.mall.promotion.enums.GroupEnabledStatus;
 import com.ww.mall.promotion.enums.GroupMemberBizStatus;
-import com.ww.mall.promotion.enums.GroupMemberStatus;
 import com.ww.mall.promotion.enums.GroupTradeType;
 import com.ww.mall.promotion.key.GroupRedisKeyBuilder;
 import com.ww.mall.promotion.mq.GroupAfterSaleSuccessMessage;
@@ -90,7 +90,7 @@ public class GroupCommandService {
             return replayedGroup;
         }
         GroupActivity activity = loadAndValidateActivity(command.getActivityId());
-        GroupActivity.GroupSkuRule skuRule = resolveSkuRule(activity, command.getSkuId());
+        resolveSkuRule(activity, command.getSkuId());
         Long userId = command.getUserId();
         String groupId = new ObjectId().toString();
         long nowMillis = System.currentTimeMillis();
@@ -110,14 +110,10 @@ public class GroupCommandService {
                 String.valueOf(userId),
                 command.getOrderId(),
                 String.valueOf(activity.getRequiredSize()),
-                decimalString(skuRule.getGroupPrice()),
                 String.valueOf(activity.getSpuId()),
-                String.valueOf(command.getSkuId()),
-                buildMemberCachePayload(groupId, activity.getId(), userId, command.getOrderId(), true,
-                        nowMillis, skuRule.getGroupPrice(), command.getPayAmount(), activity.getSpuId(),
-                        command.getSkuId(), GroupMemberStatus.NORMAL.getCode(), GroupMemberBizStatus.JOINED.name(),
-                        safeOrderInfo(command.getOrderInfo()), null, null, null, null,
-                        nowMillis, nowMillis),
+                buildMemberCachePayload(groupId, userId, command.getOrderId(), true,
+                        nowMillis, command.getPayAmount(), command.getSkuId(),
+                        GroupMemberBizStatus.JOINED.name(), null, "PAY_SUCCESS", nowMillis),
                 String.valueOf(nowMillis),
                 String.valueOf(buildExpireTime(nowMillis, activity)),
                 String.valueOf(defaultLimitPerUser(activity.getLimitPerUser())),
@@ -146,7 +142,7 @@ public class GroupCommandService {
         }
         GroupCacheSnapshot snapshot = groupRedisStateReader.requireGroupSnapshot(command.getGroupId());
         GroupActivity activity = loadAndValidateActivity(snapshot.getInstance().getActivityId());
-        GroupActivity.GroupSkuRule skuRule = resolveSkuRule(activity, command.getSkuId());
+        resolveSkuRule(activity, command.getSkuId());
         Long userId = command.getUserId();
         long nowMillis = System.currentTimeMillis();
         String activityUserCountField = groupRedisKeyBuilder.buildActivityUserCountField(activity.getId(), userId);
@@ -165,11 +161,9 @@ public class GroupCommandService {
                 String.valueOf(userId),
                 command.getOrderId(),
                 String.valueOf(defaultLimitPerUser(activity.getLimitPerUser())),
-                buildMemberCachePayload(command.getGroupId(), activity.getId(), userId, command.getOrderId(), false,
-                        nowMillis, skuRule.getGroupPrice(), command.getPayAmount(), activity.getSpuId(),
-                        command.getSkuId(), GroupMemberStatus.NORMAL.getCode(), GroupMemberBizStatus.JOINED.name(),
-                        safeOrderInfo(command.getOrderInfo()), null, null, null, null,
-                        nowMillis, nowMillis),
+                buildMemberCachePayload(command.getGroupId(), userId, command.getOrderId(), false,
+                        nowMillis, command.getPayAmount(), command.getSkuId(),
+                        GroupMemberBizStatus.JOINED.name(), null, "PAY_SUCCESS", nowMillis),
                 activityUserCountField,
                 String.valueOf(nowMillis),
                 String.valueOf(GroupBizConstants.REDIS_GROUP_DATA_RETAIN_SECONDS)
@@ -196,7 +190,6 @@ public class GroupCommandService {
             command.setUserId(message.getUserId());
             command.setOrderId(message.getOrderId());
             command.setSkuId(message.getSkuId());
-            command.setOrderInfo(message.getOrderInfo());
             command.setPayAmount(message.getPayAmount());
             return createGroup(command);
         }
@@ -205,7 +198,6 @@ public class GroupCommandService {
         command.setUserId(message.getUserId());
         command.setOrderId(message.getOrderId());
         command.setSkuId(message.getSkuId());
-        command.setOrderInfo(message.getOrderInfo());
         command.setPayAmount(message.getPayAmount());
         return joinGroup(command);
     }
@@ -255,7 +247,6 @@ public class GroupCommandService {
                 String.valueOf(nowMillis),
                 failReason,
                 nullSafe(message.getReason()),
-                String.valueOf(GroupMemberStatus.EXITED.getCode()),
                 String.valueOf(GroupBizConstants.REDIS_GROUP_DATA_RETAIN_SECONDS),
                 groupRedisKeyBuilder.buildActivityUserCountFieldPrefix(activityId)
         );
@@ -290,7 +281,6 @@ public class GroupCommandService {
                 groupId,
                 reason,
                 String.valueOf(nowMillis),
-                String.valueOf(GroupMemberStatus.EXITED.getCode()),
                 String.valueOf(GroupBizConstants.REDIS_GROUP_DATA_RETAIN_SECONDS),
                 groupRedisKeyBuilder.buildActivityUserCountFieldPrefix(snapshot.getInstance().getActivityId())
         );
@@ -367,53 +357,33 @@ public class GroupCommandService {
      * 构建成员缓存JSON。
      *
      * @param groupId 团ID
-     * @param activityId 活动ID
      * @param userId 用户ID
      * @param orderId 订单ID
      * @param leader 是否团长
      * @param joinTime 入团时间
-     * @param groupPrice 拼团价
      * @param payAmount 支付金额
-     * @param spuId SPU ID
      * @param skuId SKU ID
-     * @param status 兼容状态
      * @param memberStatus 成员业务状态
-     * @param orderInfo 订单快照
      * @param afterSaleId 售后单号
-     * @param afterSaleTime 售后时间
-     * @param releaseTime 释放时间
-     * @param successTime 成团时间
-     * @param createTime 创建时间
-     * @param updateTime 更新时间
+     * @param latestTrajectory 最近轨迹编码
+     * @param latestTrajectoryTime 最近轨迹时间
      * @return JSON 文本
      */
-    private String buildMemberCachePayload(String groupId, String activityId, Long userId, String orderId, boolean leader,
-                                           long joinTime, BigDecimal groupPrice, BigDecimal payAmount, Long spuId,
-                                           Long skuId, Integer status, String memberStatus, String orderInfo,
-                                           String afterSaleId, Date afterSaleTime, Date releaseTime, Date successTime,
-                                           long createTime, long updateTime) {
-        GroupMember member = new GroupMember();
+    private String buildMemberCachePayload(String groupId, Long userId, String orderId, boolean leader,
+                                           long joinTime, BigDecimal payAmount, Long skuId, String memberStatus,
+                                           String afterSaleId, String latestTrajectory, long latestTrajectoryTime) {
+        GroupMemberCacheSnapshot member = new GroupMemberCacheSnapshot();
         member.setGroupInstanceId(groupId);
-        member.setActivityId(activityId);
         member.setUserId(userId);
         member.setOrderId(orderId);
         member.setIsLeader(leader ? 1 : 0);
-        member.setJoinTime(new Date(joinTime));
-        member.setGroupPrice(groupPrice);
+        member.setJoinTime(joinTime);
         member.setPayAmount(payAmount);
-        member.setSpuId(spuId);
         member.setSkuId(skuId);
-        member.setStatus(status);
         member.setMemberStatus(memberStatus);
-        member.setOrderInfo(orderInfo);
         member.setAfterSaleId(afterSaleId);
-        member.setAfterSaleTime(afterSaleTime);
-        member.setReleaseTime(releaseTime);
-        member.setSuccessTime(successTime);
-        member.setLatestTrajectory("PAY_SUCCESS");
-        member.setLatestTrajectoryTime(new Date(joinTime));
-        member.setCreateTime(new Date(createTime));
-        member.setUpdateTime(new Date(updateTime));
+        member.setLatestTrajectory(latestTrajectory);
+        member.setLatestTrajectoryTime(latestTrajectoryTime);
         try {
             return objectMapper.writeValueAsString(member);
         } catch (Exception e) {
@@ -664,26 +634,6 @@ public class GroupCommandService {
      */
     private int defaultLimitPerUser(Integer limitPerUser) {
         return limitPerUser == null ? 0 : limitPerUser;
-    }
-
-    /**
-     * 金额转字符串。
-     *
-     * @param amount 金额
-     * @return 文本
-     */
-    private String decimalString(BigDecimal amount) {
-        return amount == null ? "0" : amount.toPlainString();
-    }
-
-    /**
-     * 兜底订单快照。
-     *
-     * @param orderInfo 订单快照
-     * @return 文本
-     */
-    private String safeOrderInfo(String orderInfo) {
-        return hasText(orderInfo) ? orderInfo : GroupBizConstants.EMPTY_ORDER_INFO_JSON;
     }
 
     /**
