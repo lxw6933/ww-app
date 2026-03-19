@@ -90,16 +90,6 @@ public class GroupActivity extends BaseDoc {
     private Integer status;
 
     /**
-     * 库存总数
-     */
-    private Integer totalStock;
-
-    /**
-     * 已售数量
-     */
-    private Integer soldCount;
-
-    /**
      * 每人限购数量
      */
     private Integer limitPerUser;
@@ -194,13 +184,6 @@ public class GroupActivity extends BaseDoc {
      */
     public static Update buildEnabledUpdate(Integer enabled) {
         return new Update().set("enabled", enabled);
-    }
-
-    /**
-     * 构建已售数量更新
-     */
-    public static Update buildSoldCountUpdate(Integer soldCount) {
-        return new Update().set("soldCount", soldCount);
     }
 
 }

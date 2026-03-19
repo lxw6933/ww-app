@@ -74,16 +74,6 @@ public final class GroupValidationMessageConstants {
     public static final String END_TIME_REQUIRED = "活动结束时间不能为空";
 
     /**
-     * 库存总数不能为空。
-     */
-    public static final String TOTAL_STOCK_REQUIRED = "库存总数不能为空";
-
-    /**
-     * 库存总数必须大于0。
-     */
-    public static final String TOTAL_STOCK_POSITIVE = "库存总数必须大于0";
-
-    /**
      * 活动ID不能为空。
      */
     public static final String ACTIVITY_ID_REQUIRED = "活动ID不能为空";

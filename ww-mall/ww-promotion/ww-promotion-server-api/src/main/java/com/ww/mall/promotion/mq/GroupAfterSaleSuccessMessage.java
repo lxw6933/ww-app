@@ -21,11 +21,6 @@ public class GroupAfterSaleSuccessMessage implements Serializable {
     private static final long serialVersionUID = 1L;
 
     /**
-     * 链路追踪ID。
-     */
-    private String traceId;
-
-    /**
      * 售后单号。
      */
     private String afterSaleId;

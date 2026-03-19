@@ -1,129 +1,120 @@
--- ============================================================================
--- 加入拼团Lua脚本（优化版）
--- ============================================================================
--- 功能：原子性地加入拼团，包括校验、扣减名额、更新状态等
--- 特点：保证原子性操作，防止并发加入，通过订单ID存在性实现幂等性校验，自动判断拼团是否完成
--- 优化：将用户组Set等操作合并到Lua脚本中，减少Redis往返次数
---
--- KEYS（Redis键列表）:
---   [1] metaKey         - 拼团元数据Hash键 (group:instance:meta:{groupId})
---   [2] slotsKey        - 剩余名额键 (group:instance:slots:{groupId})
---   [3] membersKey      - 成员列表Sorted Set键 (group:instance:members:{groupId})
---   [4] ordersKey       - 订单信息Hash键 (group:instance:orders:{groupId})
---   [5] expiryIndexKey  - 过期索引Sorted Set键 (group:expiry)
---   [6] userGroupKey    - 用户拼团Set键 (group:user:group:{userId})
---   [7] orderMappingKey - 订单与拼团映射键 (group:order:mapping:{orderId})
---
--- ARGV（参数列表）:
---   [1] userId          - 用户ID
---   [2] orderId         - 订单ID
---   [3] orderJson       - 订单信息（JSON字符串）
---   [4] groupId         - 拼团ID
---
--- 返回值（Array）:
---   [1] 结果码:
---       1   - 加入成功，拼团完成
---       2   - 加入成功，还有剩余名额
---       -1  - 拼团不存在
---       -2  - 拼团未开放（状态不是OPEN）
---       -3  - 拼团已过期
---       -4  - 用户已在拼团中
---       -5  - 订单已存在（幂等性：订单ID已处理）
---       -6  - 没有剩余名额
---   [2] newSlots（仅当结果码>0 时返回，表示扣减后的剩余名额）
---   [3] completeTime（仅当拼团完成时返回，毫秒时间戳）
---   -1  - 拼团不存在
---   -2  - 拼团未开放（状态不是OPEN）
---   -3  - 拼团已过期
---   -4  - 用户已在拼团中
---   -5  - 订单已存在（幂等性：订单ID已处理）
---   -6  - 没有剩余名额
--- ============================================================================
+--[[
+拼团参团脚本。
 
--- ============================================================================
--- 获取当前时间戳（毫秒）
--- ============================================================================
-local timeResult = redis.call('TIME')
-local nowMillis = tonumber(timeResult[1]) * 1000 + math.floor(tonumber(timeResult[2]) / 1000)
+功能：
+1. 基于全局订单索引做参团幂等与串单校验。
+2. 基于团主状态判断 OPEN/过期/剩余名额。
+3. 基于团内活跃用户索引判断“是否已在该团占位”。
+4. 基于活动用户占位计数判断活动级限购。
+5. 原子写入成员、索引、团主状态。
+6. 满团时批量把所有 JOINED 成员升级为 SUCCESS，并写入 GROUP_COMPLETED 事件。
 
--- ============================================================================
--- 步骤1：检查拼团是否存在
--- ============================================================================
+KEYS:
+1. group:instance:meta:{groupId}
+2. group:instance:member-store:{groupId}
+3. group:instance:user-index:{groupId}
+4. group:order:index
+5. group:activity:active:count
+6. group:expiry
+7. group:stream:event
+
+ARGV:
+1. groupId
+2. activityId
+3. userId
+4. orderId
+5. limitPerUser
+6. memberJson
+7. activityUserCountField，例如 ACT_1001:20002
+8. nowMillis
+9. retainSeconds
+
+返回值样例：
+{1, groupId, GROUP_JOINED, currentSize, remainingSlots}
+{1, groupId, GROUP_COMPLETED, currentSize, remainingSlots}
+{2, groupId} 表示幂等回放
+]]
+local existingGroupId = redis.call('HGET', KEYS[4], ARGV[4])
+if existingGroupId then
+    if existingGroupId == ARGV[1] then
+        return {2, existingGroupId}
+    end
+    return {-2, existingGroupId}
+end
+
 if redis.call('EXISTS', KEYS[1]) == 0 then
     return {-1}
 end
 
--- ============================================================================
--- 步骤2：幂等性校验 - 检查订单是否已存在
--- ============================================================================
-local orderExists = redis.call('EXISTS', KEYS[7])
-if orderExists == 1 then
+local status = redis.call('HGET', KEYS[1], 'status')
+if status ~= 'OPEN' then
+    return {-4, status}
+end
+
+local expireTime = tonumber(redis.call('HGET', KEYS[1], 'expireTime') or '0')
+if expireTime > 0 and tonumber(ARGV[8]) >= expireTime then
     return {-5}
 end
 
--- ============================================================================
--- 步骤3：检查拼团状态和过期时间
--- ============================================================================
-local status = redis.call('HGET', KEYS[1], 'status')
-local expiresAt = tonumber(redis.call('HGET', KEYS[1], 'expiresAt') or '0')
-
-if status ~= 'OPEN' then
-    return {-2}
-end
-
-if expiresAt > 0 and nowMillis >= expiresAt then
-    return {-3}
-end
-
--- ============================================================================
--- 步骤4：检查用户是否已在拼团中
--- ============================================================================
-local memberExists = redis.call('ZSCORE', KEYS[3], ARGV[1])
-if memberExists then
-    return {-4}
-end
-
--- ============================================================================
--- 步骤5：检查剩余名额
--- ============================================================================
-local slots = tonumber(redis.call('GET', KEYS[2]) or '-1')
-if slots <= 0 then
+if redis.call('HEXISTS', KEYS[3], ARGV[3]) == 1 then
     return {-6}
 end
 
--- ============================================================================
--- 步骤6：扣减名额并添加成员
--- ============================================================================
-local newSlots = redis.call('DECR', KEYS[2])
-redis.call('ZADD', KEYS[3], nowMillis, ARGV[1])
-redis.call('HSET', KEYS[4], ARGV[2], ARGV[3])
-redis.call('SET', KEYS[7], ARGV[4])
-local retainSeconds = redis.call('TTL', KEYS[1])
-if retainSeconds and retainSeconds > 0 then
-    redis.call('EXPIRE', KEYS[7], retainSeconds)
+local activeCount = tonumber(redis.call('HGET', KEYS[5], ARGV[7]) or '0')
+local limitPerUser = tonumber(ARGV[5] or '0')
+if limitPerUser > 0 and activeCount >= limitPerUser then
+    return {-7}
 end
 
--- ============================================================================
--- 步骤7：更新当前人数
--- ============================================================================
-redis.call('HINCRBY', KEYS[1], 'currentSize', 1)
-
--- ============================================================================
--- 步骤8：添加用户到用户拼团Set
--- ============================================================================
-redis.call('SADD', KEYS[6], ARGV[4])
-
--- ============================================================================
--- 步骤9：检查拼团是否完成
--- ============================================================================
-if newSlots == 0 then
-    -- 更新拼团状态为成功
-    redis.call('HSET', KEYS[1], 'status', 'SUCCESS')
-    redis.call('HSET', KEYS[1], 'completeTime', tostring(nowMillis))
-    -- 从过期索引中移除，因为拼团已完成，不再需要过期检查
-    redis.call('ZREM', KEYS[5], ARGV[4])
-    return {1, newSlots, nowMillis}  -- 拼团完成，返回结果码/剩余名额/完成时间
+local remainingSlots = tonumber(redis.call('HGET', KEYS[1], 'remainingSlots') or '0')
+if remainingSlots <= 0 then
+    return {-8}
 end
 
--- 返回成功标识（还有剩余名额），携带扣减后的剩余名额
-return {2, newSlots}
+local currentSize = redis.call('HINCRBY', KEYS[1], 'currentSize', 1)
+remainingSlots = redis.call('HINCRBY', KEYS[1], 'remainingSlots', -1)
+redis.call('HSET', KEYS[1], 'updateTime', ARGV[8])
+redis.call('HSET', KEYS[2], ARGV[4], ARGV[6])
+redis.call('HSET', KEYS[3], ARGV[3], ARGV[4])
+redis.call('HSET', KEYS[4], ARGV[4], ARGV[1])
+redis.call('HINCRBY', KEYS[5], ARGV[7], 1)
+
+local eventType = 'GROUP_JOINED'
+if tonumber(remainingSlots) == 0 then
+    redis.call('HSET', KEYS[1],
+            'status', 'SUCCESS',
+            'completeTime', ARGV[8],
+            'failReason', '',
+            'updateTime', ARGV[8]
+    )
+    local memberEntries = redis.call('HGETALL', KEYS[2])
+    for i = 1, #memberEntries, 2 do
+        local orderId = memberEntries[i]
+        local member = cjson.decode(memberEntries[i + 1])
+        if member.memberStatus == 'JOINED' then
+            member.memberStatus = 'SUCCESS'
+            member.successTime = tonumber(ARGV[8])
+            member.latestTrajectory = 'GROUP_SUCCESS'
+            member.latestTrajectoryTime = tonumber(ARGV[8])
+            member.updateTime = tonumber(ARGV[8])
+            redis.call('HSET', KEYS[2], orderId, cjson.encode(member))
+        end
+    end
+    redis.call('ZREM', KEYS[6], ARGV[1])
+    eventType = 'GROUP_COMPLETED'
+end
+
+redis.call('EXPIRE', KEYS[1], tonumber(ARGV[9]))
+redis.call('EXPIRE', KEYS[2], tonumber(ARGV[9]))
+redis.call('EXPIRE', KEYS[3], tonumber(ARGV[9]))
+redis.call('XADD', KEYS[7], '*',
+        'eventType', eventType,
+        'groupId', ARGV[1],
+        'activityId', ARGV[2],
+        'userId', ARGV[3],
+        'orderId', ARGV[4],
+        'reason', '',
+        'occurredAt', ARGV[8]
+)
+
+return {1, ARGV[1], eventType, tostring(currentSize), tostring(remainingSlots)}

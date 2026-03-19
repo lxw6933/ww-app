@@ -1,10 +1,10 @@
 package com.ww.mall.promotion.job;
 
 import com.ww.mall.promotion.constants.GroupBizConstants;
+import com.ww.mall.promotion.engine.GroupCommandService;
 import com.ww.mall.promotion.entity.group.GroupActivity;
 import com.ww.mall.promotion.enums.GroupActivityStatus;
 import com.ww.mall.promotion.key.GroupRedisKeyBuilder;
-import com.ww.mall.promotion.service.group.GroupInstanceService;
 import com.xxl.job.core.handler.annotation.XxlJob;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.mongodb.core.MongoTemplate;
@@ -18,11 +18,11 @@ import java.util.Date;
 import java.util.Set;
 
 /**
- * 拼团过期任务。
+ * 拼团过期与活动状态任务。
  *
  * @author ww
- * @create 2026-03-17
- * @description: 处理未成团超时关闭和活动状态滚动更新
+ * @create 2026-03-19
+ * @description: 仅保留过期关团和活动状态滚动更新
  */
 @Slf4j
 @Component
@@ -35,7 +35,7 @@ public class GroupExpireJob {
     private GroupRedisKeyBuilder groupRedisKeyBuilder;
 
     @Resource
-    private GroupInstanceService groupInstanceService;
+    private GroupCommandService groupCommandService;
 
     @Resource
     private MongoTemplate mongoTemplate;
@@ -45,16 +45,19 @@ public class GroupExpireJob {
      */
     @XxlJob("groupExpireJobHandler")
     public void groupExpireJobHandler() {
-        String expiryIndexKey = groupRedisKeyBuilder.buildExpiryIndexKey();
-        long nowMillis = System.currentTimeMillis();
-        Set<String> expiredGroupIds = stringRedisTemplate.opsForZSet()
-                .rangeByScore(expiryIndexKey, 0, nowMillis, 0, GroupBizConstants.EXPIRE_JOB_BATCH_LIMIT);
+        Set<String> expiredGroupIds = stringRedisTemplate.opsForZSet().rangeByScore(
+                groupRedisKeyBuilder.buildExpiryIndexKey(),
+                0,
+                System.currentTimeMillis(),
+                0,
+                GroupBizConstants.EXPIRE_JOB_BATCH_LIMIT
+        );
         if (expiredGroupIds == null || expiredGroupIds.isEmpty()) {
             return;
         }
         for (String groupId : expiredGroupIds) {
             try {
-                groupInstanceService.handleGroupFailed(groupId);
+                groupCommandService.expireGroup(groupId, "拼团过期未成团");
             } catch (Exception e) {
                 log.error("处理过期拼团失败: groupId={}", groupId, e);
             }
@@ -62,22 +65,10 @@ public class GroupExpireJob {
     }
 
     /**
-     * 同步任务保留兼容入口，实际改为预热 Redis。
+     * 兼容保留空任务，新的 Mongo 投影由 Redis Stream 投影器常驻处理。
      */
     @XxlJob("groupSyncToMongoJobHandler")
     public void groupSyncToMongoJobHandler() {
-        String expiryIndexKey = groupRedisKeyBuilder.buildExpiryIndexKey();
-        Set<String> groupIds = stringRedisTemplate.opsForZSet().range(expiryIndexKey, 0, GroupBizConstants.SYNC_JOB_BATCH_LIMIT - 1L);
-        if (groupIds == null || groupIds.isEmpty()) {
-            return;
-        }
-        for (String groupId : groupIds) {
-            try {
-                groupInstanceService.getGroupDetail(groupId);
-            } catch (Exception e) {
-                log.warn("预热拼团缓存失败: groupId={}", groupId, e);
-            }
-        }
     }
 
     /**

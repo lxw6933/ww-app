@@ -20,8 +20,6 @@ import static com.ww.mall.promotion.constants.GroupValidationMessageConstants.RE
 import static com.ww.mall.promotion.constants.GroupValidationMessageConstants.REQUIRED_SIZE_REQUIRED;
 import static com.ww.mall.promotion.constants.GroupValidationMessageConstants.SPU_ID_REQUIRED;
 import static com.ww.mall.promotion.constants.GroupValidationMessageConstants.START_TIME_REQUIRED;
-import static com.ww.mall.promotion.constants.GroupValidationMessageConstants.TOTAL_STOCK_POSITIVE;
-import static com.ww.mall.promotion.constants.GroupValidationMessageConstants.TOTAL_STOCK_REQUIRED;
 import static io.swagger.v3.oas.annotations.media.Schema.RequiredMode.REQUIRED;
 
 /**
@@ -77,11 +75,6 @@ public class GroupActivityBO {
     @Schema(description = "活动结束时间", requiredMode = REQUIRED, example = "2025-12-31 23:59:59")
     @NotNull(message = END_TIME_REQUIRED)
     private Date endTime;
-
-    @Schema(description = "库存总数", requiredMode = REQUIRED, example = "1000")
-    @NotNull(message = TOTAL_STOCK_REQUIRED)
-    @Positive(message = TOTAL_STOCK_POSITIVE)
-    private Integer totalStock;
 
     @Schema(description = "每人限购数量", example = "1")
     private Integer limitPerUser;

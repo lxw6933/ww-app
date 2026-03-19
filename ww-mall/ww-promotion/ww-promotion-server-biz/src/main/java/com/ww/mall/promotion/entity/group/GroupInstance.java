@@ -97,6 +97,11 @@ public class GroupInstance extends BaseDoc {
     private String failReason;
 
     /**
+     * 最近一次投影的领域事件ID。
+     */
+    private String lastEventId;
+
+    /**
      * 成员列表（冗余存储，便于查询）
      */
     private List<GroupMemberInfo> members;

@@ -17,21 +17,6 @@ public final class GroupBizConstants {
     public static final String EMPTY_ORDER_INFO_JSON = "{}";
 
     /**
-     * 支付回调锁时长，单位秒。
-     */
-    public static final long PAY_CALLBACK_LOCK_SECONDS = 30L;
-
-    /**
-     * 拼团业务锁等待时间，单位秒。
-     */
-    public static final long GROUP_LOCK_WAIT_SECONDS = 1L;
-
-    /**
-     * 拼团业务锁租约时间，单位秒。
-     */
-    public static final long GROUP_LOCK_LEASE_SECONDS = 10L;
-
-    /**
      * Redis 拼团数据兜底保留时长，单位秒。
      * <p>
      * 拼团过期或成功后仍保留两天，便于查询回放、补偿和排障。
@@ -39,29 +24,34 @@ public final class GroupBizConstants {
     public static final int REDIS_GROUP_DATA_RETAIN_SECONDS = 2 * 24 * 60 * 60;
 
     /**
-     * 团内轨迹保留的最大节点数。
-     */
-    public static final int MEMBER_TRAJECTORY_MAX_SIZE = 20;
-
-    /**
-     * Disruptor 处理器单批次大小。
-     */
-    public static final int EVENT_PROCESSOR_BATCH_SIZE = 100;
-
-    /**
-     * Disruptor 处理器批次超时时间，单位毫秒。
-     */
-    public static final long EVENT_PROCESSOR_BATCH_TIMEOUT_MILLIS = 200L;
-
-    /**
      * 过期任务单次处理上限。
      */
     public static final int EXPIRE_JOB_BATCH_LIMIT = 100;
 
     /**
-     * 同步任务单次处理上限。
+     * Redis Stream 消费组名称。
      */
-    public static final int SYNC_JOB_BATCH_LIMIT = 1000;
+    public static final String GROUP_EVENT_STREAM_CONSUMER_GROUP = "promotion-group-projector";
+
+    /**
+     * Redis Stream 消费者名前缀。
+     */
+    public static final String GROUP_EVENT_STREAM_CONSUMER_PREFIX = "promotion-group-consumer-";
+
+    /**
+     * Redis Stream 单批消费数量。
+     */
+    public static final int GROUP_EVENT_STREAM_BATCH_SIZE = 50;
+
+    /**
+     * Redis Stream 轮询阻塞毫秒数。
+     */
+    public static final long GROUP_EVENT_STREAM_BLOCK_MILLIS = 200L;
+
+    /**
+     * Redis Stream 投影调度固定延迟毫秒数。
+     */
+    public static final long GROUP_EVENT_STREAM_FIXED_DELAY_MILLIS = 500L;
 
     private GroupBizConstants() {
     }

@@ -22,11 +22,6 @@ public class GroupOrderPaidMessage implements Serializable {
     private static final long serialVersionUID = 1L;
 
     /**
-     * 链路追踪ID。
-     */
-    private String traceId;
-
-    /**
      * 业务类型：START-开团，JOIN-参团。
      */
     private GroupTradeType tradeType;
@@ -67,6 +62,8 @@ public class GroupOrderPaidMessage implements Serializable {
 
     /**
      * 支付金额。
+     * <p>
+     * 新版拼团状态机强依赖该值进行退款金额落盘，不再从 orderInfo 中兜底解析。
      */
     private BigDecimal payAmount;
 

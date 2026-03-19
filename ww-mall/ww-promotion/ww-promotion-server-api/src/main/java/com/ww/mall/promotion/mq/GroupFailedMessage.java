@@ -21,11 +21,6 @@ public class GroupFailedMessage implements Serializable {
     private String groupId;
 
     /**
-     * 链路追踪ID。
-     */
-    private String traceId;
-
-    /**
      * 活动ID
      */
     private String activityId;

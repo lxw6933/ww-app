@@ -21,7 +21,6 @@ public interface ErrorCodeConstants {
     ResCode GROUP_RECORD_FAILED_TOTAL_LIMIT_COUNT_EXCEED = new ResCode(1_013_011_008, "拼团失败，原因：超出总购买次数");
     ResCode GROUP_RECORD_FAILED_ORDER_STATUS_UNPAID = new ResCode(1_013_011_009, "拼团失败，原因：存在未支付订单，请先支付");
     ResCode GROUP_RECORD_FAILED_DISABLE = new ResCode(1_013_011_010, "拼团失败，活动已禁用");
-    ResCode GROUP_RECORD_STOCK_NOT_ENOUGH = new ResCode(1_013_011_011, "拼团失败，库存不足");
     ResCode GROUP_RECORD_ORDER_CODE_NOT_EXISTS = new ResCode(1_013_011_012, "拼团失败，订单信息不存在");
     ResCode GROUP_RECORD_ORDER_DUPLICATED = new ResCode(1_013_011_013, "拼团失败，订单已重复处理");
     ResCode GROUP_RECORD_SKU_NOT_SUPPORTED = new ResCode(1_013_011_014, "拼团失败，当前SKU不在活动范围内");

@@ -7,12 +7,10 @@ import com.ww.mall.promotion.controller.admin.group.req.GroupActivityBO;
 import com.ww.mall.promotion.entity.group.GroupActivity;
 import com.ww.mall.promotion.enums.GroupActivityStatus;
 import com.ww.mall.promotion.enums.GroupEnabledStatus;
-import com.ww.mall.promotion.key.GroupRedisKeyBuilder;
 import com.ww.mall.promotion.service.group.GroupActivityService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.mongodb.core.MongoTemplate;
 import org.springframework.data.mongodb.core.query.Query;
-import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Service;
 
 import javax.annotation.Resource;
@@ -46,12 +44,6 @@ public class GroupActivityServiceImpl implements GroupActivityService {
     @Resource
     private MongoTemplate mongoTemplate;
 
-    @Resource
-    private StringRedisTemplate stringRedisTemplate;
-
-    @Resource
-    private GroupRedisKeyBuilder groupRedisKeyBuilder;
-
     @Override
     public GroupActivity createActivity(GroupActivityBO bo) {
         if (bo == null) {
@@ -64,11 +56,8 @@ public class GroupActivityServiceImpl implements GroupActivityService {
         activity.setCreateTime(now);
         activity.setUpdateTime(now);
         activity.setStatus(GroupActivityStatus.NOT_STARTED.getCode());
-        activity.setSoldCount(0);
         activity.setEnabled(GroupEnabledStatus.ENABLED.getCode());
         GroupActivity saved = mongoTemplate.save(activity);
-        stringRedisTemplate.opsForValue().set(groupRedisKeyBuilder.buildActivityStockKey(saved.getId()),
-                String.valueOf(saved.getTotalStock()));
         log.info("创建拼团活动成功: activityId={}, spuId={}, skuRuleSize={}",
                 saved.getId(), saved.getSpuId(), saved.getSkuRules() != null ? saved.getSkuRules().size() : 0);
         return saved;
@@ -89,10 +78,6 @@ public class GroupActivityServiceImpl implements GroupActivityService {
         GroupActivity updated = buildActivity(bo, activity);
         updated.setUpdateTime(now);
         GroupActivity saved = mongoTemplate.save(updated);
-        int remainStock = Math.max(0, (saved.getTotalStock() == null ? 0 : saved.getTotalStock())
-                - (saved.getSoldCount() == null ? 0 : saved.getSoldCount()));
-        stringRedisTemplate.opsForValue().set(groupRedisKeyBuilder.buildActivityStockKey(saved.getId()),
-                String.valueOf(remainStock));
         log.info("更新拼团活动成功: activityId={}, spuId={}, skuRuleSize={}",
                 saved.getId(), saved.getSpuId(), saved.getSkuRules() != null ? saved.getSkuRules().size() : 0);
         return saved;
@@ -153,7 +138,6 @@ public class GroupActivityServiceImpl implements GroupActivityService {
         target.setExpireHours(bo.getExpireHours());
         target.setStartTime(bo.getStartTime());
         target.setEndTime(bo.getEndTime());
-        target.setTotalStock(bo.getTotalStock());
         target.setLimitPerUser(bo.getLimitPerUser());
         target.setImageUrl(bo.getImageUrl());
         target.setSortWeight(bo.getSortWeight());
@@ -220,9 +204,6 @@ public class GroupActivityServiceImpl implements GroupActivityService {
         }
         if (bo.getExpireHours() == null || bo.getExpireHours() <= 0) {
             throw new ApiException(GROUP_ACTIVITY_EXPIRE_HOURS_INVALID);
-        }
-        if (bo.getTotalStock() == null || bo.getTotalStock() <= 0) {
-            throw new ApiException(GROUP_ACTIVITY_PARAM_EMPTY.getMsg() + ": totalStock");
         }
         List<GroupActivity.GroupSkuRule> normalizedRules = normalizeSkuRules(bo);
         boolean invalidPrice = normalizedRules.stream()

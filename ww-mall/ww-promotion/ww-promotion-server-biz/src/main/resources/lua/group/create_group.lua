@@ -1,106 +1,89 @@
--- ============================================================================
--- 创建拼团Lua脚本（优化版）
--- ============================================================================
--- 功能：原子性地创建拼团实例，包括元数据、剩余名额、成员列表和订单信息
--- 特点：保证原子性操作，防止并发创建，通过groupId存在性实现幂等性校验
--- 优化：将用户计数、用户组Set等操作合并到Lua脚本中，减少Redis往返次数
---
--- KEYS（Redis键列表）:
---   [1] metaKey         - 拼团元数据Hash键 (group:instance:meta:{groupId})
---   [2] slotsKey        - 剩余名额键 (group:instance:slots:{groupId})
---   [3] membersKey      - 成员列表Sorted Set键 (group:instance:members:{groupId})
---   [4] ordersKey        - 订单信息Hash键 (group:instance:orders:{groupId})
---   [5] userGroupKey    - 用户拼团Set键 (group:user:group:{userId})
---   [6] expiryIndexKey  - 过期索引Sorted Set键 (group:expiry)
---   [7] orderMappingKey - 订单与拼团映射键 (group:order:mapping:{orderId})
---
--- ARGV（参数列表）:
---   [1] status          - 拼团状态 (OPEN)
---   [2] requiredSize    - 需要的人数
---   [3] expiresAt       - 过期时间戳（毫秒）
---   [4] leaderUserId    - 团长用户ID
---   [5] leaderOrderId   - 团长订单ID
---   [6] leaderOrderJson - 团长订单信息（JSON字符串）
---   [7] slotsAfterLeader- 剩余名额（requiredSize - 1）
---   [8] activityId      - 活动ID
---   [9] groupId         - 拼团ID（用于过期索引）
---   [10] retainSeconds  - Redis键保留秒数
---
--- 返回值（Long类型）:
---   1   - 创建成功
---   -1  - 拼团已存在（幂等性：groupId已存在）
---   -2  - 订单已存在（幂等性：订单ID已处理）
--- ============================================================================
+--[[
+拼团开团脚本。
 
--- ============================================================================
--- 获取当前时间戳（毫秒）
--- ============================================================================
-local timeResult = redis.call('TIME')
-local nowMillis = tonumber(timeResult[1]) * 1000 + math.floor(tonumber(timeResult[2]) / 1000)
+功能：
+1. 基于全局订单索引做开团幂等。
+2. 基于活动用户占位计数做活动维度限购。
+3. 原子写入团主状态、成员仓库、团内活跃用户索引、订单索引、过期索引。
+4. 向 stream:event 追加 GROUP_CREATED 事件。
 
--- ============================================================================
--- 步骤1：幂等性校验 - 检查拼团是否已存在
--- ============================================================================
-local metaExists = redis.call("EXISTS", KEYS[1])
-if metaExists == 1 then
-    return -1  -- 拼团已存在（幂等性），返回-1
+KEYS:
+1. group:instance:meta:{groupId}
+2. group:instance:member-store:{groupId}
+3. group:instance:user-index:{groupId}
+4. group:order:index
+5. group:activity:active:count
+6. group:expiry
+7. group:stream:event
+
+ARGV:
+1. groupId
+2. activityId
+3. userId
+4. orderId
+5. requiredSize
+6. groupPrice
+7. spuId
+8. skuId
+9. memberJson
+10. nowMillis
+11. expireTimeMillis
+12. limitPerUser
+13. activityUserCountField，例如 ACT_1001:20001
+14. retainSeconds
+
+memberJson 样例：
+{"groupInstanceId":"67dd3ac8f5a6f80001a10001","userId":20001,"orderId":"ORDER_10001","memberStatus":"JOINED","payAmount":99.00}
+
+事件样例：
+eventType=GROUP_CREATED,groupId=67dd3ac8f5a6f80001a10001,orderId=ORDER_10001
+]]
+local existingGroupId = redis.call('HGET', KEYS[4], ARGV[4])
+if existingGroupId then
+    return {2, existingGroupId}
 end
 
--- ============================================================================
--- 步骤2：幂等性校验 - 检查订单是否已存在
--- ============================================================================
-local orderExists = redis.call("EXISTS", KEYS[7])
-if orderExists == 1 then
-    return -2  -- 订单已存在（幂等性），返回-2
+local activeCount = tonumber(redis.call('HGET', KEYS[5], ARGV[13]) or '0')
+local limitPerUser = tonumber(ARGV[12] or '0')
+if limitPerUser > 0 and activeCount >= limitPerUser then
+    return {-3}
 end
 
--- ============================================================================
--- 步骤3：创建拼团元数据
--- ============================================================================
-redis.call("HMSET", KEYS[1],
-        "status", ARGV[1],           -- 拼团状态：OPEN
-        "requiredSize", ARGV[2],     -- 需要的人数
-        "expiresAt", ARGV[3],        -- 过期时间戳
-        "createdAt", tostring(nowMillis), -- 创建时间戳（使用Redis服务器时间）
-        "currentSize", "1",          -- 当前人数（初始为1，包含团长）
-        "leaderUserId", ARGV[4],     -- 团长用户ID
-        "activityId", ARGV[8]        -- 活动ID
+redis.call('HSET', KEYS[1],
+        'activityId', ARGV[2],
+        'leaderUserId', ARGV[3],
+        'status', 'OPEN',
+        'requiredSize', ARGV[5],
+        'currentSize', '1',
+        'remainingSlots', tostring(tonumber(ARGV[5]) - 1),
+        'expireTime', ARGV[11],
+        'completeTime', '',
+        'failedTime', '',
+        'groupPrice', ARGV[6],
+        'spuId', ARGV[7],
+        'skuId', ARGV[8],
+        'failReason', '',
+        'lastEventId', '',
+        'createTime', ARGV[10],
+        'updateTime', ARGV[10]
 )
 
--- ============================================================================
--- 步骤4：设置剩余名额
--- ============================================================================
-redis.call("SET", KEYS[2], ARGV[7])
+redis.call('HSET', KEYS[2], ARGV[4], ARGV[9])
+redis.call('HSET', KEYS[3], ARGV[3], ARGV[4])
+redis.call('HSET', KEYS[4], ARGV[4], ARGV[1])
+redis.call('HINCRBY', KEYS[5], ARGV[13], 1)
+redis.call('EXPIRE', KEYS[1], tonumber(ARGV[14]))
+redis.call('EXPIRE', KEYS[2], tonumber(ARGV[14]))
+redis.call('EXPIRE', KEYS[3], tonumber(ARGV[14]))
+redis.call('ZADD', KEYS[6], tonumber(ARGV[11]), ARGV[1])
+redis.call('XADD', KEYS[7], '*',
+        'eventType', 'GROUP_CREATED',
+        'groupId', ARGV[1],
+        'activityId', ARGV[2],
+        'userId', ARGV[3],
+        'orderId', ARGV[4],
+        'reason', '',
+        'occurredAt', ARGV[10]
+)
 
--- ============================================================================
--- 步骤5：添加团长到成员列表和订单信息
--- ============================================================================
-redis.call("ZADD", KEYS[3], nowMillis, ARGV[4])
-redis.call("HSET", KEYS[4], ARGV[5], ARGV[6])
-redis.call("SET", KEYS[7], ARGV[9])
-
--- ============================================================================
--- 步骤6：添加用户到用户拼团Set
--- ============================================================================
-redis.call("SADD", KEYS[5], ARGV[9])
-
--- ============================================================================
--- 步骤7：添加到过期索引
--- ============================================================================
-redis.call("ZADD", KEYS[6], ARGV[3], ARGV[9])
-
--- ============================================================================
--- 步骤8：设置键的过期时间
--- ============================================================================
-local expireSeconds = tonumber(ARGV[10]) or (3600 * 24 * 2)
-redis.call("EXPIRE", KEYS[1], expireSeconds)
-redis.call("EXPIRE", KEYS[2], expireSeconds)
-redis.call("EXPIRE", KEYS[3], expireSeconds)
-redis.call("EXPIRE", KEYS[4], expireSeconds)
-redis.call("EXPIRE", KEYS[5], expireSeconds)
-redis.call("EXPIRE", KEYS[7], expireSeconds)
-
--- ============================================================================
--- 返回成功标识
--- ============================================================================
-return 1  -- 创建成功
+return {1, ARGV[1]}

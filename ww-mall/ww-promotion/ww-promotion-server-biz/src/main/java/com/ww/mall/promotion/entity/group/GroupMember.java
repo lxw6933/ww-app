@@ -26,7 +26,8 @@ import java.util.List;
 @CompoundIndexes({
         @CompoundIndex(name = "idx_group_member_group_user", def = "{'groupInstanceId': 1, 'userId': 1}", unique = true),
         @CompoundIndex(name = "idx_group_member_group_join_time", def = "{'groupInstanceId': 1, 'joinTime': 1}"),
-        @CompoundIndex(name = "idx_group_member_user_activity", def = "{'userId': 1, 'activityId': 1, 'memberStatus': 1}")
+        @CompoundIndex(name = "idx_group_member_user_activity", def = "{'userId': 1, 'activityId': 1, 'memberStatus': 1}"),
+        @CompoundIndex(name = "idx_group_member_order", def = "{'orderId': 1}", unique = true)
 })
 public class GroupMember extends BaseDoc {
 
@@ -66,6 +67,13 @@ public class GroupMember extends BaseDoc {
     private BigDecimal groupPrice;
 
     /**
+     * 实际支付金额。
+     * <p>
+     * 退款补偿优先使用该字段，避免后续仅依赖活动价格导致金额失真。
+     */
+    private BigDecimal payAmount;
+
+    /**
      * 商品SPU ID
      */
     private Long spuId;
@@ -84,6 +92,11 @@ public class GroupMember extends BaseDoc {
      * 成员生命周期状态。
      */
     private String memberStatus;
+
+    /**
+     * 订单快照。
+     */
+    private String orderInfo;
 
     /**
      * 售后单号。

@@ -1,77 +1,89 @@
--- ============================================================================
--- 标记过期拼团为失败Lua脚本
--- ============================================================================
--- 功能：原子性地将过期的拼团标记为失败状态
--- 特点：保证原子性操作，自动清理过期索引，防止重复处理，使用Redis服务器时间
--- 使用场景：定时任务扫描过期拼团时调用
---
--- KEYS（Redis键列表）:
---   [1] metaKey          - 拼团元数据Hash键 (group:instance:meta:{groupId})
---   [2] expiryIndexKey  - 过期索引Sorted Set键 (group:expiry)
---
--- ARGV（参数列表）:
---   [1] groupId         - 拼团ID
---
--- 返回值（Long类型）:
---   1   - 成功标记为失败
---   0   - 拼团不存在（已从过期索引中移除）
---   -1  - 拼团未开放（状态不是OPEN，已处理）
---   -2  - 未过期（时间未到）
--- ============================================================================
+--[[
+拼团过期失败脚本。
 
--- ============================================================================
--- 获取当前时间戳（毫秒）
--- ============================================================================
--- Redis TIME命令返回 {seconds, microseconds}，需要转换为毫秒
-local timeResult = redis.call('TIME')
-local nowMillis = tonumber(timeResult[1]) * 1000 + math.floor(tonumber(timeResult[2]) / 1000)
+功能：
+1. 只处理仍处于 OPEN 且 expireTime 已到的团。
+2. 扫描 member-store，将仍占位成员统一标记为 FAILED_REFUND_PENDING。
+3. 释放团内活跃用户索引与活动用户占位计数。
+4. 更新团主状态为 FAILED，并从 expiry 中移除。
+5. 向 stream:event 追加 GROUP_FAILED 事件。
 
--- ============================================================================
--- 步骤1：检查拼团是否存在
--- ============================================================================
--- 如果拼团元数据不存在，说明拼团已被删除，只需要清理过期索引
-local metaExists = redis.call('EXISTS', KEYS[1])
-if metaExists == 0 then
-    -- 安全地从过期索引中移除，防止索引中残留无效数据
-    redis.call('ZREM', KEYS[2], ARGV[1])
-    return 0  -- 拼团不存在，返回0
+KEYS:
+1. group:instance:meta:{groupId}
+2. group:instance:member-store:{groupId}
+3. group:instance:user-index:{groupId}
+4. group:activity:active:count
+5. group:stream:event
+6. group:expiry
+
+ARGV:
+1. groupId
+2. reason
+3. nowMillis
+4. exitedStatusCode
+5. retainSeconds
+6. activityUserCountFieldPrefix，例如 ACT_1001:
+
+失败事件样例：
+eventType=GROUP_FAILED,groupId=67dd3ac8f5a6f80001a10001,reason=拼团过期未成团
+]]
+if redis.call('EXISTS', KEYS[1]) == 0 then
+    return {0}
 end
 
--- ============================================================================
--- 步骤2：获取拼团状态和过期时间
--- ============================================================================
 local status = redis.call('HGET', KEYS[1], 'status')
-local expiresAt = tonumber(redis.call('HGET', KEYS[1], 'expiresAt') or '0')
-
--- ============================================================================
--- 步骤3：检查拼团状态
--- ============================================================================
--- 如果拼团状态不是OPEN（可能是SUCCESS或FAILED），说明已经处理过
 if status ~= 'OPEN' then
-    -- 从过期索引中移除，因为已经不需要过期检查了
-    redis.call('ZREM', KEYS[2], ARGV[1])
-    return -1  -- 拼团未开放（已处理），返回-1
+    redis.call('ZREM', KEYS[6], ARGV[1])
+    return {-1, status}
 end
 
--- ============================================================================
--- 步骤4：检查是否真的过期
--- ============================================================================
--- 双重检查：虽然是从过期索引中扫描出来的，但可能时间有误差
-if expiresAt > nowMillis then
-    return -2  -- 未过期，返回-2（这种情况理论上不应该发生）
+local expireTime = tonumber(redis.call('HGET', KEYS[1], 'expireTime') or '0')
+if expireTime > 0 and tonumber(ARGV[3]) < expireTime then
+    return {-2}
 end
 
--- ============================================================================
--- 步骤5：标记拼团为失败
--- ============================================================================
--- 更新拼团状态为失败
-redis.call('HSET', KEYS[1], 'status', 'FAILED')
--- 记录失败时间（使用Redis服务器时间）
-redis.call('HSET', KEYS[1], 'failedTime', tostring(nowMillis))
--- 从过期索引中移除，因为已经处理完成
-redis.call('ZREM', KEYS[2], ARGV[1])
+local memberEntries = redis.call('HGETALL', KEYS[2])
+for i = 1, #memberEntries, 2 do
+    local orderId = memberEntries[i]
+    local member = cjson.decode(memberEntries[i + 1])
+    local memberStatus = member.memberStatus
+    if memberStatus == 'JOINED' or memberStatus == 'SUCCESS' then
+        member.memberStatus = 'FAILED_REFUND_PENDING'
+        member.status = tonumber(ARGV[4])
+        member.releaseTime = tonumber(ARGV[3])
+        member.latestTrajectory = 'GROUP_FAILED'
+        member.latestTrajectoryTime = tonumber(ARGV[3])
+        member.updateTime = tonumber(ARGV[3])
+        redis.call('HSET', KEYS[2], orderId, cjson.encode(member))
+        redis.call('HDEL', KEYS[3], tostring(member.userId))
+        local countField = ARGV[6] .. tostring(member.userId)
+        local latestCount = redis.call('HINCRBY', KEYS[4], countField, -1)
+        if latestCount <= 0 then
+            redis.call('HDEL', KEYS[4], countField)
+        end
+    end
+end
 
--- ============================================================================
--- 返回成功标识
--- ============================================================================
-return 1  -- 成功标记为失败，返回1
+redis.call('HSET', KEYS[1],
+        'status', 'FAILED',
+        'currentSize', '0',
+        'remainingSlots', '0',
+        'failedTime', ARGV[3],
+        'failReason', ARGV[2],
+        'updateTime', ARGV[3]
+)
+redis.call('ZREM', KEYS[6], ARGV[1])
+redis.call('EXPIRE', KEYS[1], tonumber(ARGV[5]))
+redis.call('EXPIRE', KEYS[2], tonumber(ARGV[5]))
+redis.call('EXPIRE', KEYS[3], tonumber(ARGV[5]))
+redis.call('XADD', KEYS[5], '*',
+        'eventType', 'GROUP_FAILED',
+        'groupId', ARGV[1],
+        'activityId', redis.call('HGET', KEYS[1], 'activityId'),
+        'userId', '',
+        'orderId', '',
+        'reason', ARGV[2],
+        'occurredAt', ARGV[3]
+)
+
+return {1, ARGV[1]}
