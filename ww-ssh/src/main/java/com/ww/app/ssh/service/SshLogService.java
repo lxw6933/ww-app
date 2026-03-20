@@ -552,6 +552,7 @@ public class SshLogService {
         try {
             channelContext = openExecChannel(target, command);
             registerActiveStream(streamId, clientIp, sessionId, target, resolvedFile, request.normalizedReadMode());
+            ExecChannelContext finalChannelContext = channelContext;
             ChannelExec finalChannel = channelContext.getChannel();
             InputStream finalInputStream = channelContext.getInputStream();
             List<LogStreamRequest.FilterRule> finalFilterRules = filterRules;
@@ -563,18 +564,21 @@ public class SshLogService {
                             readStreamLoop(finalInputStream, finalFilterRules, finalBeforeLines, finalAfterLines,
                                     lineConsumer);
                         } finally {
-                            disconnectQuietly(finalChannel);
+                            closeExecChannelContext(finalChannelContext);
                             releaseStreamSlot(streamReleased, streamId);
                         }
                     });
             return new StreamHandle(target, resolvedFile, streamTask, finalChannel,
-                    () -> releaseStreamSlot(streamReleased, streamId));
+                    () -> {
+                        closeExecChannelContext(finalChannelContext);
+                        releaseStreamSlot(streamReleased, streamId);
+                    });
         } catch (RejectedExecutionException ex) {
-            disconnectQuietly(channelContext == null ? null : channelContext.getChannel());
+            closeExecChannelContext(channelContext);
             releaseStreamSlot(streamReleased, streamId);
             throw new IllegalStateException("当前实时日志订阅数已达上限(" + maxConcurrentStreams + ")，请稍后重试", ex);
         } catch (Exception ex) {
-            disconnectQuietly(channelContext == null ? null : channelContext.getChannel());
+            closeExecChannelContext(channelContext);
             releaseStreamSlot(streamReleased, streamId);
             throw new IllegalStateException("启动日志流失败: " + target.displayName() + " - " + ex.getMessage(), ex);
         }
@@ -920,7 +924,7 @@ public class SshLogService {
         } catch (Exception ex) {
             throw new IllegalStateException("日志快照读取失败: " + target.displayName() + " - " + ex.getMessage(), ex);
         } finally {
-            disconnectQuietly(channelContext == null ? null : channelContext.getChannel());
+            closeExecChannelContext(channelContext);
         }
     }
 
@@ -960,7 +964,7 @@ public class SshLogService {
             throw new IllegalStateException(
                     "日志快照读取失败: " + target.displayName() + " - " + ex.getMessage(), ex);
         } finally {
-            disconnectQuietly(channelContext == null ? null : channelContext.getChannel());
+            closeExecChannelContext(channelContext);
         }
     }
 
@@ -1654,7 +1658,7 @@ public class SshLogService {
         } catch (Exception ex) {
             throw new IllegalStateException("执行远程命令失败: " + target.displayName() + " - " + ex.getMessage(), ex);
         } finally {
-            disconnectQuietly(channelContext == null ? null : channelContext.getChannel());
+            closeExecChannelContext(channelContext);
         }
     }
 
@@ -1803,7 +1807,7 @@ public class SshLogService {
                     channel.setCommand(command);
                     InputStream inputStream = channel.getInputStream();
                     channel.connect(resolveTimeout(node));
-                    sessionHolder.touch(System.currentTimeMillis());
+                    sessionHolder.retainChannel(System.currentTimeMillis());
                     return new ExecChannelContext(sessionHolder, channel, inputStream);
                 }
             } catch (JSchException | IOException ex) {
@@ -1857,7 +1861,9 @@ public class SshLogService {
             return;
         }
         for (SessionHolder sessionHolder : new ArrayList<>(sessionCache.values())) {
-            if (sessionHolder == null || !sessionHolder.isIdleExpired(currentTimeMillis, SESSION_IDLE_TTL_MS)) {
+            if (sessionHolder == null
+                    || sessionHolder.hasActiveChannels()
+                    || !sessionHolder.isIdleExpired(currentTimeMillis, SESSION_IDLE_TTL_MS)) {
                 continue;
             }
             invalidateSession(sessionHolder);
@@ -2502,6 +2508,18 @@ public class SshLogService {
     }
 
     /**
+     * 幂等关闭执行通道上下文，并同步回收会话中的活跃通道计数。
+     *
+     * @param channelContext 执行通道上下文
+     */
+    private void closeExecChannelContext(ExecChannelContext channelContext) {
+        if (channelContext == null) {
+            return;
+        }
+        channelContext.close();
+    }
+
+    /**
      * 安静断开 SSH 资源，忽略关闭异常。
      *
      * @param closeable 可关闭资源
@@ -2561,6 +2579,11 @@ public class SshLogService {
 
         private volatile long lastAccessAt;
 
+        /**
+         * 当前会话上仍在占用的执行通道数量。
+         */
+        private final AtomicInteger activeChannelCount = new AtomicInteger(0);
+
         private SessionHolder(String cacheKey, LogPanelProperties.ServerNode node) {
             this.cacheKey = cacheKey;
             this.node = node;
@@ -2592,6 +2615,35 @@ public class SshLogService {
         }
 
         /**
+         * 记录一个新的活跃执行通道，避免长连接 tail 被误判为空闲会话。
+         *
+         * @param currentTimeMillis 当前时间
+         */
+        private void retainChannel(long currentTimeMillis) {
+            touch(currentTimeMillis);
+            activeChannelCount.incrementAndGet();
+        }
+
+        /**
+         * 释放一个执行通道占用，并刷新最近访问时间。
+         *
+         * @param currentTimeMillis 当前时间
+         */
+        private void releaseChannel(long currentTimeMillis) {
+            touch(currentTimeMillis);
+            activeChannelCount.updateAndGet(current -> current <= 0 ? 0 : current - 1);
+        }
+
+        /**
+         * 判断当前会话是否仍被执行通道占用。
+         *
+         * @return true 表示仍存在活跃执行通道
+         */
+        private boolean hasActiveChannels() {
+            return activeChannelCount.get() > 0;
+        }
+
+        /**
          * 判断当前会话是否已空闲超时。
          *
          * @param currentTimeMillis 当前时间
@@ -2617,6 +2669,11 @@ public class SshLogService {
 
         private final InputStream inputStream;
 
+        /**
+         * 保证关闭逻辑仅执行一次，避免重复释放活跃通道计数。
+         */
+        private final AtomicBoolean closed = new AtomicBoolean(false);
+
         private ExecChannelContext(SessionHolder sessionHolder, ChannelExec channel, InputStream inputStream) {
             this.sessionHolder = sessionHolder;
             this.channel = channel;
@@ -2633,6 +2690,24 @@ public class SshLogService {
 
         private InputStream getInputStream() {
             return inputStream;
+        }
+
+        /**
+         * 关闭执行通道，并同步回收会话活跃通道计数。
+         */
+        private void close() {
+            if (!closed.compareAndSet(false, true)) {
+                return;
+            }
+            try {
+                if (channel != null) {
+                    channel.disconnect();
+                }
+            } finally {
+                if (sessionHolder != null) {
+                    sessionHolder.releaseChannel(System.currentTimeMillis());
+                }
+            }
         }
     }
 
@@ -2936,11 +3011,10 @@ public class SshLogService {
             if (streamTask != null) {
                 streamTask.cancel(true);
             }
-            if (channel != null) {
-                channel.disconnect();
-            }
             if (closeAction != null) {
                 closeAction.run();
+            } else if (channel != null) {
+                channel.disconnect();
             }
         }
     }

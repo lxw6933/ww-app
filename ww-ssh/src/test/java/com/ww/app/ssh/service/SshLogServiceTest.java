@@ -9,10 +9,13 @@ import com.ww.app.ssh.service.support.SshCommandBuilder;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
+import java.lang.reflect.Constructor;
+import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 /**
@@ -273,6 +276,49 @@ class SshLogServiceTest {
     }
 
     /**
+     * 校验存在活跃执行通道时，空闲会话清理不会误回收仍在 tail 的会话；
+     * 当通道释放后，再次清理应恢复正常回收。
+     *
+     * @throws Exception 反射调用异常
+     */
+    @Test
+    void shouldSkipIdleCleanupWhileSessionStillHasActiveChannels() throws Exception {
+        SshLogService service = new SshLogService(new SshCommandBuilder(), new LogLineFilterMatcher());
+        LogPanelProperties.ServerNode node = buildServerNode("10.0.0.1", 22, "app", "pwd");
+        Object sessionHolder = createSessionHolder("cache-key-1", node);
+        long expiredAt = System.currentTimeMillis() - 10 * 60_000L;
+        invokeSessionTouch(sessionHolder, expiredAt);
+        invokeSessionRetainChannel(sessionHolder, expiredAt);
+        invokeSessionCache(service).put("cache-key-1", sessionHolder);
+
+        invokeSetLastSessionCleanupAt(service, 0L);
+        invokeCleanupIdleSessionsIfNeeded(service, System.currentTimeMillis());
+        Assertions.assertTrue(invokeSessionCache(service).containsKey("cache-key-1"));
+
+        invokeSessionReleaseChannel(sessionHolder, System.currentTimeMillis());
+        invokeSetLastSessionCleanupAt(service, 0L);
+        invokeCleanupIdleSessionsIfNeeded(service, System.currentTimeMillis());
+        Assertions.assertFalse(invokeSessionCache(service).containsKey("cache-key-1"));
+    }
+
+    /**
+     * 校验执行通道上下文的关闭逻辑具备幂等性，避免重复关闭导致活跃通道计数被多次扣减。
+     *
+     * @throws Exception 反射调用异常
+     */
+    @Test
+    void shouldReleaseActiveChannelCountOnlyOnceWhenContextClosedRepeatedly() throws Exception {
+        Object sessionHolder = createSessionHolder("cache-key-2", buildServerNode("10.0.0.2", 22, "app", "pwd"));
+        invokeSessionRetainChannel(sessionHolder, System.currentTimeMillis());
+        Object channelContext = createExecChannelContext(sessionHolder);
+
+        invokeExecChannelContextClose(channelContext);
+        invokeExecChannelContextClose(channelContext);
+
+        Assertions.assertFalse(invokeSessionHasActiveChannels(sessionHolder));
+    }
+
+    /**
      * 通过反射调用私有方法，验证 cat 扫描窗口计算结果。
      *
      * @param requestedLines 请求展示行数
@@ -380,6 +426,141 @@ class SshLogServiceTest {
         java.lang.reflect.Field field = SshLogService.class.getDeclaredField("maxConcurrentStreams");
         field.setAccessible(true);
         return (Integer) field.get(service);
+    }
+
+    /**
+     * 读取 SSH 会话缓存。
+     *
+     * @param service 被测服务
+     * @return 会话缓存映射
+     * @throws Exception 反射调用异常
+     */
+    @SuppressWarnings("unchecked")
+    private Map<String, Object> invokeSessionCache(SshLogService service) throws Exception {
+        Field field = SshLogService.class.getDeclaredField("sessionCache");
+        field.setAccessible(true);
+        return (Map<String, Object>) field.get(service);
+    }
+
+    /**
+     * 重置上次会话清理时间，便于在单测中重复触发清理逻辑。
+     *
+     * @param service 被测服务
+     * @param value 目标时间戳
+     * @throws Exception 反射调用异常
+     */
+    private void invokeSetLastSessionCleanupAt(SshLogService service, long value) throws Exception {
+        Field field = SshLogService.class.getDeclaredField("lastSessionCleanupAt");
+        field.setAccessible(true);
+        ((java.util.concurrent.atomic.AtomicLong) field.get(service)).set(value);
+    }
+
+    /**
+     * 通过反射调用会话清理逻辑。
+     *
+     * @param service 被测服务
+     * @param currentTimeMillis 当前时间
+     * @throws Exception 反射调用异常
+     */
+    private void invokeCleanupIdleSessionsIfNeeded(SshLogService service, long currentTimeMillis) throws Exception {
+        Method method = SshLogService.class.getDeclaredMethod("cleanupIdleSessionsIfNeeded", long.class);
+        method.setAccessible(true);
+        method.invoke(service, currentTimeMillis);
+    }
+
+    /**
+     * 构造私有的 SessionHolder。
+     *
+     * @param cacheKey 会话缓存键
+     * @param node 节点配置
+     * @return SessionHolder 实例
+     * @throws Exception 反射调用异常
+     */
+    private Object createSessionHolder(String cacheKey, LogPanelProperties.ServerNode node) throws Exception {
+        Class<?> clazz = Class.forName("com.ww.app.ssh.service.SshLogService$SessionHolder");
+        Constructor<?> constructor = clazz.getDeclaredConstructor(String.class, LogPanelProperties.ServerNode.class);
+        constructor.setAccessible(true);
+        return constructor.newInstance(cacheKey, node);
+    }
+
+    /**
+     * 构造私有的 ExecChannelContext。
+     *
+     * @param sessionHolder 会话持有者
+     * @return 执行通道上下文
+     * @throws Exception 反射调用异常
+     */
+    private Object createExecChannelContext(Object sessionHolder) throws Exception {
+        Class<?> sessionHolderClass = Class.forName("com.ww.app.ssh.service.SshLogService$SessionHolder");
+        Class<?> contextClass = Class.forName("com.ww.app.ssh.service.SshLogService$ExecChannelContext");
+        Constructor<?> constructor = contextClass.getDeclaredConstructor(
+                sessionHolderClass, com.jcraft.jsch.ChannelExec.class, java.io.InputStream.class);
+        constructor.setAccessible(true);
+        return constructor.newInstance(sessionHolder, null, null);
+    }
+
+    /**
+     * 回写 SessionHolder 的最近访问时间。
+     *
+     * @param sessionHolder 会话持有者
+     * @param currentTimeMillis 当前时间
+     * @throws Exception 反射调用异常
+     */
+    private void invokeSessionTouch(Object sessionHolder, long currentTimeMillis) throws Exception {
+        Method method = sessionHolder.getClass().getDeclaredMethod("touch", long.class);
+        method.setAccessible(true);
+        method.invoke(sessionHolder, currentTimeMillis);
+    }
+
+    /**
+     * 模拟执行通道占用会话。
+     *
+     * @param sessionHolder 会话持有者
+     * @param currentTimeMillis 当前时间
+     * @throws Exception 反射调用异常
+     */
+    private void invokeSessionRetainChannel(Object sessionHolder, long currentTimeMillis) throws Exception {
+        Method method = sessionHolder.getClass().getDeclaredMethod("retainChannel", long.class);
+        method.setAccessible(true);
+        method.invoke(sessionHolder, currentTimeMillis);
+    }
+
+    /**
+     * 模拟执行通道释放会话。
+     *
+     * @param sessionHolder 会话持有者
+     * @param currentTimeMillis 当前时间
+     * @throws Exception 反射调用异常
+     */
+    private void invokeSessionReleaseChannel(Object sessionHolder, long currentTimeMillis) throws Exception {
+        Method method = sessionHolder.getClass().getDeclaredMethod("releaseChannel", long.class);
+        method.setAccessible(true);
+        method.invoke(sessionHolder, currentTimeMillis);
+    }
+
+    /**
+     * 判断会话上是否仍有活跃执行通道。
+     *
+     * @param sessionHolder 会话持有者
+     * @return true 表示仍存在活跃通道
+     * @throws Exception 反射调用异常
+     */
+    private boolean invokeSessionHasActiveChannels(Object sessionHolder) throws Exception {
+        Method method = sessionHolder.getClass().getDeclaredMethod("hasActiveChannels");
+        method.setAccessible(true);
+        return (Boolean) method.invoke(sessionHolder);
+    }
+
+    /**
+     * 触发执行通道上下文关闭。
+     *
+     * @param channelContext 执行通道上下文
+     * @throws Exception 反射调用异常
+     */
+    private void invokeExecChannelContextClose(Object channelContext) throws Exception {
+        Method method = channelContext.getClass().getDeclaredMethod("close");
+        method.setAccessible(true);
+        method.invoke(channelContext);
     }
 
     /**
