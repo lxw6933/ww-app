@@ -108,8 +108,9 @@ public class GroupDomainEventProjector {
                     }
                     GroupCacheSnapshot snapshot = groupRedisStateReader.loadGroupSnapshot(event.getGroupId());
                     if (snapshot != null) {
-                        persistProjection(snapshot, event);
+                        // publish external business message first, then persist Mongo projection with lastEventId
                         publishBusinessMessage(snapshot, event);
+                        persistProjection(snapshot, event);
                     } else {
                         log.warn("拼团事件投影跳过，Redis 主状态不存在: eventId={}, eventType={}, groupId={}",
                                 event.getEventId(), event.getEventType(), event.getGroupId());

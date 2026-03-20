@@ -106,10 +106,8 @@ public class GroupQueryService {
             if (!hasText(groupId)) {
                 continue;
             }
-            try {
-                result.add(getGroupDetail(groupId));
-            } catch (Exception ignore) {
-            }
+            // å¦‚æžœæŸ¥è¯¢æŸä¸ªå›¢å¤±è´¥ï¼Œä»˜è´¹ä¸ŠæŠ¥ç›´æŽ¥å¤„ç†ï¼Œé¿å…éšæ„åžé™¤å¼‚å¸¸é€ æˆéš¾ä»¥æŽ’éšœ
+            result.add(getGroupDetail(groupId));
         }
         return result;
     }

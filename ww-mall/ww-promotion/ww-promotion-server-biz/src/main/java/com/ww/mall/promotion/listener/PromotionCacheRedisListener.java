@@ -35,11 +35,11 @@ public class PromotionCacheRedisListener extends RedisChannelListener {
         log.info("收到订阅渠道【{}】通知【{}】数据变更", channel, keyStr);
         switch (channel) {
             case RedisChannelConstant.GROUP_ACTIVITY_CACHE_CHANNEL:
-                groupActivityCache.invalidate(Long.valueOf(keyStr));
+                // 使用活动ID字符串作为缓存键进行失效，保持与 LoadingCache<String, GroupActivity> 的泛型一致
+                groupActivityCache.invalidate(keyStr);
                 break;
             default:
         }
 
     }
 }
-
