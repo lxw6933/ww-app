@@ -207,6 +207,39 @@ public class SshCommandBuilder {
     }
 
     /**
+     * 构建 cat 模式 grep 预筛并仅回传尾部窗口的命令。
+     * <p>
+     * 适用于仅包含简单 include 规则的场景：将“最新命中 N 行”的裁剪直接下推到远端，
+     * 避免将全量命中结果回传到服务端再做尾部窗口保留。
+     * </p>
+     *
+     * @param filePath    日志文件路径
+     * @param filterRules 过滤规则
+     * @param keepLines   最终保留的尾部行数
+     * @return Shell 命令
+     */
+    public String buildCatGrepTailCommand(String filePath,
+                                          List<LogStreamRequest.FilterRule> filterRules,
+                                          int keepLines) {
+        String quotedPath = shellQuote(filePath);
+        int resolvedKeepLines = Math.max(1, keepLines);
+        StringBuilder command = new StringBuilder("cat " + quotedPath);
+        List<List<String>> includeRuleTerms = resolveIncludeRuleTerms(filterRules);
+        for (List<String> terms : includeRuleTerms) {
+            if (terms == null || terms.isEmpty()) {
+                continue;
+            }
+            command.append(" | grep -a -F");
+            for (String term : terms) {
+                command.append(" -e ").append(shellQuote(term));
+            }
+        }
+        command.append(" | tail -n ").append(resolvedKeepLines);
+        String fallback = "cat " + quotedPath + " 2>&1";
+        return "if [ -f " + quotedPath + " ]; then " + command + " 2>&1; else " + fallback + "; fi";
+    }
+
+    /**
      * 构建 cat 模式“全文件上下文窗口”读取命令（含 -B/-A 语义）。
      * <p>
      * 目标语义：对<strong>全文件</strong>执行过滤匹配，当某行命中 include/exclude 规则后，

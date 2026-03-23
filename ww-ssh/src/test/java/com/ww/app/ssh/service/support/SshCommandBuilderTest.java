@@ -87,6 +87,30 @@ class SshCommandBuilderTest {
     }
 
     /**
+     * 校验 cat grep + tail 命令会在远端直接裁剪最新命中窗口，避免回传全部命中结果。
+     */
+    @Test
+    void shouldBuildCatGrepTailCommand() {
+        SshCommandBuilder builder = new SshCommandBuilder();
+
+        LogStreamRequest.FilterRule include = new LogStreamRequest.FilterRule();
+        include.setType(LogStreamRequest.FILTER_TYPE_INCLUDE);
+        include.setData("ERROR||timeout");
+
+        LogStreamRequest.FilterRule exclude = new LogStreamRequest.FilterRule();
+        exclude.setType(LogStreamRequest.FILTER_TYPE_EXCLUDE);
+        exclude.setData("DEBUG");
+
+        String command = builder.buildCatGrepTailCommand("/data/logs/app.log", Arrays.asList(include, exclude), 200);
+        Assertions.assertTrue(command.contains("cat '/data/logs/app.log'"));
+        Assertions.assertTrue(command.contains("grep -a -F"));
+        Assertions.assertTrue(command.contains("-e 'ERROR'"));
+        Assertions.assertTrue(command.contains("-e 'timeout'"));
+        Assertions.assertTrue(command.contains("tail -n 200"));
+        Assertions.assertFalse(command.contains("-e 'DEBUG'"));
+    }
+
+    /**
      * 校验 tail grep 预筛命令从当前时刻追踪并拼接包含关键词。
      */
     @Test

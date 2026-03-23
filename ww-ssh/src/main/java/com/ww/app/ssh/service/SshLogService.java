@@ -717,8 +717,12 @@ public class SshLogService {
             return readByCatNoFilter(target, resolvedFile, lines);
         }
 
-        // 无上下文窗口时，保持原有行为：有 include 规则走远端 grep 预筛，减少扫描量和回传量。
+        // 无上下文窗口时，优先将“简单 include 查询”的最新命中窗口下推到远端，
+        // 进一步减少全量命中结果回传；复杂表达式仍走原有预筛 + 本地 matcher 兜底路径。
         if (hasIncludeRule && !hasContextWindow) {
+            if (canDelegateCatTailWindowToRemote(filterRules)) {
+                return readByCatByRemoteTailGrep(target, resolvedFile, filterRules, lines);
+            }
             return readByCatByGrepPrefilter(target, resolvedFile, filterRules, lines);
         }
 
@@ -734,18 +738,11 @@ public class SshLogService {
         int scanLines = resolveCatScanLines(lines + beforeLines + afterLines, filterRules);
         String command = sshCommandBuilder.buildCatCommand(resolvedFile, scanLines);
         List<String> rawLines = executeCommandForLines(target, command, scanLines + 20);
-        List<String> effectiveLines;
-        if (hasContextWindow) {
-            // 本地按“命中行 ± 上下文行数”裁剪窗口。
-            effectiveLines = applyContextWindow(rawLines, filterRules, beforeLines, afterLines);
-        } else {
-            List<String> filtered = new ArrayList<>();
-            for (String line : rawLines) {
-                if (logLineFilterMatcher.matches(line, filterRules)) {
-                    filtered.add(line);
-                }
+        List<String> effectiveLines = new ArrayList<>();
+        for (String line : rawLines) {
+            if (logLineFilterMatcher.matches(line, filterRules)) {
+                effectiveLines.add(line);
             }
-            effectiveLines = filtered;
         }
         return trimToWindow(effectiveLines, lines);
     }
@@ -916,6 +913,92 @@ public class SshLogService {
     }
 
     /**
+     * 判断规则集中是否包含“排除规则”。
+     * <p>
+     * 只要存在 exclude 规则，就不能直接依赖远端 grep + tail 输出最终结果，
+     * 否则会丢失“先命中 include 再排除 exclude”的精确判定语义。
+     * </p>
+     *
+     * @param filterRules 生效规则
+     * @return true 表示存在 exclude 规则
+     */
+    private boolean hasExcludeFilterRule(List<LogStreamRequest.FilterRule> filterRules) {
+        if (filterRules == null || filterRules.isEmpty()) {
+            return false;
+        }
+        for (LogStreamRequest.FilterRule rule : filterRules) {
+            if (rule == null) {
+                continue;
+            }
+            if (LogStreamRequest.FILTER_TYPE_EXCLUDE.equalsIgnoreCase(trimToEmpty(rule.getType()))) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    /**
+     * 判断 cat 快照是否可以将“最新命中窗口裁剪”完全下推到远端。
+     * <p>
+     * 安全下推条件：
+     * 1. 至少存在一条 include 规则；<br>
+     * 2. 不存在 exclude 规则；<br>
+     * 3. 每条 include 规则内部仅允许“单词”或“||”语义，不允许出现 &&。<br>
+     * 满足以上条件时，远端 {@code grep | tail -n} 的结果与本地 matcher 语义一致。
+     * </p>
+     *
+     * @param filterRules 生效规则
+     * @return true 表示可安全下推
+     */
+    private boolean canDelegateCatTailWindowToRemote(List<LogStreamRequest.FilterRule> filterRules) {
+        if (!hasIncludeFilterRule(filterRules) || hasExcludeFilterRule(filterRules)) {
+            return false;
+        }
+        for (LogStreamRequest.FilterRule rule : filterRules) {
+            if (rule == null) {
+                continue;
+            }
+            if (!LogStreamRequest.FILTER_TYPE_INCLUDE.equalsIgnoreCase(trimToEmpty(rule.getType()))) {
+                continue;
+            }
+            if (!isRemoteGrepSafeIncludeExpression(rule.getData())) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    /**
+     * 判断 include 表达式是否可被远端 grep 精确表达。
+     * <p>
+     * 允许：
+     * 1. 单个关键字；<br>
+     * 2. 使用 {@code ||} 连接的多个关键字。<br>
+     * 不允许：
+     * 1. 含 {@code &&} 的表达式，因为 grep 多个 {@code -e} 为 OR 语义，无法表达单条规则内 AND。<br>
+     * </p>
+     *
+     * @param expression include 表达式
+     * @return true 表示可安全下推到 grep
+     */
+    private boolean isRemoteGrepSafeIncludeExpression(String expression) {
+        String normalized = trimToEmpty(expression);
+        if (normalized.isEmpty()) {
+            return false;
+        }
+        if (normalized.contains("&&")) {
+            return false;
+        }
+        String[] orTerms = normalized.split("\\|\\|");
+        for (String term : orTerms) {
+            if (trimToEmpty(term).isEmpty()) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    /**
      * 基于 grep 预筛执行 cat 快照读取（全文件范围）。
      * <p>
      * 执行策略：
@@ -935,6 +1018,46 @@ public class SshLogService {
                                                   List<LogStreamRequest.FilterRule> filterRules,
                                                   int keepLines) {
         String command = sshCommandBuilder.buildCatGrepPrefilterCommand(resolvedFile, filterRules);
+        Deque<String> window = new ArrayDeque<>();
+        ExecChannelContext channelContext = null;
+        try {
+            channelContext = openExecChannel(target, command);
+            try (BufferedReader reader = new BufferedReader(
+                    new InputStreamReader(channelContext.getInputStream(), StandardCharsets.UTF_8))) {
+                String line;
+                while ((line = reader.readLine()) != null) {
+                    if (logLineFilterMatcher.matches(line, filterRules)) {
+                        appendTailWindow(window, line, keepLines);
+                    }
+                }
+            }
+            return new ArrayList<>(window);
+        } catch (Exception ex) {
+            throw new IllegalStateException("日志快照读取失败: " + target.displayName() + " - " + ex.getMessage(), ex);
+        } finally {
+            closeExecChannelContext(channelContext);
+        }
+    }
+
+    /**
+     * 基于“远端 grep + tail”执行 cat 快照读取。
+     * <p>
+     * 仅在 {@link #canDelegateCatTailWindowToRemote(List)} 判定为安全时调用，
+     * 由远端直接返回“符合查询条件的最新 keepLines 行”，进一步降低网络传输与服务端内存占用。
+     * 这里仍保留一次 matcher 校验，用于兜底防止远端命令与本地语义意外偏差。
+     * </p>
+     *
+     * @param target       目标服务节点
+     * @param resolvedFile 已解析日志路径
+     * @param filterRules  生效过滤规则
+     * @param keepLines    最终保留行数
+     * @return 过滤后的尾部窗口
+     */
+    private List<String> readByCatByRemoteTailGrep(LogTarget target,
+                                                   String resolvedFile,
+                                                   List<LogStreamRequest.FilterRule> filterRules,
+                                                   int keepLines) {
+        String command = sshCommandBuilder.buildCatGrepTailCommand(resolvedFile, filterRules, keepLines);
         Deque<String> window = new ArrayDeque<>();
         ExecChannelContext channelContext = null;
         try {

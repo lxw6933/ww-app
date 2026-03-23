@@ -80,6 +80,47 @@ class SshLogServiceTest {
     }
 
     /**
+     * 校验仅包含简单 include 规则时，可安全将“最新命中窗口”下推到远端 grep + tail。
+     *
+     * @throws Exception 反射调用异常
+     */
+    @Test
+    void shouldAllowRemoteTailDelegationForSimpleIncludeRules() throws Exception {
+        boolean delegated = invokeCanDelegateCatTailWindowToRemote(Arrays.asList(
+                rule("include", "ERROR||timeout"),
+                rule("include", "orderId||traceId")
+        ));
+        Assertions.assertTrue(delegated);
+    }
+
+    /**
+     * 校验 include 规则中存在 && 时，不允许下推到远端 grep，以免 AND 语义被错误放宽为 OR。
+     *
+     * @throws Exception 反射调用异常
+     */
+    @Test
+    void shouldRejectRemoteTailDelegationWhenIncludeContainsAnd() throws Exception {
+        boolean delegated = invokeCanDelegateCatTailWindowToRemote(Collections.singletonList(
+                rule("include", "ERROR&&orderId")
+        ));
+        Assertions.assertFalse(delegated);
+    }
+
+    /**
+     * 校验存在 exclude 规则时，不允许直接依赖远端 grep + tail 返回最终结果。
+     *
+     * @throws Exception 反射调用异常
+     */
+    @Test
+    void shouldRejectRemoteTailDelegationWhenExcludeRulePresent() throws Exception {
+        boolean delegated = invokeCanDelegateCatTailWindowToRemote(Arrays.asList(
+                rule("include", "ERROR||timeout"),
+                rule("exclude", "DEBUG")
+        ));
+        Assertions.assertFalse(delegated);
+    }
+
+    /**
      * 校验默认文件选择逻辑：info 日志优先于其他类型日志。
      *
      * @throws Exception 反射调用异常
@@ -343,6 +384,20 @@ class SshLogServiceTest {
      */
     private boolean invokeHasIncludeFilterRule(List<LogStreamRequest.FilterRule> filterRules) throws Exception {
         Method method = SshLogService.class.getDeclaredMethod("hasIncludeFilterRule", List.class);
+        method.setAccessible(true);
+        return (Boolean) method.invoke(sshLogService, filterRules);
+    }
+
+    /**
+     * 通过反射调用“cat 简单查询是否允许远端尾部裁剪”判定方法。
+     *
+     * @param filterRules 规则集合
+     * @return true 表示可安全下推
+     * @throws Exception 反射调用异常
+     */
+    private boolean invokeCanDelegateCatTailWindowToRemote(List<LogStreamRequest.FilterRule> filterRules)
+            throws Exception {
+        Method method = SshLogService.class.getDeclaredMethod("canDelegateCatTailWindowToRemote", List.class);
         method.setAccessible(true);
         return (Boolean) method.invoke(sshLogService, filterRules);
     }
