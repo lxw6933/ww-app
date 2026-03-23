@@ -105,6 +105,8 @@ export class MetricsPanelController {
         this.operationStates = new Map();
         this.operationTips = new Map();
         this.operationConfirmStates = new Map();
+        this.middlewareCache = new Map();
+        this.renderedMiddlewareContextKey = '';
         this.loading = false;
         this.activeRequestController = null;
         this.activeQueryKey = '';
@@ -113,6 +115,7 @@ export class MetricsPanelController {
         this.registeredQueryKey = '';
         this.lastRegisterAt = 0;
         this.visibilityEventsBound = false;
+        this.middlewareEventsBound = false;
     }
 
     /**
@@ -121,6 +124,7 @@ export class MetricsPanelController {
     init() {
         this.renderEmpty('请选择项目、环境与服务后查看服务器指标');
         this.bindVisibilityEvents();
+        this.bindMiddlewarePanelEvents();
         this.startPolling();
     }
 
@@ -404,12 +408,70 @@ export class MetricsPanelController {
     }
 
     /**
+     * 绑定中间件悬浮面板相关的全局事件。
+     * <p>
+     * 1. 点击空白区域时关闭已手动展开的面板；<br>
+     * 2. 按下 Escape 时统一收起，避免小屏或键盘操作下残留浮层。<br>
+     * </p>
+     */
+    bindMiddlewarePanelEvents() {
+        if (this.middlewareEventsBound || typeof document === 'undefined') {
+            return;
+        }
+        this.middlewareEventsBound = true;
+        document.addEventListener('click', event => {
+            if (event && event.target && event.target.closest && event.target.closest('.metric-middleware')) {
+                return;
+            }
+            this.closeOpenMiddlewarePopovers(null);
+        });
+        document.addEventListener('keydown', event => {
+            if (event && event.key === 'Escape') {
+                this.closeOpenMiddlewarePopovers(null);
+            }
+        });
+    }
+
+    /**
      * 判断页面当前是否处于后台不可见状态。
      *
      * @returns {boolean} true 表示不可见
      */
     isPageHidden() {
         return typeof document !== 'undefined' && !!document.hidden;
+    }
+
+    /**
+     * 关闭当前页面中已手动展开的中间件面板。
+     *
+     * @param {HTMLElement|null} exceptWrapper 需要保留展开状态的浮层容器
+     */
+    closeOpenMiddlewarePopovers(exceptWrapper) {
+        if (typeof document === 'undefined') {
+            return;
+        }
+        document.querySelectorAll('.metric-middleware.is-open').forEach(wrapper => {
+            if (exceptWrapper && wrapper === exceptWrapper) {
+                return;
+            }
+            this.closeMiddlewarePopover(wrapper);
+        });
+    }
+
+    /**
+     * 关闭单个中间件浮层，并同步收起按钮展开态。
+     *
+     * @param {HTMLElement|null} wrapper 浮层容器
+     */
+    closeMiddlewarePopover(wrapper) {
+        if (!wrapper) {
+            return;
+        }
+        wrapper.classList.remove('is-open');
+        const triggerEl = wrapper.querySelector('.metric-middleware-trigger');
+        if (triggerEl) {
+            triggerEl.setAttribute('aria-expanded', 'false');
+        }
     }
 
     /**
@@ -420,6 +482,7 @@ export class MetricsPanelController {
     renderEmpty(text) {
         this.setLoading(false);
         this.lastMetrics = [];
+        this.renderGlobalMiddlewareWidget(null);
         this.renderSummary({
             statusText: '待选择',
             online: null,
@@ -445,6 +508,7 @@ export class MetricsPanelController {
     renderError(text) {
         this.setLoading(false);
         this.lastMetrics = [];
+        this.renderGlobalMiddlewareWidget(null);
         this.renderSummary({
             statusText: '获取失败',
             online: null,
@@ -476,6 +540,7 @@ export class MetricsPanelController {
             return;
         }
 
+        this.renderGlobalMiddlewareWidget(this.resolveGlobalMiddlewareTarget(list));
         const hostGroups = this.groupByHost(list);
         const total = list.length;
         const totalServers = hostGroups.length;
@@ -517,6 +582,13 @@ export class MetricsPanelController {
     renderLoadingState(manual) {
         const listEl = el('metricsList');
         const hasCards = !!(listEl && listEl.querySelector('.metric-host-group'));
+        const currentMiddlewareContextKey = this.buildMiddlewareKey('');
+        if (this.renderedMiddlewareContextKey && this.renderedMiddlewareContextKey !== currentMiddlewareContextKey) {
+            this.renderGlobalMiddlewareWidget(null);
+        }
+        if (!hasCards) {
+            this.renderGlobalMiddlewareWidget(null);
+        }
         if (hasCards && !manual) {
             this.setLoading(false);
             return;
@@ -981,6 +1053,558 @@ export class MetricsPanelController {
         }
         barEl.appendChild(noteEl);
         return barEl;
+    }
+
+    /**
+     * 创建中间件入口组件。
+     * <p>
+     * 同一环境下的服务共用一套中间件配置，因此该入口虽然挂在实例卡片上，
+     * 但展示与缓存都按“项目 + 环境”维度共享，避免同环境重复请求。
+     * </p>
+     *
+     * @param {Object} item 指标对象
+     * @returns {HTMLDivElement} 中间件入口组件
+     */
+    createMiddlewareWidget(item, options) {
+        const service = item && item.service ? String(item.service) : '';
+        const middlewareCount = Number(item && item.middlewareCount);
+        const placement = options && options.placement ? String(options.placement) : 'panel';
+        const wrapperEl = document.createElement('div');
+        wrapperEl.className = placement === 'header' ? 'metric-middleware metric-middleware-header' : 'metric-middleware';
+        wrapperEl.dataset.middlewareKey = this.buildMiddlewareKey(service);
+
+        const triggerEl = document.createElement('button');
+        triggerEl.type = 'button';
+        triggerEl.className = 'metric-middleware-trigger';
+        triggerEl.title = '查看当前环境共享的中间件后台';
+        triggerEl.setAttribute('aria-haspopup', 'dialog');
+        triggerEl.setAttribute('aria-expanded', 'false');
+
+        const labelEl = document.createElement('span');
+        labelEl.className = 'metric-middleware-trigger-label';
+        labelEl.textContent = '中间件';
+        triggerEl.appendChild(labelEl);
+
+        if (Number.isFinite(middlewareCount) && middlewareCount > 0) {
+            const countEl = document.createElement('span');
+            countEl.className = 'metric-middleware-trigger-count';
+            countEl.textContent = String(middlewareCount);
+            triggerEl.appendChild(countEl);
+        }
+
+        const caretEl = document.createElement('span');
+        caretEl.className = 'metric-middleware-trigger-caret';
+        caretEl.setAttribute('aria-hidden', 'true');
+        caretEl.textContent = '▾';
+        triggerEl.appendChild(caretEl);
+
+        const popoverEl = document.createElement('div');
+        popoverEl.className = 'metric-middleware-popover';
+        popoverEl.setAttribute('role', 'dialog');
+        popoverEl.setAttribute('aria-label', 'middleware-console');
+
+        const bodyEl = document.createElement('div');
+        bodyEl.className = 'metric-middleware-popover-body';
+        popoverEl.appendChild(bodyEl);
+
+        const ensureLoaded = () => this.ensureMiddlewareLoaded(service, bodyEl);
+        const preloadPopover = event => {
+            if (event) {
+                event.stopPropagation();
+            }
+            ensureLoaded();
+        };
+        const markExpanded = expanded => {
+            triggerEl.setAttribute('aria-expanded', expanded ? 'true' : 'false');
+        };
+        triggerEl.addEventListener('mouseenter', () => markExpanded(true));
+        wrapperEl.addEventListener('mouseleave', () => markExpanded(false));
+        triggerEl.addEventListener('mouseenter', preloadPopover);
+        triggerEl.addEventListener('focus', event => {
+            markExpanded(true);
+            preloadPopover(event);
+        });
+        triggerEl.addEventListener('blur', () => markExpanded(false));
+        triggerEl.addEventListener('click', event => {
+            event.preventDefault();
+            preloadPopover(event);
+        });
+        popoverEl.addEventListener('click', event => {
+            event.stopPropagation();
+        });
+
+        wrapperEl.appendChild(triggerEl);
+        wrapperEl.appendChild(popoverEl);
+        this.renderMiddlewarePopover(bodyEl, service);
+        return wrapperEl;
+    }
+
+    /**
+     * 懒加载当前环境共享的中间件后台列表。
+     *
+     * @param {string} service 实例服务键
+     * @param {HTMLDivElement} panelBody 浮层主体节点
+     */
+    /**
+     * 从当前指标列表中挑选一个可代表当前环境的中间件入口目标。
+     *
+     * @param {Array<Object>} list 指标列表
+     * @returns {{service:string,middlewareCount:number}|null} 代表目标
+     */
+    resolveGlobalMiddlewareTarget(list) {
+        const items = Array.isArray(list) ? list : [];
+        for (let i = 0; i < items.length; i++) {
+            const item = items[i];
+            if (!truthy(item && item.canOpenMiddleware)) {
+                continue;
+            }
+            const service = item && item.service ? String(item.service) : '';
+            if (!service) {
+                continue;
+            }
+            return {
+                service: service,
+                middlewareCount: Number(item && item.middlewareCount)
+            };
+        }
+        return null;
+    }
+
+    /**
+     * 在服务器指标标题区渲染环境级中间件入口。
+     *
+     * @param {{service:string,middlewareCount:number}|null} target 代表目标
+     */
+    renderGlobalMiddlewareWidget(target) {
+        const mountEl = el('metricsPanelActions');
+        if (!mountEl) {
+            return;
+        }
+        mountEl.innerHTML = '';
+        this.renderedMiddlewareContextKey = this.buildMiddlewareKey('');
+        if (!target || !target.service) {
+            mountEl.classList.add('hidden');
+            return;
+        }
+        mountEl.classList.remove('hidden');
+        mountEl.appendChild(this.createMiddlewareWidget({
+            service: target.service,
+            middlewareCount: target.middlewareCount
+        }, {
+            placement: 'header'
+        }));
+    }
+
+    ensureMiddlewareLoaded(service, panelBody) {
+        const key = this.buildMiddlewareKey(service);
+        if (!key || !panelBody) {
+            return;
+        }
+        const cacheEntry = this.middlewareCache.get(key);
+        if (cacheEntry && (cacheEntry.status === 'loading' || cacheEntry.status === 'success')) {
+            this.renderMiddlewarePopover(panelBody, service);
+            return;
+        }
+
+        this.middlewareCache.set(key, {
+            status: 'loading',
+            items: [],
+            message: ''
+        });
+        this.renderMiddlewarePopover(panelBody, service);
+
+        fetch(this.buildMiddlewareListUrl(service))
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error(`状态码 ${response.status}`);
+                }
+                return response.json();
+            })
+            .then(payload => {
+                this.middlewareCache.set(key, {
+                    status: 'success',
+                    items: this.normalizeMiddlewareItems(payload),
+                    message: ''
+                });
+                this.refreshMiddlewarePanels(service);
+            })
+            .catch(error => {
+                const message = error && error.message ? String(error.message) : '网络异常';
+                this.middlewareCache.set(key, {
+                    status: 'error',
+                    items: [],
+                    message: `中间件配置加载失败：${message}`
+                });
+                this.refreshMiddlewarePanels(service);
+            });
+    }
+
+    /**
+     * 刷新当前页面上同一环境对应的中间件浮层内容。
+     *
+     * @param {string} service 实例服务键
+     */
+    refreshMiddlewarePanels(service) {
+        const targetKey = this.buildMiddlewareKey(service);
+        if (!targetKey || typeof document === 'undefined') {
+            return;
+        }
+        document.querySelectorAll('.metric-middleware').forEach(wrapper => {
+            if (!wrapper || wrapper.dataset.middlewareKey !== targetKey) {
+                return;
+            }
+            const bodyEl = wrapper.querySelector('.metric-middleware-popover-body');
+            if (bodyEl) {
+                this.renderMiddlewarePopover(bodyEl, service);
+            }
+        });
+    }
+
+    /**
+     * 渲染中间件浮层内容。
+     *
+     * @param {HTMLDivElement} panelBody 浮层主体节点
+     * @param {string} service 实例服务键
+     */
+    renderMiddlewarePopover(panelBody, service) {
+        if (!panelBody) {
+            return;
+        }
+        const cacheEntry = this.middlewareCache.get(this.buildMiddlewareKey(service));
+        panelBody.innerHTML = '';
+        panelBody.appendChild(this.createMiddlewarePopoverHeader(cacheEntry));
+
+        const contentEl = document.createElement('div');
+        contentEl.className = 'metric-middleware-list';
+        panelBody.appendChild(contentEl);
+
+        if (!cacheEntry || cacheEntry.status === 'loading') {
+            const loadingEl = document.createElement('div');
+            loadingEl.className = 'metric-middleware-empty';
+            loadingEl.textContent = '中间件配置加载中...';
+            contentEl.appendChild(loadingEl);
+            return;
+        }
+
+        if (cacheEntry.status === 'error') {
+            const errorEl = document.createElement('div');
+            errorEl.className = 'metric-middleware-empty error';
+            errorEl.textContent = cacheEntry.message || '中间件配置加载失败';
+            contentEl.appendChild(errorEl);
+
+            const retryBtn = document.createElement('button');
+            retryBtn.type = 'button';
+            retryBtn.className = 'secondary metric-middleware-retry-btn';
+            retryBtn.textContent = '重试';
+            retryBtn.addEventListener('click', event => {
+                event.preventDefault();
+                event.stopPropagation();
+                this.middlewareCache.delete(this.buildMiddlewareKey(service));
+                this.ensureMiddlewareLoaded(service, panelBody);
+            });
+            contentEl.appendChild(retryBtn);
+            return;
+        }
+
+        if (!cacheEntry.items || cacheEntry.items.length === 0) {
+            const emptyEl = document.createElement('div');
+            emptyEl.className = 'metric-middleware-empty';
+            emptyEl.textContent = '当前环境未配置共享中间件后台';
+            contentEl.appendChild(emptyEl);
+            return;
+        }
+
+        cacheEntry.items.forEach(item => {
+            contentEl.appendChild(this.createMiddlewareItem(service, item));
+        });
+    }
+
+    /**
+     * 创建单个中间件后台卡片。
+     *
+     * @param {string} service 实例服务键
+     * @param {Object} item 中间件配置
+     * @returns {HTMLDivElement} 卡片节点
+     */
+    /**
+     * 创建中间件浮层头部，统一说明与关闭入口。
+     *
+     * @param {{items:Array<Object>}|undefined} cacheEntry 缓存条目
+     * @returns {HTMLDivElement} 头部节点
+     */
+    createMiddlewarePopoverHeader(cacheEntry) {
+        const headEl = document.createElement('div');
+        headEl.className = 'metric-middleware-popover-head';
+
+        const titleWrapEl = document.createElement('div');
+        titleWrapEl.className = 'metric-middleware-popover-title-wrap';
+
+        const titleEl = document.createElement('div');
+        titleEl.className = 'metric-middleware-popover-title';
+        titleEl.textContent = `${this.getEnv ? String(this.getEnv() || '') : ''} 环境中间件`;
+        titleWrapEl.appendChild(titleEl);
+
+        const descEl = document.createElement('div');
+        descEl.className = 'metric-middleware-popover-desc';
+        const itemCount = cacheEntry && Array.isArray(cacheEntry.items) ? cacheEntry.items.length : 0;
+        descEl.textContent = itemCount > 0
+            ? `已配置 ${itemCount} 个共享后台入口`
+            : '统一查看当前环境共享的中间件后台';
+        titleWrapEl.appendChild(descEl);
+
+        const closeBtn = document.createElement('button');
+        closeBtn.type = 'button';
+        closeBtn.className = 'secondary metric-middleware-close-btn';
+        closeBtn.textContent = '关闭';
+        closeBtn.addEventListener('click', event => {
+            event.preventDefault();
+            event.stopPropagation();
+            this.closeMiddlewarePopover(
+                event.currentTarget && event.currentTarget.closest
+                    ? event.currentTarget.closest('.metric-middleware')
+                    : null
+            );
+        });
+
+        headEl.appendChild(titleWrapEl);
+        headEl.appendChild(closeBtn);
+        return headEl;
+    }
+
+    createMiddlewareItem(service, item) {
+        const itemEl = document.createElement('div');
+        itemEl.className = 'metric-middleware-item';
+
+        const headEl = document.createElement('div');
+        headEl.className = 'metric-middleware-item-head';
+
+        const titleEl = document.createElement('span');
+        titleEl.className = 'metric-middleware-name';
+        titleEl.textContent = item && item.name ? String(item.name) : '未命名中间件';
+        headEl.appendChild(titleEl);
+
+        if (item && item.code) {
+            const codeEl = document.createElement('span');
+            codeEl.className = 'metric-middleware-code';
+            codeEl.textContent = String(item.code);
+            headEl.appendChild(codeEl);
+        }
+        itemEl.appendChild(headEl);
+
+        itemEl.appendChild(this.createMiddlewareField('账号', item && item.username ? String(item.username) : '--', false));
+        itemEl.appendChild(this.createMiddlewareField('密码', item && item.password ? String(item.password) : '--', false));
+        itemEl.appendChild(this.createMiddlewareField('地址', item && item.url ? String(item.url) : '--', true));
+
+        const actionRowEl = document.createElement('div');
+        actionRowEl.className = 'metric-middleware-actions';
+
+        const copyUserBtn = document.createElement('button');
+        copyUserBtn.type = 'button';
+        copyUserBtn.className = 'secondary metric-middleware-mini-btn';
+        copyUserBtn.textContent = '复制账号';
+        copyUserBtn.disabled = !item || !item.username;
+        copyUserBtn.addEventListener('click', event => {
+            event.preventDefault();
+            event.stopPropagation();
+            this.copyMiddlewareText(item && item.username ? String(item.username) : '', copyUserBtn, '已复制');
+        });
+        actionRowEl.appendChild(copyUserBtn);
+
+        const copyPasswordBtn = document.createElement('button');
+        copyPasswordBtn.type = 'button';
+        copyPasswordBtn.className = 'secondary metric-middleware-mini-btn';
+        copyPasswordBtn.textContent = '复制密码';
+        copyPasswordBtn.disabled = !item || !item.password;
+        copyPasswordBtn.addEventListener('click', event => {
+            event.preventDefault();
+            event.stopPropagation();
+            this.copyMiddlewareText(item && item.password ? String(item.password) : '', copyPasswordBtn, '已复制');
+        });
+        actionRowEl.appendChild(copyPasswordBtn);
+
+        const actionBtn = document.createElement('button');
+        actionBtn.type = 'button';
+        actionBtn.className = 'secondary metric-middleware-open-btn';
+        actionBtn.textContent = '打开后台';
+        actionBtn.addEventListener('click', event => {
+            event.preventDefault();
+            event.stopPropagation();
+            const launchUrl = this.buildMiddlewareLaunchUrl(service, item && item.code ? String(item.code) : '');
+            const popup = window.open(launchUrl, '_blank');
+            if (popup) {
+                popup.opener = null;
+            }
+        });
+        actionRowEl.appendChild(actionBtn);
+        itemEl.appendChild(actionRowEl);
+        return itemEl;
+    }
+
+    /**
+     * 创建中间件信息字段行。
+     *
+     * @param {string} label 字段标签
+     * @param {string} value 字段值
+     * @param {boolean} isLink 是否按链接展示
+     * @returns {HTMLDivElement} 字段节点
+     */
+    createMiddlewareField(label, value, isLink) {
+        const fieldEl = document.createElement('div');
+        fieldEl.className = 'metric-middleware-field';
+
+        const labelEl = document.createElement('span');
+        labelEl.className = 'metric-middleware-field-label';
+        labelEl.textContent = label;
+        fieldEl.appendChild(labelEl);
+
+        if (isLink && value && value !== '--') {
+            const anchorEl = document.createElement('a');
+            anchorEl.className = 'metric-middleware-field-value is-link';
+            anchorEl.href = value;
+            anchorEl.target = '_blank';
+            anchorEl.rel = 'noopener noreferrer';
+            anchorEl.textContent = value;
+            anchorEl.title = value;
+            fieldEl.appendChild(anchorEl);
+            return fieldEl;
+        }
+
+        const valueEl = document.createElement('span');
+        valueEl.className = 'metric-middleware-field-value';
+        valueEl.textContent = value;
+        valueEl.title = value;
+        fieldEl.appendChild(valueEl);
+        return fieldEl;
+    }
+
+    /**
+     * 复制中间件账号或密码，并给予轻量反馈。
+     *
+     * @param {string} text 待复制文本
+     * @param {HTMLButtonElement} buttonEl 触发按钮
+     * @param {string} successLabel 成功文案
+     */
+    copyMiddlewareText(text, buttonEl, successLabel) {
+        const normalized = text ? String(text) : '';
+        if (!normalized || !buttonEl) {
+            return;
+        }
+        const fallbackCopy = () => {
+            const inputEl = document.createElement('textarea');
+            inputEl.value = normalized;
+            inputEl.setAttribute('readonly', 'readonly');
+            inputEl.style.position = 'fixed';
+            inputEl.style.top = '-9999px';
+            document.body.appendChild(inputEl);
+            inputEl.select();
+            try {
+                document.execCommand('copy');
+                this.flashMiddlewareCopyButton(buttonEl, successLabel);
+            } finally {
+                document.body.removeChild(inputEl);
+            }
+        };
+
+        if (typeof navigator !== 'undefined'
+            && navigator.clipboard
+            && typeof navigator.clipboard.writeText === 'function') {
+            navigator.clipboard.writeText(normalized)
+                .then(() => this.flashMiddlewareCopyButton(buttonEl, successLabel))
+                .catch(() => fallbackCopy());
+            return;
+        }
+        fallbackCopy();
+    }
+
+    /**
+     * 短暂更新复制按钮文案，反馈复制完成。
+     *
+     * @param {HTMLButtonElement} buttonEl 按钮节点
+     * @param {string} successLabel 成功文案
+     */
+    flashMiddlewareCopyButton(buttonEl, successLabel) {
+        if (!buttonEl) {
+            return;
+        }
+        const originalLabel = buttonEl.dataset.originalLabel || buttonEl.textContent || '';
+        buttonEl.dataset.originalLabel = originalLabel;
+        buttonEl.textContent = successLabel || '已复制';
+        if (buttonEl._middlewareCopyTimer) {
+            window.clearTimeout(buttonEl._middlewareCopyTimer);
+        }
+        buttonEl._middlewareCopyTimer = window.setTimeout(() => {
+            buttonEl.textContent = buttonEl.dataset.originalLabel || originalLabel;
+            buttonEl._middlewareCopyTimer = null;
+        }, 1200);
+    }
+
+    /**
+     * 规范化中间件后台列表响应。
+     *
+     * @param {Array<Object>} payload 原始响应
+     * @returns {Array<Object>} 规范化列表
+     */
+    normalizeMiddlewareItems(payload) {
+        if (!Array.isArray(payload)) {
+            return [];
+        }
+        return payload.map(item => ({
+            code: item && item.code ? String(item.code) : '',
+            name: item && item.name ? String(item.name) : '',
+            url: item && item.url ? String(item.url) : '',
+            username: item && item.username ? String(item.username) : '',
+            password: item && item.password ? String(item.password) : '',
+            sort: Number.isFinite(Number(item && item.sort)) ? Number(item.sort) : 0
+        })).sort((left, right) => {
+            if (left.sort !== right.sort) {
+                return left.sort - right.sort;
+            }
+            return String(left.name || left.code).localeCompare(String(right.name || right.code), 'zh-CN');
+        });
+    }
+
+    /**
+     * 构建中间件配置查询地址。
+     *
+     * @param {string} service 实例服务键
+     * @returns {string} 查询地址
+     */
+    buildMiddlewareListUrl(service) {
+        const project = this.getProject ? String(this.getProject() || '') : '';
+        const env = this.getEnv ? String(this.getEnv() || '') : '';
+        return `/api/middleware/consoles?project=${encodeURIComponent(project)}&env=${encodeURIComponent(env)}&service=${encodeURIComponent(service)}`;
+    }
+
+    /**
+     * 构建中间件后台跳转地址。
+     *
+     * @param {string} service 实例服务键
+     * @param {string} code 中间件编码
+     * @returns {string} 跳转地址
+     */
+    buildMiddlewareLaunchUrl(service, code) {
+        const project = this.getProject ? String(this.getProject() || '') : '';
+        const env = this.getEnv ? String(this.getEnv() || '') : '';
+        return `/api/middleware/launch?project=${encodeURIComponent(project)}&env=${encodeURIComponent(env)}&service=${encodeURIComponent(service)}&code=${encodeURIComponent(code)}`;
+    }
+
+    /**
+     * 构建中间件缓存键。
+     * <p>
+     * 中间件配置按环境共享，因此缓存只按“项目 + 环境”隔离，
+     * 不再区分同一环境下的具体实例。
+     * </p>
+     *
+     * @param {string} service 实例服务键
+     * @returns {string} 缓存键
+     */
+    buildMiddlewareKey(service) {
+        const project = this.getProject ? String(this.getProject() || '') : '';
+        const env = this.getEnv ? String(this.getEnv() || '') : '';
+        if (!project || !env) {
+            return '';
+        }
+        return `${project}#${env}#middlewares`;
     }
 
     /**

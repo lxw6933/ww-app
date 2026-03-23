@@ -522,6 +522,8 @@ public class MetricsSnapshotService {
         errSnapshot.setCanManage(target != null && target.getServerNode() != null
                 && !nullSafe(target.getServerNode().getManageCommandFile()).trim().isEmpty());
         errSnapshot.setCanMonitorJvm(target != null && target.supportsJvmMonitor());
+        errSnapshot.setCanOpenMiddleware(target != null && target.supportsMiddleware());
+        errSnapshot.setMiddlewareCount(target == null ? 0 : target.middlewareCount());
         errSnapshot.setStatus("error");
         errSnapshot.setMessage(message == null ? "采集失败" : message);
         errSnapshot.setUpdatedAt(System.currentTimeMillis());

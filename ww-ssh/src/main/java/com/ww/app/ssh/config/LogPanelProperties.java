@@ -4,7 +4,9 @@ import lombok.Data;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.context.annotation.Configuration;
 
+import java.util.ArrayList;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -53,6 +55,16 @@ public class LogPanelProperties {
      * </p>
      */
     private Map<String, Map<String, ServerNode>> servers = new LinkedHashMap<>();
+
+    /**
+     * 环境级共享中间件后台配置。
+     * <p>
+     * 推荐结构：{@code app.middlewares.<project>.<env>.<middlewareCode>}。<br>
+     * 当同一环境下多个实例共用同一套中间件后台时，应优先使用该配置，避免在每个服务节点下重复维护。<br>
+     * 例如：test 环境下共用的 Nacos、RabbitMQ、XXL-JOB 等后台入口。
+     * </p>
+     */
+    private Map<String, Map<String, Map<String, MiddlewareConsole>>> middlewares = new LinkedHashMap<>();
 
     /**
      * 推荐配置结构：项目 -> 环境 -> 服务 -> 节点。
@@ -139,6 +151,17 @@ public class LogPanelProperties {
         private String manageCommandFile;
 
         /**
+         * 当前实例挂载的中间件后台配置。
+         * <p>
+         * key 建议使用中间件编码，例如 {@code nacos}、{@code rabbitmq}、
+         * {@code xxl-job}、{@code soul}；<br>
+         * value 为该实例对应的后台访问地址与账号信息。<br>
+         * 该配置主要用于测试环境下快速跳转到中间件后台，不参与 SSH 运维逻辑。
+         * </p>
+         */
+        private Map<String, MiddlewareConsole> middlewares = new LinkedHashMap<>();
+
+        /**
          * 获取规范化后的目标类型。
          *
          * @return 目标类型
@@ -158,6 +181,105 @@ public class LogPanelProperties {
          */
         public boolean supportsJvmMonitor() {
             return TARGET_TYPE_APP.equals(normalizedTargetType());
+        }
+
+        /**
+         * 判断当前实例是否已配置可用的中间件后台入口。
+         *
+         * @return true 表示至少存在一个启用的中间件后台配置
+         */
+        public boolean hasEnabledMiddlewares() {
+            return middlewareCount() > 0;
+        }
+
+        /**
+         * 统计当前实例已启用的中间件后台数量。
+         *
+         * @return 已启用的中间件后台数量
+         */
+        public int middlewareCount() {
+            if (middlewares == null || middlewares.isEmpty()) {
+                return 0;
+            }
+            int count = 0;
+            for (MiddlewareConsole console : middlewares.values()) {
+                if (console != null && console.isConsoleEnabled()) {
+                    count++;
+                }
+            }
+            return count;
+        }
+
+        /**
+         * 获取按配置顺序排列的中间件后台项。
+         * <p>
+         * 该方法会过滤掉空配置与显式禁用的配置项，供接口层直接消费。
+         * </p>
+         *
+         * @return 可用的中间件后台列表
+         */
+        public List<Map.Entry<String, MiddlewareConsole>> enabledMiddlewares() {
+            List<Map.Entry<String, MiddlewareConsole>> result = new ArrayList<>();
+            if (middlewares == null || middlewares.isEmpty()) {
+                return result;
+            }
+            for (Map.Entry<String, MiddlewareConsole> entry : middlewares.entrySet()) {
+                MiddlewareConsole console = entry.getValue();
+                if (console == null || !console.isConsoleEnabled()) {
+                    continue;
+                }
+                result.add(entry);
+            }
+            return result;
+        }
+    }
+
+    /**
+     * 单个中间件后台配置。
+     */
+    @Data
+    public static class MiddlewareConsole {
+
+        /**
+         * 中间件展示名称。
+         * <p>
+         * 若未配置，则前端回退为配置 key。
+         * </p>
+         */
+        private String name;
+
+        /**
+         * 中间件后台访问地址。
+         */
+        private String url;
+
+        /**
+         * 登录账号。
+         */
+        private String username;
+
+        /**
+         * 登录密码。
+         */
+        private String password;
+
+        /**
+         * 排序值，数值越小越靠前。
+         */
+        private Integer sort = 0;
+
+        /**
+         * 是否启用该中间件入口。
+         */
+        private Boolean enabled = true;
+
+        /**
+         * 判断当前中间件入口是否启用。
+         *
+         * @return true 表示启用
+         */
+        public boolean isConsoleEnabled() {
+            return enabled == null || enabled;
         }
     }
 }

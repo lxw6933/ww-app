@@ -2216,6 +2216,8 @@ public class SshLogService {
         snapshot.setHost(target.getServerNode() == null ? "" : trimToEmpty(target.getServerNode().getHost()));
         snapshot.setCanManage(hasManageCommandFile(target));
         snapshot.setCanMonitorJvm(supportsJvmMonitor(target));
+        snapshot.setCanOpenMiddleware(hasConfiguredMiddleware(target));
+        snapshot.setMiddlewareCount(resolveMiddlewareCount(target));
         snapshot.setInstanceStatus(hasManageCommandFile(target) ? INSTANCE_STATUS_UNKNOWN : INSTANCE_STATUS_UNCONFIGURED);
         snapshot.setInstanceStatusDetail(hasManageCommandFile(target) ? "检测中" : "未配置运维脚本");
         if (supportsJvmMonitor(target)) {
@@ -2252,6 +2254,29 @@ public class SshLogService {
      */
     private boolean supportsJvmMonitor(LogTarget target) {
         return target != null && target.supportsJvmMonitor();
+    }
+
+    /**
+     * 判断目标实例是否已配置中间件后台入口。
+     *
+     * @param target 目标实例
+     * @return true 表示已配置
+     */
+    private boolean hasConfiguredMiddleware(LogTarget target) {
+        return resolveMiddlewareCount(target) > 0;
+    }
+
+    /**
+     * 统计目标实例启用的中间件后台数量。
+     *
+     * @param target 目标实例
+     * @return 数量
+     */
+    private int resolveMiddlewareCount(LogTarget target) {
+        if (target == null) {
+            return 0;
+        }
+        return target.middlewareCount();
     }
 
     /**

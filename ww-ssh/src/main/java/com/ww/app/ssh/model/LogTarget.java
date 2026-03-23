@@ -1,7 +1,6 @@
 package com.ww.app.ssh.model;
 
 import com.ww.app.ssh.config.LogPanelProperties;
-import lombok.AllArgsConstructor;
 import lombok.Data;
 
 /**
@@ -12,7 +11,6 @@ import lombok.Data;
  * </p>
  */
 @Data
-@AllArgsConstructor
 public class LogTarget {
 
     /**
@@ -34,6 +32,47 @@ public class LogTarget {
      * SSH 节点配置。
      */
     private LogPanelProperties.ServerNode serverNode;
+
+    /**
+     * 当前项目环境下可用的中间件后台数量。
+     * <p>
+     * 该值来源于环境级共享配置，用于前端在实例卡片上决定是否展示“中间件”入口。
+     * </p>
+     */
+    private Integer middlewareCount;
+
+    /**
+     * 构造方法。
+     *
+     * @param project 项目名称
+     * @param env 环境名称
+     * @param service 服务名称
+     * @param serverNode 节点配置
+     */
+    public LogTarget(String project, String env, String service, LogPanelProperties.ServerNode serverNode) {
+        this(project, env, service, serverNode, 0);
+    }
+
+    /**
+     * 构造方法。
+     *
+     * @param project 项目名称
+     * @param env 环境名称
+     * @param service 服务名称
+     * @param serverNode 节点配置
+     * @param middlewareCount 环境中间件数量
+     */
+    public LogTarget(String project,
+                     String env,
+                     String service,
+                     LogPanelProperties.ServerNode serverNode,
+                     Integer middlewareCount) {
+        this.project = project;
+        this.env = env;
+        this.service = service;
+        this.serverNode = serverNode;
+        this.middlewareCount = middlewareCount == null ? 0 : middlewareCount;
+    }
 
     /**
      * 获取“项目/环境/服务”的展示标识。
@@ -63,5 +102,23 @@ public class LogTarget {
      */
     public boolean supportsJvmMonitor() {
         return serverNode != null && serverNode.supportsJvmMonitor();
+    }
+
+    /**
+     * 判断当前环境是否已配置中间件后台入口。
+     *
+     * @return true 表示已配置
+     */
+    public boolean supportsMiddleware() {
+        return middlewareCount() > 0;
+    }
+
+    /**
+     * 获取当前环境启用的中间件后台数量。
+     *
+     * @return 数量
+     */
+    public int middlewareCount() {
+        return middlewareCount == null ? 0 : Math.max(middlewareCount, 0);
     }
 }

@@ -139,6 +139,22 @@ public class HostMetricSnapshot {
     private Boolean canMonitorJvm;
 
     /**
+     * 是否已配置中间件后台入口。
+     * <p>
+     * true 表示前端可展示“中间件”按钮，并加载该实例关联的测试环境后台地址。
+     * </p>
+     */
+    private Boolean canOpenMiddleware;
+
+    /**
+     * 已配置的中间件后台数量。
+     * <p>
+     * 仅统计启用状态的配置项，便于前端做提示展示。
+     * </p>
+     */
+    private Integer middlewareCount;
+
+    /**
      * 实例运行状态。
      * <p>
      * 可选值：
