@@ -48,6 +48,8 @@ export class LogView {
         this.searchCursor = -1;
         this.metricsRefreshTimer = null;
         this.metricsRefreshMs = 180;
+        this.metricsSnapshot = this.createEmptyMetricsSnapshot();
+        this.metricsSnapshotDirty = false;
     }
 
     /**
@@ -162,6 +164,7 @@ export class LogView {
     appendLines(text) {
         const logEl = el('log');
         const fragment = document.createDocumentFragment();
+        const appendedLines = [];
         let appendCount = 0;
         String(text || '').split(/\r?\n/).forEach(line => {
             if (!line) {
@@ -169,14 +172,15 @@ export class LogView {
             }
             const lineEl = this.createLogLineElement(line);
             fragment.appendChild(lineEl);
+            appendedLines.push(lineEl);
             appendCount += 1;
         });
         if (!appendCount) {
             return;
         }
         logEl.appendChild(fragment);
-
-        this.trimLines(logEl);
+        appendedLines.forEach(lineEl => this.trackLineAppended(lineEl));
+        this.trimLines(logEl).forEach(lineEl => this.trackLineRemoved(lineEl));
         if (this.searchKeyword) {
             this.scheduleSearchRefresh();
         }
@@ -213,6 +217,7 @@ export class LogView {
         this.searchCursor = -1;
         this.updateSearchCounter();
         this.state.lineCount = 0;
+        this.resetMetricsSnapshot();
         this.renderLineCount();
         this.renderLevelStats();
         this.updateBottomButton();
@@ -229,7 +234,8 @@ export class LogView {
         lineEl.dataset.level = 'SYSTEM';
         lineEl.classList.remove('line-level-hidden', 'line-filter-hidden', 'hidden');
         logEl.appendChild(lineEl);
-        this.trimLines(logEl);
+        this.trackLineAppended(lineEl);
+        this.trimLines(logEl).forEach(item => this.trackLineRemoved(item));
         if (this.searchKeyword) {
             this.scheduleSearchRefresh();
         }
@@ -255,6 +261,7 @@ export class LogView {
                 lineEl.classList.add('hidden');
             }
         });
+        this.invalidateMetricsSnapshot();
         this.refreshSearchMatches(true, false);
         this.renderLineCount();
         this.renderLevelStats();
@@ -424,9 +431,16 @@ export class LogView {
      */
     trimLines(logEl) {
         const overflow = logEl.children.length - this.maxLines;
+        const removedLines = [];
         for (let index = 0; index < overflow; index += 1) {
-            logEl.removeChild(logEl.firstChild);
+            const removed = logEl.firstChild;
+            if (!removed) {
+                break;
+            }
+            removedLines.push(removed);
+            logEl.removeChild(removed);
         }
+        return removedLines;
     }
 
     /**
@@ -439,13 +453,8 @@ export class LogView {
             el('lineCount').textContent = `${total} 行`;
             return;
         }
-        // 常见路径：未启用级别筛选、未隐藏系统消息、无过滤规则时，可直接使用总行数，避免全量扫描。
-        const canUseTotalDirectly = this.levelFilter === 'ALL'
-            && checked('showSystem')
-            && (!this.ruleFilterEnabled || !this.filterRules || this.filterRules.length === 0);
-        const visible = canUseTotalDirectly
-            ? total
-            : this.countVisibleLines(logEl);
+        const snapshot = this.resolveMetricsSnapshot(logEl);
+        const visible = snapshot.visible;
         this.state.lineCount = total;
         if (visible === total) {
             el('lineCount').textContent = `${visible} 行`;
@@ -461,17 +470,126 @@ export class LogView {
      * @returns {number} 可见行数量
      */
     countVisibleLines(logEl) {
-        if (!logEl || !logEl.children) {
-            return 0;
-        }
-        let visible = 0;
-        for (let index = 0; index < logEl.children.length; index += 1) {
-            const lineEl = logEl.children[index];
-            if (this.isLineVisible(lineEl)) {
-                visible += 1;
+        return this.resolveMetricsSnapshot(logEl).visible;
+    }
+
+    /**
+     * 创建空的统计快照。
+     *
+     * @returns {{total:number,visible:number,levels:{ALL:number,INFO:number,WARN:number,ERROR:number}}} 统计快照
+     */
+    createEmptyMetricsSnapshot() {
+        return {
+            total: 0,
+            visible: 0,
+            levels: {
+                ALL: 0,
+                INFO: 0,
+                WARN: 0,
+                ERROR: 0
             }
+        };
+    }
+
+    /**
+     * 将统计快照标记为脏数据，下次渲染时再统一重算。
+     */
+    invalidateMetricsSnapshot() {
+        this.metricsSnapshotDirty = true;
+    }
+
+    /**
+     * 重置统计快照。
+     */
+    resetMetricsSnapshot() {
+        this.metricsSnapshot = this.createEmptyMetricsSnapshot();
+        this.metricsSnapshotDirty = false;
+    }
+
+    /**
+     * 获取当前有效的统计快照。
+     *
+     * @param {HTMLElement} logEl 日志容器
+     * @returns {{total:number,visible:number,levels:{ALL:number,INFO:number,WARN:number,ERROR:number}}} 统计快照
+     */
+    resolveMetricsSnapshot(logEl) {
+        if (!logEl || !logEl.children) {
+            return this.createEmptyMetricsSnapshot();
         }
-        return visible;
+        if (this.metricsSnapshotDirty || this.metricsSnapshot.total !== logEl.children.length) {
+            this.metricsSnapshot = this.rebuildMetricsSnapshot(logEl);
+            this.metricsSnapshotDirty = false;
+        }
+        return this.metricsSnapshot;
+    }
+
+    /**
+     * 全量重建统计快照。
+     *
+     * @param {HTMLElement} logEl 日志容器
+     * @returns {{total:number,visible:number,levels:{ALL:number,INFO:number,WARN:number,ERROR:number}}} 统计快照
+     */
+    rebuildMetricsSnapshot(logEl) {
+        const snapshot = this.createEmptyMetricsSnapshot();
+        if (!logEl || !logEl.children) {
+            return snapshot;
+        }
+        snapshot.total = logEl.children.length;
+        for (let index = 0; index < logEl.children.length; index += 1) {
+            this.accumulateVisibleLevelStats(snapshot, logEl.children[index], 1);
+        }
+        return snapshot;
+    }
+
+    /**
+     * 记录新追加日志行对统计快照的影响。
+     *
+     * @param {HTMLElement} lineEl 日志行
+     */
+    trackLineAppended(lineEl) {
+        if (this.metricsSnapshotDirty || !lineEl) {
+            return;
+        }
+        this.metricsSnapshot.total += 1;
+        this.accumulateVisibleLevelStats(this.metricsSnapshot, lineEl, 1);
+    }
+
+    /**
+     * 记录被裁剪日志行对统计快照的影响。
+     *
+     * @param {HTMLElement} lineEl 日志行
+     */
+    trackLineRemoved(lineEl) {
+        if (this.metricsSnapshotDirty || !lineEl) {
+            return;
+        }
+        this.metricsSnapshot.total = Math.max(0, this.metricsSnapshot.total - 1);
+        this.accumulateVisibleLevelStats(this.metricsSnapshot, lineEl, -1);
+    }
+
+    /**
+     * 按可见性与级别累计统计值。
+     *
+     * @param {{total:number,visible:number,levels:{ALL:number,INFO:number,WARN:number,ERROR:number}}} snapshot 统计快照
+     * @param {HTMLElement} lineEl 日志行
+     * @param {number} delta 增量，1 表示新增，-1 表示移除
+     */
+    accumulateVisibleLevelStats(snapshot, lineEl, delta) {
+        if (!snapshot || !lineEl || !delta || !this.isLineVisible(lineEl)) {
+            return;
+        }
+        snapshot.visible = Math.max(0, snapshot.visible + delta);
+        snapshot.levels.ALL = Math.max(0, snapshot.levels.ALL + delta);
+        const level = lineEl.dataset && lineEl.dataset.level ? lineEl.dataset.level : 'INFO';
+        if (level === 'ERROR') {
+            snapshot.levels.ERROR = Math.max(0, snapshot.levels.ERROR + delta);
+            return;
+        }
+        if (level === 'WARN') {
+            snapshot.levels.WARN = Math.max(0, snapshot.levels.WARN + delta);
+            return;
+        }
+        snapshot.levels.INFO = Math.max(0, snapshot.levels.INFO + delta);
     }
 
     /**
@@ -667,6 +785,7 @@ export class LogView {
             this.renderLineText(textEl, rawText);
             this.applyRuleFilterForLine(lineEl);
         });
+        this.invalidateMetricsSnapshot();
         this.refreshSearchMatches(true, false);
         this.renderLineCount();
     }
@@ -819,6 +938,7 @@ export class LogView {
         }
         this.levelFilter = normalized;
         this.refreshLevelVisibility();
+        this.invalidateMetricsSnapshot();
         this.refreshSearchMatches(true, false);
         this.renderLineCount();
     }
@@ -1070,10 +1190,10 @@ export class LogView {
      */
     renderLevelStats() {
         const stats = this.collectLevelStats();
-        this.renderLevelButtonText('btnLevelAll', 'all ', stats.ALL);
-        this.renderLevelButtonText('btnLevelInfo', 'info ', stats.INFO);
-        this.renderLevelButtonText('btnLevelWarn', 'warn ', stats.WARN);
-        this.renderLevelButtonText('btnLevelError', 'error ', stats.ERROR);
+        this.renderLevelButtonText('btnLevelAll', 'All ', stats.ALL);
+        this.renderLevelButtonText('btnLevelInfo', 'Info ', stats.INFO);
+        this.renderLevelButtonText('btnLevelWarn', 'Warn ', stats.WARN);
+        this.renderLevelButtonText('btnLevelError', 'Error ', stats.ERROR);
     }
 
     /**
@@ -1082,34 +1202,13 @@ export class LogView {
      * @returns {{ALL:number,INFO:number,WARN:number,ERROR:number}} 统计结果
      */
     collectLevelStats() {
-        const stats = {
-            ALL: 0,
-            INFO: 0,
-            WARN: 0,
-            ERROR: 0
+        const snapshot = this.resolveMetricsSnapshot(el('log'));
+        return {
+            ALL: snapshot.levels.ALL,
+            INFO: snapshot.levels.INFO,
+            WARN: snapshot.levels.WARN,
+            ERROR: snapshot.levels.ERROR
         };
-        const logEl = el('log');
-        if (!logEl || !logEl.children) {
-            return stats;
-        }
-        for (let index = 0; index < logEl.children.length; index += 1) {
-            const lineEl = logEl.children[index];
-            if (lineEl.classList.contains('hidden') || lineEl.classList.contains('line-filter-hidden')) {
-                continue;
-            }
-            stats.ALL += 1;
-            const level = lineEl.dataset && lineEl.dataset.level ? lineEl.dataset.level : 'INFO';
-            if (level === 'ERROR') {
-                stats.ERROR += 1;
-                continue;
-            }
-            if (level === 'WARN') {
-                stats.WARN += 1;
-                continue;
-            }
-            stats.INFO += 1;
-        }
-        return stats;
     }
 
     /**

@@ -165,6 +165,22 @@ public class SshLogService {
     private static final int CAT_CONTEXT_MAX_OUTPUT_LINES = 12000;
 
     /**
+     * 普通远程命令执行超时时间（毫秒）。
+     * <p>
+     * 主要覆盖日志快照、文件发现与主机指标采集，避免超大日志扫描长时间阻塞请求线程。
+     * </p>
+     */
+    private static final long COMMAND_EXEC_TIMEOUT_MS = 15_000L;
+
+    /**
+     * 带退出码标记的远程命令执行超时时间（毫秒）。
+     * <p>
+     * 实例启停/状态探测需要等待脚本输出退出码，给予略高于普通命令的超时时间。
+     * </p>
+     */
+    private static final long COMMAND_EXEC_TIMEOUT_WITH_MARKER_MS = 20_000L;
+
+    /**
      * SSH 命令构建器。
      */
     private final SshCommandBuilder sshCommandBuilder;
@@ -196,6 +212,14 @@ public class SshLogService {
      * 流式读取线程池。
      */
     private final ExecutorService streamExecutor;
+
+    /**
+     * 一次性远程命令读取线程池。
+     * <p>
+     * 将阻塞式输出读取与请求线程解耦，便于为快照/探测命令施加超时控制。
+     * </p>
+     */
+    private final ExecutorService commandExecutor;
 
     /**
      * 实时日志流并发信号量。
@@ -240,9 +264,10 @@ public class SshLogService {
                 60L,
                 TimeUnit.SECONDS,
                 new SynchronousQueue<>(),
-                new NamedThreadFactory(),
+                new NamedThreadFactory("ww-ssh-log-stream-"),
                 new ThreadPoolExecutor.AbortPolicy()
         );
+        this.commandExecutor = Executors.newCachedThreadPool(new NamedThreadFactory("ww-ssh-command-"));
         this.streamPermits = new Semaphore(this.maxConcurrentStreams);
     }
 
@@ -751,6 +776,7 @@ public class SshLogService {
     @PreDestroy
     public void shutdown() {
         streamExecutor.shutdownNow();
+        commandExecutor.shutdownNow();
         for (SessionHolder sessionHolder : new ArrayList<>(sessionCache.values())) {
             invalidateSession(sessionHolder);
         }
@@ -1626,42 +1652,94 @@ public class SshLogService {
                                                       String command,
                                                       int maxLines,
                                                       String markerPrefix) {
-        List<String> lines = new ArrayList<>();
-        boolean outputTruncated = false;
-        boolean markerDetected = false;
         String normalizedMarker = trimToEmpty(markerPrefix);
-        boolean detectMarker = !normalizedMarker.isEmpty();
         ExecChannelContext channelContext = null;
         try {
             channelContext = openExecChannel(target, command);
-            try (BufferedReader reader = new BufferedReader(
-                    new InputStreamReader(channelContext.getInputStream(), StandardCharsets.UTF_8))) {
-                String line;
-                while ((line = reader.readLine()) != null) {
-                    String trimmed = trimToEmpty(line);
-                    boolean markerLine = detectMarker && trimmed.startsWith(normalizedMarker);
-                    if (markerLine) {
-                        markerDetected = true;
-                    }
-                    if (lines.size() < maxLines || markerLine) {
-                        lines.add(line);
-                    } else {
-                        outputTruncated = true;
-                    }
-                    if (!detectMarker && lines.size() >= maxLines) {
-                        break;
-                    }
-                    if (detectMarker && markerDetected && outputTruncated) {
-                        break;
-                    }
+            ExecChannelContext finalChannelContext = channelContext;
+            Future<CommandReadResult> readFuture = commandExecutor.submit(
+                    () -> readCommandResult(finalChannelContext.getInputStream(), maxLines, normalizedMarker));
+            try {
+                return readFuture.get(resolveCommandExecTimeoutMs(normalizedMarker), TimeUnit.MILLISECONDS);
+            } catch (TimeoutException ex) {
+                readFuture.cancel(true);
+                throw new IllegalStateException(
+                        "执行远程命令超时: " + target.displayName() + " - 已超过 "
+                                + resolveCommandExecTimeoutMs(normalizedMarker) + "ms", ex);
+            } catch (InterruptedException ex) {
+                readFuture.cancel(true);
+                Thread.currentThread().interrupt();
+                throw new IllegalStateException("执行远程命令被中断: " + target.displayName(), ex);
+            } catch (ExecutionException ex) {
+                Throwable cause = ex.getCause();
+                if (cause instanceof RuntimeException) {
+                    throw (RuntimeException) cause;
                 }
+                throw new IllegalStateException("执行远程命令失败: " + target.displayName() + " - " + cause.getMessage(), cause);
             }
-            return new CommandReadResult(lines, outputTruncated, markerDetected);
+        } catch (IllegalStateException ex) {
+            throw ex;
         } catch (Exception ex) {
             throw new IllegalStateException("执行远程命令失败: " + target.displayName() + " - " + ex.getMessage(), ex);
         } finally {
             closeExecChannelContext(channelContext);
         }
+    }
+
+    /**
+     * 读取远程命令输出结果。
+     * <p>
+     * 保持既有“限量采集 + 退出码标记探测”语义，仅将阻塞读取搬到独立线程中，
+     * 以便外层统一施加超时控制。
+     * </p>
+     *
+     * @param inputStream       远程命令输出流
+     * @param maxLines          最大采集行数
+     * @param normalizedMarker  规范化后的退出码标记前缀
+     * @return 命令读取结果
+     */
+    private CommandReadResult readCommandResult(InputStream inputStream,
+                                                int maxLines,
+                                                String normalizedMarker) {
+        List<String> lines = new ArrayList<>();
+        boolean outputTruncated = false;
+        boolean markerDetected = false;
+        boolean detectMarker = !normalizedMarker.isEmpty();
+        try (BufferedReader reader = new BufferedReader(
+                new InputStreamReader(inputStream, StandardCharsets.UTF_8))) {
+            String line;
+            while ((line = reader.readLine()) != null) {
+                String trimmed = trimToEmpty(line);
+                boolean markerLine = detectMarker && trimmed.startsWith(normalizedMarker);
+                if (markerLine) {
+                    markerDetected = true;
+                }
+                if (lines.size() < maxLines || markerLine) {
+                    lines.add(line);
+                } else {
+                    outputTruncated = true;
+                }
+                if (!detectMarker && lines.size() >= maxLines) {
+                    break;
+                }
+                if (detectMarker && markerDetected && outputTruncated) {
+                    break;
+                }
+            }
+        } catch (IOException ex) {
+            throw new IllegalStateException("读取远程命令输出失败: " + ex.getMessage(), ex);
+        }
+        return new CommandReadResult(lines, outputTruncated, markerDetected);
+    }
+
+    /**
+     * 解析远程命令执行超时时间。
+     *
+     * @param normalizedMarker 规范化后的退出码标记前缀
+     * @return 超时毫秒
+     */
+    private long resolveCommandExecTimeoutMs(String normalizedMarker) {
+        return normalizedMarker.isEmpty() ? COMMAND_EXEC_TIMEOUT_MS : COMMAND_EXEC_TIMEOUT_WITH_MARKER_MS;
     }
 
     /**
@@ -3044,15 +3122,35 @@ public class SshLogService {
     private static class NamedThreadFactory implements ThreadFactory {
 
         /**
+         * 线程名前缀。
+         */
+        private final String prefix;
+
+        /**
          * 线程编号序列。
          */
         private final AtomicInteger sequence = new AtomicInteger(1);
 
+        private NamedThreadFactory(String prefix) {
+            this.prefix = trimThreadPrefix(prefix);
+        }
+
         @Override
         public Thread newThread(@NonNull Runnable runnable) {
-            Thread thread = new Thread(runnable, "ww-ssh-log-stream-" + sequence.getAndIncrement());
+            Thread thread = new Thread(runnable, prefix + sequence.getAndIncrement());
             thread.setDaemon(true);
             return thread;
+        }
+
+        /**
+         * 规范化线程名前缀。
+         *
+         * @param prefix 原始前缀
+         * @return 可用前缀
+         */
+        private String trimThreadPrefix(String prefix) {
+            String normalized = prefix == null ? "" : prefix.trim();
+            return normalized.isEmpty() ? "ww-ssh-worker-" : normalized;
         }
     }
 }

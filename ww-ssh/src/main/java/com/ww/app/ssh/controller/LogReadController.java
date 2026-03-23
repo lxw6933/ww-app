@@ -15,6 +15,8 @@ import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.util.ArrayList;
+import java.util.ArrayDeque;
+import java.util.Deque;
 import java.util.List;
 
 /**
@@ -59,23 +61,33 @@ public class LogReadController {
         try {
             validateFilePathPolicy(request);
             List<LogTarget> targets = logPanelQueryService.resolveTargets(request);
-            List<String> rows = new ArrayList<>();
+            int keep = request.normalizedLines();
+            boolean aggregateTailWindow = request.isAllService();
+            List<String> rows = aggregateTailWindow ? null : new ArrayList<>();
+            Deque<String> tailWindow = aggregateTailWindow ? new ArrayDeque<>(keep) : null;
             for (LogTarget target : targets) {
                 try {
-                    rows.addAll(sshLogService.readByCat(target, request));
+                    List<String> targetRows = sshLogService.readByCat(target, request);
+                    if (aggregateTailWindow) {
+                        appendTailWindow(tailWindow, targetRows, keep);
+                    } else {
+                        rows.addAll(targetRows);
+                    }
                 } catch (Exception ex) {
-                    rows.add("[系统提示] 读取失败 " + target.displayName() + ": " + ex.getMessage());
+                    String errorLine = "[系统提示] 读取失败 " + target.displayName() + ": " + ex.getMessage();
+                    if (aggregateTailWindow) {
+                        appendTailWindow(tailWindow, java.util.Collections.singletonList(errorLine), keep);
+                    } else {
+                        rows.add(errorLine);
+                    }
                 }
             }
             // 说明：
             // - 单服务/单文件：每个目标内部已按 requested lines 做尾部窗口裁剪，直接返回即可；
             // - 全部服务聚合：若直接拼接所有目标窗口，页面会混入大量“很久没产生日志”的实例尾巴，
             //   视觉上会表现为“cat 查到的都是旧日志”。因此聚合场景保留“全局取最新 N 行”行为。
-            if (request.isAllService()) {
-                int keep = request.normalizedLines();
-                if (rows.size() > keep) {
-                    rows = new ArrayList<>(rows.subList(rows.size() - keep, rows.size()));
-                }
+            if (aggregateTailWindow) {
+                rows = new ArrayList<>(tailWindow);
             }
             HttpHeaders headers = new HttpHeaders();
             // 明确告知客户端/代理不要缓存，避免出现“cat 总是旧数据”的误判。
@@ -105,6 +117,28 @@ public class LogReadController {
         }
         if (!request.isAllService() && request.normalizedFilePath().isEmpty()) {
             throw new IllegalArgumentException("单服务模式下必须显式选择日志文件");
+        }
+    }
+
+    /**
+     * 向“全部服务”聚合尾窗追加日志行。
+     * <p>
+     * 聚合场景仅保留全局最新 N 行，避免先把所有目标结果完整堆入内存后再裁剪。
+     * </p>
+     *
+     * @param tailWindow 全局尾窗
+     * @param rows       待追加日志行
+     * @param keep       最大保留行数
+     */
+    private void appendTailWindow(Deque<String> tailWindow, List<String> rows, int keep) {
+        if (tailWindow == null || rows == null || rows.isEmpty() || keep <= 0) {
+            return;
+        }
+        for (String row : rows) {
+            if (tailWindow.size() >= keep) {
+                tailWindow.pollFirst();
+            }
+            tailWindow.addLast(row);
         }
     }
 }
