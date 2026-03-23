@@ -26,6 +26,16 @@ public class LogPanelProperties {
     public static final String DEFAULT_PROJECT = "default";
 
     /**
+     * 目标类型：Java 应用服务。
+     */
+    public static final String TARGET_TYPE_APP = "app";
+
+    /**
+     * 目标类型：nginx。
+     */
+    public static final String TARGET_TYPE_NGINX = "nginx";
+
+    /**
      * 单实例允许同时承载的实时日志流上限。
      * <p>
      * 每个被订阅的实例日志会占用 1 条实时流，
@@ -60,6 +70,16 @@ public class LogPanelProperties {
      */
     @Data
     public static class ServerNode {
+
+        /**
+         * 目标类型。
+         * <p>
+         * 当前支持：
+         * 1. app：普通 Java 应用服务，默认支持 JVM 监控；<br>
+         * 2. nginx：nginx 日志目标，不展示 JVM 监控入口。<br>
+         * </p>
+         */
+        private String targetType = TARGET_TYPE_APP;
 
         /**
          * SSH 主机地址。
@@ -117,5 +137,27 @@ public class LogPanelProperties {
          * </p>
          */
         private String manageCommandFile;
+
+        /**
+         * 获取规范化后的目标类型。
+         *
+         * @return 目标类型
+         */
+        public String normalizedTargetType() {
+            String normalized = targetType == null ? "" : targetType.trim().toLowerCase();
+            if (TARGET_TYPE_NGINX.equals(normalized)) {
+                return TARGET_TYPE_NGINX;
+            }
+            return TARGET_TYPE_APP;
+        }
+
+        /**
+         * 判断当前目标是否支持 JVM 监控。
+         *
+         * @return true 表示支持 JVM 监控
+         */
+        public boolean supportsJvmMonitor() {
+            return TARGET_TYPE_APP.equals(normalizedTargetType());
+        }
     }
 }

@@ -3401,7 +3401,7 @@ select {
     color-scheme: dark;
     height: 36px;
     line-height: 36px;
-    padding: 0 38px 0 12px !important;
+    padding: 0 24px 0 12px !important;
     border: 1px solid rgba(103, 189, 245, 0.52) !important;
     background:
         linear-gradient(180deg, rgba(16, 46, 70, 0.95), rgba(10, 30, 48, 0.96)) !important;
@@ -3413,8 +3413,8 @@ select {
         linear-gradient(180deg, rgba(16, 46, 70, 0.95), rgba(10, 30, 48, 0.96)),
         url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 12'%3E%3Cpath d='M2 4l4 4 4-4' fill='none' stroke='%238fd4ff' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
     background-repeat: no-repeat, no-repeat;
-    background-position: 0 0, right 11px center;
-    background-size: 100% 100%, 12px 12px;
+    background-position: 0 0, right 7px center;
+    background-size: 100% 100%, 10px 10px;
 }
 select:hover:not(:disabled) {
     border-color: rgba(127, 216, 255, 0.76) !important;
@@ -6649,4 +6649,147 @@ body:not([data-read-mode]):not(.center-view-jvm) .toolbar-panel .row-primary .gr
     opacity: 0.44 !important;
     transform: none !important;
     cursor: not-allowed !important;
+}
+
+/* ==================== Toolbar Final Layout Fix ==================== */
+/* 统一收口顶部工具栏布局，避免“服务双下拉”引入后被历史覆盖规则打乱。 */
+body .toolbar-panel .row-primary {
+    display: grid !important;
+    grid-template-columns:
+        minmax(130px, 0.9fr)
+        minmax(130px, 0.9fr)
+        minmax(290px, 1.5fr)
+        minmax(0, 2.7fr) !important;
+    align-items: center !important;
+    gap: 10px !important;
+}
+
+body .toolbar-panel .row-primary .group-env,
+body .toolbar-panel .row-primary .group-service,
+body .toolbar-panel .row-primary .toolbar-action-bar {
+    min-width: 0 !important;
+    border: none !important;
+    background: transparent !important;
+    box-shadow: none !important;
+    padding: 0 !important;
+}
+
+body .toolbar-panel .row-primary .group-env {
+    display: grid !important;
+    grid-template-columns: auto minmax(0, 1fr) !important;
+    align-items: center !important;
+    column-gap: 8px !important;
+}
+
+body .toolbar-panel .row-primary .group-service {
+    display: grid !important;
+    grid-template-columns: 72px minmax(0, 1fr) !important;
+    align-items: center !important;
+    column-gap: 6px !important;
+}
+
+body .toolbar-panel .row-primary .group-env label {
+    margin: 0 !important;
+    white-space: nowrap !important;
+    font-size: 13px !important;
+    font-weight: 600 !important;
+    color: #9ec7e2 !important;
+}
+
+body .toolbar-panel .row-primary .group-env select,
+body .toolbar-panel .row-primary .group-service select {
+    width: 100% !important;
+    min-width: 0 !important;
+    max-width: none !important;
+    height: 36px !important;
+}
+
+body .toolbar-panel .row-primary #serviceType {
+    min-width: 72px !important;
+    max-width: 72px !important;
+    padding: 0 20px 0 10px !important;
+    color: #d9f2ff !important;
+    -webkit-text-fill-color: #d9f2ff !important;
+    text-align: left !important;
+    text-align-last: left !important;
+    background-position: 0 0, right 6px center !important;
+    background-size: 100% 100%, 10px 10px !important;
+}
+
+body .toolbar-panel .row-primary #serviceType option {
+    color: #ddf3ff !important;
+    text-align: left;
+}
+
+body .toolbar-panel .row-primary #service {
+    min-width: 0 !important;
+}
+
+body .toolbar-panel .row-primary .toolbar-action-bar {
+    display: flex !important;
+    flex-wrap: nowrap !important;
+    align-items: center !important;
+    justify-content: flex-start !important;
+    gap: 6px !important;
+    width: 100% !important;
+    overflow: visible !important;
+}
+
+body .toolbar-panel .row-primary .toolbar-action-bar > * {
+    flex: 0 0 auto !important;
+}
+
+body .toolbar-panel .row-primary .toolbar-toggle {
+    display: inline-flex !important;
+    align-items: center !important;
+    gap: 0 !important;
+}
+
+body .toolbar-panel .row-primary .toolbar-toggle .read-mode-btn {
+    min-width: 52px !important;
+}
+
+/* nginx 等非 JVM 目标隐藏“日志/JVM”切换后，同时清掉紧随其后的分隔线，防止按钮区错位。 */
+body .toolbar-panel .row-primary #centerViewSwitch.hidden {
+    display: none !important;
+}
+
+body .toolbar-panel .row-primary #centerViewSwitch.hidden + .action-separator {
+    display: none !important;
+}
+
+/* 仅隐藏紧跟在 centerViewSwitch 后的分隔线，其它分隔线保留。 */
+body .toolbar-panel .row-primary .toolbar-action-bar .action-separator {
+    flex: 0 0 auto !important;
+}
+
+@media (max-width: 1260px) {
+    body .toolbar-panel .row-primary {
+        grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    }
+
+    body .toolbar-panel .row-primary .group-service,
+    body .toolbar-panel .row-primary .toolbar-action-bar {
+        grid-column: 1 / -1 !important;
+    }
+
+    body .toolbar-panel .row-primary .toolbar-action-bar {
+        flex-wrap: wrap !important;
+    }
+}
+
+@media (max-width: 760px) {
+    body .toolbar-panel .row-primary {
+        grid-template-columns: 1fr !important;
+    }
+
+    body .toolbar-panel .row-primary .group-service {
+        grid-template-columns: 1fr !important;
+        row-gap: 6px !important;
+    }
+
+    body .toolbar-panel .row-primary .toolbar-action-bar {
+        grid-column: auto !important;
+        flex-wrap: wrap !important;
+    }
 }

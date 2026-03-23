@@ -359,7 +359,9 @@ public class SshLogService {
             applySwapMetrics(snapshot, metricValues.get(COMBINED_METRIC_SWAP));
             applyDiskMetrics(snapshot, metricValues.get(COMBINED_METRIC_DISK));
             applyLoadMetrics(snapshot, metricValues.get(COMBINED_METRIC_LOAD));
-            applyJvmGcMetrics(snapshot, target);
+            if (supportsJvmMonitor(target)) {
+                applyJvmGcMetrics(snapshot, target);
+            }
             applyInstanceStatus(snapshot, target);
             snapshot.setStatus("ok");
             snapshot.setMessage("采集成功");
@@ -2009,12 +2011,19 @@ public class SshLogService {
         snapshot.setProject(target.getProject());
         snapshot.setEnv(target.getEnv());
         snapshot.setService(target.getService());
+        snapshot.setTargetType(target.targetType());
         snapshot.setHost(target.getServerNode() == null ? "" : trimToEmpty(target.getServerNode().getHost()));
         snapshot.setCanManage(hasManageCommandFile(target));
+        snapshot.setCanMonitorJvm(supportsJvmMonitor(target));
         snapshot.setInstanceStatus(hasManageCommandFile(target) ? INSTANCE_STATUS_UNKNOWN : INSTANCE_STATUS_UNCONFIGURED);
         snapshot.setInstanceStatusDetail(hasManageCommandFile(target) ? "检测中" : "未配置运维脚本");
-        snapshot.setJvmGcStatus(JVM_GC_STATUS_UNKNOWN);
-        snapshot.setJvmGcMessage("待采集");
+        if (supportsJvmMonitor(target)) {
+            snapshot.setJvmGcStatus(JVM_GC_STATUS_UNKNOWN);
+            snapshot.setJvmGcMessage("待采集");
+        } else {
+            snapshot.setJvmGcStatus(JVM_GC_STATUS_NO_PID);
+            snapshot.setJvmGcMessage("当前目标类型不支持 JVM 监控");
+        }
         snapshot.setUpdatedAt(System.currentTimeMillis());
         snapshot.setStatus("error");
         snapshot.setMessage("采集中");
@@ -2032,6 +2041,16 @@ public class SshLogService {
             return false;
         }
         return !trimToEmpty(target.getServerNode().getManageCommandFile()).isEmpty();
+    }
+
+    /**
+     * 判断目标是否支持 JVM 监控。
+     *
+     * @param target 目标实例
+     * @return true 表示支持 JVM 监控
+     */
+    private boolean supportsJvmMonitor(LogTarget target) {
+        return target != null && target.supportsJvmMonitor();
     }
 
     /**

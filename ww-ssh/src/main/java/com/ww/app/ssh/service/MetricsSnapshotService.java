@@ -516,8 +516,12 @@ public class MetricsSnapshotService {
         errSnapshot.setProject(target == null ? "" : target.getProject());
         errSnapshot.setEnv(target == null ? "" : target.getEnv());
         errSnapshot.setService(target == null ? "" : target.getService());
+        errSnapshot.setTargetType(target == null ? "" : target.targetType());
         errSnapshot.setHost(target == null || target.getServerNode() == null
                 ? "" : nullSafe(target.getServerNode().getHost()));
+        errSnapshot.setCanManage(target != null && target.getServerNode() != null
+                && !nullSafe(target.getServerNode().getManageCommandFile()).trim().isEmpty());
+        errSnapshot.setCanMonitorJvm(target != null && target.supportsJvmMonitor());
         errSnapshot.setStatus("error");
         errSnapshot.setMessage(message == null ? "采集失败" : message);
         errSnapshot.setUpdatedAt(System.currentTimeMillis());

@@ -879,7 +879,10 @@ export class MetricsPanelController {
         }
         const mainEl = document.createElement('div');
         mainEl.className = 'metric-instance-main';
-        mainEl.appendChild(createInstanceStatusBlock(item));
+        const instanceStatusNode = createInstanceStatusBlock(item);
+        if (instanceStatusNode) {
+            mainEl.appendChild(instanceStatusNode);
+        }
         if (!ok) {
             const messageEl = document.createElement('p');
             messageEl.className = 'metric-message';
@@ -943,32 +946,40 @@ export class MetricsPanelController {
         const barEl = document.createElement('div');
         barEl.className = 'metric-ops';
         const service = item && item.service ? String(item.service) : '';
+        const canManage = truthy(item && item.canManage);
+        const canMonitorJvm = truthy(item && item.canMonitorJvm);
         if (!service) {
             return barEl;
         }
 
-        if (this.openJvmMonitor) {
+        if (canMonitorJvm && this.openJvmMonitor) {
             barEl.appendChild(this.createMonitorButton(service));
         }
 
-        if (!item || !item.canManage || !this.operateInstance) {
-            const noteEl = document.createElement('span');
-            noteEl.className = 'metric-op-note';
-            noteEl.textContent = '未配置运维脚本';
-            barEl.appendChild(noteEl);
+        if (canManage && this.operateInstance) {
+            const statusInfo = resolveInstanceStatus(item && item.instanceStatus);
+            const pendingAction = this.getPendingAction(service);
+            MANAGED_INSTANCE_ACTIONS.forEach(option => {
+                barEl.appendChild(this.createManagedOperationButton(service, option, statusInfo.level, pendingAction));
+            });
+
+            const feedbackNode = this.createOperationFeedbackNode(service, pendingAction);
+            if (feedbackNode) {
+                barEl.appendChild(feedbackNode);
+            }
             return barEl;
         }
 
-        const statusInfo = resolveInstanceStatus(item && item.instanceStatus);
-        const pendingAction = this.getPendingAction(service);
-        MANAGED_INSTANCE_ACTIONS.forEach(option => {
-            barEl.appendChild(this.createManagedOperationButton(service, option, statusInfo.level, pendingAction));
-        });
-
-        const feedbackNode = this.createOperationFeedbackNode(service, pendingAction);
-        if (feedbackNode) {
-            barEl.appendChild(feedbackNode);
+        const noteEl = document.createElement('span');
+        noteEl.className = 'metric-op-note';
+        if (!canManage && !canMonitorJvm) {
+            noteEl.textContent = '当前目标仅支持日志与主机指标';
+        } else if (!canManage) {
+            noteEl.textContent = '未配置运维脚本';
+        } else {
+            noteEl.textContent = '当前页面未启用实例运维';
         }
+        barEl.appendChild(noteEl);
         return barEl;
     }
 
@@ -1511,6 +1522,9 @@ function createLoadBlock(item) {
  * @returns {HTMLDivElement} 节点
  */
 function createInstanceStatusBlock(item) {
+    if (!truthy(item && item.canManage)) {
+        return null;
+    }
     const statusInfo = resolveInstanceStatus(item && item.instanceStatus);
     const detailRaw = item && item.instanceStatusDetail ? String(item.instanceStatusDetail).trim() : '';
 
@@ -1541,6 +1555,23 @@ function createInstanceStatusBlock(item) {
 function resolveInstanceStatus(rawStatus) {
     const status = String(rawStatus || '').trim().toLowerCase();
     return INSTANCE_STATUS_META[status] || INSTANCE_STATUS_META.unknown;
+}
+
+/**
+ * 统一将后端返回的布尔值、字符串布尔值转换为 true/false。
+ *
+ * @param {*} value 候选值
+ * @returns {boolean} true 表示真值
+ */
+function truthy(value) {
+    if (typeof value === 'boolean') {
+        return value;
+    }
+    if (value === null || value === undefined) {
+        return false;
+    }
+    const normalized = String(value).trim().toLowerCase();
+    return normalized === 'true' || normalized === '1' || normalized === 'yes';
 }
 
 /**

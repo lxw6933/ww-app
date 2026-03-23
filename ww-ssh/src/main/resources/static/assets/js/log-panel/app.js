@@ -4,11 +4,13 @@ import {
     collectProjects,
     collectEnvs,
     collectServices,
+    getTargetMeta,
     isAggregateSelected,
     matchFileKeyword,
     parseLines,
     sortFileOptions,
-    fileName
+    fileName,
+    supportsJvmMonitor
 } from './utils.js';
 import {LogView} from './log-view.js';
 import {FilterChainManager} from './filter-chain.js';
@@ -185,7 +187,7 @@ const READ_MODE_BUTTON_META = Object.freeze({
     })
 });
 
-const CONTEXT_CONTROL_IDS = Object.freeze(['project', 'env', 'service']);
+const CONTEXT_CONTROL_IDS = Object.freeze(['project', 'env', 'serviceType', 'service']);
 const CAT_BUSY_CONTROL_IDS = Object.freeze(['btnReadTail', 'btnReadCat']);
 const CONTEXT_LINE_CONTROL_IDS = Object.freeze(['beforeLines', 'afterLines']);
 
@@ -209,11 +211,11 @@ function init() {
     updateControls();
     applyCenterViewByState();
     logView.setHighlightRules(filterChainManager.getRules());
-    logView.setEmptyTip('尚未开始查看日志。请先选择项目、环境和服务，然后点击“开始查看”。');
+    logView.setEmptyTip('尚未开始查看日志。请先选择项目、环境和目标，然后点击“开始查看”。');
     logView.renderLevelStats();
     updateSettingsSummary();
     updateLogSearchClearButton();
-    logView.appendSystem('操作提示：先选择项目、环境和服务，再点击“开始查看”。');
+    logView.appendSystem('操作提示：先选择项目、环境和目标，再点击“开始查看”。');
     loadServers();
     loadConcurrentStreamAccess();
     window.addEventListener('beforeunload', beforeUnloadCleanup);
@@ -231,6 +233,55 @@ function beforeUnloadCleanup() {
     statusBar.stop();
     metricsPanel.stopPolling();
     jvmView.stop();
+}
+
+/**
+ * 获取当前选中目标的元数据。
+ *
+ * @returns {Object} 目标元数据
+ */
+function currentTargetMeta() {
+    return getTargetMeta(state.config, value('project'), value('env'), value('service'));
+}
+
+/**
+ * 判断当前目标是否支持 JVM 监控。
+ *
+ * @returns {boolean} true 表示支持 JVM 监控
+ */
+function currentTargetSupportsJvm() {
+    return supportsJvmMonitor(state.config, value('project'), value('env'), value('service'));
+}
+
+/**
+ * 根据当前目标能力更新“日志 / JVM”视图开关的可见性。
+ * <p>
+ * 当目标不支持 JVM（例如 nginx 等非 JVM 目标）时，隐藏日志/JVM 切换开关，避免出现无效的 JVM 入口。
+ * </p>
+ */
+function updateCenterViewSwitchVisibility() {
+    const switchEl = el('centerViewSwitch');
+    if (!switchEl) {
+        return;
+    }
+    const project = value('project');
+    const env = value('env');
+    const service = value('service');
+    if (!project || !env || !service) {
+        switchEl.classList.remove('hidden');
+        return;
+    }
+    const meta = currentTargetMeta();
+    const supportsJvm = currentTargetSupportsJvm();
+    const targetType = meta && meta.targetType ? String(meta.targetType).trim().toLowerCase() : '';
+    const hideSwitch = !supportsJvm || targetType === 'nginx';
+    if (hideSwitch) {
+        switchEl.classList.add('hidden');
+        // 确保回到日志视图，避免在隐藏开关时仍停留在 JVM 视图。
+        setCenterView(CENTER_VIEW_LOG, false);
+    } else {
+        switchEl.classList.remove('hidden');
+    }
 }
 
 /**
@@ -278,17 +329,34 @@ function bindEvents() {
         preferenceStore.set('project', value('project'));
         loadEnvs();
         jvmView.handleContextChanged();
+        updateCenterViewSwitchVisibility();
     });
     el('env').addEventListener('change', () => {
         preferenceStore.set('env', value('env'));
         loadServices();
         jvmView.handleContextChanged();
+        updateCenterViewSwitchVisibility();
     });
+    const serviceTypeEl = el('serviceType');
+    if (serviceTypeEl) {
+        serviceTypeEl.addEventListener('change', () => {
+            preferenceStore.set('serviceType', value('serviceType'));
+            loadServices();
+            jvmView.handleContextChanged();
+            updateCenterViewSwitchVisibility();
+        });
+    }
     el('service').addEventListener('change', () => {
         if (enforceJvmSingleServiceSelection(false)) {
             return;
         }
+        if (isJvmCenterViewActive() && !isAggregateSelected(value('project'), value('env'), value('service'))
+            && !currentTargetSupportsJvm()) {
+            setCenterView(CENTER_VIEW_LOG, false);
+            logView.appendSystem('当前目标不支持 JVM 监控，已自动切回日志视图');
+        }
         preferenceStore.set('service', value('service'));
+        updateCenterViewSwitchVisibility();
         loadFiles();
         refreshMetricsPanel(false);
         jvmView.handleContextChanged();
@@ -467,6 +535,12 @@ function adjustContextLinesByStep(inputId, direction) {
  */
 function setCenterView(view, persist) {
     const normalized = view === CENTER_VIEW_JVM ? CENTER_VIEW_JVM : CENTER_VIEW_LOG;
+    if (normalized === CENTER_VIEW_JVM
+        && !isAggregateSelected(value('project'), value('env'), value('service'))
+        && !currentTargetSupportsJvm()) {
+        logView.appendSystem('当前目标不支持 JVM 监控，请切换到 Java 服务目标后再查看');
+        return;
+    }
     const jvmActive = normalized === CENTER_VIEW_JVM;
     const logShell = el('logShell');
     const jvmShell = el('jvmShell');
@@ -528,9 +602,9 @@ function isJvmCenterViewActive() {
 }
 
 /**
- * 同步“全部服务”选项在不同视图下的可用状态。
+ * 同步“全部”聚合选项在不同视图下的可用状态。
  * <p>
- * JVM 模式下禁用“全部服务”，日志模式下恢复可选。
+ * JVM 模式下禁用聚合选项，日志模式下恢复可选。
  * </p>
  *
  * @param {boolean} disabled 是否禁用
@@ -548,9 +622,9 @@ function syncServiceAggregateOptionState(disabled) {
 }
 
 /**
- * JVM 模式下强制单服务选择。
+ * JVM 模式下强制单项选择。
  * <p>
- * 若当前选择为“全部服务”，自动切换到第一个可用单服务并刷新上下文。
+ * 若当前选择为聚合项，自动切换到第一个可用单项并刷新上下文。
  * </p>
  *
  * @param {boolean} showTip 是否输出系统提示
@@ -581,7 +655,7 @@ function enforceJvmSingleServiceSelection(showTip) {
     refreshMetricsPanel(false);
     jvmView.handleContextChanged();
     if (showTip) {
-        logView.appendSystem('JVM 模式不支持“全部服务”，已自动切换到单服务');
+        logView.appendSystem(`JVM 模式不支持“${getAggregateSelectionLabel()}”，已自动切换到${getSingleSelectionLabel()}`);
     }
     return true;
 }
@@ -1506,6 +1580,7 @@ function loadServers() {
             collectProjects(state.config).forEach(project => projectEl.add(new Option(project, project)));
             applySavedSelectValue(projectEl, consumeSharedString('project', preferenceStore.getString('project', '')));
             loadEnvs();
+            updateCenterViewSwitchVisibility();
         })
         .catch(() => logView.setStatus('配置加载失败', 'var(--error)'));
 }
@@ -1528,10 +1603,69 @@ function loadEnvs() {
 function loadServices() {
     const project = value('project');
     const env = value('env');
+    const serviceTypeEl = el('serviceType');
     const serviceEl = el('service');
+    if (!serviceEl) {
+        return;
+    }
     serviceEl.innerHTML = '';
-    collectServices(state.config, project, env).forEach(service => serviceEl.add(new Option(service, service)));
-    serviceEl.add(new Option('全部服务', ALL));
+    if (serviceTypeEl) {
+        serviceTypeEl.innerHTML = '';
+    }
+
+    const allServices = collectServices(state.config, project, env);
+
+    // 构建一级分类下拉：仅提供“服务”和“目标”两档，用于区分 JVM 应用与 nginx 等特殊目标。
+    if (serviceTypeEl) {
+        let hasDefault = false;
+        let hasOther = false;
+        allServices.forEach(service => {
+            const meta = getTargetMeta(state.config, project, env, service);
+            const type = String((meta && meta.targetType) || 'app').trim().toLowerCase();
+            if (!type || type === 'app') {
+                hasDefault = true;
+            } else {
+                hasOther = true;
+            }
+        });
+        const savedType = consumeSharedString('serviceType', preferenceStore.getString('serviceType', 'default'));
+        if (hasDefault) {
+            serviceTypeEl.add(new Option('服务：', 'default'));
+        }
+        if (hasOther) {
+            serviceTypeEl.add(new Option('目标：', 'other'));
+        }
+        if (savedType && Array.from(serviceTypeEl.options).some(option => option.value === savedType)) {
+            serviceTypeEl.value = savedType;
+        } else if (hasDefault) {
+            serviceTypeEl.value = 'default';
+        } else if (hasOther) {
+            serviceTypeEl.value = 'other';
+        }
+        preferenceStore.set('serviceType', serviceTypeEl.value);
+    }
+
+    const targetTypeFilter = serviceTypeEl ? String(serviceTypeEl.value || '').trim().toLowerCase() : '';
+    const filteredServices = allServices.filter(service => {
+        if (!targetTypeFilter) {
+            return true;
+        }
+        const meta = getTargetMeta(state.config, project, env, service);
+        const type = String((meta && meta.targetType) || 'app').trim().toLowerCase();
+        if (targetTypeFilter === 'default') {
+            // 服务：targetType 为空或 app
+            return !type || type === 'app';
+        }
+        if (targetTypeFilter === 'other') {
+            // 目标：非 app 的所有目标（nginx 等）
+            return !!type && type !== 'app';
+        }
+        // 兜底：兼容历史上直接缓存具体 targetType 的情况
+        return type === targetTypeFilter;
+    });
+
+    filteredServices.forEach(service => serviceEl.add(new Option(service, service)));
+    serviceEl.add(new Option(getAggregateSelectionLabel(), ALL));
     applySavedSelectValue(serviceEl, consumeSharedString('service', preferenceStore.getString('service', '')));
     syncServiceAggregateOptionState(isJvmCenterViewActive());
     if (!enforceJvmSingleServiceSelection(false)) {
@@ -1598,7 +1732,7 @@ function renderFileOptions() {
     fileEl.innerHTML = '';
 
     if (aggregate) {
-        fileEl.add(new Option('聚合模式下读取各服务默认日志', ''));
+        fileEl.add(new Option(`聚合模式下读取${getAggregateSelectionLabel()}默认日志`, ''));
         fileEl.value = '';
         preferenceStore.set('file', '');
         updateSettingsSummary();
@@ -1636,7 +1770,7 @@ function connect() {
     const env = value('env');
     const service = value('service');
     if (!project || !env || !service) {
-        logView.appendSystem('请先选择项目、环境和服务');
+        logView.appendSystem('请先选择项目、环境和目标');
         return;
     }
     if (!isAggregateSelected(project, env, service) && !value('file')) {
@@ -2477,8 +2611,10 @@ function updateFileMode() {
     const fileSearchEl = el('fileSearch');
     el('file').disabled = catBusy || aggregate;
     fileSearchEl.disabled = catBusy || aggregate;
-    statusBar.setModeTip(aggregate);
-    fileSearchEl.placeholder = aggregate ? '全部服务查看时不支持文件名筛选' : '输入文件名关键字进行筛选';
+    statusBar.setModeTip(aggregate, getAggregateViewLabel(), getSingleViewLabel());
+    fileSearchEl.placeholder = aggregate
+        ? `${getAggregateViewLabel()}时不支持文件名筛选`
+        : '输入文件名关键字进行筛选';
     updateSettingsSummary();
 }
 
@@ -2692,6 +2828,57 @@ function parseSharedStateFromUrl() {
 }
 
 /**
+ * 获取当前服务分类值。
+ * <p>
+ * 顶部工具栏中的 serviceType 只区分“服务 / 目标”两类，
+ * 这里统一归一化为 default / other，避免各处重复散落判断。
+ * </p>
+ *
+ * @returns {string} 当前服务分类值
+ */
+function getCurrentServiceType() {
+    const serviceTypeEl = el('serviceType');
+    const rawValue = serviceTypeEl ? String(serviceTypeEl.value || '').trim().toLowerCase() : '';
+    return rawValue === 'other' ? 'other' : 'default';
+}
+
+/**
+ * 获取当前分类下的聚合选项文案。
+ *
+ * @returns {string} “全部服务”或“全部目标”
+ */
+function getAggregateSelectionLabel() {
+    return getCurrentServiceType() === 'other' ? '全部目标' : '全部服务';
+}
+
+/**
+ * 获取当前分类下的单项选项文案。
+ *
+ * @returns {string} “单服务”或“单目标”
+ */
+function getSingleSelectionLabel() {
+    return getCurrentServiceType() === 'other' ? '单目标' : '单服务';
+}
+
+/**
+ * 获取当前分类下的聚合查看文案。
+ *
+ * @returns {string} “全部服务查看”或“全部目标查看”
+ */
+function getAggregateViewLabel() {
+    return `${getAggregateSelectionLabel()}查看`;
+}
+
+/**
+ * 获取当前分类下的单项查看文案。
+ *
+ * @returns {string} “单服务查看”或“单目标查看”
+ */
+function getSingleViewLabel() {
+    return `${getSingleSelectionLabel()}查看`;
+}
+
+/**
  * 根据沉浸模式状态刷新按钮文案、图标与可访问性属性。
  *
  * @param {HTMLButtonElement} button 按钮节点
@@ -2721,7 +2908,9 @@ function updateSettingsSummary() {
         ? fileEl.options[fileEl.selectedIndex].text
         : '未选择';
     const shortFile = abbreviateText(selectedLabel || '未选择', 16);
-    const mode = isAggregateSelected(value('project'), value('env'), value('service')) ? '全部服务' : '单服务';
+    const mode = isAggregateSelected(value('project'), value('env'), value('service'))
+        ? getAggregateSelectionLabel()
+        : getSingleSelectionLabel();
     summaryEl.textContent = `文件:${shortFile} | ${mode}`;
 }
 

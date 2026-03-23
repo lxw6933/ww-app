@@ -105,6 +105,53 @@ export function collectServices(config, project, env) {
 }
 
 /**
+ * 获取当前目标元数据。
+ *
+ * @param {Object} config 配置对象
+ * @param {string} project 项目
+ * @param {string} env 环境
+ * @param {string} service 目标键
+ * @returns {Object} 目标元数据
+ */
+export function getTargetMeta(config, project, env, service) {
+    if (!config || !project || !env || !service || service === ALL) {
+        return {};
+    }
+    const projectMap = config[project] || {};
+    const envMap = projectMap[env] || {};
+    const targetMeta = envMap[service];
+    return targetMeta && typeof targetMeta === 'object' ? targetMeta : {};
+}
+
+/**
+ * 判断目标是否支持 JVM 监控。
+ *
+ * @param {Object} config 配置对象
+ * @param {string} project 项目
+ * @param {string} env 环境
+ * @param {string} service 目标键
+ * @returns {boolean} true 表示支持
+ */
+export function supportsJvmMonitor(config, project, env, service) {
+    const meta = getTargetMeta(config, project, env, service);
+    return String(meta.supportsJvm || '').toLowerCase() === 'true';
+}
+
+/**
+ * 判断目标是否支持实例运维。
+ *
+ * @param {Object} config 配置对象
+ * @param {string} project 项目
+ * @param {string} env 环境
+ * @param {string} service 目标键
+ * @returns {boolean} true 表示支持
+ */
+export function supportsManageOperation(config, project, env, service) {
+    const meta = getTargetMeta(config, project, env, service);
+    return String(meta.supportsManage || '').toLowerCase() === 'true';
+}
+
+/**
  * 判断文件是否命中搜索关键字。
  *
  * @param {string} path 文件路径
@@ -144,6 +191,20 @@ export function sortFileOptions(list) {
  * @returns {number} 优先级
  */
 function filePriority(path) {
-    const normalized = fileName(path).toLowerCase();
-    return normalized.indexOf('info') >= 0 ? 0 : 1;
+    const name = fileName(path).toLowerCase();
+    const full = String(path || '').toLowerCase();
+    const isNginx = full.indexOf('nginx') >= 0;
+    const isAccess = name.indexOf('access') >= 0;
+
+    // nginx access 日志最高优先级，其次是其他 access 日志，再其次是 info，最后是其他文件。
+    if (isNginx && isAccess) {
+        return 0;
+    }
+    if (isAccess) {
+        return 1;
+    }
+    if (name.indexOf('info') >= 0) {
+        return 2;
+    }
+    return 3;
 }

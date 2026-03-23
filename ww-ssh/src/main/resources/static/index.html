@@ -33,7 +33,7 @@
             </div>
         </div>
         <div id="statusWrap" class="status-bar status-bar-top">
-            <span id="modeTip">当前：单服务查看</span>
+            <span id="modeTip">当前：单项查看</span>
             <span id="status">未连接</span>
             <span id="lineCount">0 行</span>
             <span id="lastLogTime">最后日志: --</span>
@@ -63,11 +63,11 @@
                         <select id="env" class="control-lg"></select>
                     </div>
                     <div class="group group-service">
-                        <label for="service">服务：</label>
-                        <select id="service" class="control-lg"></select>
+                        <select id="serviceType" class="control-sm" aria-label="服务分类" title="服务分类"></select>
+                        <select id="service" class="control-lg" aria-label="服务或目标" title="服务或目标"></select>
                     </div>
                     <div class="group group-action toolbar-action-bar">
-                        <div class="center-view-switch read-mode-switch toolbar-toggle toolbar-toggle-view" role="group" aria-label="查看中心切换">
+                        <div id="centerViewSwitch" class="center-view-switch read-mode-switch toolbar-toggle toolbar-toggle-view" role="group" aria-label="查看中心切换">
                             <button id="btnViewLog" type="button" class="secondary read-mode-btn active" title="切换到日志窗口" aria-label="切换到日志窗口">日志</button>
                             <button id="btnViewJvm" type="button" class="secondary read-mode-btn" title="切换到 JVM 监控窗口" aria-label="切换到 JVM 监控窗口">JVM</button>
                         </div>
@@ -116,10 +116,10 @@
                     <div class="log-tools">
                         <div class="log-level-box">
                             <span class="log-level-label">日志级别</span>
-                            <button id="btnLevelAll" data-level="ALL" type="button" class="secondary level-btn active">全部</button>
-                            <button id="btnLevelInfo" data-level="INFO" type="button" class="secondary level-btn">INFO</button>
-                            <button id="btnLevelWarn" data-level="WARN" type="button" class="secondary level-btn">WARN</button>
-                            <button id="btnLevelError" data-level="ERROR" type="button" class="secondary level-btn">ERROR</button>
+                            <button id="btnLevelAll" data-level="ALL" type="button" class="secondary level-btn active">all</button>
+                            <button id="btnLevelInfo" data-level="INFO" type="button" class="secondary level-btn">info</button>
+                            <button id="btnLevelWarn" data-level="WARN" type="button" class="secondary level-btn">warn</button>
+                            <button id="btnLevelError" data-level="ERROR" type="button" class="secondary level-btn">error</button>
                         </div>
                         <div class="log-search-box">
                             <div class="log-search-input-wrap">
@@ -284,7 +284,7 @@
                 <input id="fileSearch" type="text" class="control-xl" placeholder="输入文件名关键字">
             </div>
             <div class="group group-file-select settings-field-group">
-                <label for="file">日志文件（单服务必选）</label>
+                        <label for="file">日志文件（单项必选）</label>
                 <select id="file" class="control-xl"></select>
             </div>
             <div class="group group-lines-context settings-field-group">

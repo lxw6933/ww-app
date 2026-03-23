@@ -43,6 +43,8 @@ bcm:
 
 
 service:
+  nginx:
+    logPath: "/data/nginx/logs"
   mall-basic-portal:
     logPath: "/data/B2B2C/mall-basic-portal/target/logs"
     manageCommandFile: "/data/B2B2C/mall-basic-portal/bin/server.sh"
@@ -64,6 +66,10 @@ app:
   # 单实例允许同时承载的实时日志流上限。
   # 每个被订阅的实例日志会占用 1 条流，例如“全部服务”订阅会按命中的实例数累加占用。
   maxConcurrentStreams: 96
+  # nginx 目标配置说明：
+  # 1. 使用 targetType: nginx 声明当前目标不是 JVM 应用；
+  # 2. logPath 指向 nginx 日志目录，前端仍可列出并查看 access/error 日志；
+  # 3. 不配置 manageCommandFile，前端会自动隐藏 JVM 与实例运维能力。
   # 推荐结构：app.projects.<project>.<env>.<service>。
   # 兼容说明：若仍使用 app.servers，系统会自动归并到 default 项目。
   projects:
@@ -112,6 +118,13 @@ app:
           password: ${test.password}
           logPath: ${service.soul-bootstrap.logPath}
           manageCommandFile: ${service.soul-bootstrap.manageCommandFile}
+        nginx:
+          host: ${test.ip}
+          port: ${test.port}
+          username: ${test.username}
+          password: ${test.password}
+          targetType: nginx
+          logPath: ${service.nginx.logPath}
 
       test2:
         mall-basic-portal:
@@ -149,6 +162,13 @@ app:
           password: ${test2.password}
           logPath: ${service.soul-bootstrap.logPath}
           manageCommandFile: ${service.soul-bootstrap.manageCommandFile}
+        nginx:
+          host: ${test2.ip}
+          port: ${test2.port}
+          username: ${test2.username}
+          password: ${test2.password}
+          targetType: nginx
+          logPath: ${service.nginx.logPath}
 
       uat2:
         mall-basic-portal:
@@ -186,6 +206,13 @@ app:
           password: ${uat2_middle.password}
           logPath: ${service.soul-bootstrap.logPath}
           manageCommandFile: ${service.soul-bootstrap.manageCommandFile}
+        nginx:
+          host: ${uat2_middle.ip}
+          port: ${uat2_middle.port}
+          username: ${uat2_middle.username}
+          password: ${uat2_middle.password}
+          targetType: nginx
+          logPath: ${service.nginx.logPath}
 
       press:
         mall-basic-portal:
@@ -223,6 +250,13 @@ app:
           password: ${press_middle.password}
           logPath: ${service.soul-bootstrap.logPath}
           manageCommandFile: ${service.soul-bootstrap.manageCommandFile}
+        nginx:
+          host: ${press_middle.ip}
+          port: ${press_middle.port}
+          username: ${press_middle.username}
+          password: ${press_middle.password}
+          targetType: nginx
+          logPath: ${service.nginx.logPath}
 
       bcm:
         mall-basic-portal:
@@ -260,6 +294,13 @@ app:
           password: ${bcm.password}
           logPath: ${service.soul-bootstrap.logPath}
           manageCommandFile: ${service.soul-bootstrap.manageCommandFile}
+        nginx:
+          host: ${bcm.ip}
+          port: ${bcm.port}
+          username: ${bcm.username}
+          password: ${bcm.password}
+          targetType: nginx
+          logPath: ${service.nginx.logPath}
 
     vms:
       # 默认占位项目配置（假环境 + 假实例），用于项目维度展示与后续按需替换。

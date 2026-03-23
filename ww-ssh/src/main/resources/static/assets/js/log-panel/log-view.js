@@ -1070,10 +1070,10 @@ export class LogView {
      */
     renderLevelStats() {
         const stats = this.collectLevelStats();
-        this.renderLevelButtonText('btnLevelAll', '全部', stats.ALL);
-        this.renderLevelButtonText('btnLevelInfo', 'INFO', stats.INFO);
-        this.renderLevelButtonText('btnLevelWarn', 'WARN', stats.WARN);
-        this.renderLevelButtonText('btnLevelError', 'ERROR', stats.ERROR);
+        this.renderLevelButtonText('btnLevelAll', 'all', stats.ALL);
+        this.renderLevelButtonText('btnLevelInfo', 'info', stats.INFO);
+        this.renderLevelButtonText('btnLevelWarn', 'warn', stats.WARN);
+        this.renderLevelButtonText('btnLevelError', 'error', stats.ERROR);
     }
 
     /**

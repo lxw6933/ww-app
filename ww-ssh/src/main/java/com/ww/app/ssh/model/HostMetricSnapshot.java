@@ -29,6 +29,15 @@ public class HostMetricSnapshot {
     private String service;
 
     /**
+     * 目标类型。
+     * <p>
+     * 当前主要用于区分 Java 应用与 nginx 等非 JVM 日志目标，
+     * 便于前端按能力控制交互入口。
+     * </p>
+     */
+    private String targetType;
+
+    /**
      * 主机地址。
      */
     private String host;
@@ -120,6 +129,14 @@ public class HostMetricSnapshot {
      * </p>
      */
     private Boolean canManage;
+
+    /**
+     * 是否支持 JVM 监控。
+     * <p>
+     * nginx 等非 JVM 目标应返回 false，前端据此隐藏 JVM 入口。
+     * </p>
+     */
+    private Boolean canMonitorJvm;
 
     /**
      * 实例运行状态。

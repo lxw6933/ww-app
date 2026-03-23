@@ -70,10 +70,17 @@ public class LogPanelQueryService {
                         meta.put("host", node == null ? "" : defaultString(node.getHost()));
                         meta.put("logPath", node == null ? "" : defaultString(node.getLogPath()));
                         meta.put("instances", "1");
+                        meta.put("targetType", resolveTargetType(node));
+                        meta.put("supportsJvm", String.valueOf(supportsJvm(node)));
+                        meta.put("supportsManage", String.valueOf(supportsManage(node)));
                         serviceMap.put(groupName, meta);
                     } else {
                         int instances = Integer.parseInt(defaultString(meta.get("instances")).isEmpty() ? "1" : meta.get("instances"));
                         meta.put("instances", String.valueOf(instances + 1));
+                        meta.put("supportsJvm", String.valueOf(Boolean.parseBoolean(defaultString(meta.get("supportsJvm")))
+                                || supportsJvm(node)));
+                        meta.put("supportsManage", String.valueOf(Boolean.parseBoolean(defaultString(meta.get("supportsManage")))
+                                || supportsManage(node)));
                     }
                 }
                 envMap.put(envEntry.getKey(), serviceMap);
@@ -352,5 +359,38 @@ public class LogPanelQueryService {
      */
     private String defaultString(String source) {
         return source == null ? "" : source;
+    }
+
+    /**
+     * 解析目标类型。
+     *
+     * @param node 节点配置
+     * @return 目标类型
+     */
+    private String resolveTargetType(LogPanelProperties.ServerNode node) {
+        if (node == null) {
+            return LogPanelProperties.TARGET_TYPE_APP;
+        }
+        return node.normalizedTargetType();
+    }
+
+    /**
+     * 判断目标是否支持 JVM 监控。
+     *
+     * @param node 节点配置
+     * @return true 表示支持
+     */
+    private boolean supportsJvm(LogPanelProperties.ServerNode node) {
+        return node != null && node.supportsJvmMonitor();
+    }
+
+    /**
+     * 判断目标是否支持实例运维。
+     *
+     * @param node 节点配置
+     * @return true 表示支持
+     */
+    private boolean supportsManage(LogPanelProperties.ServerNode node) {
+        return node != null && !trimToEmpty(node.getManageCommandFile()).isEmpty();
     }
 }

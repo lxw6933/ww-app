@@ -81,13 +81,17 @@ export class StatusBarController {
      * 更新查看模式文案。
      *
      * @param {boolean} aggregate 是否为聚合模式
+     * @param {string} aggregateLabel 聚合模式文案
+     * @param {string} singleLabel 单项模式文案
      */
-    setModeTip(aggregate) {
+    setModeTip(aggregate, aggregateLabel, singleLabel) {
         const modeTipEl = el('modeTip');
         if (!modeTipEl) {
             return;
         }
-        modeTipEl.textContent = aggregate ? '当前：全部服务查看' : '当前：单服务查看';
+        const aggregateText = aggregateLabel || '全部目标查看';
+        const singleText = singleLabel || '单目标查看';
+        modeTipEl.textContent = aggregate ? `当前：${aggregateText}` : `当前：${singleText}`;
     }
 
     /**

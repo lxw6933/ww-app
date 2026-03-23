@@ -43,4 +43,25 @@ public class LogTarget {
     public String displayName() {
         return project + "/" + env + "/" + service;
     }
+
+    /**
+     * 获取目标类型。
+     *
+     * @return 目标类型
+     */
+    public String targetType() {
+        if (serverNode == null) {
+            return LogPanelProperties.TARGET_TYPE_APP;
+        }
+        return serverNode.normalizedTargetType();
+    }
+
+    /**
+     * 判断当前目标是否支持 JVM 监控。
+     *
+     * @return true 表示支持 JVM 监控
+     */
+    public boolean supportsJvmMonitor() {
+        return serverNode != null && serverNode.supportsJvmMonitor();
+    }
 }
