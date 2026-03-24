@@ -5,9 +5,11 @@ import com.github.benmanes.caffeine.cache.LoadingCache;
 import com.ww.app.common.exception.ApiException;
 import com.ww.mall.promotion.constants.GroupBizConstants;
 import com.ww.mall.promotion.controller.app.group.res.GroupInstanceVO;
+import com.ww.mall.promotion.engine.notify.GroupNotifyTaskService;
 import com.ww.mall.promotion.engine.model.GroupCacheSnapshot;
 import com.ww.mall.promotion.engine.model.GroupCommandResult;
 import com.ww.mall.promotion.engine.model.GroupMemberCacheSnapshot;
+import com.ww.mall.promotion.engine.projection.GroupProjectionPersistenceService;
 import com.ww.mall.promotion.entity.group.GroupActivity;
 import com.ww.mall.promotion.entity.group.GroupMember;
 import com.ww.mall.promotion.enums.GroupEnabledStatus;
@@ -35,7 +37,8 @@ import static com.ww.mall.promotion.constants.ErrorCodeConstants.*;
 /**
  * 拼团命令服务。
  * <p>
- * 所有主链路状态迁移都通过 Redis Lua 脚本完成，Mongo 只由异步投影器负责落库。
+ * 所有主链路状态迁移都通过 Redis Lua 脚本完成，
+ * Lua 成功后立即同步 Mongo 查询模型，并按最终状态创建 MQ 通知任务。
  *
  * @author ww
  * @create 2026-03-19
@@ -64,6 +67,12 @@ public class GroupCommandService {
 
     @Resource
     private MongoTemplate mongoTemplate;
+
+    @Resource
+    private GroupProjectionPersistenceService groupProjectionPersistenceService;
+
+    @Resource
+    private GroupNotifyTaskService groupNotifyTaskService;
 
     @Resource(name = "groupCreateScript")
     private RedisScript<List<Object>> groupCreateScript;
@@ -101,8 +110,7 @@ public class GroupCommandService {
                 groupRedisKeyBuilder.buildGroupUserIndexKey(groupId),
                 groupRedisKeyBuilder.buildOrderIndexKey(),
                 groupRedisKeyBuilder.buildActivityUserCountKey(),
-                groupRedisKeyBuilder.buildExpiryIndexKey(),
-                groupRedisKeyBuilder.buildDomainEventStreamKey()
+                groupRedisKeyBuilder.buildExpiryIndexKey()
         );
         List<String> args = Arrays.asList(
                 groupId,
@@ -125,6 +133,7 @@ public class GroupCommandService {
         if (!result.isSuccess()) {
             throwCreateException(result);
         }
+        syncProjectionAndNotify(result.getGroupId());
         return groupQueryService.getGroupDetail(result.getGroupId());
     }
 
@@ -152,8 +161,7 @@ public class GroupCommandService {
                 groupRedisKeyBuilder.buildGroupUserIndexKey(command.getGroupId()),
                 groupRedisKeyBuilder.buildOrderIndexKey(),
                 groupRedisKeyBuilder.buildActivityUserCountKey(),
-                groupRedisKeyBuilder.buildExpiryIndexKey(),
-                groupRedisKeyBuilder.buildDomainEventStreamKey()
+                groupRedisKeyBuilder.buildExpiryIndexKey()
         );
         List<String> args = Arrays.asList(
                 command.getGroupId(),
@@ -173,6 +181,7 @@ public class GroupCommandService {
         if (!result.isSuccess()) {
             throwJoinException(result);
         }
+        syncProjectionAndNotify(result.getGroupId());
         return groupQueryService.getGroupDetail(result.getGroupId());
     }
 
@@ -234,8 +243,7 @@ public class GroupCommandService {
                 groupRedisKeyBuilder.buildGroupMemberStoreKey(groupId),
                 groupRedisKeyBuilder.buildGroupUserIndexKey(groupId),
                 groupRedisKeyBuilder.buildActivityUserCountKey(),
-                groupRedisKeyBuilder.buildExpiryIndexKey(),
-                groupRedisKeyBuilder.buildDomainEventStreamKey()
+                groupRedisKeyBuilder.buildExpiryIndexKey()
         );
         String failReason = userId != null && isLeader(snapshot, userId)
                 ? "团长售后导致拼团关闭" : "售后成功，释放拼团名额";
@@ -258,6 +266,9 @@ public class GroupCommandService {
         if (code < 0) {
             throw new ApiException(GROUP_RECORD_ERROR);
         }
+        if (code == 1) {
+            syncProjectionAndNotify(groupId);
+        }
     }
 
     /**
@@ -274,7 +285,6 @@ public class GroupCommandService {
                 groupRedisKeyBuilder.buildGroupMemberStoreKey(groupId),
                 groupRedisKeyBuilder.buildGroupUserIndexKey(groupId),
                 groupRedisKeyBuilder.buildActivityUserCountKey(),
-                groupRedisKeyBuilder.buildDomainEventStreamKey(),
                 groupRedisKeyBuilder.buildExpiryIndexKey()
         );
         List<String> args = Arrays.asList(
@@ -291,6 +301,9 @@ public class GroupCommandService {
         int code = parseInt(rawResult.get(0));
         if (code < 0 && code != -1 && code != -2) {
             throw new ApiException(GROUP_RECORD_ERROR);
+        }
+        if (code == 1) {
+            syncProjectionAndNotify(groupId);
         }
     }
 
@@ -519,7 +532,11 @@ public class GroupCommandService {
      */
     private GroupInstanceVO replayCreateGroup(CreateGroupCommand command) {
         String existingGroupId = findExistingGroupId(command.getOrderId());
-        return hasText(existingGroupId) ? groupQueryService.getGroupDetail(existingGroupId) : null;
+        if (!hasText(existingGroupId)) {
+            return null;
+        }
+        syncProjectionAndNotify(existingGroupId);
+        return groupQueryService.getGroupDetail(existingGroupId);
     }
 
     /**
@@ -536,7 +553,24 @@ public class GroupCommandService {
         if (!existingGroupId.equals(command.getGroupId())) {
             throw new ApiException(GROUP_RECORD_ORDER_DUPLICATED);
         }
+        syncProjectionAndNotify(existingGroupId);
         return groupQueryService.getGroupDetail(existingGroupId);
+    }
+
+    /**
+     * 同步 Mongo 投影并尝试发送业务通知。
+     * <p>
+     * 当前命令链路会在 Lua 成功后立即完成查询模型同步，
+     * 并按最终状态创建通知任务、优先直发 MQ。
+     *
+     * @param groupId 团ID
+     */
+    private void syncProjectionAndNotify(String groupId) {
+        if (!hasText(groupId)) {
+            return;
+        }
+        GroupCacheSnapshot snapshot = groupProjectionPersistenceService.syncSnapshot(groupId);
+        groupNotifyTaskService.notifyIfNecessary(snapshot);
     }
 
     /**

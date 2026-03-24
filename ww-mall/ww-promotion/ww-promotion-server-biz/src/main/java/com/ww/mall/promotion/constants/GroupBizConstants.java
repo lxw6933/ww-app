@@ -24,29 +24,26 @@ public final class GroupBizConstants {
     public static final int EXPIRE_JOB_BATCH_LIMIT = 100;
 
     /**
-     * Redis Stream 消费组名称。
+     * 拼团通知任务定时扫描间隔，单位毫秒。
      */
-    public static final String GROUP_EVENT_STREAM_CONSUMER_GROUP = "promotion-group-projector";
+    public static final long GROUP_NOTIFY_TASK_FIXED_DELAY_MILLIS = 5_000L;
 
     /**
-     * Redis Stream 消费者名前缀。
+     * 拼团通知任务单次扫描上限。
      */
-    public static final String GROUP_EVENT_STREAM_CONSUMER_PREFIX = "promotion-group-consumer-";
+    public static final int GROUP_NOTIFY_TASK_BATCH_SIZE = 100;
 
     /**
-     * Redis Stream 单批消费数量。
+     * 拼团通知任务“发送中”租约时长，单位毫秒。
+     * <p>
+     * 当实例在发送过程中崩溃时，其他实例可在租约过期后重新领取该任务。
      */
-    public static final int GROUP_EVENT_STREAM_BATCH_SIZE = 50;
+    public static final long GROUP_NOTIFY_TASK_SENDING_LEASE_MILLIS = 30_000L;
 
     /**
-     * Redis Stream 轮询阻塞毫秒数。
+     * 拼团通知任务最大重试次数。
      */
-    public static final long GROUP_EVENT_STREAM_BLOCK_MILLIS = 200L;
-
-    /**
-     * Redis Stream 投影调度固定延迟毫秒数。
-     */
-    public static final long GROUP_EVENT_STREAM_FIXED_DELAY_MILLIS = 500L;
+    public static final int GROUP_NOTIFY_TASK_MAX_RETRY_COUNT = 5;
 
     private GroupBizConstants() {
     }

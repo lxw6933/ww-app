@@ -160,6 +160,36 @@ public class GroupInstance extends BaseDoc {
     }
 
     /**
+     * 构建根据团ID列表查询摘要的条件。
+     * <p>
+     * 用户“我的拼团”列表只需要团摘要与冗余成员快照，不需要回表读取完整成员轨迹，
+     * 因此这里显式限制返回字段，减少 Mongo 文档反序列化与网络传输开销。
+     *
+     * @param idList 团ID列表
+     * @return Mongo 查询条件
+     */
+    public static Query buildIdListSummaryQuery(List<String> idList) {
+        Query query = BaseDoc.buildIdListQuery(idList);
+        appendSummaryFields(query);
+        return query;
+    }
+
+    /**
+     * 构建根据活动ID和状态查询团摘要的条件。
+     * <p>
+     * 活动团列表页同样只展示摘要信息，因此复用摘要字段投影，避免拉取无关字段。
+     *
+     * @param activityId 活动ID
+     * @param status 团状态
+     * @return Mongo 查询条件
+     */
+    public static Query buildActivityIdAndStatusSummaryQuery(String activityId, String status) {
+        Query query = buildActivityIdAndStatusQuery(activityId, status);
+        appendSummaryFields(query);
+        return query;
+    }
+
+    /**
      * 构建根据团长用户ID和状态查询
      */
     public static Query buildLeaderUserIdAndStatusQuery(Long leaderUserId, String status) {
@@ -208,6 +238,27 @@ public class GroupInstance extends BaseDoc {
         update.set("currentSize", currentSize);
         update.set("remainingSlots", remainingSlots);
         return update;
+    }
+
+    /**
+     * 为查询追加团摘要所需字段。
+     *
+     * @param query Mongo 查询条件
+     */
+    private static void appendSummaryFields(Query query) {
+        query.fields()
+                .include("activityId")
+                .include("leaderUserId")
+                .include("status")
+                .include("requiredSize")
+                .include("currentSize")
+                .include("remainingSlots")
+                .include("expireTime")
+                .include("completeTime")
+                .include("spuId")
+                .include("skuIds")
+                .include("failReason")
+                .include("members");
     }
 
 }

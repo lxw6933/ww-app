@@ -5,7 +5,7 @@
 1. 基于全局订单索引做开团幂等。
 2. 基于活动用户占位计数做活动维度限购。
 3. 原子写入团主状态、成员仓库、团内活跃用户索引、订单索引、过期索引。
-4. 向 stream:event 追加 GROUP_CREATED 事件。
+4. 原子写入过期索引。
 
 KEYS:
 1. group:instance:meta:{groupId}
@@ -14,8 +14,6 @@ KEYS:
 4. group:order:index
 5. group:activity:active:count
 6. group:expiry
-7. group:stream:event
-
 ARGV:
 1. groupId
 2. activityId
@@ -33,8 +31,6 @@ ARGV:
 memberJson 样例：
 {"groupInstanceId":"67dd3ac8f5a6f80001a10001","userId":20001,"orderId":"ORDER_10001","skuId":30001,"memberStatus":"JOINED","payAmount":99.00}
 
-事件样例：
-eventType=GROUP_CREATED,groupId=67dd3ac8f5a6f80001a10001,orderId=ORDER_10001
 ]]
 local existingGroupId = redis.call('HGET', KEYS[4], ARGV[4])
 if existingGroupId then
@@ -71,14 +67,5 @@ redis.call('EXPIRE', KEYS[1], tonumber(ARGV[12]))
 redis.call('EXPIRE', KEYS[2], tonumber(ARGV[12]))
 redis.call('EXPIRE', KEYS[3], tonumber(ARGV[12]))
 redis.call('ZADD', KEYS[6], tonumber(ARGV[9]), ARGV[1])
-redis.call('XADD', KEYS[7], '*',
-        'eventType', 'GROUP_CREATED',
-        'groupId', ARGV[1],
-        'activityId', ARGV[2],
-        'userId', ARGV[3],
-        'orderId', ARGV[4],
-        'reason', '',
-        'occurredAt', ARGV[8]
-)
 
 return {1, ARGV[1]}

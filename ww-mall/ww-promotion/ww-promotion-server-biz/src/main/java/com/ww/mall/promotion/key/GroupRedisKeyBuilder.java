@@ -7,16 +7,15 @@ import org.springframework.stereotype.Component;
  * 拼团 Redis Key 构建器。
  * <p>
  * 新版拼团重构后，Redis 为主状态存储，所有命令链路都围绕统一 Key 规范运转。
- * 这里集中维护各类状态、索引、计数器和事件流 Key，避免命令脚本与 Java 代码各自拼串。
+ * 这里集中维护各类状态、索引和计数器 Key，避免命令脚本与 Java 代码各自拼串。
  * <p>
- * 当前拼团主链路固定使用 7 个核心 Key：
+ * 当前拼团主链路固定使用 6 个核心 Key：
  * 1. 团主状态：{@code group:instance:meta:{groupId}}
  * 2. 团成员仓库：{@code group:instance:member-store:{groupId}}
  * 3. 团内活跃用户索引：{@code group:instance:user-index:{groupId}}
  * 4. 全局订单幂等索引：{@code group:order:index}
  * 5. 活动用户占位计数：{@code group:activity:active:count}
  * 6. 过期调度索引：{@code group:expiry}
- * 7. 状态变更事件流：{@code group:stream:event}
  * <p>
  * 示例：
  * 团状态 Key:
@@ -24,9 +23,6 @@ import org.springframework.stereotype.Component;
  * <p>
  * 团状态 Value:
  * {@code {status=OPEN,currentSize=1,remainingSlots=1,expireTime=1770000000000}}
- * <p>
- * 事件流样例:
- * {@code eventType=GROUP_COMPLETED,groupId=67dd3ac8f5a6f80001a10001,orderId=ORDER_10001}
  *
  * @author ww
  * @create 2026-03-19
@@ -44,8 +40,6 @@ public class GroupRedisKeyBuilder extends RedisKeyBuilder {
     private static final String ACTIVE = "active";
     private static final String COUNT = "count";
     private static final String EXPIRY = "expiry";
-    private static final String STREAM = "stream";
-    private static final String EVENT = "event";
     private static final String MEMBER_STORE = "member-store";
     private static final String USER_INDEX = "user-index";
 
@@ -198,25 +192,6 @@ public class GroupRedisKeyBuilder extends RedisKeyBuilder {
      */
     public String buildExpiryIndexKey() {
         return join(GROUP, EXPIRY);
-    }
-
-    /**
-     * 拼团领域事件 Stream Key。
-     * <p>
-     * 功能：
-     * Lua 脚本只负责原子修改 Redis 主状态，再把变更结果写入该 Stream。
-     * 后续由投影器异步消费，完成 Mongo 投影和外部 MQ 通知，避免同步双写。
-     * <p>
-     * Key 示例：
-     * {@code promotion:group:stream:event}
-     * <p>
-     * Event 示例：
-     * {@code {eventType=GROUP_FAILED,groupId=67dd3ac8f5a6f80001a10001,reason=拼团过期未成团}}
-     *
-     * @return Redis Key
-     */
-    public String buildDomainEventStreamKey() {
-        return join(GROUP, STREAM, EVENT);
     }
 
     /**
