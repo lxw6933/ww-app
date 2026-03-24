@@ -5,7 +5,6 @@ import com.ww.app.redis.annotation.RedisPublishMsg;
 import com.ww.mall.promotion.constants.RedisChannelConstant;
 import com.ww.mall.promotion.controller.admin.group.req.GroupActivityBO;
 import com.ww.mall.promotion.entity.group.GroupActivity;
-import com.ww.mall.promotion.enums.GroupActivityStatus;
 import com.ww.mall.promotion.enums.GroupEnabledStatus;
 import com.ww.mall.promotion.service.group.GroupActivityService;
 import lombok.extern.slf4j.Slf4j;
@@ -32,6 +31,9 @@ import static com.ww.mall.promotion.constants.ErrorCodeConstants.GROUP_ACTIVITY_
 
 /**
  * 拼团活动服务实现。
+ * <p>
+ * 该实现不再维护持久化 status 字段，而是统一以开始时间和结束时间为准，
+ * 在查询和返回阶段动态推导活动状态。
  *
  * @author ww
  * @create 2026-03-17
@@ -55,7 +57,6 @@ public class GroupActivityServiceImpl implements GroupActivityService {
         Date now = new Date();
         activity.setCreateTime(now);
         activity.setUpdateTime(now);
-        activity.setStatus(GroupActivityStatus.NOT_STARTED.getCode());
         activity.setEnabled(GroupEnabledStatus.ENABLED.getCode());
         GroupActivity saved = mongoTemplate.save(activity);
         log.info("创建拼团活动成功: activityId={}, spuId={}, skuRuleSize={}",
@@ -72,7 +73,7 @@ public class GroupActivityServiceImpl implements GroupActivityService {
         validateActivityBO(bo);
         GroupActivity activity = getActivityById(bo.getId());
         Date now = new Date();
-        if (activity.getStartTime().before(now) && activity.getEndTime().after(now)) {
+        if (activity.isActiveAt(now)) {
             throw new ApiException(GROUP_ACTIVITY_UPDATING_FORBIDDEN);
         }
         GroupActivity updated = buildActivity(bo, activity);
@@ -98,13 +99,14 @@ public class GroupActivityServiceImpl implements GroupActivityService {
     @Override
     public List<GroupActivity> listActiveActivities() {
         Date now = new Date();
-        Query query = GroupActivity.buildActiveQuery(GroupActivityStatus.ACTIVE.getCode(), now);
+        Query query = GroupActivity.buildActiveQuery(now);
         return mongoTemplate.find(query, GroupActivity.class);
     }
 
     @Override
     public List<GroupActivity> getActivitiesBySpuId(Long spuId) {
-        Query query = GroupActivity.buildSpuIdAndStatusQuery(spuId, GroupActivityStatus.ACTIVE.getCode());
+        Date now = new Date();
+        Query query = GroupActivity.buildSpuIdAndActiveQuery(spuId, now);
         return mongoTemplate.find(query, GroupActivity.class);
     }
 
@@ -125,6 +127,10 @@ public class GroupActivityServiceImpl implements GroupActivityService {
 
     /**
      * 构建活动实体。
+     * <p>
+     * 该方法负责把请求对象转换为持久化对象，并同步刷新兼容字段：
+     * 1. skuRules 保存完整可售规则。
+     * 2. skuId/groupPrice/originalPrice 保存当前用于展示的默认规则快照。
      *
      * @param bo 请求对象
      * @param target 目标实体
@@ -144,19 +150,25 @@ public class GroupActivityServiceImpl implements GroupActivityService {
 
         List<GroupActivity.GroupSkuRule> skuRules = normalizeSkuRules(bo);
         target.setSkuRules(skuRules);
-        GroupActivity.GroupSkuRule displayRule = skuRules.stream()
-                .min(Comparator.comparing(GroupActivity.GroupSkuRule::getGroupPrice))
-                .orElse(null);
+        GroupActivity.GroupSkuRule displayRule = resolveDisplayRule(skuRules);
         if (displayRule != null) {
             target.setSkuId(displayRule.getSkuId());
             target.setGroupPrice(displayRule.getGroupPrice());
             target.setOriginalPrice(displayRule.getOriginalPrice());
+        } else {
+            target.setSkuId(null);
+            target.setGroupPrice(null);
+            target.setOriginalPrice(null);
         }
         return target;
     }
 
     /**
      * 归一化 SKU 规则。
+     * <p>
+     * 该方法统一兼容新旧两种入参格式：
+     * 1. 新格式优先使用 skuRules。
+     * 2. 若未提供 skuRules，则回退到单 SKU 兼容字段。
      *
      * @param bo 活动请求对象
      * @return SKU 规则列表
@@ -191,7 +203,33 @@ public class GroupActivityServiceImpl implements GroupActivityService {
     }
 
     /**
+     * 选择默认展示规则。
+     * <p>
+     * 展示规则只从启用中的 SKU 规则里选择，避免页面展示一个实际已禁用的最低价 SKU。
+     * 若当前所有规则均为禁用，则返回 null，让兼容展示字段清空，避免保留旧值造成误导。
+     *
+     * @param skuRules SKU 规则列表
+     * @return 默认展示规则
+     */
+    private GroupActivity.GroupSkuRule resolveDisplayRule(List<GroupActivity.GroupSkuRule> skuRules) {
+        if (skuRules == null || skuRules.isEmpty()) {
+            return null;
+        }
+        return skuRules.stream()
+                .filter(rule -> rule != null
+                        && GroupEnabledStatus.DISABLED.getCode() != rule.getEnabled()
+                        && rule.getGroupPrice() != null)
+                .min(Comparator.comparing(GroupActivity.GroupSkuRule::getGroupPrice))
+                .orElse(null);
+    }
+
+    /**
      * 校验活动请求。
+     * <p>
+     * 重点校验以下边界：
+     * 1. 时间窗必须合法。
+     * 2. 成团人数和有效期必须为正数。
+     * 3. SKU 规则至少存在一条且价格必须大于 0。
      *
      * @param bo 活动请求
      */

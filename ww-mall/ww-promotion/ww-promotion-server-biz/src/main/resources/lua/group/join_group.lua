@@ -7,7 +7,7 @@
 3. 基于团内活跃用户索引判断“是否已在该团占位”。
 4. 基于活动用户占位计数判断活动级限购。
 5. 原子写入成员、索引、团主状态。
-6. 满团时批量把所有 JOINED 成员升级为 SUCCESS，并写入 GROUP_COMPLETED 事件。
+6. 满团时批量把所有 JOINED 成员升级为 SUCCESS。
 
 KEYS:
 1. group:instance:meta:{groupId}
@@ -16,8 +16,6 @@ KEYS:
 4. group:order:index
 5. group:activity:active:count
 6. group:expiry
-7. group:stream:event
-
 ARGV:
 1. groupId
 2. activityId
@@ -105,14 +103,5 @@ end
 redis.call('EXPIRE', KEYS[1], tonumber(ARGV[9]))
 redis.call('EXPIRE', KEYS[2], tonumber(ARGV[9]))
 redis.call('EXPIRE', KEYS[3], tonumber(ARGV[9]))
-redis.call('XADD', KEYS[7], '*',
-        'eventType', eventType,
-        'groupId', ARGV[1],
-        'activityId', ARGV[2],
-        'userId', ARGV[3],
-        'orderId', ARGV[4],
-        'reason', '',
-        'occurredAt', ARGV[8]
-)
 
 return {1, ARGV[1], eventType, tostring(currentSize), tostring(remainingSlots)}
