@@ -106,6 +106,7 @@ export class MetricsPanelController {
         this.operationTips = new Map();
         this.operationConfirmStates = new Map();
         this.middlewareCache = new Map();
+        this.openMiddlewarePanelKey = '';
         this.renderedMiddlewareContextKey = '';
         this.loading = false;
         this.activeRequestController = null;
@@ -472,6 +473,40 @@ export class MetricsPanelController {
         if (triggerEl) {
             triggerEl.setAttribute('aria-expanded', 'false');
         }
+        if (wrapper.dataset && wrapper.dataset.middlewareKey === this.openMiddlewarePanelKey) {
+            this.openMiddlewarePanelKey = '';
+        }
+    }
+
+    /**
+     * 打开单个中间件浮层，并按当前环境记录展开状态。
+     *
+     * @param {HTMLElement|null} wrapper 浮层容器
+     */
+    openMiddlewarePopover(wrapper) {
+        if (!wrapper) {
+            return;
+        }
+        this.closeOpenMiddlewarePopovers(wrapper);
+        wrapper.classList.add('is-open');
+        const triggerEl = wrapper.querySelector('.metric-middleware-trigger');
+        if (triggerEl) {
+            triggerEl.setAttribute('aria-expanded', 'true');
+        }
+        this.openMiddlewarePanelKey = wrapper.dataset && wrapper.dataset.middlewareKey
+            ? String(wrapper.dataset.middlewareKey)
+            : '';
+    }
+
+    /**
+     * 判断当前环境的中间件浮层是否需要在重渲染后恢复展开。
+     *
+     * @param {string} service 实例服务名
+     * @returns {boolean} true 表示需要恢复展开
+     */
+    shouldRestoreMiddlewarePopover(service) {
+        const targetKey = this.buildMiddlewareKey(service);
+        return !!targetKey && targetKey === this.openMiddlewarePanelKey;
     }
 
     /**
@@ -1069,9 +1104,10 @@ export class MetricsPanelController {
         const service = item && item.service ? String(item.service) : '';
         const middlewareCount = Number(item && item.middlewareCount);
         const placement = options && options.placement ? String(options.placement) : 'panel';
+        const middlewareKey = this.buildMiddlewareKey(service);
         const wrapperEl = document.createElement('div');
         wrapperEl.className = placement === 'header' ? 'metric-middleware metric-middleware-header' : 'metric-middleware';
-        wrapperEl.dataset.middlewareKey = this.buildMiddlewareKey(service);
+        wrapperEl.dataset.middlewareKey = middlewareKey;
 
         const triggerEl = document.createElement('button');
         triggerEl.type = 'button';
@@ -1118,16 +1154,21 @@ export class MetricsPanelController {
             triggerEl.setAttribute('aria-expanded', expanded ? 'true' : 'false');
         };
         triggerEl.addEventListener('mouseenter', () => markExpanded(true));
-        wrapperEl.addEventListener('mouseleave', () => markExpanded(false));
+        wrapperEl.addEventListener('mouseleave', () => markExpanded(wrapperEl.classList.contains('is-open')));
         triggerEl.addEventListener('mouseenter', preloadPopover);
         triggerEl.addEventListener('focus', event => {
             markExpanded(true);
             preloadPopover(event);
         });
-        triggerEl.addEventListener('blur', () => markExpanded(false));
+        triggerEl.addEventListener('blur', () => markExpanded(wrapperEl.classList.contains('is-open')));
         triggerEl.addEventListener('click', event => {
             event.preventDefault();
             preloadPopover(event);
+            if (wrapperEl.classList.contains('is-open')) {
+                this.closeMiddlewarePopover(wrapperEl);
+                return;
+            }
+            this.openMiddlewarePopover(wrapperEl);
         });
         popoverEl.addEventListener('click', event => {
             event.stopPropagation();
@@ -1136,6 +1177,10 @@ export class MetricsPanelController {
         wrapperEl.appendChild(triggerEl);
         wrapperEl.appendChild(popoverEl);
         this.renderMiddlewarePopover(bodyEl, service);
+        if (this.shouldRestoreMiddlewarePopover(service)) {
+            this.openMiddlewarePopover(wrapperEl);
+            ensureLoaded();
+        }
         return wrapperEl;
     }
 
@@ -1181,11 +1226,13 @@ export class MetricsPanelController {
             return;
         }
         mountEl.innerHTML = '';
-        this.renderedMiddlewareContextKey = this.buildMiddlewareKey('');
         if (!target || !target.service) {
+            this.openMiddlewarePanelKey = '';
+            this.renderedMiddlewareContextKey = '';
             mountEl.classList.add('hidden');
             return;
         }
+        this.renderedMiddlewareContextKey = this.buildMiddlewareKey(target.service);
         mountEl.classList.remove('hidden');
         mountEl.appendChild(this.createMiddlewareWidget({
             service: target.service,
@@ -1393,7 +1440,7 @@ export class MetricsPanelController {
 
         itemEl.appendChild(this.createMiddlewareField('账号', item && item.username ? String(item.username) : '--', false));
         itemEl.appendChild(this.createMiddlewareField('密码', item && item.password ? String(item.password) : '--', false));
-        itemEl.appendChild(this.createMiddlewareField('地址', item && item.url ? String(item.url) : '--', true));
+        // itemEl.appendChild(this.createMiddlewareField('地址', item && item.url ? String(item.url) : '--', true));
 
         const actionRowEl = document.createElement('div');
         actionRowEl.className = 'metric-middleware-actions';
