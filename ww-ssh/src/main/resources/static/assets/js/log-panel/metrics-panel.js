@@ -1446,10 +1446,10 @@ export class MetricsPanelController {
             copyText: item && item.password ? String(item.password) : '',
             copyLabel: '复制密码'
         }));
-        itemEl.appendChild(this.createMiddlewareField('地址', item && item.url ? String(item.url) : '--', false, {
-            copyText: item && item.url ? String(item.url) : '',
-            copyLabel: '复制地址'
-        }));
+        // itemEl.appendChild(this.createMiddlewareField('地址', item && item.url ? String(item.url) : '--', false, {
+        //     copyText: item && item.url ? String(item.url) : '',
+        //     copyLabel: '复制地址'
+        // }));
 
         const actionRowEl = document.createElement('div');
         actionRowEl.className = 'metric-middleware-actions';
