@@ -1446,7 +1446,10 @@ export class MetricsPanelController {
             copyText: item && item.password ? String(item.password) : '',
             copyLabel: '复制密码'
         }));
-        // itemEl.appendChild(this.createMiddlewareField('地址', item && item.url ? String(item.url) : '--', true));
+        itemEl.appendChild(this.createMiddlewareField('地址', item && item.url ? String(item.url) : '--', false, {
+            copyText: item && item.url ? String(item.url) : '',
+            copyLabel: '复制地址'
+        }));
 
         const actionRowEl = document.createElement('div');
         actionRowEl.className = 'metric-middleware-actions';
@@ -1455,9 +1458,17 @@ export class MetricsPanelController {
         actionBtn.type = 'button';
         actionBtn.className = 'secondary metric-middleware-open-btn';
         actionBtn.textContent = '打开后台';
+        const launchable = !!(item && item.launchable);
+        actionBtn.disabled = !launchable;
+        if (!launchable) {
+            actionBtn.title = '当前地址格式无法识别，无法统一跳转';
+        }
         actionBtn.addEventListener('click', event => {
             event.preventDefault();
             event.stopPropagation();
+            if (!launchable) {
+                return;
+            }
             const launchUrl = this.buildMiddlewareLaunchUrl(service, item && item.code ? String(item.code) : '');
             const popup = window.open(launchUrl, '_blank');
             if (popup) {
@@ -1643,6 +1654,7 @@ export class MetricsPanelController {
             code: item && item.code ? String(item.code) : '',
             name: item && item.name ? String(item.name) : '',
             url: item && item.url ? String(item.url) : '',
+            launchable: truthy(item && item.launchable),
             username: item && item.username ? String(item.username) : '',
             password: item && item.password ? String(item.password) : '',
             sort: Number.isFinite(Number(item && item.sort)) ? Number(item.sort) : 0

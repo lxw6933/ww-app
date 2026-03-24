@@ -77,106 +77,106 @@ app:
       test2:
         nacos:
           name: Nacos
-          url: "http://${test2.ip}:8848/nacos"
+          url: "${test2.ip}:8848/nacos"
           username: "nacos"
           password: "nacos"
         rabbitmq:
           name: RabbitMQ
-          url: "http://${test2.ip}:15672/"
+          url: "${test2.ip}:15672"
           username: "pflm"
           password: "OW5bNvS27knB#Udp"
         xxl_job:
           name: XXL-JOB
-          url: "http://${test2.ip}:7700/"
+          url: "${test2.ip}:7700"
           username: "admin"
           password: "123456"
         soul:
           name: Soul Admin
-          url: "http://${test2.ip}:9095/"
+          url: "${test2.ip}:9095"
           username: "admin"
           password: "123456"
       test:
          nacos:
            name: Nacos
-           url: "http://192.168.10.142:8848/nacos"
+           url: "192.168.10.142:8848/nacos"
            username: "nacos"
            password: "nacos"
          rabbitmq:
            name: RabbitMQ
-           url: "http://${test.ip}:15672/"
+           url: "${test.ip}:15672"
            username: "pflm"
            password: "OW5bNvS27knB#Udp"
          xxl_job:
            name: XXL-JOB
-           url: "http://${test.ip}:7700/"
+           url: "${test.ip}:7700"
            username: "admin"
            password: "123456"
          soul:
            name: Soul Admin
-           url: "http://${test.ip}:9095/"
+           url: "${test.ip}:9095"
            username: "admin"
            password: "123456"
       uat2:
         nacos:
           name: Nacos
-          url: "http://${uat2_middle.ip}:8848/nacos"
+          url: "${uat2_middle.ip}:8848/nacos"
           username: "nacos"
           password: "nacos"
         rabbitmq:
           name: RabbitMQ
-          url: "http://${uat2_middle.ip}:15672/"
+          url: "${uat2_middle.ip}:15672"
           username: "pflm"
           password: "G9Ywgeffa"
         xxl_job:
           name: XXL-JOB
-          url: "http://${uat2_middle.ip}:7700/"
+          url: "${uat2_middle.ip}:7700"
           username: "admin"
           password: "123456"
         soul:
           name: Soul Admin
-          url: "http://${uat2_middle.ip}:9095/"
+          url: "${uat2_middle.ip}:9095"
           username: "admin"
           password: "123456"
       press:
         nacos:
           name: Nacos
-          url: "http://${press_middle.ip}:8848/nacos"
+          url: "${press_middle.ip}:8848/nacos"
           username: "nacos"
           password: "nacos"
         rabbitmq:
           name: RabbitMQ
-          url: "http://${press_middle.ip}:15672/"
+          url: "${press_middle.ip}:15672"
           username: "pflm"
           password: "G9Ywgeffa"
         xxl_job:
           name: XXL-JOB
-          url: "http://${press_middle.ip}:7700/"
+          url: "${press_middle.ip}:7700"
           username: "admin"
           password: "123456"
         soul:
           name: Soul Admin
-          url: "http://${press_middle.ip}:9095/"
+          url: "${press_middle.ip}:9095"
           username: "admin"
           password: "123456"
       bcm:
         nacos:
           name: Nacos
-          url: "http://${bcm.ip}:8848/nacos"
+          url: "${bcm.ip}:8848/nacos"
           username: "nacos"
           password: "nacos"
         rabbitmq:
           name: RabbitMQ
-          url: "http://${bcm.ip}:15672/"
+          url: "${bcm.ip}:15672"
           username: "pflm"
           password: "OW5bNvS27knB#Udp"
         xxl_job:
           name: XXL-JOB
-          url: "http://${bcm.ip}:7700/"
+          url: "${bcm.ip}:7700"
           username: "admin"
           password: "123456"
         soul:
           name: Soul Admin
-          url: "http://${bcm.ip}:9095/"
+          url: "${bcm.ip}:9095"
           username: "admin"
           password: "y8v86CASm4dFT@K4"
 
