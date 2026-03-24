@@ -1438,36 +1438,18 @@ export class MetricsPanelController {
         }
         itemEl.appendChild(headEl);
 
-        itemEl.appendChild(this.createMiddlewareField('账号', item && item.username ? String(item.username) : '--', false));
-        itemEl.appendChild(this.createMiddlewareField('密码', item && item.password ? String(item.password) : '--', false));
+        itemEl.appendChild(this.createMiddlewareField('账号', item && item.username ? String(item.username) : '--', false, {
+            copyText: item && item.username ? String(item.username) : '',
+            copyLabel: '复制账号'
+        }));
+        itemEl.appendChild(this.createMiddlewareField('密码', item && item.password ? String(item.password) : '--', false, {
+            copyText: item && item.password ? String(item.password) : '',
+            copyLabel: '复制密码'
+        }));
         // itemEl.appendChild(this.createMiddlewareField('地址', item && item.url ? String(item.url) : '--', true));
 
         const actionRowEl = document.createElement('div');
         actionRowEl.className = 'metric-middleware-actions';
-
-        const copyUserBtn = document.createElement('button');
-        copyUserBtn.type = 'button';
-        copyUserBtn.className = 'secondary metric-middleware-mini-btn';
-        copyUserBtn.textContent = '复制账号';
-        copyUserBtn.disabled = !item || !item.username;
-        copyUserBtn.addEventListener('click', event => {
-            event.preventDefault();
-            event.stopPropagation();
-            this.copyMiddlewareText(item && item.username ? String(item.username) : '', copyUserBtn, '已复制');
-        });
-        actionRowEl.appendChild(copyUserBtn);
-
-        const copyPasswordBtn = document.createElement('button');
-        copyPasswordBtn.type = 'button';
-        copyPasswordBtn.className = 'secondary metric-middleware-mini-btn';
-        copyPasswordBtn.textContent = '复制密码';
-        copyPasswordBtn.disabled = !item || !item.password;
-        copyPasswordBtn.addEventListener('click', event => {
-            event.preventDefault();
-            event.stopPropagation();
-            this.copyMiddlewareText(item && item.password ? String(item.password) : '', copyPasswordBtn, '已复制');
-        });
-        actionRowEl.appendChild(copyPasswordBtn);
 
         const actionBtn = document.createElement('button');
         actionBtn.type = 'button';
@@ -1493,9 +1475,10 @@ export class MetricsPanelController {
      * @param {string} label 字段标签
      * @param {string} value 字段值
      * @param {boolean} isLink 是否按链接展示
+     * @param {{copyText:string,copyLabel:string}|undefined} options 扩展配置
      * @returns {HTMLDivElement} 字段节点
      */
-    createMiddlewareField(label, value, isLink) {
+    createMiddlewareField(label, value, isLink, options) {
         const fieldEl = document.createElement('div');
         fieldEl.className = 'metric-middleware-field';
 
@@ -1503,6 +1486,9 @@ export class MetricsPanelController {
         labelEl.className = 'metric-middleware-field-label';
         labelEl.textContent = label;
         fieldEl.appendChild(labelEl);
+
+        const contentEl = document.createElement('div');
+        contentEl.className = 'metric-middleware-field-main';
 
         if (isLink && value && value !== '--') {
             const anchorEl = document.createElement('a');
@@ -1512,7 +1498,8 @@ export class MetricsPanelController {
             anchorEl.rel = 'noopener noreferrer';
             anchorEl.textContent = value;
             anchorEl.title = value;
-            fieldEl.appendChild(anchorEl);
+            contentEl.appendChild(anchorEl);
+            fieldEl.appendChild(contentEl);
             return fieldEl;
         }
 
@@ -1520,8 +1507,41 @@ export class MetricsPanelController {
         valueEl.className = 'metric-middleware-field-value';
         valueEl.textContent = value;
         valueEl.title = value;
-        fieldEl.appendChild(valueEl);
+        contentEl.appendChild(valueEl);
+
+        const copyText = options && options.copyText ? String(options.copyText) : '';
+        if (copyText && value !== '--') {
+            contentEl.appendChild(this.createMiddlewareCopyButton(copyText, options && options.copyLabel
+                ? String(options.copyLabel)
+                : '复制'));
+        }
+
+        fieldEl.appendChild(contentEl);
         return fieldEl;
+    }
+
+    /**
+     * 创建中间件字段右侧的复制图标按钮。
+     *
+     * @param {string} text 待复制文本
+     * @param {string} label 按钮说明
+     * @returns {HTMLButtonElement} 图标按钮
+     */
+    createMiddlewareCopyButton(text, label) {
+        const buttonEl = document.createElement('button');
+        buttonEl.type = 'button';
+        buttonEl.className = 'secondary metric-middleware-copy-btn';
+        buttonEl.title = label || '复制';
+        buttonEl.setAttribute('aria-label', label || '复制');
+        buttonEl.dataset.iconDefault = 'icon-copy';
+        buttonEl.dataset.iconSuccess = 'icon-check';
+        this.renderMiddlewareCopyButtonIcon(buttonEl, buttonEl.dataset.iconDefault);
+        buttonEl.addEventListener('click', event => {
+            event.preventDefault();
+            event.stopPropagation();
+            this.copyMiddlewareText(text, buttonEl, '已复制');
+        });
+        return buttonEl;
     }
 
     /**
@@ -1573,16 +1593,40 @@ export class MetricsPanelController {
         if (!buttonEl) {
             return;
         }
-        const originalLabel = buttonEl.dataset.originalLabel || buttonEl.textContent || '';
-        buttonEl.dataset.originalLabel = originalLabel;
-        buttonEl.textContent = successLabel || '已复制';
+        const originalTitle = buttonEl.dataset.originalTitle || buttonEl.title || '';
+        buttonEl.dataset.originalTitle = originalTitle;
+        buttonEl.title = successLabel || '已复制';
+        buttonEl.setAttribute('aria-label', successLabel || '已复制');
+        buttonEl.classList.add('is-success');
+        this.renderMiddlewareCopyButtonIcon(buttonEl, buttonEl.dataset.iconSuccess || 'icon-check');
         if (buttonEl._middlewareCopyTimer) {
             window.clearTimeout(buttonEl._middlewareCopyTimer);
         }
         buttonEl._middlewareCopyTimer = window.setTimeout(() => {
-            buttonEl.textContent = buttonEl.dataset.originalLabel || originalLabel;
+            buttonEl.title = buttonEl.dataset.originalTitle || originalTitle;
+            buttonEl.setAttribute('aria-label', buttonEl.dataset.originalTitle || originalTitle);
+            buttonEl.classList.remove('is-success');
+            this.renderMiddlewareCopyButtonIcon(buttonEl, buttonEl.dataset.iconDefault || 'icon-copy');
             buttonEl._middlewareCopyTimer = null;
         }, 1200);
+    }
+
+    /**
+     * 渲染复制按钮图标，统一复用按钮图标雪碧图。
+     *
+     * @param {HTMLButtonElement} buttonEl 按钮节点
+     * @param {string} iconId 图标 ID
+     */
+    renderMiddlewareCopyButtonIcon(buttonEl, iconId) {
+        if (!buttonEl) {
+            return;
+        }
+        buttonEl.textContent = '';
+        const iconEl = createOperationButtonIcon(iconId);
+        if (iconEl) {
+            iconEl.classList.add('metric-middleware-copy-icon');
+            buttonEl.appendChild(iconEl);
+        }
     }
 
     /**
