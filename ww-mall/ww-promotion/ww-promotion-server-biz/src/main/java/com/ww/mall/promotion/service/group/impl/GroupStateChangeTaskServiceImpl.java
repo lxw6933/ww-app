@@ -1,7 +1,7 @@
 package com.ww.mall.promotion.service.group.impl;
 
+import com.ww.mall.promotion.engine.GroupStorageComponent;
 import com.ww.mall.promotion.engine.model.GroupCacheSnapshot;
-import com.ww.mall.promotion.engine.projection.GroupProjectionPersistenceService;
 import com.ww.mall.promotion.mq.GroupStateChangedMessage;
 import com.ww.mall.promotion.service.group.GroupStateChangeTaskService;
 import lombok.extern.slf4j.Slf4j;
@@ -24,7 +24,7 @@ import javax.annotation.Resource;
 public class GroupStateChangeTaskServiceImpl implements GroupStateChangeTaskService {
 
     @Resource
-    private GroupProjectionPersistenceService groupProjectionPersistenceService;
+    private GroupStorageComponent groupStorageComponent;
 
     @Override
     public void handleStateChanged(GroupStateChangedMessage message) {
@@ -32,7 +32,7 @@ public class GroupStateChangeTaskServiceImpl implements GroupStateChangeTaskServ
             return;
         }
         try {
-            GroupCacheSnapshot snapshot = groupProjectionPersistenceService.syncSnapshot(message.getGroupId());
+            GroupCacheSnapshot snapshot = groupStorageComponent.syncProjection(message.getGroupId());
             if (snapshot == null || snapshot.getInstance() == null) {
                 log.warn("拼团状态变更内部消息未读取到有效快照: groupId={}",
                         message.getGroupId());

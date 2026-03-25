@@ -5,7 +5,6 @@ import com.ww.mall.promotion.controller.app.group.res.GroupInstanceVO;
 import com.ww.mall.promotion.engine.model.GroupCacheSnapshot;
 import com.ww.mall.promotion.entity.group.GroupInstance;
 import com.ww.mall.promotion.entity.group.GroupMember;
-import org.springframework.data.mongodb.core.MongoTemplate;
 import org.springframework.stereotype.Service;
 
 import javax.annotation.Resource;
@@ -25,8 +24,8 @@ import static com.ww.mall.promotion.constants.ErrorCodeConstants.GROUP_RECORD_NO
 /**
  * 拼团查询服务。
  * <p>
- * 查询链路优先读取 Redis 主状态，Mongo 仅作为详情降级与列表摘要投影存储。
- * 其中列表查询严格控制字段范围，避免把完整轨迹明细无差别拉回应用层。
+ * 查询链路优先读取 Redis 主状态，Mongo 仅作为详情降级与列表摘要存储。
+ * 具体 Redis/Mongo 访问能力统一通过 {@link GroupStorageComponent} 下沉。
  *
  * @author ww
  * @create 2026-03-19
@@ -36,10 +35,7 @@ import static com.ww.mall.promotion.constants.ErrorCodeConstants.GROUP_RECORD_NO
 public class GroupQueryService {
 
     @Resource
-    private GroupRedisStateReader groupRedisStateReader;
-
-    @Resource
-    private MongoTemplate mongoTemplate;
+    private GroupStorageComponent groupStorageComponent;
 
     /**
      * 查询拼团详情。
@@ -48,23 +44,20 @@ public class GroupQueryService {
      * @return 拼团详情
      */
     public GroupInstanceVO getGroupDetail(String groupId) {
-        GroupCacheSnapshot snapshot = groupRedisStateReader.loadGroupSnapshot(groupId);
+        GroupCacheSnapshot snapshot = groupStorageComponent.loadGroupSnapshot(groupId);
         if (snapshot != null) {
             return convertToVO(snapshot.getInstance(), snapshot.getMembers());
         }
-        GroupInstance instance = mongoTemplate.findOne(GroupInstance.buildIdQuery(groupId), GroupInstance.class);
+        GroupInstance instance = groupStorageComponent.findMongoGroupInstance(groupId);
         if (instance == null) {
             throw new ApiException(GROUP_RECORD_NOT_EXISTS);
         }
-        List<GroupMember> members = mongoTemplate.find(GroupMember.buildGroupInstanceIdQuery(groupId), GroupMember.class);
+        List<GroupMember> members = groupStorageComponent.findMongoGroupMembers(groupId);
         return convertToVO(instance, members);
     }
 
     /**
      * 查询用户参与的拼团列表。
-     * <p>
-     * 列表页只依赖团摘要和冗余成员快照，因此先按用户维度一次性查出团ID，
-     * 再批量查询对应团摘要，避免逐团回表造成 N+1 查询。
      *
      * @param userId 用户ID
      * @return 拼团列表
@@ -73,7 +66,7 @@ public class GroupQueryService {
         if (userId == null) {
             throw new ApiException(GROUP_RECORD_ERROR);
         }
-        List<GroupMember> userMembers = mongoTemplate.find(GroupMember.buildUserIdQuery(userId), GroupMember.class);
+        List<GroupMember> userMembers = groupStorageComponent.findMongoUserMembers(userId);
         if (userMembers == null || userMembers.isEmpty()) {
             return Collections.emptyList();
         }
@@ -100,7 +93,7 @@ public class GroupQueryService {
         if (!hasText(activityId)) {
             throw new ApiException(GROUP_RECORD_ERROR);
         }
-        return mongoTemplate.find(GroupInstance.buildActivityIdAndStatusSummaryQuery(activityId, status), GroupInstance.class)
+        return groupStorageComponent.findMongoActivityGroupSummaries(activityId, status)
                 .stream()
                 .map(this::convertSummaryToVO)
                 .collect(Collectors.toList());
@@ -108,9 +101,6 @@ public class GroupQueryService {
 
     /**
      * 批量加载团摘要。
-     * <p>
-     * 这里按用户最近参与时间保留团ID顺序，批量查回摘要后再按原顺序组装返回，
-     * 避免 Mongo `in` 查询结果顺序不稳定导致列表抖动。
      *
      * @param groupIds 团ID集合
      * @return 团摘要列表
@@ -119,10 +109,7 @@ public class GroupQueryService {
         if (groupIds == null || groupIds.isEmpty()) {
             return Collections.emptyList();
         }
-        List<GroupInstance> instances = mongoTemplate.find(
-                GroupInstance.buildIdListSummaryQuery(new ArrayList<>(groupIds)),
-                GroupInstance.class
-        );
+        List<GroupInstance> instances = groupStorageComponent.findMongoGroupSummaries(new ArrayList<>(groupIds));
         if (instances == null || instances.isEmpty()) {
             return Collections.emptyList();
         }
@@ -148,7 +135,7 @@ public class GroupQueryService {
     /**
      * 将完整实体转换为返回视图。
      *
-     * @param instance 团实例
+     * @param instance 团实体
      * @param members 成员列表
      * @return 返回视图
      */
@@ -174,7 +161,7 @@ public class GroupQueryService {
     /**
      * 将团摘要实体转换为返回视图。
      *
-     * @param instance 团实例
+     * @param instance 团实体
      * @return 返回视图
      */
     private GroupInstanceVO convertSummaryToVO(GroupInstance instance) {

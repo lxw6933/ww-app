@@ -1,21 +1,14 @@
 package com.ww.mall.promotion.engine;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.benmanes.caffeine.cache.LoadingCache;
-import com.ww.app.rabbitmq.RabbitMqPublisher;
 import com.ww.app.common.exception.ApiException;
-import com.ww.mall.promotion.constants.GroupBizConstants;
+import com.ww.app.rabbitmq.RabbitMqPublisher;
 import com.ww.mall.promotion.controller.app.group.res.GroupInstanceVO;
 import com.ww.mall.promotion.engine.model.GroupCacheSnapshot;
 import com.ww.mall.promotion.engine.model.GroupCommandResult;
-import com.ww.mall.promotion.engine.model.GroupMemberCacheSnapshot;
-import com.ww.mall.promotion.engine.projection.GroupProjectionPersistenceService;
 import com.ww.mall.promotion.entity.group.GroupActivity;
-import com.ww.mall.promotion.entity.group.GroupMember;
 import com.ww.mall.promotion.enums.GroupEnabledStatus;
-import com.ww.mall.promotion.enums.GroupMemberBizStatus;
 import com.ww.mall.promotion.enums.GroupTradeType;
-import com.ww.mall.promotion.key.GroupRedisKeyBuilder;
 import com.ww.mall.promotion.mq.GroupAfterSaleSuccessMessage;
 import com.ww.mall.promotion.mq.GroupMqConstant;
 import com.ww.mall.promotion.mq.GroupOrderPaidMessage;
@@ -24,23 +17,31 @@ import com.ww.mall.promotion.service.group.command.CreateGroupCommand;
 import com.ww.mall.promotion.service.group.command.JoinGroupCommand;
 import lombok.extern.slf4j.Slf4j;
 import org.bson.types.ObjectId;
-import org.springframework.data.redis.core.StringRedisTemplate;
-import org.springframework.data.redis.core.script.RedisScript;
 import org.springframework.stereotype.Service;
 
 import javax.annotation.Resource;
-import java.math.BigDecimal;
-import java.util.Arrays;
 import java.util.Date;
-import java.util.List;
 
-import static com.ww.mall.promotion.constants.ErrorCodeConstants.*;
+import static com.ww.mall.promotion.constants.ErrorCodeConstants.GROUP_ACTIVITY_EXPIRE_HOURS_INVALID;
+import static com.ww.mall.promotion.constants.ErrorCodeConstants.GROUP_ACTIVITY_REQUIRED_SIZE_INVALID;
+import static com.ww.mall.promotion.constants.ErrorCodeConstants.GROUP_CREATE_FAILED;
+import static com.ww.mall.promotion.constants.ErrorCodeConstants.GROUP_RECORD_ERROR;
+import static com.ww.mall.promotion.constants.ErrorCodeConstants.GROUP_RECORD_EXISTS;
+import static com.ww.mall.promotion.constants.ErrorCodeConstants.GROUP_RECORD_FAILED_DISABLE;
+import static com.ww.mall.promotion.constants.ErrorCodeConstants.GROUP_RECORD_FAILED_HAVE_JOINED;
+import static com.ww.mall.promotion.constants.ErrorCodeConstants.GROUP_RECORD_FAILED_TIME_END;
+import static com.ww.mall.promotion.constants.ErrorCodeConstants.GROUP_RECORD_FAILED_TIME_NOT_START;
+import static com.ww.mall.promotion.constants.ErrorCodeConstants.GROUP_RECORD_NOT_EXISTS;
+import static com.ww.mall.promotion.constants.ErrorCodeConstants.GROUP_RECORD_ORDER_CODE_NOT_EXISTS;
+import static com.ww.mall.promotion.constants.ErrorCodeConstants.GROUP_RECORD_ORDER_DUPLICATED;
+import static com.ww.mall.promotion.constants.ErrorCodeConstants.GROUP_RECORD_SKU_NOT_SUPPORTED;
+import static com.ww.mall.promotion.constants.ErrorCodeConstants.GROUP_RECORD_USER_FULL;
 
 /**
  * 拼团命令服务。
  * <p>
- * 所有主链路状态迁移都通过 Redis Lua 脚本完成，
- * Lua 成功后主链路只尝试投递一条内部状态变更 MQ，由消费者异步同步 Mongo 查询模型。
+ * 该服务只负责业务编排、规则校验与异常语义映射。
+ * 具体的 Redis Lua、Redis 快照、Mongo 投影与索引访问统一下沉到 {@link GroupStorageComponent}。
  *
  * @author ww
  * @create 2026-03-19
@@ -54,37 +55,13 @@ public class GroupCommandService {
     private LoadingCache<String, GroupActivity> groupActivityCache;
 
     @Resource
-    private StringRedisTemplate stringRedisTemplate;
-
-    @Resource
-    private GroupRedisKeyBuilder groupRedisKeyBuilder;
+    private GroupStorageComponent groupStorageComponent;
 
     @Resource
     private GroupQueryService groupQueryService;
 
     @Resource
-    private GroupRedisStateReader groupRedisStateReader;
-
-    @Resource
-    private ObjectMapper objectMapper;
-
-    @Resource
-    private GroupProjectionPersistenceService groupProjectionPersistenceService;
-
-    @Resource
     private RabbitMqPublisher rabbitMqPublisher;
-
-    @Resource(name = "groupCreateScript")
-    private RedisScript<List<Object>> groupCreateScript;
-
-    @Resource(name = "groupJoinScript")
-    private RedisScript<List<Object>> groupJoinScript;
-
-    @Resource(name = "groupAfterSaleScript")
-    private RedisScript<List<Object>> groupAfterSaleScript;
-
-    @Resource(name = "groupExpireScript")
-    private RedisScript<List<Object>> groupExpireScript;
 
     /**
      * 创建拼团。
@@ -100,36 +77,9 @@ public class GroupCommandService {
         }
         GroupActivity activity = loadAndValidateActivity(command.getActivityId());
         resolveSkuRule(activity, command.getSkuId());
-        Long userId = command.getUserId();
         String groupId = new ObjectId().toString();
         long nowMillis = System.currentTimeMillis();
-        String activityUserCountField = groupRedisKeyBuilder.buildActivityUserCountField(activity.getId(), userId);
-        List<String> keys = Arrays.asList(
-                groupRedisKeyBuilder.buildGroupMetaKey(groupId),
-                groupRedisKeyBuilder.buildGroupMemberStoreKey(groupId),
-                groupRedisKeyBuilder.buildGroupUserIndexKey(groupId),
-                groupRedisKeyBuilder.buildOrderIndexKey(),
-                groupRedisKeyBuilder.buildActivityUserCountKey(),
-                groupRedisKeyBuilder.buildExpiryIndexKey()
-        );
-        List<String> args = Arrays.asList(
-                groupId,
-                activity.getId(),
-                String.valueOf(userId),
-                command.getOrderId(),
-                String.valueOf(activity.getRequiredSize()),
-                String.valueOf(activity.getSpuId()),
-                buildMemberCachePayload(groupId, userId, command.getOrderId(), true,
-                        nowMillis, command.getPayAmount(), command.getSkuId(),
-                        GroupMemberBizStatus.JOINED.name(), null, "PAY_SUCCESS", nowMillis),
-                String.valueOf(nowMillis),
-                String.valueOf(buildExpireTime(nowMillis, activity)),
-                String.valueOf(defaultLimitPerUser(activity.getLimitPerUser())),
-                activityUserCountField,
-                String.valueOf(GroupBizConstants.REDIS_GROUP_DATA_RETAIN_SECONDS)
-        );
-        List<Object> rawResult = stringRedisTemplate.execute(groupCreateScript, keys, args.toArray());
-        GroupCommandResult result = parseCreateResult(rawResult);
+        GroupCommandResult result = groupStorageComponent.createGroup(groupId, activity, command, nowMillis);
         if (!result.isSuccess()) {
             throwCreateException(result);
         }
@@ -138,7 +88,7 @@ public class GroupCommandService {
     }
 
     /**
-     * 参团。
+     * 参与拼团。
      *
      * @param command 参团命令
      * @return 团详情
@@ -149,35 +99,11 @@ public class GroupCommandService {
         if (replayedGroup != null) {
             return replayedGroup;
         }
-        GroupCacheSnapshot snapshot = groupRedisStateReader.requireGroupSnapshot(command.getGroupId());
+        GroupCacheSnapshot snapshot = groupStorageComponent.requireGroupSnapshot(command.getGroupId());
         GroupActivity activity = loadAndValidateActivity(snapshot.getInstance().getActivityId());
         resolveSkuRule(activity, command.getSkuId());
-        Long userId = command.getUserId();
         long nowMillis = System.currentTimeMillis();
-        String activityUserCountField = groupRedisKeyBuilder.buildActivityUserCountField(activity.getId(), userId);
-        List<String> keys = Arrays.asList(
-                groupRedisKeyBuilder.buildGroupMetaKey(command.getGroupId()),
-                groupRedisKeyBuilder.buildGroupMemberStoreKey(command.getGroupId()),
-                groupRedisKeyBuilder.buildGroupUserIndexKey(command.getGroupId()),
-                groupRedisKeyBuilder.buildOrderIndexKey(),
-                groupRedisKeyBuilder.buildActivityUserCountKey(),
-                groupRedisKeyBuilder.buildExpiryIndexKey()
-        );
-        List<String> args = Arrays.asList(
-                command.getGroupId(),
-                activity.getId(),
-                String.valueOf(userId),
-                command.getOrderId(),
-                String.valueOf(defaultLimitPerUser(activity.getLimitPerUser())),
-                buildMemberCachePayload(command.getGroupId(), userId, command.getOrderId(), false,
-                        nowMillis, command.getPayAmount(), command.getSkuId(),
-                        GroupMemberBizStatus.JOINED.name(), null, "PAY_SUCCESS", nowMillis),
-                activityUserCountField,
-                String.valueOf(nowMillis),
-                String.valueOf(GroupBizConstants.REDIS_GROUP_DATA_RETAIN_SECONDS)
-        );
-        List<Object> rawResult = stringRedisTemplate.execute(groupJoinScript, keys, args.toArray());
-        GroupCommandResult result = parseJoinResult(rawResult);
+        GroupCommandResult result = groupStorageComponent.joinGroup(activity, command, nowMillis);
         if (!result.isSuccess()) {
             throwJoinException(result);
         }
@@ -221,42 +147,29 @@ public class GroupCommandService {
             throw new ApiException(GROUP_RECORD_ORDER_CODE_NOT_EXISTS);
         }
         String groupId = hasText(message.getGroupId()) ? message.getGroupId()
-                : (String) stringRedisTemplate.opsForHash().get(groupRedisKeyBuilder.buildOrderIndexKey(), message.getOrderId());
+                : groupStorageComponent.findGroupIdByOrderId(message.getOrderId());
         if (!hasText(groupId)) {
             throw new ApiException(GROUP_RECORD_NOT_EXISTS);
         }
-        GroupCacheSnapshot snapshot = groupRedisStateReader.requireGroupSnapshot(groupId);
+        GroupCacheSnapshot snapshot = groupStorageComponent.requireGroupSnapshot(groupId);
         String activityId = snapshot.getInstance().getActivityId();
-        Long userId = message.getUserId() != null ? message.getUserId() : findMemberUserId(snapshot, message.getOrderId());
+        Long userId = message.getUserId() != null ? message.getUserId()
+                : groupStorageComponent.findMemberUserId(snapshot, message.getOrderId());
         if (userId == null) {
             throw new ApiException(GROUP_RECORD_ORDER_CODE_NOT_EXISTS);
         }
         long nowMillis = message.getSuccessTime() != null ? message.getSuccessTime().getTime() : System.currentTimeMillis();
-        List<String> keys = Arrays.asList(
-                groupRedisKeyBuilder.buildGroupMetaKey(groupId),
-                groupRedisKeyBuilder.buildGroupMemberStoreKey(groupId),
-                groupRedisKeyBuilder.buildGroupUserIndexKey(groupId),
-                groupRedisKeyBuilder.buildActivityUserCountKey(),
-                groupRedisKeyBuilder.buildExpiryIndexKey()
-        );
-        String failReason = userId != null && isLeader(snapshot, userId)
+        String failReason = groupStorageComponent.isLeader(snapshot, userId)
                 ? "团长售后导致拼团关闭" : "售后成功，释放拼团名额";
-        List<String> args = Arrays.asList(
+        int code = groupStorageComponent.afterSaleSuccess(
                 groupId,
                 activityId,
-                nullSafe(message.getAfterSaleId()),
+                message.getAfterSaleId(),
                 message.getOrderId(),
-                String.valueOf(nowMillis),
+                nowMillis,
                 failReason,
-                nullSafe(message.getReason()),
-                String.valueOf(GroupBizConstants.REDIS_GROUP_DATA_RETAIN_SECONDS),
-                groupRedisKeyBuilder.buildActivityUserCountFieldPrefix(activityId)
+                message.getReason()
         );
-        List<Object> rawResult = stringRedisTemplate.execute(groupAfterSaleScript, keys, args.toArray());
-        if (rawResult == null || rawResult.isEmpty()) {
-            throw new ApiException(GROUP_RECORD_ERROR);
-        }
-        int code = parseInt(rawResult.get(0));
         if (code < 0) {
             throw new ApiException(GROUP_RECORD_ERROR);
         }
@@ -272,27 +185,9 @@ public class GroupCommandService {
      * @param reason 关团原因
      */
     public void expireGroup(String groupId, String reason) {
-        GroupCacheSnapshot snapshot = groupRedisStateReader.requireGroupSnapshot(groupId);
+        GroupCacheSnapshot snapshot = groupStorageComponent.requireGroupSnapshot(groupId);
         long nowMillis = System.currentTimeMillis();
-        List<String> keys = Arrays.asList(
-                groupRedisKeyBuilder.buildGroupMetaKey(groupId),
-                groupRedisKeyBuilder.buildGroupMemberStoreKey(groupId),
-                groupRedisKeyBuilder.buildGroupUserIndexKey(groupId),
-                groupRedisKeyBuilder.buildActivityUserCountKey(),
-                groupRedisKeyBuilder.buildExpiryIndexKey()
-        );
-        List<String> args = Arrays.asList(
-                groupId,
-                reason,
-                String.valueOf(nowMillis),
-                String.valueOf(GroupBizConstants.REDIS_GROUP_DATA_RETAIN_SECONDS),
-                groupRedisKeyBuilder.buildActivityUserCountFieldPrefix(snapshot.getInstance().getActivityId())
-        );
-        List<Object> rawResult = stringRedisTemplate.execute(groupExpireScript, keys, args.toArray());
-        if (rawResult == null || rawResult.isEmpty()) {
-            throw new ApiException(GROUP_RECORD_ERROR);
-        }
-        int code = parseInt(rawResult.get(0));
+        int code = groupStorageComponent.expireGroup(groupId, snapshot.getInstance().getActivityId(), reason, nowMillis);
         if (code < 0 && code != -1 && code != -2) {
             throw new ApiException(GROUP_RECORD_ERROR);
         }
@@ -361,117 +256,6 @@ public class GroupCommandService {
     }
 
     /**
-     * 构建成员缓存JSON。
-     *
-     * @param groupId 团ID
-     * @param userId 用户ID
-     * @param orderId 订单ID
-     * @param leader 是否团长
-     * @param joinTime 入团时间
-     * @param payAmount 支付金额
-     * @param skuId SKU ID
-     * @param memberStatus 成员业务状态
-     * @param afterSaleId 售后单号
-     * @param latestTrajectory 最近轨迹编码
-     * @param latestTrajectoryTime 最近轨迹时间
-     * @return JSON 文本
-     */
-    private String buildMemberCachePayload(String groupId, Long userId, String orderId, boolean leader,
-                                           long joinTime, BigDecimal payAmount, Long skuId, String memberStatus,
-                                           String afterSaleId, String latestTrajectory, long latestTrajectoryTime) {
-        GroupMemberCacheSnapshot member = new GroupMemberCacheSnapshot();
-        member.setGroupInstanceId(groupId);
-        member.setUserId(userId);
-        member.setOrderId(orderId);
-        member.setIsLeader(leader ? 1 : 0);
-        member.setJoinTime(joinTime);
-        member.setPayAmount(payAmount);
-        member.setSkuId(skuId);
-        member.setMemberStatus(memberStatus);
-        member.setAfterSaleId(afterSaleId);
-        member.setLatestTrajectory(latestTrajectory);
-        member.setLatestTrajectoryTime(latestTrajectoryTime);
-        try {
-            return objectMapper.writeValueAsString(member);
-        } catch (Exception e) {
-            throw new ApiException(GROUP_RECORD_ERROR);
-        }
-    }
-
-    /**
-     * 构建过期时间。
-     *
-     * @param nowMillis 当前时间
-     * @param activity 活动
-     * @return 过期毫秒值
-     */
-    private long buildExpireTime(long nowMillis, GroupActivity activity) {
-        return nowMillis + activity.getExpireHours() * 3600_000L;
-    }
-
-    /**
-     * 解析开团结果。
-     *
-     * @param rawResult 脚本返回值
-     * @return 命令结果
-     */
-    private GroupCommandResult parseCreateResult(List<Object> rawResult) {
-        GroupCommandResult result = new GroupCommandResult();
-        if (rawResult == null || rawResult.isEmpty()) {
-            result.setFailReason(GROUP_CREATE_FAILED.getMsg());
-            return result;
-        }
-        int code = parseInt(rawResult.get(0));
-        if (code == 1) {
-            result.setSuccess(true);
-            result.setGroupId(stringValue(rawResult, 1));
-            return result;
-        }
-        if (code == 2) {
-            result.setSuccess(true);
-            result.setGroupId(stringValue(rawResult, 1));
-            result.setReplayed(true);
-            return result;
-        }
-        result.setFailReason(String.valueOf(code));
-        return result;
-    }
-
-    /**
-     * 解析参团结果。
-     *
-     * @param rawResult 脚本返回值
-     * @return 命令结果
-     */
-    private GroupCommandResult parseJoinResult(List<Object> rawResult) {
-        GroupCommandResult result = new GroupCommandResult();
-        if (rawResult == null || rawResult.isEmpty()) {
-            result.setFailReason(GROUP_RECORD_ERROR.getMsg());
-            return result;
-        }
-        int code = parseInt(rawResult.get(0));
-        if (code == 1) {
-            result.setSuccess(true);
-            result.setGroupId(stringValue(rawResult, 1));
-            result.setGroupStatus(stringValue(rawResult, 2));
-            return result;
-        }
-        if (code == 2) {
-            result.setSuccess(true);
-            result.setGroupId(stringValue(rawResult, 1));
-            result.setReplayed(true);
-            return result;
-        }
-        result.setFailReason(String.valueOf(code));
-        if (code == -4) {
-            result.setGroupStatus(stringValue(rawResult, 1));
-        } else {
-            result.setGroupId(stringValue(rawResult, 1));
-        }
-        return result;
-    }
-
-    /**
      * 抛出开团异常。
      *
      * @param result 命令结果
@@ -522,7 +306,7 @@ public class GroupCommandService {
      * 仅依赖 Redis 订单索引做幂等判断，避免回放链路再依赖 Mongo 投影。
      *
      * @param command 开团命令
-     * @return 已存在的团详情，不存在时返回null
+     * @return 已存在的团详情，不存在时返回 null
      */
     private GroupInstanceVO replayCreateGroup(CreateGroupCommand command) {
         String existingGroupId = findExistingGroupId(command.getOrderId());
@@ -537,7 +321,7 @@ public class GroupCommandService {
      * 在正式参团前按订单进行幂等回放。
      *
      * @param command 参团命令
-     * @return 已存在的团详情，不存在时返回null
+     * @return 已存在的团详情，不存在时返回 null
      */
     private GroupInstanceVO replayJoinGroup(JoinGroupCommand command) {
         String existingGroupId = findExistingGroupId(command.getOrderId());
@@ -554,8 +338,7 @@ public class GroupCommandService {
     /**
      * 尝试投递内部状态变更 MQ。
      * <p>
-     * Lua 成功后主链路不再同步执行 Mongo 投影，
-     * 这里只做一次内部 MQ 投递，由异步消费者继续处理落库。
+     * Lua 成功后主链路不再同步执行 Mongo 投影，这里只做一次内部 MQ 投递。
      *
      * @param groupId 团ID
      * @param eventTimeMillis 状态变更发生时间毫秒值
@@ -580,7 +363,7 @@ public class GroupCommandService {
     }
 
     /**
-     * 仅同步 Mongo 投影。
+     * 同步 Mongo 投影。
      *
      * @param groupId 团ID
      * @return 最新快照
@@ -589,7 +372,7 @@ public class GroupCommandService {
         if (!hasText(groupId)) {
             return null;
         }
-        return groupProjectionPersistenceService.syncSnapshot(groupId);
+        return groupStorageComponent.syncProjection(groupId);
     }
 
     /**
@@ -599,7 +382,7 @@ public class GroupCommandService {
      * @return 拼团ID
      */
     private String findExistingGroupId(String orderId) {
-        return (String) stringRedisTemplate.opsForHash().get(groupRedisKeyBuilder.buildOrderIndexKey(), orderId);
+        return groupStorageComponent.findGroupIdByOrderId(orderId);
     }
 
     /**
@@ -645,67 +428,6 @@ public class GroupCommandService {
     }
 
     /**
-     * 查找成员用户ID。
-     *
-     * @param snapshot 团快照
-     * @param orderId 订单ID
-     * @return 用户ID
-     */
-    private Long findMemberUserId(GroupCacheSnapshot snapshot, String orderId) {
-        if (snapshot == null || snapshot.getMembers() == null) {
-            return null;
-        }
-        return snapshot.getMembers().stream()
-                .filter(member -> orderId.equals(member.getOrderId()))
-                .map(GroupMember::getUserId)
-                .findFirst()
-                .orElse(null);
-    }
-
-    /**
-     * 判断是否团长。
-     *
-     * @param snapshot 团快照
-     * @param userId 用户ID
-     * @return true-团长
-     */
-    private boolean isLeader(GroupCacheSnapshot snapshot, Long userId) {
-        return snapshot != null && snapshot.getInstance() != null
-                && userId != null && userId.equals(snapshot.getInstance().getLeaderUserId());
-    }
-
-    /**
-     * 默认限购值。
-     *
-     * @param limitPerUser 限购
-     * @return 限购值
-     */
-    private int defaultLimitPerUser(Integer limitPerUser) {
-        return limitPerUser == null ? 0 : limitPerUser;
-    }
-
-    /**
-     * 解析整型。
-     *
-     * @param value 原值
-     * @return 整型
-     */
-    private int parseInt(Object value) {
-        return Integer.parseInt(String.valueOf(value));
-    }
-
-    /**
-     * 读取脚本返回项。
-     *
-     * @param values 返回值
-     * @param index 下标
-     * @return 文本
-     */
-    private String stringValue(List<Object> values, int index) {
-        return values.size() > index && values.get(index) != null ? String.valueOf(values.get(index)) : null;
-    }
-
-    /**
      * 判断文本是否有值。
      *
      * @param value 文本
@@ -713,15 +435,5 @@ public class GroupCommandService {
      */
     private boolean hasText(String value) {
         return value != null && !value.trim().isEmpty();
-    }
-
-    /**
-     * 空值保护。
-     *
-     * @param value 原值
-     * @return 非null值
-     */
-    private String nullSafe(String value) {
-        return value == null ? "" : value;
     }
 }
