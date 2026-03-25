@@ -1,7 +1,6 @@
 package com.ww.mall.promotion.entity.group;
 
 import com.ww.app.mongodb.common.BaseDoc;
-import com.ww.mall.promotion.enums.GroupStatus;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import org.springframework.data.domain.Sort;
@@ -9,7 +8,6 @@ import org.springframework.data.mongodb.core.index.CompoundIndex;
 import org.springframework.data.mongodb.core.mapping.Document;
 import org.springframework.data.mongodb.core.query.Criteria;
 import org.springframework.data.mongodb.core.query.Query;
-import org.springframework.data.mongodb.core.query.Update;
 
 import java.util.Date;
 import java.util.List;
@@ -187,57 +185,6 @@ public class GroupInstance extends BaseDoc {
         Query query = buildActivityIdAndStatusQuery(activityId, status);
         appendSummaryFields(query);
         return query;
-    }
-
-    /**
-     * 构建根据团长用户ID和状态查询
-     */
-    public static Query buildLeaderUserIdAndStatusQuery(Long leaderUserId, String status) {
-        return new Query().addCriteria(
-                Criteria.where("leaderUserId").is(leaderUserId)
-                        .and("status").is(status)
-        );
-    }
-
-    /**
-     * 构建查询过期的拼团实例
-     */
-    public static Query buildExpiredQuery(String status, Date now) {
-        return new Query().addCriteria(
-                Criteria.where("status").is(status)
-                        .and("expireTime").lt(now)
-        );
-    }
-
-    /**
-     * 构建根据状态查询
-     */
-    public static Query buildStatusQuery(String status) {
-        return new Query().addCriteria(Criteria.where("status").is(status));
-    }
-
-    /**
-     * 构建状态更新
-     */
-    public static Update buildStatusUpdate(String status) {
-        Update update = new Update();
-        update.set("status", status);
-        if (GroupStatus.SUCCESS.getCode().equals(status)) {
-            update.set("completeTime", new Date());
-        } else if (GroupStatus.FAILED.getCode().equals(status)) {
-            update.set("failedTime", new Date());
-        }
-        return update;
-    }
-
-    /**
-     * 构建更新当前人数和剩余名额
-     */
-    public static Update buildSizeUpdate(Integer currentSize, Integer remainingSlots) {
-        Update update = new Update();
-        update.set("currentSize", currentSize);
-        update.set("remainingSlots", remainingSlots);
-        return update;
     }
 
     /**

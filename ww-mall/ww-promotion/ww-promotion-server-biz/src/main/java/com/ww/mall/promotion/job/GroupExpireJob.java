@@ -57,7 +57,7 @@ public class GroupExpireJob {
     /**
      * 兼容保留空任务。
      * <p>
-     * Mongo 投影已经改为命令链路同步写入。
+     * Mongo 投影当前由 `group.state.changed` 内部消息异步驱动。
      * 这里继续保留空实现，仅用于兼容已有 XXL-Job 配置，避免任务中心继续调度时报错。
      */
     @XxlJob("groupSyncToMongoJobHandler")

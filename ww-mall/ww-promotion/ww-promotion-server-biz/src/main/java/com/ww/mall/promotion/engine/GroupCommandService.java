@@ -330,7 +330,8 @@ public class GroupCommandService {
     /**
      * 尝试投递内部状态变更 MQ。
      * <p>
-     * Lua 成功后主链路不再同步执行 Mongo 投影，这里只做一次内部 MQ 投递。
+     * Lua 成功后主链路优先投递一次内部 MQ，由消费者异步把 Redis 快照落到 Mongo。
+     * 若 MQ 投递失败，则退化为当前线程直接同步一次 Mongo 投影，降低查询模型长时间不一致的概率。
      *
      * @param groupId 团ID
      * @param eventTimeMillis 状态变更发生时间毫秒值
@@ -351,6 +352,13 @@ public class GroupCommandService {
         } catch (Exception e) {
             log.error("拼团状态变更内部消息发送失败: groupId={}, eventTimeMillis={}",
                     message.getGroupId(), eventTimeMillis, e);
+            try {
+                syncProjection(groupId);
+                log.warn("拼团状态变更内部消息发送失败，已执行本地Mongo投影兜底: groupId={}", groupId);
+            } catch (Exception projectionException) {
+                log.error("拼团状态变更内部消息发送失败后，本地Mongo投影兜底仍失败: groupId={}",
+                        groupId, projectionException);
+            }
         }
     }
 
