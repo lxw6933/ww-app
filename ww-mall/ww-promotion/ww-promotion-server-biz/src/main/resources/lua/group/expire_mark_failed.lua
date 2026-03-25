@@ -18,7 +18,7 @@ ARGV:
 1. groupId
 2. reason
 3. nowMillis
-4. retainSeconds
+4. terminalRetainSeconds
 
 ]]
 if redis.call('EXISTS', KEYS[1]) == 0 then

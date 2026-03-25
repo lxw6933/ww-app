@@ -16,7 +16,7 @@
 
 ### 创建拼团 / 参团
 
-1. 校验活动、订单与幂等条件。
+1. 校验活动、订单与幂等条件，并计算团业务失效时间。
 2. 执行 Redis Lua，原子更新拼团状态与成员快照。
 3. 主链路 `try/catch` 发送一条 `group.state.changed` 内部消息。
 4. 消费者收到消息后，把最新 Redis 快照同步到 Mongo。
@@ -39,7 +39,7 @@
 
 ### Redis
 
-- `group:instance:meta:{groupId}`：拼团主状态。
+- `group:instance:meta:{groupId}`：拼团主状态，内部包含业务失效时间 `expireTime`。
 - `group:instance:member-store:{groupId}`：成员快照。
 - `group:instance:user-index:{groupId}`：团内活跃用户索引。
 - `group:order:index`：订单到拼团的幂等索引。
@@ -56,5 +56,8 @@
 
 - 当前实现不再自动发送拼团成功、失败、退款等业务通知。
 - 限购校验与计数维护不在拼团域执行，统一由下单域负责。
+- `expireTime` 表示团业务失效时间，取“活动结束时间”和“开团时间 + 团有效期”中的较小值。
+- OPEN 状态 Redis TTL 在开团时一次性设置为“距 `expireTime` 的剩余时长 + 2天保留期”。
+- 团成功、售后关闭、过期失败后，Redis TTL 会重置为固定 2 天，不继续沿用 OPEN 状态下的长 TTL。
 - 如果内部 `group.state.changed` 发送失败，只记录错误日志。
 - B 端回显时应校验 Mongo/Redis 状态，必要时提供手动补发内部消息的入口。

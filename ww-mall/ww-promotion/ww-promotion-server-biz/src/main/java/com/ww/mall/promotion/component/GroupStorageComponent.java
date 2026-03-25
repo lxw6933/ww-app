@@ -103,6 +103,7 @@ public class GroupStorageComponent {
     public GroupCommandResult createGroup(String groupId, GroupActivity activity, CreateGroupCommand command, long nowMillis) {
         log.debug("执行开团存储操作: groupId={}, activityId={}, userId={}, orderId={}, nowMillis={}",
                 groupId, activity.getId(), command.getUserId(), command.getOrderId(), nowMillis);
+        long businessExpireTime = buildBusinessExpireTime(nowMillis, activity);
         List<String> keys = Arrays.asList(
                 groupRedisKeyBuilder.buildGroupMetaKey(groupId),
                 groupRedisKeyBuilder.buildGroupMemberStoreKey(groupId),
@@ -122,8 +123,8 @@ public class GroupStorageComponent {
                         nowMillis, command.getPayAmount(), command.getSkuId(),
                         GroupMemberBizStatus.JOINED.name(), null, "PAY_SUCCESS", nowMillis),
                 String.valueOf(nowMillis),
-                String.valueOf(buildExpireTime(nowMillis, activity)),
-                String.valueOf(GroupBizConstants.REDIS_GROUP_DATA_RETAIN_SECONDS)
+                String.valueOf(businessExpireTime),
+                String.valueOf(buildOpenGroupCacheTtlSeconds(nowMillis, businessExpireTime))
         );
         GroupCommandResult result = parseCreateResult(executeMultiScript(SCRIPT_GROUP_CREATE, keys, args));
         log.debug("开团存储操作完成: groupId={}, success={}, replayed={}, failReason={}",
@@ -159,7 +160,7 @@ public class GroupStorageComponent {
                         nowMillis, command.getPayAmount(), command.getSkuId(),
                         GroupMemberBizStatus.JOINED.name(), null, "PAY_SUCCESS", nowMillis),
                 String.valueOf(nowMillis),
-                String.valueOf(GroupBizConstants.REDIS_GROUP_DATA_RETAIN_SECONDS)
+                String.valueOf(GroupBizConstants.REDIS_GROUP_TERMINAL_RETAIN_SECONDS)
         );
         GroupCommandResult result = parseJoinResult(executeMultiScript(SCRIPT_GROUP_JOIN, keys, args));
         log.debug("参团存储操作完成: groupId={}, success={}, replayed={}, groupStatus={}, failReason={}",
@@ -195,7 +196,7 @@ public class GroupStorageComponent {
                 String.valueOf(nowMillis),
                 failReason,
                 nullSafe(reason),
-                String.valueOf(GroupBizConstants.REDIS_GROUP_DATA_RETAIN_SECONDS)
+                String.valueOf(GroupBizConstants.REDIS_GROUP_TERMINAL_RETAIN_SECONDS)
         );
         int code = parseLuaCode(executeMultiScript(SCRIPT_GROUP_AFTER_SALE, keys, args));
         log.debug("售后成功存储操作完成: groupId={}, orderId={}, code={}", groupId, orderId, code);
@@ -223,7 +224,7 @@ public class GroupStorageComponent {
                 groupId,
                 reason,
                 String.valueOf(nowMillis),
-                String.valueOf(GroupBizConstants.REDIS_GROUP_DATA_RETAIN_SECONDS)
+                String.valueOf(GroupBizConstants.REDIS_GROUP_TERMINAL_RETAIN_SECONDS)
         );
         int code = parseLuaCode(executeMultiScript(SCRIPT_GROUP_EXPIRE, keys, args));
         log.debug("过期关团存储操作完成: groupId={}, code={}", groupId, code);
@@ -801,17 +802,39 @@ public class GroupStorageComponent {
     }
 
     /**
-     * 计算团过期时间。
+     * 计算团业务失效时间。
      *
      * @param nowMillis 当前毫秒时间
      * @param activity 活动配置
-     * @return 过期毫秒时间
+     * @return 业务失效毫秒时间
      */
-    private long buildExpireTime(long nowMillis, GroupActivity activity) {
-        long expireTime = nowMillis + activity.getExpireHours() * 3600_000L;
-        log.debug("计算拼团过期时间: activityId={}, nowMillis={}, expireHours={}, expireTime={}",
-                activity.getId(), nowMillis, activity.getExpireHours(), expireTime);
-        return expireTime;
+    private long buildBusinessExpireTime(long nowMillis, GroupActivity activity) {
+        long configuredExpireTime = nowMillis + activity.getExpireHours() * 3600_000L;
+        long activityEndTime = activity.getEndTime() == null ? Long.MAX_VALUE : activity.getEndTime().getTime();
+        long businessExpireTime = Math.min(configuredExpireTime, activityEndTime);
+        log.debug("计算拼团业务失效时间: activityId={}, nowMillis={}, expireHours={}, configuredExpireTime={}, activityEndTime={}, businessExpireTime={}",
+                activity.getId(), nowMillis, activity.getExpireHours(), configuredExpireTime,
+                activity.getEndTime(), businessExpireTime);
+        return businessExpireTime;
+    }
+
+    /**
+     * 计算 OPEN 状态下的 Redis 缓存 TTL。
+     * <p>
+     * OPEN 状态缓存至少要覆盖到业务失效时刻，且在自然过期后继续保留一段时间，
+     * 便于过期任务补偿、查询回放和异步落库。
+     *
+     * @param nowMillis 当前毫秒时间
+     * @param businessExpireTime 业务失效时间
+     * @return Redis TTL，单位秒
+     */
+    private long buildOpenGroupCacheTtlSeconds(long nowMillis, long businessExpireTime) {
+        long remainMillis = Math.max(0L, businessExpireTime - nowMillis);
+        long remainSeconds = (remainMillis + 999L) / 1000L;
+        long ttlSeconds = remainSeconds + GroupBizConstants.REDIS_GROUP_TERMINAL_RETAIN_SECONDS;
+        log.debug("计算OPEN状态Redis缓存TTL完成: nowMillis={}, businessExpireTime={}, remainSeconds={}, ttlSeconds={}",
+                nowMillis, businessExpireTime, remainSeconds, ttlSeconds);
+        return ttlSeconds;
     }
 
     /**

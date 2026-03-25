@@ -12,11 +12,11 @@ package com.ww.mall.promotion.constants;
 public final class GroupBizConstants {
 
     /**
-     * Redis 拼团数据兜底保留时长，单位秒。
+     * Redis 拼团终态缓存保留时长，单位秒。
      * <p>
-     * 拼团过期或成功后仍保留两天，便于查询回放、补偿和排障。
+     * 团成功、失败、售后关闭后，Redis 仍继续保留两天，便于查询回放、补偿和排障。
      */
-    public static final int REDIS_GROUP_DATA_RETAIN_SECONDS = 2 * 24 * 60 * 60;
+    public static final int REDIS_GROUP_TERMINAL_RETAIN_SECONDS = 2 * 24 * 60 * 60;
 
     /**
      * 过期任务单次处理上限。

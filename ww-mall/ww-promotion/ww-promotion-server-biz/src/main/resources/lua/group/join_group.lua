@@ -3,7 +3,7 @@
 
 功能：
 1. 基于全局订单索引做参团幂等与串单校验。
-2. 基于团主状态判断 OPEN/过期/剩余名额。
+2. 基于团主状态判断 OPEN/业务失效/剩余名额。
 3. 基于团内活跃用户索引判断“是否已在该团占位”。
 4. 原子写入成员、索引、团主状态。
 5. 满团时批量把所有 JOINED 成员升级为 SUCCESS。
@@ -22,7 +22,7 @@ ARGV:
 4. orderId
 5. memberJson
 6. nowMillis
-7. retainSeconds
+7. terminalRetainSeconds
 
 返回值样例：
 {1, groupId, GROUP_JOINED, currentSize, remainingSlots}
@@ -89,10 +89,9 @@ if tonumber(remainingSlots) == 0 then
     end
     redis.call('ZREM', KEYS[6], ARGV[1])
     eventType = 'GROUP_COMPLETED'
+    redis.call('EXPIRE', KEYS[1], tonumber(ARGV[7]))
+    redis.call('EXPIRE', KEYS[2], tonumber(ARGV[7]))
+    redis.call('EXPIRE', KEYS[3], tonumber(ARGV[7]))
 end
-
-redis.call('EXPIRE', KEYS[1], tonumber(ARGV[7]))
-redis.call('EXPIRE', KEYS[2], tonumber(ARGV[7]))
-redis.call('EXPIRE', KEYS[3], tonumber(ARGV[7]))
 
 return {1, ARGV[1], eventType, tostring(currentSize), tostring(remainingSlots)}

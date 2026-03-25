@@ -162,7 +162,7 @@ public class GroupActivity extends BaseDoc {
         if (startTime != null && startTime.after(currentTime)) {
             return GroupActivityStatus.NOT_STARTED.getCode();
         }
-        if (endTime != null && endTime.before(currentTime)) {
+        if (endTime != null && !endTime.after(currentTime)) {
             return GroupActivityStatus.ENDED.getCode();
         }
         return GroupActivityStatus.ACTIVE.getCode();
@@ -221,7 +221,7 @@ public class GroupActivity extends BaseDoc {
     /**
      * 构建“当前可参与活动”查询。
      * <p>
-     * 条件固定为：启用中、开始时间不晚于当前时间、结束时间不早于当前时间。
+     * 条件固定为：启用中、开始时间不晚于当前时间、结束时间晚于当前时间。
      *
      * @param now 查询参考时间
      * @return Mongo Query
@@ -230,7 +230,7 @@ public class GroupActivity extends BaseDoc {
         return new Query().addCriteria(
                 Criteria.where("enabled").is(1)
                         .and("startTime").lte(now)
-                        .and("endTime").gte(now)
+                        .and("endTime").gt(now)
         );
     }
 
@@ -246,7 +246,7 @@ public class GroupActivity extends BaseDoc {
                 Criteria.where("spuId").is(spuId)
                         .and("enabled").is(1)
                         .and("startTime").lte(now)
-                        .and("endTime").gte(now)
+                        .and("endTime").gt(now)
         );
     }
 

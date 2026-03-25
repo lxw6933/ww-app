@@ -218,7 +218,7 @@ public class GroupCommandService {
         if (activity.getStartTime() != null && activity.getStartTime().after(now)) {
             throw new ApiException(GROUP_RECORD_FAILED_TIME_NOT_START);
         }
-        if (activity.getEndTime() != null && activity.getEndTime().before(now)) {
+        if (activity.getEndTime() != null && !activity.getEndTime().after(now)) {
             throw new ApiException(GROUP_RECORD_FAILED_TIME_END);
         }
         return activity;

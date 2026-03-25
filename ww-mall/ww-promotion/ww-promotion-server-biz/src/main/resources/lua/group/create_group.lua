@@ -21,8 +21,8 @@ ARGV:
 6. spuId
 7. memberJson
 8. nowMillis
-9. expireTimeMillis
-10. retainSeconds
+9. businessExpireTimeMillis
+10. openCacheTtlSeconds
 
 memberJson 样例：
 {"groupInstanceId":"67dd3ac8f5a6f80001a10001","userId":20001,"orderId":"ORDER_10001","skuId":30001,"memberStatus":"JOINED","payAmount":99.00}
