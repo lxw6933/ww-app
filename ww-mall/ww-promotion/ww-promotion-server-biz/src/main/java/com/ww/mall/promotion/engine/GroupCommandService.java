@@ -2,10 +2,10 @@ package com.ww.mall.promotion.engine;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.benmanes.caffeine.cache.LoadingCache;
+import com.ww.app.rabbitmq.RabbitMqPublisher;
 import com.ww.app.common.exception.ApiException;
 import com.ww.mall.promotion.constants.GroupBizConstants;
 import com.ww.mall.promotion.controller.app.group.res.GroupInstanceVO;
-import com.ww.mall.promotion.engine.notify.GroupNotifyTaskService;
 import com.ww.mall.promotion.engine.model.GroupCacheSnapshot;
 import com.ww.mall.promotion.engine.model.GroupCommandResult;
 import com.ww.mall.promotion.engine.model.GroupMemberCacheSnapshot;
@@ -17,11 +17,13 @@ import com.ww.mall.promotion.enums.GroupMemberBizStatus;
 import com.ww.mall.promotion.enums.GroupTradeType;
 import com.ww.mall.promotion.key.GroupRedisKeyBuilder;
 import com.ww.mall.promotion.mq.GroupAfterSaleSuccessMessage;
+import com.ww.mall.promotion.mq.GroupMqConstant;
 import com.ww.mall.promotion.mq.GroupOrderPaidMessage;
+import com.ww.mall.promotion.mq.GroupStateChangedMessage;
 import com.ww.mall.promotion.service.group.command.CreateGroupCommand;
 import com.ww.mall.promotion.service.group.command.JoinGroupCommand;
+import lombok.extern.slf4j.Slf4j;
 import org.bson.types.ObjectId;
-import org.springframework.data.mongodb.core.MongoTemplate;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.data.redis.core.script.RedisScript;
 import org.springframework.stereotype.Service;
@@ -38,12 +40,13 @@ import static com.ww.mall.promotion.constants.ErrorCodeConstants.*;
  * 拼团命令服务。
  * <p>
  * 所有主链路状态迁移都通过 Redis Lua 脚本完成，
- * Lua 成功后立即同步 Mongo 查询模型，并按最终状态创建 MQ 通知任务。
+ * Lua 成功后主链路只尝试投递一条内部状态变更 MQ，由消费者异步同步 Mongo 查询模型。
  *
  * @author ww
  * @create 2026-03-19
  * @description: 拼团命令服务
  */
+@Slf4j
 @Service
 public class GroupCommandService {
 
@@ -66,13 +69,10 @@ public class GroupCommandService {
     private ObjectMapper objectMapper;
 
     @Resource
-    private MongoTemplate mongoTemplate;
-
-    @Resource
     private GroupProjectionPersistenceService groupProjectionPersistenceService;
 
     @Resource
-    private GroupNotifyTaskService groupNotifyTaskService;
+    private RabbitMqPublisher rabbitMqPublisher;
 
     @Resource(name = "groupCreateScript")
     private RedisScript<List<Object>> groupCreateScript;
@@ -133,7 +133,7 @@ public class GroupCommandService {
         if (!result.isSuccess()) {
             throwCreateException(result);
         }
-        syncProjectionAndNotify(result.getGroupId());
+        afterStateChanged(result.getGroupId(), nowMillis);
         return groupQueryService.getGroupDetail(result.getGroupId());
     }
 
@@ -181,7 +181,7 @@ public class GroupCommandService {
         if (!result.isSuccess()) {
             throwJoinException(result);
         }
-        syncProjectionAndNotify(result.getGroupId());
+        afterStateChanged(result.getGroupId(), nowMillis);
         return groupQueryService.getGroupDetail(result.getGroupId());
     }
 
@@ -223,12 +223,6 @@ public class GroupCommandService {
         String groupId = hasText(message.getGroupId()) ? message.getGroupId()
                 : (String) stringRedisTemplate.opsForHash().get(groupRedisKeyBuilder.buildOrderIndexKey(), message.getOrderId());
         if (!hasText(groupId)) {
-            GroupMember member = mongoTemplate.findOne(GroupMember.buildOrderIdQuery(message.getOrderId()), GroupMember.class);
-            if (member != null) {
-                groupId = member.getGroupInstanceId();
-            }
-        }
-        if (!hasText(groupId)) {
             throw new ApiException(GROUP_RECORD_NOT_EXISTS);
         }
         GroupCacheSnapshot snapshot = groupRedisStateReader.requireGroupSnapshot(groupId);
@@ -267,7 +261,7 @@ public class GroupCommandService {
             throw new ApiException(GROUP_RECORD_ERROR);
         }
         if (code == 1) {
-            syncProjectionAndNotify(groupId);
+            afterStateChanged(groupId, nowMillis);
         }
     }
 
@@ -303,7 +297,7 @@ public class GroupCommandService {
             throw new ApiException(GROUP_RECORD_ERROR);
         }
         if (code == 1) {
-            syncProjectionAndNotify(groupId);
+            afterStateChanged(groupId, nowMillis);
         }
     }
 
@@ -525,7 +519,7 @@ public class GroupCommandService {
     /**
      * 在正式开团前按订单进行幂等回放。
      * <p>
-     * 优先读取 Redis 映射，映射丢失时再回落 Mongo 投影，避免 MQ 重投或缓存淘汰后重复建团。
+     * 仅依赖 Redis 订单索引做幂等判断，避免回放链路再依赖 Mongo 投影。
      *
      * @param command 开团命令
      * @return 已存在的团详情，不存在时返回null
@@ -535,7 +529,7 @@ public class GroupCommandService {
         if (!hasText(existingGroupId)) {
             return null;
         }
-        syncProjectionAndNotify(existingGroupId);
+        syncProjection(existingGroupId);
         return groupQueryService.getGroupDetail(existingGroupId);
     }
 
@@ -553,24 +547,49 @@ public class GroupCommandService {
         if (!existingGroupId.equals(command.getGroupId())) {
             throw new ApiException(GROUP_RECORD_ORDER_DUPLICATED);
         }
-        syncProjectionAndNotify(existingGroupId);
+        syncProjection(existingGroupId);
         return groupQueryService.getGroupDetail(existingGroupId);
     }
 
     /**
-     * 同步 Mongo 投影并尝试发送业务通知。
+     * 尝试投递内部状态变更 MQ。
      * <p>
-     * 当前命令链路会在 Lua 成功后立即完成查询模型同步，
-     * 并按最终状态创建通知任务、优先直发 MQ。
+     * Lua 成功后主链路不再同步执行 Mongo 投影，
+     * 这里只做一次内部 MQ 投递，由异步消费者继续处理落库。
      *
      * @param groupId 团ID
+     * @param eventTimeMillis 状态变更发生时间毫秒值
      */
-    private void syncProjectionAndNotify(String groupId) {
-        if (!hasText(groupId)) {
+    private void afterStateChanged(String groupId, long eventTimeMillis) {
+        if (!hasText(groupId) || eventTimeMillis <= 0L) {
             return;
         }
-        GroupCacheSnapshot snapshot = groupProjectionPersistenceService.syncSnapshot(groupId);
-        groupNotifyTaskService.notifyIfNecessary(snapshot);
+        GroupStateChangedMessage message = new GroupStateChangedMessage();
+        message.setGroupId(groupId);
+        message.setEventTime(new Date(eventTimeMillis));
+        try {
+            rabbitMqPublisher.sendMsg(
+                    GroupMqConstant.GROUP_EXCHANGE,
+                    GroupMqConstant.GROUP_STATE_CHANGED_KEY,
+                    message
+            );
+        } catch (Exception e) {
+            log.error("拼团状态变更内部消息发送失败: groupId={}, eventTimeMillis={}",
+                    message.getGroupId(), eventTimeMillis, e);
+        }
+    }
+
+    /**
+     * 仅同步 Mongo 投影。
+     *
+     * @param groupId 团ID
+     * @return 最新快照
+     */
+    private GroupCacheSnapshot syncProjection(String groupId) {
+        if (!hasText(groupId)) {
+            return null;
+        }
+        return groupProjectionPersistenceService.syncSnapshot(groupId);
     }
 
     /**
@@ -580,12 +599,7 @@ public class GroupCommandService {
      * @return 拼团ID
      */
     private String findExistingGroupId(String orderId) {
-        String existingGroupId = (String) stringRedisTemplate.opsForHash().get(groupRedisKeyBuilder.buildOrderIndexKey(), orderId);
-        if (hasText(existingGroupId)) {
-            return existingGroupId;
-        }
-        GroupMember member = mongoTemplate.findOne(GroupMember.buildOrderIdQuery(orderId), GroupMember.class);
-        return member == null ? null : member.getGroupInstanceId();
+        return (String) stringRedisTemplate.opsForHash().get(groupRedisKeyBuilder.buildOrderIndexKey(), orderId);
     }
 
     /**

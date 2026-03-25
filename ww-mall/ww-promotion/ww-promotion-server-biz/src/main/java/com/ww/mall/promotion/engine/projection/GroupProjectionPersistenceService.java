@@ -2,7 +2,6 @@ package com.ww.mall.promotion.engine.projection;
 
 import com.ww.mall.promotion.engine.GroupRedisStateReader;
 import com.ww.mall.promotion.engine.model.GroupCacheSnapshot;
-import com.ww.mall.promotion.entity.group.GroupInstance;
 import com.ww.mall.promotion.entity.group.GroupMember;
 import org.springframework.data.mongodb.core.BulkOperations;
 import org.springframework.data.mongodb.core.MongoTemplate;
@@ -62,18 +61,6 @@ public class GroupProjectionPersistenceService {
      * @param groupId 团ID
      * @return Mongo 快照，不存在时返回 {@code null}
      */
-    public GroupCacheSnapshot loadSnapshotFromMongo(String groupId) {
-        GroupInstance instance = mongoTemplate.findOne(GroupInstance.buildIdQuery(groupId), GroupInstance.class);
-        if (instance == null) {
-            return null;
-        }
-        List<GroupMember> members = mongoTemplate.find(GroupMember.buildGroupInstanceIdQuery(groupId), GroupMember.class);
-        GroupCacheSnapshot snapshot = new GroupCacheSnapshot();
-        snapshot.setInstance(instance);
-        snapshot.setMembers(members);
-        return snapshot;
-    }
-
     /**
      * 按订单号增量 upsert 成员轨迹。
      *

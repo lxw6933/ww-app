@@ -23,28 +23,6 @@ public final class GroupBizConstants {
      */
     public static final int EXPIRE_JOB_BATCH_LIMIT = 100;
 
-    /**
-     * 拼团通知任务定时扫描间隔，单位毫秒。
-     */
-    public static final long GROUP_NOTIFY_TASK_FIXED_DELAY_MILLIS = 5_000L;
-
-    /**
-     * 拼团通知任务单次扫描上限。
-     */
-    public static final int GROUP_NOTIFY_TASK_BATCH_SIZE = 100;
-
-    /**
-     * 拼团通知任务“发送中”租约时长，单位毫秒。
-     * <p>
-     * 当实例在发送过程中崩溃时，其他实例可在租约过期后重新领取该任务。
-     */
-    public static final long GROUP_NOTIFY_TASK_SENDING_LEASE_MILLIS = 30_000L;
-
-    /**
-     * 拼团通知任务最大重试次数。
-     */
-    public static final int GROUP_NOTIFY_TASK_MAX_RETRY_COUNT = 5;
-
     private GroupBizConstants() {
     }
 }

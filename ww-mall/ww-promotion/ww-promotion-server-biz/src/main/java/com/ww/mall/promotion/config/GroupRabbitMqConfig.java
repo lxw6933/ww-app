@@ -24,14 +24,6 @@ public class GroupRabbitMqConfig {
     }
 
     /**
-     * 拼团成功队列
-     */
-    @Bean
-    public Queue groupSuccessQueue() {
-        return QueueBuilder.durable(GroupMqConstant.GROUP_SUCCESS_QUEUE).build();
-    }
-
-    /**
      * 支付成功驱动拼团队列。
      */
     @Bean
@@ -48,37 +40,11 @@ public class GroupRabbitMqConfig {
     }
 
     /**
-     * 拼团失败队列
+     * 拼团状态变更内部驱动队列。
      */
     @Bean
-    public Queue groupFailedQueue() {
-        return QueueBuilder.durable(GroupMqConstant.GROUP_FAILED_QUEUE).build();
-    }
-
-    /**
-     * 拼团过期队列
-     */
-    @Bean
-    public Queue groupExpiredQueue() {
-        return QueueBuilder.durable(GroupMqConstant.GROUP_EXPIRED_QUEUE).build();
-    }
-
-    /**
-     * 拼团退款队列
-     */
-    @Bean
-    public Queue groupRefundQueue() {
-        return QueueBuilder.durable(GroupMqConstant.GROUP_REFUND_QUEUE).build();
-    }
-
-    /**
-     * 绑定拼团成功队列
-     */
-    @Bean
-    public Binding groupSuccessBinding() {
-        return BindingBuilder.bind(groupSuccessQueue())
-                .to(groupExchange())
-                .with(GroupMqConstant.GROUP_SUCCESS_KEY);
+    public Queue groupStateChangedQueue() {
+        return QueueBuilder.durable(GroupMqConstant.GROUP_STATE_CHANGED_QUEUE).build();
     }
 
     /**
@@ -102,33 +68,13 @@ public class GroupRabbitMqConfig {
     }
 
     /**
-     * 绑定拼团失败队列
+     * 绑定拼团状态变更内部驱动队列。
      */
     @Bean
-    public Binding groupFailedBinding() {
-        return BindingBuilder.bind(groupFailedQueue())
+    public Binding groupStateChangedBinding() {
+        return BindingBuilder.bind(groupStateChangedQueue())
                 .to(groupExchange())
-                .with(GroupMqConstant.GROUP_FAILED_KEY);
-    }
-
-    /**
-     * 绑定拼团过期队列
-     */
-    @Bean
-    public Binding groupExpiredBinding() {
-        return BindingBuilder.bind(groupExpiredQueue())
-                .to(groupExchange())
-                .with(GroupMqConstant.GROUP_EXPIRED_KEY);
-    }
-
-    /**
-     * 绑定拼团退款队列
-     */
-    @Bean
-    public Binding groupRefundBinding() {
-        return BindingBuilder.bind(groupRefundQueue())
-                .to(groupExchange())
-                .with(GroupMqConstant.GROUP_REFUND_KEY);
+                .with(GroupMqConstant.GROUP_STATE_CHANGED_KEY);
     }
 
 }

@@ -13,16 +13,6 @@ public class GroupMqConstant {
     public static final String GROUP_EXCHANGE = "group.exchange";
 
     /**
-     * 拼团成功队列
-     */
-    public static final String GROUP_SUCCESS_QUEUE = "group.success.queue";
-
-    /**
-     * 拼团成功路由键
-     */
-    public static final String GROUP_SUCCESS_KEY = "group.success";
-
-    /**
      * 支付成功驱动拼团的队列。
      */
     public static final String GROUP_ORDER_PAID_QUEUE = "group.order.paid.queue";
@@ -43,33 +33,13 @@ public class GroupMqConstant {
     public static final String GROUP_AFTER_SALE_KEY = "group.after.sale.success";
 
     /**
-     * 拼团失败队列
+     * 拼团状态变更内部驱动队列。
      */
-    public static final String GROUP_FAILED_QUEUE = "group.failed.queue";
+    public static final String GROUP_STATE_CHANGED_QUEUE = "group.state.changed.queue";
 
     /**
-     * 拼团失败路由键
+     * 拼团状态变更内部驱动路由键。
      */
-    public static final String GROUP_FAILED_KEY = "group.failed";
-
-    /**
-     * 拼团过期队列
-     */
-    public static final String GROUP_EXPIRED_QUEUE = "group.expired.queue";
-
-    /**
-     * 拼团过期路由键
-     */
-    public static final String GROUP_EXPIRED_KEY = "group.expired";
-
-    /**
-     * 拼团退款队列
-     */
-    public static final String GROUP_REFUND_QUEUE = "group.refund.queue";
-
-    /**
-     * 拼团退款路由键
-     */
-    public static final String GROUP_REFUND_KEY = "group.refund";
+    public static final String GROUP_STATE_CHANGED_KEY = "group.state.changed";
 
 }

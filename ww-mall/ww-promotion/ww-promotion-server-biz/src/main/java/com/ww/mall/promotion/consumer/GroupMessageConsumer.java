@@ -3,6 +3,8 @@ package com.ww.mall.promotion.consumer;
 import com.ww.mall.promotion.mq.GroupAfterSaleSuccessMessage;
 import com.ww.mall.promotion.mq.GroupMqConstant;
 import com.ww.mall.promotion.mq.GroupOrderPaidMessage;
+import com.ww.mall.promotion.mq.GroupStateChangedMessage;
+import com.ww.mall.promotion.service.group.GroupStateChangeTaskService;
 import com.ww.mall.promotion.service.group.GroupTradeService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.amqp.rabbit.annotation.RabbitListener;
@@ -24,6 +26,9 @@ public class GroupMessageConsumer {
     @Resource
     private GroupTradeService groupTradeService;
 
+    @Resource
+    private GroupStateChangeTaskService groupStateChangeTaskService;
+
     /**
      * 消费支付成功消息。
      *
@@ -44,5 +49,16 @@ public class GroupMessageConsumer {
     public void handleAfterSaleSuccess(GroupAfterSaleSuccessMessage message) {
         log.info("消费拼团售后成功消息: orderId={}, afterSaleId={}", message.getOrderId(), message.getAfterSaleId());
         groupTradeService.handleAfterSaleSuccess(message);
+    }
+
+    /**
+     * 消费拼团状态变更内部消息。
+     *
+     * @param message 状态变更内部消息
+     */
+    @RabbitListener(queues = GroupMqConstant.GROUP_STATE_CHANGED_QUEUE)
+    public void handleStateChanged(GroupStateChangedMessage message) {
+        log.info("消费拼团状态变更内部消息: groupId={}", message.getGroupId());
+        groupStateChangeTaskService.handleStateChanged(message);
     }
 }
