@@ -228,6 +228,27 @@ public class GroupStorageComponent {
     }
 
     /**
+     * 查询已到期的拼团ID列表。
+     * <p>
+     * 该方法仅负责按过期索引读取当前时间之前到期的团ID，不直接在此处修改状态。
+     * 实际关团仍由上层命令服务统一调用 Redis Lua 完成，保证多实例下的原子性与幂等性。
+     *
+     * @param nowMillis 当前毫秒时间
+     * @param limit 批量上限
+     * @return 已到期的团ID集合，不存在时返回空集合
+     */
+    public Set<String> findExpiredGroupIds(long nowMillis, long limit) {
+        Set<String> expiredGroupIds = stringRedisTemplate.opsForZSet().rangeByScore(
+                groupRedisKeyBuilder.buildExpiryIndexKey(),
+                0,
+                nowMillis,
+                0,
+                limit
+        );
+        return expiredGroupIds == null ? Collections.emptySet() : expiredGroupIds;
+    }
+
+    /**
      * 读取 Redis 拼团快照。
      *
      * @param groupId 团ID

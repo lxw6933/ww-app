@@ -2,11 +2,11 @@ package com.ww.mall.promotion.service.group.impl;
 
 import com.ww.app.common.exception.ApiException;
 import com.ww.mall.promotion.controller.admin.group.res.GroupAdminDetailVO;
+import com.ww.mall.promotion.engine.GroupStorageComponent;
 import com.ww.mall.promotion.entity.group.GroupInstance;
 import com.ww.mall.promotion.entity.group.GroupMember;
 import com.ww.mall.promotion.service.group.GroupAdminService;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.data.mongodb.core.MongoTemplate;
 import org.springframework.stereotype.Service;
 
 import javax.annotation.Resource;
@@ -27,15 +27,15 @@ import static com.ww.mall.promotion.constants.ErrorCodeConstants.GROUP_RECORD_NO
 public class GroupAdminServiceImpl implements GroupAdminService {
 
     @Resource
-    private MongoTemplate mongoTemplate;
+    private GroupStorageComponent groupStorageComponent;
 
     @Override
     public GroupAdminDetailVO getDetail(String groupId) {
-        GroupInstance instance = mongoTemplate.findOne(GroupInstance.buildIdQuery(groupId), GroupInstance.class);
+        GroupInstance instance = groupStorageComponent.findMongoGroupInstance(groupId);
         if (instance == null) {
             throw new ApiException(GROUP_RECORD_NOT_EXISTS);
         }
-        List<GroupMember> members = mongoTemplate.find(GroupMember.buildGroupInstanceIdQuery(groupId), GroupMember.class);
+        List<GroupMember> members = groupStorageComponent.findMongoGroupMembers(groupId);
         GroupAdminDetailVO detail = new GroupAdminDetailVO();
         detail.setGroupId(instance.getId());
         detail.setActivityId(instance.getActivityId());

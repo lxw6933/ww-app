@@ -2,10 +2,9 @@ package com.ww.mall.promotion.job;
 
 import com.ww.mall.promotion.constants.GroupBizConstants;
 import com.ww.mall.promotion.engine.GroupCommandService;
-import com.ww.mall.promotion.key.GroupRedisKeyBuilder;
+import com.ww.mall.promotion.engine.GroupStorageComponent;
 import com.xxl.job.core.handler.annotation.XxlJob;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Component;
 
 import javax.annotation.Resource;
@@ -26,10 +25,7 @@ import java.util.Set;
 public class GroupExpireJob {
 
     @Resource
-    private StringRedisTemplate stringRedisTemplate;
-
-    @Resource
-    private GroupRedisKeyBuilder groupRedisKeyBuilder;
+    private GroupStorageComponent groupStorageComponent;
 
     @Resource
     private GroupCommandService groupCommandService;
@@ -42,14 +38,11 @@ public class GroupExpireJob {
      */
     @XxlJob("groupExpireJobHandler")
     public void groupExpireJobHandler() {
-        Set<String> expiredGroupIds = stringRedisTemplate.opsForZSet().rangeByScore(
-                groupRedisKeyBuilder.buildExpiryIndexKey(),
-                0,
+        Set<String> expiredGroupIds = groupStorageComponent.findExpiredGroupIds(
                 System.currentTimeMillis(),
-                0,
                 GroupBizConstants.EXPIRE_JOB_BATCH_LIMIT
         );
-        if (expiredGroupIds == null || expiredGroupIds.isEmpty()) {
+        if (expiredGroupIds.isEmpty()) {
             return;
         }
         for (String groupId : expiredGroupIds) {
