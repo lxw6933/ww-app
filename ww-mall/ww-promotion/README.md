@@ -16,7 +16,7 @@
 
 ### 创建拼团 / 参团
 
-1. 校验活动、订单、限购与幂等条件。
+1. 校验活动、订单与幂等条件。
 2. 执行 Redis Lua，原子更新拼团状态与成员快照。
 3. 主链路 `try/catch` 发送一条 `group.state.changed` 内部消息。
 4. 消费者收到消息后，把最新 Redis 快照同步到 Mongo。
@@ -43,7 +43,7 @@
 - `group:instance:member-store:{groupId}`：成员快照。
 - `group:instance:user-index:{groupId}`：团内活跃用户索引。
 - `group:order:index`：订单到拼团的幂等索引。
-- `group:activity:active:count`：活动用户占位计数。
+- `group:activity:stats:{activityId}`：活动累计统计。
 - `group:expiry`：过期索引。
 
 ### Mongo
@@ -55,5 +55,6 @@
 ## 说明
 
 - 当前实现不再自动发送拼团成功、失败、退款等业务通知。
+- 限购校验与计数维护不在拼团域执行，统一由下单域负责。
 - 如果内部 `group.state.changed` 发送失败，只记录错误日志。
 - B 端回显时应校验 Mongo/Redis 状态，必要时提供手动补发内部消息的入口。

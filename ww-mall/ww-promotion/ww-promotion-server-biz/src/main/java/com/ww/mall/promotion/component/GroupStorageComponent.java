@@ -103,13 +103,11 @@ public class GroupStorageComponent {
     public GroupCommandResult createGroup(String groupId, GroupActivity activity, CreateGroupCommand command, long nowMillis) {
         log.debug("执行开团存储操作: groupId={}, activityId={}, userId={}, orderId={}, nowMillis={}",
                 groupId, activity.getId(), command.getUserId(), command.getOrderId(), nowMillis);
-        String activityUserCountField = groupRedisKeyBuilder.buildActivityUserCountField(activity.getId(), command.getUserId());
         List<String> keys = Arrays.asList(
                 groupRedisKeyBuilder.buildGroupMetaKey(groupId),
                 groupRedisKeyBuilder.buildGroupMemberStoreKey(groupId),
                 groupRedisKeyBuilder.buildGroupUserIndexKey(groupId),
                 groupRedisKeyBuilder.buildOrderIndexKey(),
-                groupRedisKeyBuilder.buildActivityUserCountKey(),
                 groupRedisKeyBuilder.buildActivityStatsKey(activity.getId()),
                 groupRedisKeyBuilder.buildExpiryIndexKey()
         );
@@ -125,8 +123,6 @@ public class GroupStorageComponent {
                         GroupMemberBizStatus.JOINED.name(), null, "PAY_SUCCESS", nowMillis),
                 String.valueOf(nowMillis),
                 String.valueOf(buildExpireTime(nowMillis, activity)),
-                String.valueOf(defaultLimitPerUser(activity.getLimitPerUser())),
-                activityUserCountField,
                 String.valueOf(GroupBizConstants.REDIS_GROUP_DATA_RETAIN_SECONDS)
         );
         GroupCommandResult result = parseCreateResult(executeMultiScript(SCRIPT_GROUP_CREATE, keys, args));
@@ -146,13 +142,11 @@ public class GroupStorageComponent {
     public GroupCommandResult joinGroup(GroupActivity activity, JoinGroupCommand command, long nowMillis) {
         log.debug("执行参团存储操作: groupId={}, activityId={}, userId={}, orderId={}, nowMillis={}",
                 command.getGroupId(), activity.getId(), command.getUserId(), command.getOrderId(), nowMillis);
-        String activityUserCountField = groupRedisKeyBuilder.buildActivityUserCountField(activity.getId(), command.getUserId());
         List<String> keys = Arrays.asList(
                 groupRedisKeyBuilder.buildGroupMetaKey(command.getGroupId()),
                 groupRedisKeyBuilder.buildGroupMemberStoreKey(command.getGroupId()),
                 groupRedisKeyBuilder.buildGroupUserIndexKey(command.getGroupId()),
                 groupRedisKeyBuilder.buildOrderIndexKey(),
-                groupRedisKeyBuilder.buildActivityUserCountKey(),
                 groupRedisKeyBuilder.buildActivityStatsKey(activity.getId()),
                 groupRedisKeyBuilder.buildExpiryIndexKey()
         );
@@ -161,11 +155,9 @@ public class GroupStorageComponent {
                 activity.getId(),
                 String.valueOf(command.getUserId()),
                 command.getOrderId(),
-                String.valueOf(defaultLimitPerUser(activity.getLimitPerUser())),
                 buildMemberCachePayload(command.getGroupId(), command.getUserId(), command.getOrderId(), false,
                         nowMillis, command.getPayAmount(), command.getSkuId(),
                         GroupMemberBizStatus.JOINED.name(), null, "PAY_SUCCESS", nowMillis),
-                activityUserCountField,
                 String.valueOf(nowMillis),
                 String.valueOf(GroupBizConstants.REDIS_GROUP_DATA_RETAIN_SECONDS)
         );
@@ -179,7 +171,6 @@ public class GroupStorageComponent {
      * 执行售后成功 Redis Lua。
      *
      * @param groupId 团ID
-     * @param activityId 活动ID
      * @param afterSaleId 售后单号
      * @param orderId 订单号
      * @param nowMillis 事件时间
@@ -187,27 +178,24 @@ public class GroupStorageComponent {
      * @param reason 售后原因
      * @return Lua 返回码
      */
-    public int afterSaleSuccess(String groupId, String activityId, String afterSaleId,
+    public int afterSaleSuccess(String groupId, String afterSaleId,
                                 String orderId, long nowMillis, String failReason, String reason) {
-        log.debug("执行售后成功存储操作: groupId={}, activityId={}, afterSaleId={}, orderId={}, nowMillis={}",
-                groupId, activityId, afterSaleId, orderId, nowMillis);
+        log.debug("执行售后成功存储操作: groupId={}, afterSaleId={}, orderId={}, nowMillis={}",
+                groupId, afterSaleId, orderId, nowMillis);
         List<String> keys = Arrays.asList(
                 groupRedisKeyBuilder.buildGroupMetaKey(groupId),
                 groupRedisKeyBuilder.buildGroupMemberStoreKey(groupId),
                 groupRedisKeyBuilder.buildGroupUserIndexKey(groupId),
-                groupRedisKeyBuilder.buildActivityUserCountKey(),
                 groupRedisKeyBuilder.buildExpiryIndexKey()
         );
         List<String> args = Arrays.asList(
                 groupId,
-                activityId,
                 nullSafe(afterSaleId),
                 orderId,
                 String.valueOf(nowMillis),
                 failReason,
                 nullSafe(reason),
-                String.valueOf(GroupBizConstants.REDIS_GROUP_DATA_RETAIN_SECONDS),
-                groupRedisKeyBuilder.buildActivityUserCountFieldPrefix(activityId)
+                String.valueOf(GroupBizConstants.REDIS_GROUP_DATA_RETAIN_SECONDS)
         );
         int code = parseLuaCode(executeMultiScript(SCRIPT_GROUP_AFTER_SALE, keys, args));
         log.debug("售后成功存储操作完成: groupId={}, orderId={}, code={}", groupId, orderId, code);
@@ -218,27 +206,24 @@ public class GroupStorageComponent {
      * 执行过期关团 Redis Lua。
      *
      * @param groupId 团ID
-     * @param activityId 活动ID
      * @param reason 关团原因
      * @param nowMillis 当前毫秒时间
      * @return Lua 返回码
      */
-    public int expireGroup(String groupId, String activityId, String reason, long nowMillis) {
-        log.debug("执行过期关团存储操作: groupId={}, activityId={}, reason={}, nowMillis={}",
-                groupId, activityId, reason, nowMillis);
+    public int expireGroup(String groupId, String reason, long nowMillis) {
+        log.debug("执行过期关团存储操作: groupId={}, reason={}, nowMillis={}",
+                groupId, reason, nowMillis);
         List<String> keys = Arrays.asList(
                 groupRedisKeyBuilder.buildGroupMetaKey(groupId),
                 groupRedisKeyBuilder.buildGroupMemberStoreKey(groupId),
                 groupRedisKeyBuilder.buildGroupUserIndexKey(groupId),
-                groupRedisKeyBuilder.buildActivityUserCountKey(),
                 groupRedisKeyBuilder.buildExpiryIndexKey()
         );
         List<String> args = Arrays.asList(
                 groupId,
                 reason,
                 String.valueOf(nowMillis),
-                String.valueOf(GroupBizConstants.REDIS_GROUP_DATA_RETAIN_SECONDS),
-                groupRedisKeyBuilder.buildActivityUserCountFieldPrefix(activityId)
+                String.valueOf(GroupBizConstants.REDIS_GROUP_DATA_RETAIN_SECONDS)
         );
         int code = parseLuaCode(executeMultiScript(SCRIPT_GROUP_EXPIRE, keys, args));
         log.debug("过期关团存储操作完成: groupId={}, code={}", groupId, code);
@@ -827,18 +812,6 @@ public class GroupStorageComponent {
         log.debug("计算拼团过期时间: activityId={}, nowMillis={}, expireHours={}, expireTime={}",
                 activity.getId(), nowMillis, activity.getExpireHours(), expireTime);
         return expireTime;
-    }
-
-    /**
-     * 获取默认限购值。
-     *
-     * @param limitPerUser 限购值
-     * @return 非空限购值
-     */
-    private int defaultLimitPerUser(Integer limitPerUser) {
-        int limit = limitPerUser == null ? 0 : limitPerUser;
-        log.debug("计算默认限购值: input={}, result={}", limitPerUser, limit);
-        return limit;
     }
 
     /**

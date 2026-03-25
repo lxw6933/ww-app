@@ -29,7 +29,6 @@ import static com.ww.mall.promotion.constants.ErrorCodeConstants.GROUP_CREATE_FA
 import static com.ww.mall.promotion.constants.ErrorCodeConstants.GROUP_RECORD_ERROR;
 import static com.ww.mall.promotion.constants.ErrorCodeConstants.GROUP_RECORD_EXISTS;
 import static com.ww.mall.promotion.constants.ErrorCodeConstants.GROUP_RECORD_FAILED_DISABLE;
-import static com.ww.mall.promotion.constants.ErrorCodeConstants.GROUP_RECORD_FAILED_HAVE_JOINED;
 import static com.ww.mall.promotion.constants.ErrorCodeConstants.GROUP_RECORD_FAILED_TIME_END;
 import static com.ww.mall.promotion.constants.ErrorCodeConstants.GROUP_RECORD_FAILED_TIME_NOT_START;
 import static com.ww.mall.promotion.constants.ErrorCodeConstants.GROUP_RECORD_NOT_EXISTS;
@@ -153,7 +152,6 @@ public class GroupCommandService {
             throw new ApiException(GROUP_RECORD_NOT_EXISTS);
         }
         GroupCacheSnapshot snapshot = groupStorageComponent.requireGroupSnapshot(groupId);
-        String activityId = snapshot.getInstance().getActivityId();
         Long userId = message.getUserId() != null ? message.getUserId()
                 : groupStorageComponent.findMemberUserId(snapshot, message.getOrderId());
         if (userId == null) {
@@ -164,7 +162,6 @@ public class GroupCommandService {
                 ? "团长售后导致拼团关闭" : "售后成功，释放拼团名额";
         int code = groupStorageComponent.afterSaleSuccess(
                 groupId,
-                activityId,
                 message.getAfterSaleId(),
                 message.getOrderId(),
                 nowMillis,
@@ -186,9 +183,9 @@ public class GroupCommandService {
      * @param reason 关团原因
      */
     public void expireGroup(String groupId, String reason) {
-        GroupCacheSnapshot snapshot = groupStorageComponent.requireGroupSnapshot(groupId);
         long nowMillis = System.currentTimeMillis();
-        int code = groupStorageComponent.expireGroup(groupId, snapshot.getInstance().getActivityId(), reason, nowMillis);
+        groupStorageComponent.requireGroupSnapshot(groupId);
+        int code = groupStorageComponent.expireGroup(groupId, reason, nowMillis);
         if (code < 0 && code != -1 && code != -2) {
             throw new ApiException(GROUP_RECORD_ERROR);
         }
@@ -262,9 +259,6 @@ public class GroupCommandService {
      * @param result 命令结果
      */
     private void throwCreateException(GroupCommandResult result) {
-        if ("-3".equals(result.getFailReason())) {
-            throw new ApiException(GROUP_RECORD_FAILED_HAVE_JOINED);
-        }
         throw new ApiException(GROUP_CREATE_FAILED);
     }
 
@@ -291,9 +285,6 @@ public class GroupCommandService {
         }
         if ("-6".equals(result.getFailReason())) {
             throw new ApiException(GROUP_RECORD_EXISTS);
-        }
-        if ("-7".equals(result.getFailReason())) {
-            throw new ApiException(GROUP_RECORD_FAILED_HAVE_JOINED);
         }
         if ("-8".equals(result.getFailReason())) {
             throw new ApiException(GROUP_RECORD_USER_FULL);

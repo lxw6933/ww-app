@@ -14,7 +14,7 @@ import org.springframework.stereotype.Component;
  * 2. 团成员仓库：{@code group:instance:member-store:{groupId}}
  * 3. 团内活跃用户索引：{@code group:instance:user-index:{groupId}}
  * 4. 全局订单幂等索引：{@code group:order:index}
- * 5. 活动用户占位计数：{@code group:activity:active:count}
+ * 5. 活动统计：{@code group:activity:stats:{activityId}}
  * 6. 过期调度索引：{@code group:expiry}
  * <p>
  * 示例：
@@ -37,8 +37,6 @@ public class GroupRedisKeyBuilder extends RedisKeyBuilder {
     private static final String ORDER = "order";
     private static final String INDEX = "index";
     private static final String ACTIVITY = "activity";
-    private static final String ACTIVE = "active";
-    private static final String COUNT = "count";
     private static final String STATS = "stats";
     private static final String EXPIRY = "expiry";
     private static final String MEMBER_STORE = "member-store";
@@ -127,54 +125,6 @@ public class GroupRedisKeyBuilder extends RedisKeyBuilder {
      */
     public String buildOrderIndexKey() {
         return join(GROUP, ORDER, INDEX);
-    }
-
-    /**
-     * 全局活动用户有效名额计数 Hash Key。
-     * <p>
-     * 功能：
-     * 控制“同一活动下一个用户当前最多占用多少个有效拼团名额”。
-     * 开团/参团时加一，售后释放或拼团失败时减一。
-     * <p>
-     * Key 示例：
-     * {@code promotion:group:activity:active:count}
-     * <p>
-     * Field/Value 示例：
-     * {@code ACT_1001:20001 -> 2}
-     *
-     * @return Redis Key
-     */
-    public String buildActivityUserCountKey() {
-        return join(GROUP, ACTIVITY, ACTIVE, COUNT);
-    }
-
-    /**
-     * 构建活动用户计数字段。
-     * <p>
-     * 示例：
-     * {@code ACT_1001:20001}
-     *
-     * @param activityId 活动ID
-     * @param userId 用户ID
-     * @return Hash field
-     */
-    public String buildActivityUserCountField(String activityId, Long userId) {
-        return activityId + SPLIT_ITEM + userId;
-    }
-
-    /**
-     * 构建活动用户计数字段前缀。
-     * <p>
-     * 主要用于 Lua 批量释放名额时拼接用户ID。
-     * <p>
-     * 示例：
-     * {@code ACT_1001:}
-     *
-     * @param activityId 活动ID
-     * @return Hash field 前缀
-     */
-    public String buildActivityUserCountFieldPrefix(String activityId) {
-        return activityId + SPLIT_ITEM;
     }
 
     /**
