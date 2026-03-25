@@ -88,16 +88,6 @@ public class GroupMember extends BaseDoc {
     private Date latestTrajectoryTime;
 
     /**
-     * 构建根据拼团实例ID和用户ID查询
-     */
-    public static Query buildGroupInstanceIdAndUserIdQuery(String groupInstanceId, Long userId) {
-        return new Query().addCriteria(
-                Criteria.where("groupInstanceId").is(groupInstanceId)
-                        .and("userId").is(userId)
-        );
-    }
-
-    /**
      * 构建根据订单ID查询
      */
     public static Query buildOrderIdQuery(String orderId) {
