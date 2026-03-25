@@ -2,7 +2,7 @@ package com.ww.mall.promotion.service.group.impl;
 
 import com.ww.app.common.exception.ApiException;
 import com.ww.mall.promotion.controller.admin.group.res.GroupAdminDetailVO;
-import com.ww.mall.promotion.engine.GroupStorageComponent;
+import com.ww.mall.promotion.component.GroupStorageComponent;
 import com.ww.mall.promotion.entity.group.GroupInstance;
 import com.ww.mall.promotion.entity.group.GroupMember;
 import com.ww.mall.promotion.service.group.GroupAdminService;

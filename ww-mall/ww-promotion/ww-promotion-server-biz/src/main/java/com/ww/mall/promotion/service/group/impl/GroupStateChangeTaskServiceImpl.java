@@ -1,6 +1,6 @@
 package com.ww.mall.promotion.service.group.impl;
 
-import com.ww.mall.promotion.engine.GroupStorageComponent;
+import com.ww.mall.promotion.component.GroupStorageComponent;
 import com.ww.mall.promotion.engine.model.GroupCacheSnapshot;
 import com.ww.mall.promotion.mq.GroupStateChangedMessage;
 import com.ww.mall.promotion.service.group.GroupStateChangeTaskService;

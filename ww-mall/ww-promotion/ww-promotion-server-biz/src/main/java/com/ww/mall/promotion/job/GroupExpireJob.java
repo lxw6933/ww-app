@@ -2,7 +2,7 @@ package com.ww.mall.promotion.job;
 
 import com.ww.mall.promotion.constants.GroupBizConstants;
 import com.ww.mall.promotion.engine.GroupCommandService;
-import com.ww.mall.promotion.engine.GroupStorageComponent;
+import com.ww.mall.promotion.component.GroupStorageComponent;
 import com.xxl.job.core.handler.annotation.XxlJob;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;

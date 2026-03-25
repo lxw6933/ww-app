@@ -3,6 +3,7 @@ package com.ww.mall.promotion.engine;
 import com.github.benmanes.caffeine.cache.LoadingCache;
 import com.ww.app.common.exception.ApiException;
 import com.ww.app.rabbitmq.RabbitMqPublisher;
+import com.ww.mall.promotion.component.GroupStorageComponent;
 import com.ww.mall.promotion.controller.app.group.res.GroupInstanceVO;
 import com.ww.mall.promotion.engine.model.GroupCacheSnapshot;
 import com.ww.mall.promotion.engine.model.GroupCommandResult;

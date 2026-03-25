@@ -1,4 +1,4 @@
-package com.ww.mall.promotion.engine;
+package com.ww.mall.promotion.component;
 
 import com.ww.app.common.exception.ApiException;
 import com.ww.app.common.utils.json.JacksonUtils;
@@ -14,6 +14,7 @@ import com.ww.mall.promotion.enums.GroupMemberBizStatus;
 import com.ww.mall.promotion.key.GroupRedisKeyBuilder;
 import com.ww.mall.promotion.service.group.command.CreateGroupCommand;
 import com.ww.mall.promotion.service.group.command.JoinGroupCommand;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.mongodb.core.BulkOperations;
 import org.springframework.data.mongodb.core.MongoTemplate;
 import org.springframework.data.redis.connection.ReturnType;
@@ -44,6 +45,7 @@ import static com.ww.mall.promotion.constants.ErrorCodeConstants.GROUP_RECORD_NO
  * @create 2026-03-25
  * @description: 统一封装拼团 Redis/Mongo 访问能力
  */
+@Slf4j
 @Component
 public class GroupStorageComponent {
 
@@ -77,10 +79,13 @@ public class GroupStorageComponent {
      */
     @PostConstruct
     public void init() {
+        log.info("预加载拼团 Lua 脚本开始");
         redisScriptComponent.preLoadLuaScript(SCRIPT_GROUP_CREATE, loadScriptBytes(PATH_GROUP_CREATE));
         redisScriptComponent.preLoadLuaScript(SCRIPT_GROUP_JOIN, loadScriptBytes(PATH_GROUP_JOIN));
         redisScriptComponent.preLoadLuaScript(SCRIPT_GROUP_AFTER_SALE, loadScriptBytes(PATH_GROUP_AFTER_SALE));
         redisScriptComponent.preLoadLuaScript(SCRIPT_GROUP_EXPIRE, loadScriptBytes(PATH_GROUP_EXPIRE));
+        log.info("预加载拼团 Lua 脚本完成: scripts=[{},{},{},{}]",
+                SCRIPT_GROUP_CREATE, SCRIPT_GROUP_JOIN, SCRIPT_GROUP_AFTER_SALE, SCRIPT_GROUP_EXPIRE);
     }
 
     /**
@@ -93,6 +98,8 @@ public class GroupStorageComponent {
      * @return 开团命令结果
      */
     public GroupCommandResult createGroup(String groupId, GroupActivity activity, CreateGroupCommand command, long nowMillis) {
+        log.debug("执行开团存储操作: groupId={}, activityId={}, userId={}, orderId={}, nowMillis={}",
+                groupId, activity.getId(), command.getUserId(), command.getOrderId(), nowMillis);
         String activityUserCountField = groupRedisKeyBuilder.buildActivityUserCountField(activity.getId(), command.getUserId());
         List<String> keys = Arrays.asList(
                 groupRedisKeyBuilder.buildGroupMetaKey(groupId),
@@ -118,7 +125,10 @@ public class GroupStorageComponent {
                 activityUserCountField,
                 String.valueOf(GroupBizConstants.REDIS_GROUP_DATA_RETAIN_SECONDS)
         );
-        return parseCreateResult(executeMultiScript(SCRIPT_GROUP_CREATE, keys, args));
+        GroupCommandResult result = parseCreateResult(executeMultiScript(SCRIPT_GROUP_CREATE, keys, args));
+        log.debug("开团存储操作完成: groupId={}, success={}, replayed={}, failReason={}",
+                result.getGroupId(), result.isSuccess(), result.isReplayed(), result.getFailReason());
+        return result;
     }
 
     /**
@@ -130,6 +140,8 @@ public class GroupStorageComponent {
      * @return 参团命令结果
      */
     public GroupCommandResult joinGroup(GroupActivity activity, JoinGroupCommand command, long nowMillis) {
+        log.debug("执行参团存储操作: groupId={}, activityId={}, userId={}, orderId={}, nowMillis={}",
+                command.getGroupId(), activity.getId(), command.getUserId(), command.getOrderId(), nowMillis);
         String activityUserCountField = groupRedisKeyBuilder.buildActivityUserCountField(activity.getId(), command.getUserId());
         List<String> keys = Arrays.asList(
                 groupRedisKeyBuilder.buildGroupMetaKey(command.getGroupId()),
@@ -152,7 +164,10 @@ public class GroupStorageComponent {
                 String.valueOf(nowMillis),
                 String.valueOf(GroupBizConstants.REDIS_GROUP_DATA_RETAIN_SECONDS)
         );
-        return parseJoinResult(executeMultiScript(SCRIPT_GROUP_JOIN, keys, args));
+        GroupCommandResult result = parseJoinResult(executeMultiScript(SCRIPT_GROUP_JOIN, keys, args));
+        log.debug("参团存储操作完成: groupId={}, success={}, replayed={}, groupStatus={}, failReason={}",
+                result.getGroupId(), result.isSuccess(), result.isReplayed(), result.getGroupStatus(), result.getFailReason());
+        return result;
     }
 
     /**
@@ -169,6 +184,8 @@ public class GroupStorageComponent {
      */
     public int afterSaleSuccess(String groupId, String activityId, String afterSaleId,
                                 String orderId, long nowMillis, String failReason, String reason) {
+        log.debug("执行售后成功存储操作: groupId={}, activityId={}, afterSaleId={}, orderId={}, nowMillis={}",
+                groupId, activityId, afterSaleId, orderId, nowMillis);
         List<String> keys = Arrays.asList(
                 groupRedisKeyBuilder.buildGroupMetaKey(groupId),
                 groupRedisKeyBuilder.buildGroupMemberStoreKey(groupId),
@@ -187,7 +204,9 @@ public class GroupStorageComponent {
                 String.valueOf(GroupBizConstants.REDIS_GROUP_DATA_RETAIN_SECONDS),
                 groupRedisKeyBuilder.buildActivityUserCountFieldPrefix(activityId)
         );
-        return parseLuaCode(executeMultiScript(SCRIPT_GROUP_AFTER_SALE, keys, args));
+        int code = parseLuaCode(executeMultiScript(SCRIPT_GROUP_AFTER_SALE, keys, args));
+        log.debug("售后成功存储操作完成: groupId={}, orderId={}, code={}", groupId, orderId, code);
+        return code;
     }
 
     /**
@@ -200,6 +219,8 @@ public class GroupStorageComponent {
      * @return Lua 返回码
      */
     public int expireGroup(String groupId, String activityId, String reason, long nowMillis) {
+        log.debug("执行过期关团存储操作: groupId={}, activityId={}, reason={}, nowMillis={}",
+                groupId, activityId, reason, nowMillis);
         List<String> keys = Arrays.asList(
                 groupRedisKeyBuilder.buildGroupMetaKey(groupId),
                 groupRedisKeyBuilder.buildGroupMemberStoreKey(groupId),
@@ -214,7 +235,9 @@ public class GroupStorageComponent {
                 String.valueOf(GroupBizConstants.REDIS_GROUP_DATA_RETAIN_SECONDS),
                 groupRedisKeyBuilder.buildActivityUserCountFieldPrefix(activityId)
         );
-        return parseLuaCode(executeMultiScript(SCRIPT_GROUP_EXPIRE, keys, args));
+        int code = parseLuaCode(executeMultiScript(SCRIPT_GROUP_EXPIRE, keys, args));
+        log.debug("过期关团存储操作完成: groupId={}, code={}", groupId, code);
+        return code;
     }
 
     /**
@@ -224,7 +247,9 @@ public class GroupStorageComponent {
      * @return 拼团ID，不存在时返回 {@code null}
      */
     public String findGroupIdByOrderId(String orderId) {
-        return (String) stringRedisTemplate.opsForHash().get(groupRedisKeyBuilder.buildOrderIndexKey(), orderId);
+        String groupId = (String) stringRedisTemplate.opsForHash().get(groupRedisKeyBuilder.buildOrderIndexKey(), orderId);
+        log.debug("根据订单索引查询拼团ID: orderId={}, groupId={}", orderId, groupId);
+        return groupId;
     }
 
     /**
@@ -238,6 +263,7 @@ public class GroupStorageComponent {
      * @return 已到期的团ID集合，不存在时返回空集合
      */
     public Set<String> findExpiredGroupIds(long nowMillis, long limit) {
+        log.debug("查询已到期拼团ID: nowMillis={}, limit={}", nowMillis, limit);
         Set<String> expiredGroupIds = stringRedisTemplate.opsForZSet().rangeByScore(
                 groupRedisKeyBuilder.buildExpiryIndexKey(),
                 0,
@@ -245,7 +271,9 @@ public class GroupStorageComponent {
                 0,
                 limit
         );
-        return expiredGroupIds == null ? Collections.emptySet() : expiredGroupIds;
+        Set<String> result = expiredGroupIds == null ? Collections.emptySet() : expiredGroupIds;
+        log.debug("查询已到期拼团ID完成: nowMillis={}, limit={}, count={}", nowMillis, limit, result.size());
+        return result;
     }
 
     /**
@@ -255,11 +283,14 @@ public class GroupStorageComponent {
      * @return 拼团快照，不存在时返回 {@code null}
      */
     public GroupCacheSnapshot loadGroupSnapshot(String groupId) {
+        log.debug("读取拼团Redis快照: groupId={}", groupId);
         if (!hasText(groupId)) {
+            log.warn("读取拼团Redis快照失败: groupId为空");
             return null;
         }
         Map<Object, Object> metaMap = stringRedisTemplate.opsForHash().entries(groupRedisKeyBuilder.buildGroupMetaKey(groupId));
         if (metaMap.isEmpty()) {
+            log.debug("拼团Redis快照不存在: groupId={}", groupId);
             return null;
         }
         GroupCacheSnapshot snapshot = new GroupCacheSnapshot();
@@ -267,6 +298,8 @@ public class GroupStorageComponent {
         GroupInstance instance = buildInstance(groupId, metaMap, members);
         snapshot.setInstance(instance);
         snapshot.setMembers(members);
+        log.debug("读取拼团Redis快照完成: groupId={}, status={}, memberCount={}",
+                groupId, instance.getStatus(), members.size());
         return snapshot;
     }
 
@@ -277,10 +310,14 @@ public class GroupStorageComponent {
      * @return 拼团快照
      */
     public GroupCacheSnapshot requireGroupSnapshot(String groupId) {
+        log.debug("读取必需存在的拼团Redis快照: groupId={}", groupId);
         GroupCacheSnapshot snapshot = loadGroupSnapshot(groupId);
         if (snapshot == null || snapshot.getInstance() == null) {
+            log.warn("必需存在的拼团Redis快照缺失: groupId={}", groupId);
             throw new ApiException(GROUP_RECORD_NOT_EXISTS);
         }
+        log.debug("读取必需存在的拼团Redis快照完成: groupId={}, status={}",
+                groupId, snapshot.getInstance().getStatus());
         return snapshot;
     }
 
@@ -291,8 +328,11 @@ public class GroupStorageComponent {
      * @return 最新快照
      */
     public GroupCacheSnapshot syncProjection(String groupId) {
+        log.debug("按groupId同步Mongo投影: groupId={}", groupId);
         GroupCacheSnapshot snapshot = requireGroupSnapshot(groupId);
         syncProjection(snapshot);
+        log.debug("按groupId同步Mongo投影完成: groupId={}, memberCount={}",
+                groupId, snapshot.getMembers() == null ? 0 : snapshot.getMembers().size());
         return snapshot;
     }
 
@@ -303,10 +343,16 @@ public class GroupStorageComponent {
      */
     public void syncProjection(GroupCacheSnapshot snapshot) {
         if (snapshot == null || snapshot.getInstance() == null) {
+            log.warn("同步Mongo投影跳过: snapshot为空或instance为空");
             return;
         }
+        log.debug("同步Mongo投影: groupId={}, status={}, memberCount={}",
+                snapshot.getInstance().getId(),
+                snapshot.getInstance().getStatus(),
+                snapshot.getMembers() == null ? 0 : snapshot.getMembers().size());
         mongoTemplate.save(snapshot.getInstance());
         upsertMembers(snapshot.getMembers());
+        log.debug("同步Mongo投影完成: groupId={}", snapshot.getInstance().getId());
     }
 
     /**
@@ -317,14 +363,18 @@ public class GroupStorageComponent {
      * @return 用户ID，不存在时返回 {@code null}
      */
     public Long findMemberUserId(GroupCacheSnapshot snapshot, String orderId) {
+        log.debug("根据订单号查询成员用户ID: orderId={}", orderId);
         if (snapshot == null || snapshot.getMembers() == null) {
+            log.warn("根据订单号查询成员用户ID失败: snapshot为空或members为空, orderId={}", orderId);
             return null;
         }
-        return snapshot.getMembers().stream()
+        Long userId = snapshot.getMembers().stream()
                 .filter(member -> orderId.equals(member.getOrderId()))
                 .map(GroupMember::getUserId)
                 .findFirst()
                 .orElse(null);
+        log.debug("根据订单号查询成员用户ID完成: orderId={}, userId={}", orderId, userId);
+        return userId;
     }
 
     /**
@@ -335,8 +385,12 @@ public class GroupStorageComponent {
      * @return true-团长，false-非团长
      */
     public boolean isLeader(GroupCacheSnapshot snapshot, Long userId) {
-        return snapshot != null && snapshot.getInstance() != null
+        boolean leader = snapshot != null && snapshot.getInstance() != null
                 && userId != null && userId.equals(snapshot.getInstance().getLeaderUserId());
+        log.debug("判断用户是否团长: groupId={}, userId={}, leader={}",
+                snapshot != null && snapshot.getInstance() != null ? snapshot.getInstance().getId() : null,
+                userId, leader);
+        return leader;
     }
 
     /**
@@ -346,7 +400,9 @@ public class GroupStorageComponent {
      * @return Mongo 拼团实例
      */
     public GroupInstance findMongoGroupInstance(String groupId) {
-        return mongoTemplate.findOne(GroupInstance.buildIdQuery(groupId), GroupInstance.class);
+        GroupInstance instance = mongoTemplate.findOne(GroupInstance.buildIdQuery(groupId), GroupInstance.class);
+        log.debug("查询Mongo拼团实例: groupId={}, found={}", groupId, instance != null);
+        return instance;
     }
 
     /**
@@ -356,7 +412,9 @@ public class GroupStorageComponent {
      * @return 成员列表
      */
     public List<GroupMember> findMongoGroupMembers(String groupId) {
-        return mongoTemplate.find(GroupMember.buildGroupInstanceIdQuery(groupId), GroupMember.class);
+        List<GroupMember> members = mongoTemplate.find(GroupMember.buildGroupInstanceIdQuery(groupId), GroupMember.class);
+        log.debug("查询Mongo拼团成员: groupId={}, memberCount={}", groupId, members.size());
+        return members;
     }
 
     /**
@@ -366,7 +424,9 @@ public class GroupStorageComponent {
      * @return 成员记录列表
      */
     public List<GroupMember> findMongoUserMembers(Long userId) {
-        return mongoTemplate.find(GroupMember.buildUserIdQuery(userId), GroupMember.class);
+        List<GroupMember> members = mongoTemplate.find(GroupMember.buildUserIdQuery(userId), GroupMember.class);
+        log.debug("查询用户Mongo拼团成员记录: userId={}, memberCount={}", userId, members.size());
+        return members;
     }
 
     /**
@@ -377,7 +437,12 @@ public class GroupStorageComponent {
      * @return 团摘要列表
      */
     public List<GroupInstance> findMongoActivityGroupSummaries(String activityId, String status) {
-        return mongoTemplate.find(GroupInstance.buildActivityIdAndStatusSummaryQuery(activityId, status), GroupInstance.class);
+        List<GroupInstance> instances = mongoTemplate.find(
+                GroupInstance.buildActivityIdAndStatusSummaryQuery(activityId, status),
+                GroupInstance.class
+        );
+        log.debug("查询活动Mongo拼团摘要: activityId={}, status={}, count={}", activityId, status, instances.size());
+        return instances;
     }
 
     /**
@@ -387,7 +452,10 @@ public class GroupStorageComponent {
      * @return 团摘要列表
      */
     public List<GroupInstance> findMongoGroupSummaries(List<String> groupIds) {
-        return mongoTemplate.find(GroupInstance.buildIdListSummaryQuery(groupIds), GroupInstance.class);
+        List<GroupInstance> instances = mongoTemplate.find(GroupInstance.buildIdListSummaryQuery(groupIds), GroupInstance.class);
+        log.debug("批量查询Mongo拼团摘要: groupIdCount={}, resultCount={}",
+                groupIds == null ? 0 : groupIds.size(), instances.size());
+        return instances;
     }
 
     /**
@@ -399,7 +467,14 @@ public class GroupStorageComponent {
      * @return Lua 原始返回值
      */
     private List<Object> executeMultiScript(String scriptName, List<String> keys, List<String> args) {
-        return redisScriptComponent.executeLuaScript(scriptName, ReturnType.MULTI, keys, args);
+        log.debug("执行Lua脚本: scriptName={}, keyCount={}, argCount={}",
+                scriptName, keys == null ? 0 : keys.size(), args == null ? 0 : args.size());
+        List<Object> result = redisScriptComponent.executeLuaScript(scriptName, ReturnType.MULTI, keys, args);
+        log.debug("执行Lua脚本完成: scriptName={}, resultSize={}, firstResult={}",
+                scriptName,
+                result == null ? 0 : result.size(),
+                result == null || result.isEmpty() ? null : result.get(0));
+        return result;
     }
 
     /**
@@ -409,6 +484,7 @@ public class GroupStorageComponent {
      */
     private void upsertMembers(List<GroupMember> members) {
         if (members == null || members.isEmpty()) {
+            log.debug("批量upsert成员轨迹跳过: members为空");
             return;
         }
         BulkOperations bulkOperations = mongoTemplate.bulkOps(BulkOperations.BulkMode.UNORDERED, GroupMember.class);
@@ -427,6 +503,7 @@ public class GroupStorageComponent {
         if (upsertCount > 0) {
             bulkOperations.execute();
         }
+        log.debug("批量upsert成员轨迹完成: inputCount={}, upsertCount={}", members.size(), upsertCount);
     }
 
     /**
@@ -436,9 +513,11 @@ public class GroupStorageComponent {
      * @return 成员列表
      */
     private List<GroupMember> loadMembers(String groupId) {
+        log.debug("读取拼团成员快照: groupId={}", groupId);
         List<Object> memberJsonList = stringRedisTemplate.opsForHash()
                 .values(groupRedisKeyBuilder.buildGroupMemberStoreKey(groupId));
         if (memberJsonList.isEmpty()) {
+            log.debug("拼团成员快照为空: groupId={}", groupId);
             return new ArrayList<>();
         }
         List<GroupMember> members = new ArrayList<>();
@@ -449,6 +528,7 @@ public class GroupStorageComponent {
             members.add(buildMember(String.valueOf(memberJson)));
         }
         members.sort((left, right) -> compareDate(left.getJoinTime(), right.getJoinTime()));
+        log.debug("读取拼团成员快照完成: groupId={}, memberCount={}", groupId, members.size());
         return members;
     }
 
@@ -484,6 +564,8 @@ public class GroupStorageComponent {
         instance.setMembers(members.stream()
                 .map(this::buildMemberSummary)
                 .collect(Collectors.toList()));
+        log.debug("构建拼团实例完成: groupId={}, status={}, currentSize={}, memberCount={}",
+                groupId, instance.getStatus(), instance.getCurrentSize(), members.size());
         return instance;
     }
 
@@ -510,6 +592,8 @@ public class GroupStorageComponent {
             member.setLatestTrajectoryTime(toDate(cacheSnapshot.getLatestTrajectoryTime()));
             member.setCreateTime(member.getJoinTime());
             member.setUpdateTime(member.getLatestTrajectoryTime() != null ? member.getLatestTrajectoryTime() : member.getJoinTime());
+            log.debug("构建拼团成员完成: groupId={}, userId={}, orderId={}, memberStatus={}",
+                    member.getGroupInstanceId(), member.getUserId(), member.getOrderId(), member.getMemberStatus());
             return member;
         } catch (Exception e) {
             throw new IllegalStateException("拼团成员缓存反序列化失败", e);
@@ -532,6 +616,8 @@ public class GroupStorageComponent {
         memberInfo.setMemberStatus(member.getMemberStatus());
         memberInfo.setLatestTrajectory(member.getLatestTrajectory());
         memberInfo.setLatestTrajectoryTime(member.getLatestTrajectoryTime());
+        log.debug("构建拼团成员摘要完成: userId={}, orderId={}, memberStatus={}",
+                member.getUserId(), member.getOrderId(), member.getMemberStatus());
         return memberInfo;
     }
 
@@ -545,21 +631,28 @@ public class GroupStorageComponent {
         GroupCommandResult result = new GroupCommandResult();
         if (rawResult == null || rawResult.isEmpty()) {
             result.setFailReason(GROUP_CREATE_FAILED.getMsg());
+            log.warn("解析开团Lua结果失败: rawResult为空");
             return result;
         }
         int code = parseInt(rawResult.get(0));
         if (code == 1) {
             result.setSuccess(true);
             result.setGroupId(stringValue(rawResult, 1));
+            log.debug("解析开团Lua结果完成: code={}, groupId={}, success={}, replayed={}",
+                    code, result.getGroupId(), result.isSuccess(), result.isReplayed());
             return result;
         }
         if (code == 2) {
             result.setSuccess(true);
             result.setGroupId(stringValue(rawResult, 1));
             result.setReplayed(true);
+            log.debug("解析开团Lua结果完成: code={}, groupId={}, success={}, replayed={}",
+                    code, result.getGroupId(), result.isSuccess(), result.isReplayed());
             return result;
         }
         result.setFailReason(String.valueOf(code));
+        log.debug("解析开团Lua结果完成: code={}, groupId={}, success={}, replayed={}, failReason={}",
+                code, result.getGroupId(), result.isSuccess(), result.isReplayed(), result.getFailReason());
         return result;
     }
 
@@ -573,6 +666,7 @@ public class GroupStorageComponent {
         GroupCommandResult result = new GroupCommandResult();
         if (rawResult == null || rawResult.isEmpty()) {
             result.setFailReason(GROUP_RECORD_ERROR.getMsg());
+            log.warn("解析参团Lua结果失败: rawResult为空");
             return result;
         }
         int code = parseInt(rawResult.get(0));
@@ -580,12 +674,16 @@ public class GroupStorageComponent {
             result.setSuccess(true);
             result.setGroupId(stringValue(rawResult, 1));
             result.setGroupStatus(stringValue(rawResult, 2));
+            log.debug("解析参团Lua结果完成: code={}, groupId={}, success={}, replayed={}, groupStatus={}",
+                    code, result.getGroupId(), result.isSuccess(), result.isReplayed(), result.getGroupStatus());
             return result;
         }
         if (code == 2) {
             result.setSuccess(true);
             result.setGroupId(stringValue(rawResult, 1));
             result.setReplayed(true);
+            log.debug("解析参团Lua结果完成: code={}, groupId={}, success={}, replayed={}, groupStatus={}",
+                    code, result.getGroupId(), result.isSuccess(), result.isReplayed(), result.getGroupStatus());
             return result;
         }
         result.setFailReason(String.valueOf(code));
@@ -594,6 +692,8 @@ public class GroupStorageComponent {
         } else {
             result.setGroupId(stringValue(rawResult, 1));
         }
+        log.debug("解析参团Lua结果完成: code={}, groupId={}, success={}, replayed={}, groupStatus={}, failReason={}",
+                code, result.getGroupId(), result.isSuccess(), result.isReplayed(), result.getGroupStatus(), result.getFailReason());
         return result;
     }
 
@@ -605,9 +705,12 @@ public class GroupStorageComponent {
      */
     private int parseLuaCode(List<Object> rawResult) {
         if (rawResult == null || rawResult.isEmpty()) {
+            log.warn("解析Lua状态码失败: rawResult为空");
             throw new ApiException(GROUP_RECORD_ERROR);
         }
-        return parseInt(rawResult.get(0));
+        int code = parseInt(rawResult.get(0));
+        log.debug("解析Lua状态码完成: code={}", code);
+        return code;
     }
 
     /**
@@ -642,8 +745,12 @@ public class GroupStorageComponent {
         member.setLatestTrajectory(latestTrajectory);
         member.setLatestTrajectoryTime(latestTrajectoryTime);
         try {
-            return JacksonUtils.toJsonString(member);
+            String payload = JacksonUtils.toJsonString(member);
+            log.debug("构建成员缓存载荷完成: groupId={}, userId={}, orderId={}, leader={}, memberStatus={}",
+                    groupId, userId, orderId, leader, memberStatus);
+            return payload;
         } catch (Exception e) {
+            log.error("构建成员缓存载荷失败: groupId={}, userId={}, orderId={}", groupId, userId, orderId, e);
             throw new ApiException(GROUP_RECORD_ERROR);
         }
     }
@@ -656,7 +763,10 @@ public class GroupStorageComponent {
      * @return 过期毫秒时间
      */
     private long buildExpireTime(long nowMillis, GroupActivity activity) {
-        return nowMillis + activity.getExpireHours() * 3600_000L;
+        long expireTime = nowMillis + activity.getExpireHours() * 3600_000L;
+        log.debug("计算拼团过期时间: activityId={}, nowMillis={}, expireHours={}, expireTime={}",
+                activity.getId(), nowMillis, activity.getExpireHours(), expireTime);
+        return expireTime;
     }
 
     /**
@@ -666,7 +776,9 @@ public class GroupStorageComponent {
      * @return 非空限购值
      */
     private int defaultLimitPerUser(Integer limitPerUser) {
-        return limitPerUser == null ? 0 : limitPerUser;
+        int limit = limitPerUser == null ? 0 : limitPerUser;
+        log.debug("计算默认限购值: input={}, result={}", limitPerUser, limit);
+        return limit;
     }
 
     /**
@@ -679,7 +791,9 @@ public class GroupStorageComponent {
     private int compareDate(Date left, Date right) {
         Date leftValue = left != null ? left : new Date(0L);
         Date rightValue = right != null ? right : new Date(0L);
-        return leftValue.compareTo(rightValue);
+        int result = leftValue.compareTo(rightValue);
+        log.debug("比较时间完成: left={}, right={}, result={}", leftValue, rightValue, result);
+        return result;
     }
 
     /**
@@ -689,7 +803,9 @@ public class GroupStorageComponent {
      * @return 日期
      */
     private Date toDate(Long millis) {
-        return millis == null || millis <= 0 ? null : new Date(millis);
+        Date date = millis == null || millis <= 0 ? null : new Date(millis);
+        log.debug("毫秒值转日期完成: millis={}, date={}", millis, date);
+        return date;
     }
 
     /**
@@ -701,7 +817,9 @@ public class GroupStorageComponent {
      */
     private String getString(Map<Object, Object> map, String key) {
         Object value = map.get(key);
-        return value == null ? null : String.valueOf(value);
+        String result = value == null ? null : String.valueOf(value);
+        log.debug("读取字符串字段完成: key={}, value={}", key, result);
+        return result;
     }
 
     /**
@@ -713,7 +831,9 @@ public class GroupStorageComponent {
      */
     private Long getLong(Map<Object, Object> map, String key) {
         String value = getString(map, key);
-        return hasText(value) ? Long.parseLong(value) : null;
+        Long result = hasText(value) ? Long.parseLong(value) : null;
+        log.debug("读取长整型字段完成: key={}, value={}", key, result);
+        return result;
     }
 
     /**
@@ -725,7 +845,9 @@ public class GroupStorageComponent {
      */
     private Integer getInteger(Map<Object, Object> map, String key) {
         String value = getString(map, key);
-        return hasText(value) ? Integer.parseInt(value) : null;
+        Integer result = hasText(value) ? Integer.parseInt(value) : null;
+        log.debug("读取整型字段完成: key={}, value={}", key, result);
+        return result;
     }
 
     /**
@@ -737,7 +859,9 @@ public class GroupStorageComponent {
      */
     private Date getDate(Map<Object, Object> map, String key) {
         Long millis = getLong(map, key);
-        return millis == null || millis <= 0 ? null : new Date(millis);
+        Date result = millis == null || millis <= 0 ? null : new Date(millis);
+        log.debug("读取日期字段完成: key={}, millis={}, value={}", key, millis, result);
+        return result;
     }
 
     /**
@@ -747,7 +871,9 @@ public class GroupStorageComponent {
      * @return 整型结果
      */
     private int parseInt(Object value) {
-        return Integer.parseInt(String.valueOf(value));
+        int result = Integer.parseInt(String.valueOf(value));
+        log.debug("解析整型值完成: rawValue={}, result={}", value, result);
+        return result;
     }
 
     /**
@@ -758,7 +884,9 @@ public class GroupStorageComponent {
      * @return 字符串值
      */
     private String stringValue(List<Object> values, int index) {
-        return values.size() > index && values.get(index) != null ? String.valueOf(values.get(index)) : null;
+        String result = values.size() > index && values.get(index) != null ? String.valueOf(values.get(index)) : null;
+        log.debug("读取Lua返回字符串项完成: index={}, value={}", index, result);
+        return result;
     }
 
     /**
@@ -768,7 +896,9 @@ public class GroupStorageComponent {
      * @return 非 null 字符串
      */
     private String nullSafe(String value) {
-        return value == null ? "" : value;
+        String result = value == null ? "" : value;
+        log.debug("空值保护完成: originalNull={}, resultLength={}", value == null, result.length());
+        return result;
     }
 
     /**
@@ -779,7 +909,9 @@ public class GroupStorageComponent {
      */
     private byte[] loadScriptBytes(String path) {
         try {
-            return StreamUtils.copyToByteArray(new ClassPathResource(path).getInputStream());
+            byte[] bytes = StreamUtils.copyToByteArray(new ClassPathResource(path).getInputStream());
+            log.debug("读取Lua脚本字节完成: path={}, byteSize={}", path, bytes.length);
+            return bytes;
         } catch (IOException e) {
             throw new IllegalStateException("加载拼团 Lua 脚本失败: " + path, e);
         }
@@ -792,6 +924,8 @@ public class GroupStorageComponent {
      * @return true-有值
      */
     private boolean hasText(String value) {
-        return value != null && !value.trim().isEmpty();
+        boolean result = value != null && !value.trim().isEmpty();
+        log.debug("判断文本是否有值完成: hasText={}", result);
+        return result;
     }
 }
