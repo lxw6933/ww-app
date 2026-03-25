@@ -49,6 +49,9 @@ import static com.ww.mall.promotion.constants.ErrorCodeConstants.GROUP_RECORD_NO
 @Component
 public class GroupStorageComponent {
 
+    private static final String FIELD_OPEN_GROUP_COUNT = "openGroupCount";
+    private static final String FIELD_JOIN_MEMBER_COUNT = "joinMemberCount";
+
     private static final String SCRIPT_GROUP_CREATE = "promotion_group_create";
     private static final String SCRIPT_GROUP_JOIN = "promotion_group_join";
     private static final String SCRIPT_GROUP_AFTER_SALE = "promotion_group_after_sale";
@@ -107,6 +110,7 @@ public class GroupStorageComponent {
                 groupRedisKeyBuilder.buildGroupUserIndexKey(groupId),
                 groupRedisKeyBuilder.buildOrderIndexKey(),
                 groupRedisKeyBuilder.buildActivityUserCountKey(),
+                groupRedisKeyBuilder.buildActivityStatsKey(activity.getId()),
                 groupRedisKeyBuilder.buildExpiryIndexKey()
         );
         List<String> args = Arrays.asList(
@@ -149,6 +153,7 @@ public class GroupStorageComponent {
                 groupRedisKeyBuilder.buildGroupUserIndexKey(command.getGroupId()),
                 groupRedisKeyBuilder.buildOrderIndexKey(),
                 groupRedisKeyBuilder.buildActivityUserCountKey(),
+                groupRedisKeyBuilder.buildActivityStatsKey(activity.getId()),
                 groupRedisKeyBuilder.buildExpiryIndexKey()
         );
         List<String> args = Arrays.asList(
@@ -466,6 +471,61 @@ public class GroupStorageComponent {
      * @param args Lua 参数
      * @return Lua 原始返回值
      */
+    /**
+     * 回填单个活动的统计数据。
+     * <p>
+     * 当前仅回填 Redis 中维护的累计开团数与累计参团人数。
+     * 若活动尚无统计记录，则按 0 回填，避免调用方额外处理空值。
+     *
+     * @param activity 活动实体
+     */
+    public void fillActivityStatistics(GroupActivity activity) {
+        if (activity == null || !hasText(activity.getId())) {
+            log.warn("回填活动统计跳过: activity为空或activityId为空");
+            return;
+        }
+        log.debug("回填单个活动统计: activityId={}", activity.getId());
+        Map<Object, Object> statsMap = stringRedisTemplate.opsForHash()
+                .entries(groupRedisKeyBuilder.buildActivityStatsKey(activity.getId()));
+        applyActivityStatistics(activity, statsMap);
+        log.debug("回填单个活动统计完成: activityId={}, openGroupCount={}, joinMemberCount={}",
+                activity.getId(), activity.getOpenGroupCount(), activity.getJoinMemberCount());
+    }
+
+    /**
+     * 批量回填活动统计数据。
+     * <p>
+     * 该方法用于活动列表场景统一补齐统计值，当前按活动逐个读取 Redis 统计 Hash，
+     * 在保持实现简单的前提下复用单活动回填逻辑。
+     *
+     * @param activities 活动列表
+     */
+    public void fillActivityStatistics(List<GroupActivity> activities) {
+        if (activities == null || activities.isEmpty()) {
+            log.debug("批量回填活动统计跳过: activities为空");
+            return;
+        }
+        log.debug("批量回填活动统计: activityCount={}", activities.size());
+        for (GroupActivity activity : activities) {
+            fillActivityStatistics(activity);
+        }
+        log.debug("批量回填活动统计完成: activityCount={}", activities.size());
+    }
+
+    /**
+     * 将 Redis 统计数据应用到活动实体。
+     *
+     * @param activity 活动实体
+     * @param statsMap Redis 统计Map
+     */
+    private void applyActivityStatistics(GroupActivity activity, Map<Object, Object> statsMap) {
+        if (activity == null) {
+            return;
+        }
+        activity.setOpenGroupCount(defaultLong(getLong(statsMap, FIELD_OPEN_GROUP_COUNT)));
+        activity.setJoinMemberCount(defaultLong(getLong(statsMap, FIELD_JOIN_MEMBER_COUNT)));
+    }
+
     private List<Object> executeMultiScript(String scriptName, List<String> keys, List<String> args) {
         log.debug("执行Lua脚本: scriptName={}, keyCount={}, argCount={}",
                 scriptName, keys == null ? 0 : keys.size(), args == null ? 0 : args.size());
@@ -898,6 +958,18 @@ public class GroupStorageComponent {
     private String nullSafe(String value) {
         String result = value == null ? "" : value;
         log.debug("空值保护完成: originalNull={}, resultLength={}", value == null, result.length());
+        return result;
+    }
+
+    /**
+     * 长整型空值兜底。
+     *
+     * @param value 原始值
+     * @return 非空长整型
+     */
+    private Long defaultLong(Long value) {
+        Long result = value == null ? 0L : value;
+        log.debug("长整型空值兜底完成: input={}, result={}", value, result);
         return result;
     }
 

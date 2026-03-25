@@ -13,7 +13,8 @@ KEYS:
 3. group:instance:user-index:{groupId}
 4. group:order:index
 5. group:activity:active:count
-6. group:expiry
+6. group:activity:stats:{activityId}
+7. group:expiry
 ARGV:
 1. groupId
 2. activityId
@@ -63,9 +64,11 @@ redis.call('HSET', KEYS[2], ARGV[4], ARGV[7])
 redis.call('HSET', KEYS[3], ARGV[3], ARGV[4])
 redis.call('HSET', KEYS[4], ARGV[4], ARGV[1])
 redis.call('HINCRBY', KEYS[5], ARGV[11], 1)
+redis.call('HINCRBY', KEYS[6], 'openGroupCount', 1)
+redis.call('HINCRBY', KEYS[6], 'joinMemberCount', 1)
 redis.call('EXPIRE', KEYS[1], tonumber(ARGV[12]))
 redis.call('EXPIRE', KEYS[2], tonumber(ARGV[12]))
 redis.call('EXPIRE', KEYS[3], tonumber(ARGV[12]))
-redis.call('ZADD', KEYS[6], tonumber(ARGV[9]), ARGV[1])
+redis.call('ZADD', KEYS[7], tonumber(ARGV[9]), ARGV[1])
 
 return {1, ARGV[1]}

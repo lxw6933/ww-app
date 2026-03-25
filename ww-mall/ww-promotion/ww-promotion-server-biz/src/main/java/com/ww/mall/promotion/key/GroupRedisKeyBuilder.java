@@ -39,6 +39,7 @@ public class GroupRedisKeyBuilder extends RedisKeyBuilder {
     private static final String ACTIVITY = "activity";
     private static final String ACTIVE = "active";
     private static final String COUNT = "count";
+    private static final String STATS = "stats";
     private static final String EXPIRY = "expiry";
     private static final String MEMBER_STORE = "member-store";
     private static final String USER_INDEX = "user-index";
@@ -174,6 +175,25 @@ public class GroupRedisKeyBuilder extends RedisKeyBuilder {
      */
     public String buildActivityUserCountFieldPrefix(String activityId) {
         return activityId + SPLIT_ITEM;
+    }
+
+    /**
+     * 活动统计 Hash Key。
+     * <p>
+     * 功能：
+     * 记录活动维度的累计开团数与累计参团人数。
+     * 当前仅维护两个累计指标：
+     * 1. {@code openGroupCount}：首次开团成功次数
+     * 2. {@code joinMemberCount}：累计参团人数，团长开团也计入一次
+     * <p>
+     * Key 示例：
+     * {@code promotion:group:activity:stats:ACT_1001}
+     *
+     * @param activityId 活动ID
+     * @return Redis Key
+     */
+    public String buildActivityStatsKey(String activityId) {
+        return join(GROUP, ACTIVITY, STATS, activityId);
     }
 
     /**

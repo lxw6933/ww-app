@@ -2,6 +2,7 @@ package com.ww.mall.promotion.service.group.impl;
 
 import com.ww.app.common.exception.ApiException;
 import com.ww.app.redis.annotation.RedisPublishMsg;
+import com.ww.mall.promotion.component.GroupStorageComponent;
 import com.ww.mall.promotion.constants.RedisChannelConstant;
 import com.ww.mall.promotion.controller.admin.group.req.GroupActivityBO;
 import com.ww.mall.promotion.entity.group.GroupActivity;
@@ -46,6 +47,9 @@ public class GroupActivityServiceImpl implements GroupActivityService {
     @Resource
     private MongoTemplate mongoTemplate;
 
+    @Resource
+    private GroupStorageComponent groupStorageComponent;
+
     @Override
     public GroupActivity createActivity(GroupActivityBO bo) {
         if (bo == null) {
@@ -59,6 +63,7 @@ public class GroupActivityServiceImpl implements GroupActivityService {
         activity.setUpdateTime(now);
         activity.setEnabled(GroupEnabledStatus.ENABLED.getCode());
         GroupActivity saved = mongoTemplate.save(activity);
+        groupStorageComponent.fillActivityStatistics(saved);
         log.info("创建拼团活动成功: activityId={}, spuId={}, skuRuleSize={}",
                 saved.getId(), saved.getSpuId(), saved.getSkuRules() != null ? saved.getSkuRules().size() : 0);
         return saved;
@@ -79,6 +84,7 @@ public class GroupActivityServiceImpl implements GroupActivityService {
         GroupActivity updated = buildActivity(bo, activity);
         updated.setUpdateTime(now);
         GroupActivity saved = mongoTemplate.save(updated);
+        groupStorageComponent.fillActivityStatistics(saved);
         log.info("更新拼团活动成功: activityId={}, spuId={}, skuRuleSize={}",
                 saved.getId(), saved.getSpuId(), saved.getSkuRules() != null ? saved.getSkuRules().size() : 0);
         return saved;
@@ -93,6 +99,7 @@ public class GroupActivityServiceImpl implements GroupActivityService {
         if (activity == null) {
             throw new ApiException(GROUP_ACTIVITY_NOT_EXISTS);
         }
+        groupStorageComponent.fillActivityStatistics(activity);
         return activity;
     }
 
@@ -100,14 +107,18 @@ public class GroupActivityServiceImpl implements GroupActivityService {
     public List<GroupActivity> listActiveActivities() {
         Date now = new Date();
         Query query = GroupActivity.buildActiveQuery(now);
-        return mongoTemplate.find(query, GroupActivity.class);
+        List<GroupActivity> activities = mongoTemplate.find(query, GroupActivity.class);
+        groupStorageComponent.fillActivityStatistics(activities);
+        return activities;
     }
 
     @Override
     public List<GroupActivity> getActivitiesBySpuId(Long spuId) {
         Date now = new Date();
         Query query = GroupActivity.buildSpuIdAndActiveQuery(spuId, now);
-        return mongoTemplate.find(query, GroupActivity.class);
+        List<GroupActivity> activities = mongoTemplate.find(query, GroupActivity.class);
+        groupStorageComponent.fillActivityStatistics(activities);
+        return activities;
     }
 
     @Override

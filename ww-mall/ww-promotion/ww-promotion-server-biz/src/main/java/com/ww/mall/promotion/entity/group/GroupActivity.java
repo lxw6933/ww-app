@@ -116,6 +116,24 @@ public class GroupActivity extends BaseDoc {
     private Integer sortWeight;
 
     /**
+     * 活动累计开团数。
+     * <p>
+     * 该字段不落库，运行时从 Redis 统计数据中回填。
+     * 仅在“首次开团成功”时累计加一，不包含幂等回放。
+     */
+    @Transient
+    private Long openGroupCount;
+
+    /**
+     * 活动累计参团人数。
+     * <p>
+     * 该字段不落库，运行时从 Redis 统计数据中回填。
+     * 当前口径按累计参团人次统计，团长开团也计入一次。
+     */
+    @Transient
+    private Long joinMemberCount;
+
+    /**
      * 运行时动态计算活动状态。
      * <p>
      * 该值不落库，只用于接口返回和内存内业务判断。

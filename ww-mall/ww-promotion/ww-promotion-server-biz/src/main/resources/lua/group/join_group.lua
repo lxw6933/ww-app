@@ -15,7 +15,8 @@ KEYS:
 3. group:instance:user-index:{groupId}
 4. group:order:index
 5. group:activity:active:count
-6. group:expiry
+6. group:activity:stats:{activityId}
+7. group:expiry
 ARGV:
 1. groupId
 2. activityId
@@ -76,6 +77,7 @@ redis.call('HSET', KEYS[2], ARGV[4], ARGV[6])
 redis.call('HSET', KEYS[3], ARGV[3], ARGV[4])
 redis.call('HSET', KEYS[4], ARGV[4], ARGV[1])
 redis.call('HINCRBY', KEYS[5], ARGV[7], 1)
+redis.call('HINCRBY', KEYS[6], 'joinMemberCount', 1)
 
 local eventType = 'GROUP_JOINED'
 if tonumber(remainingSlots) == 0 then
@@ -96,7 +98,7 @@ if tonumber(remainingSlots) == 0 then
             redis.call('HSET', KEYS[2], orderId, cjson.encode(member))
         end
     end
-    redis.call('ZREM', KEYS[6], ARGV[1])
+    redis.call('ZREM', KEYS[7], ARGV[1])
     eventType = 'GROUP_COMPLETED'
 end
 
