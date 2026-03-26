@@ -48,6 +48,14 @@ public class GroupRabbitMqConfig {
     }
 
     /**
+     * 拼团退款补偿申请队列。
+     */
+    @Bean
+    public Queue groupRefundRequestQueue() {
+        return QueueBuilder.durable(GroupMqConstant.GROUP_REFUND_REQUEST_QUEUE).build();
+    }
+
+    /**
      * 绑定支付成功驱动拼团队列。
      */
     @Bean
@@ -75,6 +83,16 @@ public class GroupRabbitMqConfig {
         return BindingBuilder.bind(groupStateChangedQueue())
                 .to(groupExchange())
                 .with(GroupMqConstant.GROUP_STATE_CHANGED_KEY);
+    }
+
+    /**
+     * 绑定拼团退款补偿申请队列。
+     */
+    @Bean
+    public Binding groupRefundRequestBinding() {
+        return BindingBuilder.bind(groupRefundRequestQueue())
+                .to(groupExchange())
+                .with(GroupMqConstant.GROUP_REFUND_REQUEST_KEY);
     }
 
 }

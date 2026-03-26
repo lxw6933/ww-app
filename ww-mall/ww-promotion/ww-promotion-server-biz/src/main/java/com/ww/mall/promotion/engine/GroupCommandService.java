@@ -8,11 +8,14 @@ import com.ww.mall.promotion.controller.app.group.res.GroupInstanceVO;
 import com.ww.mall.promotion.engine.model.GroupCacheSnapshot;
 import com.ww.mall.promotion.engine.model.GroupCommandResult;
 import com.ww.mall.promotion.entity.group.GroupActivity;
+import com.ww.mall.promotion.entity.group.GroupMember;
+import com.ww.mall.promotion.enums.GroupMemberBizStatus;
 import com.ww.mall.promotion.enums.GroupEnabledStatus;
 import com.ww.mall.promotion.enums.GroupTradeType;
 import com.ww.mall.promotion.mq.GroupAfterSaleSuccessMessage;
 import com.ww.mall.promotion.mq.GroupMqConstant;
 import com.ww.mall.promotion.mq.GroupOrderPaidMessage;
+import com.ww.mall.promotion.mq.GroupRefundRequestMessage;
 import com.ww.mall.promotion.mq.GroupStateChangedMessage;
 import com.ww.mall.promotion.service.group.command.CreateGroupCommand;
 import com.ww.mall.promotion.service.group.command.JoinGroupCommand;
@@ -21,7 +24,10 @@ import org.bson.types.ObjectId;
 import org.springframework.stereotype.Service;
 
 import javax.annotation.Resource;
+import java.util.Arrays;
 import java.util.Date;
+import java.util.HashSet;
+import java.util.Set;
 
 import static com.ww.mall.promotion.constants.ErrorCodeConstants.GROUP_ACTIVITY_EXPIRE_HOURS_INVALID;
 import static com.ww.mall.promotion.constants.ErrorCodeConstants.GROUP_ACTIVITY_REQUIRED_SIZE_INVALID;
@@ -29,6 +35,7 @@ import static com.ww.mall.promotion.constants.ErrorCodeConstants.GROUP_CREATE_FA
 import static com.ww.mall.promotion.constants.ErrorCodeConstants.GROUP_RECORD_ERROR;
 import static com.ww.mall.promotion.constants.ErrorCodeConstants.GROUP_RECORD_EXISTS;
 import static com.ww.mall.promotion.constants.ErrorCodeConstants.GROUP_RECORD_FAILED_DISABLE;
+import static com.ww.mall.promotion.constants.ErrorCodeConstants.GROUP_RECORD_FAILED_CLOSED;
 import static com.ww.mall.promotion.constants.ErrorCodeConstants.GROUP_RECORD_FAILED_TIME_END;
 import static com.ww.mall.promotion.constants.ErrorCodeConstants.GROUP_RECORD_FAILED_TIME_NOT_START;
 import static com.ww.mall.promotion.constants.ErrorCodeConstants.GROUP_RECORD_NOT_EXISTS;
@@ -50,6 +57,23 @@ import static com.ww.mall.promotion.constants.ErrorCodeConstants.GROUP_RECORD_US
 @Slf4j
 @Service
 public class GroupCommandService {
+
+    /**
+     * 支付成功后，拼团域可直接判定为“应退款”的业务失败码集合。
+     * <p>
+     * 这些错误都表示“订单已支付，但未真正占到拼团席位”，
+     * 下游应基于订单号发起退款补偿。
+     */
+    private static final Set<Integer> PAY_SUCCESS_AUTO_REFUND_ERROR_CODES = new HashSet<>(Arrays.asList(
+            GROUP_RECORD_NOT_EXISTS.getCode(),
+            GROUP_RECORD_EXISTS.getCode(),
+            GROUP_RECORD_USER_FULL.getCode(),
+            GROUP_RECORD_FAILED_TIME_NOT_START.getCode(),
+            GROUP_RECORD_FAILED_TIME_END.getCode(),
+            GROUP_RECORD_FAILED_DISABLE.getCode(),
+            GROUP_RECORD_FAILED_CLOSED.getCode(),
+            GROUP_RECORD_SKU_NOT_SUPPORTED.getCode()
+    ));
 
     @Resource
     private LoadingCache<String, GroupActivity> groupActivityCache;
@@ -119,22 +143,32 @@ public class GroupCommandService {
      */
     public GroupInstanceVO handleOrderPaid(GroupOrderPaidMessage message) {
         validatePaidMessage(message);
-        if (message.getTradeType() == GroupTradeType.START) {
-            CreateGroupCommand command = new CreateGroupCommand();
-            command.setActivityId(message.getActivityId());
+        try {
+            if (message.getTradeType() == GroupTradeType.START) {
+                CreateGroupCommand command = new CreateGroupCommand();
+                command.setActivityId(message.getActivityId());
+                command.setUserId(message.getUserId());
+                command.setOrderId(message.getOrderId());
+                command.setSkuId(message.getSkuId());
+                command.setPayAmount(message.getPayAmount());
+                return createGroup(command);
+            }
+            JoinGroupCommand command = new JoinGroupCommand();
+            command.setGroupId(message.getGroupId());
             command.setUserId(message.getUserId());
             command.setOrderId(message.getOrderId());
             command.setSkuId(message.getSkuId());
             command.setPayAmount(message.getPayAmount());
-            return createGroup(command);
+            return joinGroup(command);
+        } catch (ApiException e) {
+            if (!shouldRequestRefundForPaidFailure(e)) {
+                throw e;
+            }
+            requestRefundForPaidFailure(message, e.getMessage());
+            log.warn("支付成功后拼团处理被业务规则拒绝，已发送退款补偿申请: orderId={}, tradeType={}, reason={}",
+                    message.getOrderId(), message.getTradeType(), e.getMessage());
+            return null;
         }
-        JoinGroupCommand command = new JoinGroupCommand();
-        command.setGroupId(message.getGroupId());
-        command.setUserId(message.getUserId());
-        command.setOrderId(message.getOrderId());
-        command.setSkuId(message.getSkuId());
-        command.setPayAmount(message.getPayAmount());
-        return joinGroup(command);
     }
 
     /**
@@ -173,6 +207,10 @@ public class GroupCommandService {
         }
         if (code == 1) {
             afterStateChanged(groupId, nowMillis);
+            if ("OPEN".equals(snapshot.getInstance().getStatus())) {
+                requestRefundForPendingMembers(groupId, "GROUP_FAILED_REFUND", failReason,
+                        new Date(nowMillis));
+            }
         }
     }
 
@@ -191,6 +229,8 @@ public class GroupCommandService {
         }
         if (code == 1) {
             afterStateChanged(groupId, nowMillis);
+            requestRefundForPendingMembers(groupId, "GROUP_FAILED_REFUND", reason,
+                    new Date(nowMillis));
         }
     }
 
@@ -277,6 +317,9 @@ public class GroupCommandService {
         if ("-4".equals(result.getFailReason())) {
             if ("SUCCESS".equals(result.getGroupStatus())) {
                 throw new ApiException(GROUP_RECORD_USER_FULL);
+            }
+            if ("FAILED".equals(result.getGroupStatus())) {
+                throw new ApiException(GROUP_RECORD_FAILED_CLOSED);
             }
             throw new ApiException(GROUP_RECORD_ERROR);
         }
@@ -435,5 +478,119 @@ public class GroupCommandService {
      */
     private boolean hasText(String value) {
         return value != null && !value.trim().isEmpty();
+    }
+
+    /**
+     * 判断支付成功后的业务失败是否应触发退款补偿。
+     * <p>
+     * 这里只接收“已支付但未占位成功”的确定性失败；
+     * 对于系统异常、状态未知、消息重复等场景，不在本方法内直接退款，
+     * 避免误退或重复退。
+     *
+     * @param exception 业务异常
+     * @return true-应触发退款补偿
+     */
+    private boolean shouldRequestRefundForPaidFailure(ApiException exception) {
+        return exception != null
+                && exception.getCode() != null
+                && PAY_SUCCESS_AUTO_REFUND_ERROR_CODES.contains(exception.getCode());
+    }
+
+    /**
+     * 针对“支付成功但未成功入团”的场景发送退款补偿申请。
+     *
+     * @param message 支付成功消息
+     * @param reason 失败原因
+     */
+    private void requestRefundForPaidFailure(GroupOrderPaidMessage message, String reason) {
+        GroupRefundRequestMessage refundMessage = new GroupRefundRequestMessage();
+        refundMessage.setGroupId(message.getGroupId());
+        refundMessage.setActivityId(message.getActivityId());
+        refundMessage.setUserId(message.getUserId());
+        refundMessage.setOrderId(message.getOrderId());
+        refundMessage.setRefundAmount(message.getPayAmount());
+        refundMessage.setRefundScene(message.getTradeType() == GroupTradeType.START
+                ? "GROUP_CREATE_REJECTED" : "GROUP_JOIN_REJECTED");
+        refundMessage.setReason(reason);
+        refundMessage.setEventTime(new Date());
+        publishRefundRequest(refundMessage);
+    }
+
+    /**
+     * 为当前团中处于“待退款”状态的成员批量发送退款补偿申请。
+     * <p>
+     * 该方法只读取已经落入 Redis 终态快照中的成员状态，
+     * 仅对 {@link GroupMemberBizStatus#FAILED_REFUND_PENDING} 成员发消息，
+     * 从而保证普通售后释放名额等非退款场景不会被误触发。
+     *
+     * @param groupId 团ID
+     * @param refundScene 退款场景
+     * @param reason 失败原因
+     * @param eventTime 事件时间
+     */
+    private void requestRefundForPendingMembers(String groupId, String refundScene, String reason, Date eventTime) {
+        if (!hasText(groupId)) {
+            return;
+        }
+        GroupCacheSnapshot snapshot = groupStorageComponent.requireGroupSnapshot(groupId);
+        if (snapshot == null || snapshot.getInstance() == null || snapshot.getMembers() == null) {
+            return;
+        }
+        snapshot.getMembers().forEach(member ->
+                requestRefundForPendingMember(snapshot, member, refundScene, reason, eventTime));
+    }
+
+    /**
+     * 为单个待退款成员发送退款补偿申请。
+     * <p>
+     * 只有订单号和退款金额完整时才发送消息；
+     * 若关键数据缺失，则保留成员的待退款状态并记录错误日志，留待人工或后续任务补偿。
+     *
+     * @param snapshot 团快照
+     * @param member 成员快照
+     * @param refundScene 退款场景
+     * @param reason 退款原因
+     * @param eventTime 事件时间
+     */
+    private void requestRefundForPendingMember(GroupCacheSnapshot snapshot, GroupMember member,
+                                               String refundScene, String reason, Date eventTime) {
+        if (member == null
+                || !GroupMemberBizStatus.FAILED_REFUND_PENDING.name().equals(member.getMemberStatus())) {
+            return;
+        }
+        if (!hasText(member.getOrderId()) || member.getPayAmount() == null) {
+            log.error("拼团退款补偿消息未发送，成员关键数据缺失: groupId={}, orderId={}, memberStatus={}",
+                    snapshot.getInstance().getId(), member.getOrderId(), member.getMemberStatus());
+            return;
+        }
+        GroupRefundRequestMessage refundMessage = new GroupRefundRequestMessage();
+        refundMessage.setGroupId(snapshot.getInstance().getId());
+        refundMessage.setActivityId(snapshot.getInstance().getActivityId());
+        refundMessage.setUserId(member.getUserId());
+        refundMessage.setOrderId(member.getOrderId());
+        refundMessage.setRefundAmount(member.getPayAmount());
+        refundMessage.setRefundScene(refundScene);
+        refundMessage.setReason(hasText(snapshot.getInstance().getFailReason())
+                ? snapshot.getInstance().getFailReason() : reason);
+        refundMessage.setEventTime(eventTime != null ? eventTime : new Date());
+        try {
+            publishRefundRequest(refundMessage);
+        } catch (RuntimeException e) {
+            log.error("拼团退款补偿消息发送失败: groupId={}, orderId={}, refundScene={}",
+                    refundMessage.getGroupId(), refundMessage.getOrderId(), refundScene, e);
+        }
+    }
+
+    /**
+     * 发送退款补偿申请消息。
+     *
+     * @param message 退款补偿消息
+     */
+    private void publishRefundRequest(GroupRefundRequestMessage message) {
+        rabbitMqPublisher.sendMsg(
+                GroupMqConstant.GROUP_EXCHANGE,
+                GroupMqConstant.GROUP_REFUND_REQUEST_KEY,
+                message
+        );
     }
 }

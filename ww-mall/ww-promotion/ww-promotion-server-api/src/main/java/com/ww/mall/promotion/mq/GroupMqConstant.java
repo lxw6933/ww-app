@@ -42,4 +42,17 @@ public class GroupMqConstant {
      */
     public static final String GROUP_STATE_CHANGED_KEY = "group.state.changed";
 
+    /**
+     * 拼团退款补偿申请队列。
+     * <p>
+     * 该队列面向订单域/支付域消费，拼团域只负责投递退款申请事件，
+     * 不直接在本域内执行支付退款。
+     */
+    public static final String GROUP_REFUND_REQUEST_QUEUE = "group.refund.request.queue";
+
+    /**
+     * 拼团退款补偿申请路由键。
+     */
+    public static final String GROUP_REFUND_REQUEST_KEY = "group.refund.requested";
+
 }
