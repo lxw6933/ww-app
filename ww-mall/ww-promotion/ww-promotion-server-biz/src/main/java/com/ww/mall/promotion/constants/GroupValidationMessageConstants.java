@@ -24,6 +24,11 @@ public final class GroupValidationMessageConstants {
     public static final String SPU_ID_REQUIRED = "商品SPU ID不能为空";
 
     /**
+     * 活动 SPU 配置不能为空。
+     */
+    public static final String SPU_CONFIGS_REQUIRED = "活动SPU配置不能为空";
+
+    /**
      * 商品SKU ID不能为空。
      */
     public static final String SKU_ID_REQUIRED = "商品SKU ID不能为空";

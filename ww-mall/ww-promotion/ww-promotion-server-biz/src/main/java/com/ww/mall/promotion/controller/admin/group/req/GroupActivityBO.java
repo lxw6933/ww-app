@@ -5,6 +5,7 @@ import lombok.Data;
 
 import javax.validation.Valid;
 import javax.validation.constraints.NotNull;
+import javax.validation.constraints.NotEmpty;
 import javax.validation.constraints.Positive;
 import java.math.BigDecimal;
 import java.util.Date;
@@ -18,7 +19,9 @@ import static com.ww.mall.promotion.constants.GroupValidationMessageConstants.GR
 import static com.ww.mall.promotion.constants.GroupValidationMessageConstants.GROUP_PRICE_REQUIRED;
 import static com.ww.mall.promotion.constants.GroupValidationMessageConstants.REQUIRED_SIZE_POSITIVE;
 import static com.ww.mall.promotion.constants.GroupValidationMessageConstants.REQUIRED_SIZE_REQUIRED;
+import static com.ww.mall.promotion.constants.GroupValidationMessageConstants.SKU_RULES_REQUIRED;
 import static com.ww.mall.promotion.constants.GroupValidationMessageConstants.SPU_ID_REQUIRED;
+import static com.ww.mall.promotion.constants.GroupValidationMessageConstants.SPU_CONFIGS_REQUIRED;
 import static com.ww.mall.promotion.constants.GroupValidationMessageConstants.START_TIME_REQUIRED;
 import static io.swagger.v3.oas.annotations.media.Schema.RequiredMode.REQUIRED;
 
@@ -41,22 +44,10 @@ public class GroupActivityBO {
     @Schema(description = "活动描述", example = "双十一特惠拼团，2人成团")
     private String description;
 
-    @Schema(description = "商品SPU ID", requiredMode = REQUIRED, example = "1001")
-    @NotNull(message = SPU_ID_REQUIRED)
-    private Long spuId;
-
-    @Schema(description = "兼容字段：默认SKU ID，新设计以 skuRules 为准", example = "2001")
-    private Long skuId;
-
-    @Schema(description = "兼容字段：默认拼团价，新设计以 skuRules 为准", example = "99.00")
-    private BigDecimal groupPrice;
-
-    @Schema(description = "兼容字段：默认原价，新设计以 skuRules 为准", example = "199.00")
-    private BigDecimal originalPrice;
-
-    @Schema(description = "SKU规则列表，同一团允许购买不同SKU，按 SPU 维度共享拼团", requiredMode = REQUIRED)
+    @Schema(description = "活动下的 SPU 配置列表，一个活动可配置多个 SPU", requiredMode = REQUIRED)
     @Valid
-    private List<GroupSkuRuleBO> skuRules;
+    @NotEmpty(message = SPU_CONFIGS_REQUIRED)
+    private List<GroupSpuConfigBO> spuConfigs;
 
     @Schema(description = "拼团人数要求", requiredMode = REQUIRED, example = "2")
     @NotNull(message = REQUIRED_SIZE_REQUIRED)
@@ -79,11 +70,22 @@ public class GroupActivityBO {
     @Schema(description = "每人限购数量", example = "1")
     private Integer limitPerUser;
 
-    @Schema(description = "活动图片URL", example = "https://example.com/image.jpg")
-    private String imageUrl;
+    /**
+     * SPU 维度配置。
+     */
+    @Data
+    @Schema(description = "拼团活动SPU配置")
+    public static class GroupSpuConfigBO {
 
-    @Schema(description = "排序权重", example = "100")
-    private Integer sortWeight;
+        @Schema(description = "SPU ID", requiredMode = REQUIRED, example = "1001")
+        @NotNull(message = SPU_ID_REQUIRED)
+        private Long spuId;
+
+        @Schema(description = "当前 SPU 下的 SKU 规则列表", requiredMode = REQUIRED)
+        @Valid
+        @NotEmpty(message = SKU_RULES_REQUIRED)
+        private List<GroupSkuRuleBO> skuRules;
+    }
 
     /**
      * SKU 维度规则。
@@ -101,11 +103,8 @@ public class GroupActivityBO {
         @Positive(message = GROUP_PRICE_POSITIVE)
         private BigDecimal groupPrice;
 
-        @Schema(description = "SKU原价", example = "199.00")
-        private BigDecimal originalPrice;
-
-        @Schema(description = "是否启用，1-启用，0-禁用", example = "1")
-        private Integer enabled;
+        @Schema(description = "是否启用，true-启用，false-禁用", example = "true")
+        private Boolean enabled;
     }
 
 }

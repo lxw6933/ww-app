@@ -5,7 +5,6 @@ import com.ww.mall.promotion.component.GroupStorageComponent;
 import com.ww.mall.promotion.constants.RedisChannelConstant;
 import com.ww.mall.promotion.controller.admin.group.req.GroupActivityBO;
 import com.ww.mall.promotion.entity.group.GroupActivity;
-import com.ww.mall.promotion.enums.GroupEnabledStatus;
 import org.bson.Document;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -23,23 +22,17 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.Date;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertNull;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.Mockito.doAnswer;
-import static org.mockito.Mockito.never;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.*;
 
 /**
  * 拼团活动服务实现测试。
  *
  * @author ww
  * @create 2026-03-26
- * @description: 校验活动动态查询、展示规则选择以及活动统计归档逻辑
+ * @description: 校验活动动态查询、多SPU配置组装以及活动统计归档逻辑
  */
 @ExtendWith(MockitoExtension.class)
 class GroupActivityServiceImplTest {
@@ -69,55 +62,61 @@ class GroupActivityServiceImplTest {
         verify(mongoTemplate).find(queryCaptor.capture(), eq(GroupActivity.class));
         Document queryObject = queryCaptor.getValue().getQueryObject();
         assertFalse(queryObject.containsKey("status"));
-        assertEquals(1, queryObject.get("enabled"));
+        assertEquals(true, queryObject.get("enabled"));
         assertTrue(queryObject.containsKey("startTime"));
         assertTrue(queryObject.containsKey("endTime"));
     }
 
     /**
-     * 创建活动时，应仅从启用中的 SKU 规则里挑选默认展示规则。
+     * 创建活动时，应保留多个 SPU 配置及其 SKU 规则。
      */
     @Test
-    void shouldUseEnabledSkuRuleAsDisplayRule() {
+    void shouldCreateActivityWithMultipleSpuConfigs() {
         when(mongoTemplate.save(any(GroupActivity.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
         GroupActivityBO bo = buildBaseActivityBO();
-        bo.setSkuRules(Arrays.asList(
-                buildSkuRule(101L, "9.90", "19.90", GroupEnabledStatus.DISABLED.getCode()),
-                buildSkuRule(102L, "29.90", "39.90", GroupEnabledStatus.ENABLED.getCode()),
-                buildSkuRule(103L, "15.90", "25.90", GroupEnabledStatus.ENABLED.getCode())
+        bo.setSpuConfigs(Arrays.asList(
+                buildSpuConfig(1001L,
+                        buildSkuRule(101L, "29.90", true),
+                        buildSkuRule(102L, "19.90", false)),
+                buildSpuConfig(1002L,
+                        buildSkuRule(201L, "39.90", true))
         ));
 
         GroupActivity activity = groupActivityService.createActivity(bo);
 
-        assertEquals(103L, activity.getSkuId());
-        assertEquals(new BigDecimal("15.90"), activity.getGroupPrice());
-        assertEquals(new BigDecimal("25.90"), activity.getOriginalPrice());
+        assertEquals(2, activity.getSpuConfigs().size());
+        assertEquals(1001L, activity.getSpuConfigs().get(0).getSpuId());
+        assertEquals(2, activity.getSpuConfigs().get(0).getSkuRules().size());
+        assertEquals(201L, activity.getSpuConfigs().get(1).getSkuRules().get(0).getSkuId());
         assertEquals(0L, activity.getOpenGroupCount());
         assertEquals(0L, activity.getJoinMemberCount());
         assertFalse(activity.getStatsSettled());
-        assertNull(activity.getStatsSettledTime());
         verify(groupStorageComponent).fillActivityStatistics(activity);
     }
 
     /**
-     * 当所有 SKU 规则均被禁用时，应清空兼容展示字段，避免保留旧值误导调用方。
+     * 按 SPU 查询活动时，应命中嵌套 SPU 字段并仅返回匹配 SPU 的配置切片。
      */
     @Test
-    void shouldClearDisplayFieldsWhenAllSkuRulesDisabled() {
-        when(mongoTemplate.save(any(GroupActivity.class))).thenAnswer(invocation -> invocation.getArgument(0));
-
-        GroupActivityBO bo = buildBaseActivityBO();
-        bo.setSkuRules(Arrays.asList(
-                buildSkuRule(101L, "19.90", "29.90", GroupEnabledStatus.DISABLED.getCode()),
-                buildSkuRule(102L, "15.90", "25.90", GroupEnabledStatus.DISABLED.getCode())
+    void shouldQueryActivitiesByNestedSpuIdAndTrimUnmatchedSpuConfigs() {
+        GroupActivity activity = new GroupActivity();
+        activity.setId("activity-1");
+        activity.setSpuConfigs(Arrays.asList(
+                buildActivitySpuConfig(1001L, buildActivitySkuRule(101L, "29.90", true)),
+                buildActivitySpuConfig(1002L, buildActivitySkuRule(201L, "39.90", true))
         ));
+        when(mongoTemplate.find(any(Query.class), eq(GroupActivity.class))).thenReturn(Collections.singletonList(activity));
 
-        GroupActivity activity = groupActivityService.createActivity(bo);
+        java.util.List<GroupActivity> activities = groupActivityService.getActivitiesBySpuId(1002L);
 
-        assertNull(activity.getSkuId());
-        assertNull(activity.getGroupPrice());
-        assertNull(activity.getOriginalPrice());
+        ArgumentCaptor<Query> queryCaptor = ArgumentCaptor.forClass(Query.class);
+        verify(mongoTemplate).find(queryCaptor.capture(), eq(GroupActivity.class));
+        Document queryObject = queryCaptor.getValue().getQueryObject();
+        assertEquals(1002L, queryObject.get("spuConfigs.spuId"));
+        assertEquals(1, activities.size());
+        assertEquals(1, activities.get(0).getSpuConfigs().size());
+        assertEquals(1002L, activities.get(0).getSpuConfigs().get(0).getSpuId());
     }
 
     /**
@@ -178,14 +177,11 @@ class GroupActivityServiceImplTest {
         GroupActivityBO bo = new GroupActivityBO();
         bo.setName("测试拼团活动");
         bo.setDescription("用于单元测试");
-        bo.setSpuId(1001L);
         bo.setRequiredSize(2);
         bo.setExpireHours(24);
         bo.setStartTime(new Date(nowMillis + 60_000L));
         bo.setEndTime(new Date(nowMillis + 3_600_000L));
         bo.setLimitPerUser(1);
-        bo.setImageUrl("https://test.example.com/group.png");
-        bo.setSortWeight(100);
         return bo;
     }
 
@@ -194,16 +190,58 @@ class GroupActivityServiceImplTest {
      *
      * @param skuId SKU ID
      * @param groupPrice 拼团价
-     * @param originalPrice 原价
      * @param enabled 启用状态
      * @return SKU 规则请求
      */
-    private GroupActivityBO.GroupSkuRuleBO buildSkuRule(Long skuId, String groupPrice, String originalPrice, Integer enabled) {
+    private GroupActivityBO.GroupSkuRuleBO buildSkuRule(Long skuId, String groupPrice, Boolean enabled) {
         GroupActivityBO.GroupSkuRuleBO skuRuleBO = new GroupActivityBO.GroupSkuRuleBO();
         skuRuleBO.setSkuId(skuId);
         skuRuleBO.setGroupPrice(new BigDecimal(groupPrice));
-        skuRuleBO.setOriginalPrice(new BigDecimal(originalPrice));
         skuRuleBO.setEnabled(enabled);
         return skuRuleBO;
+    }
+
+    /**
+     * 构建 SPU 配置请求。
+     *
+     * @param spuId SPU ID
+     * @param skuRules SKU 规则
+     * @return SPU 配置请求
+     */
+    private GroupActivityBO.GroupSpuConfigBO buildSpuConfig(Long spuId, GroupActivityBO.GroupSkuRuleBO... skuRules) {
+        GroupActivityBO.GroupSpuConfigBO spuConfigBO = new GroupActivityBO.GroupSpuConfigBO();
+        spuConfigBO.setSpuId(spuId);
+        spuConfigBO.setSkuRules(Arrays.asList(skuRules));
+        return spuConfigBO;
+    }
+
+    /**
+     * 构建活动 SPU 配置。
+     *
+     * @param spuId SPU ID
+     * @param skuRules SKU 规则
+     * @return SPU 配置
+     */
+    private GroupActivity.GroupSpuConfig buildActivitySpuConfig(Long spuId, GroupActivity.GroupSkuRule... skuRules) {
+        GroupActivity.GroupSpuConfig spuConfig = new GroupActivity.GroupSpuConfig();
+        spuConfig.setSpuId(spuId);
+        spuConfig.setSkuRules(Arrays.asList(skuRules));
+        return spuConfig;
+    }
+
+    /**
+     * 构建活动 SKU 规则。
+     *
+     * @param skuId SKU ID
+     * @param groupPrice 拼团价
+     * @param enabled 是否启用
+     * @return SKU 规则
+     */
+    private GroupActivity.GroupSkuRule buildActivitySkuRule(Long skuId, String groupPrice, Boolean enabled) {
+        GroupActivity.GroupSkuRule skuRule = new GroupActivity.GroupSkuRule();
+        skuRule.setSkuId(skuId);
+        skuRule.setGroupPrice(new BigDecimal(groupPrice));
+        skuRule.setEnabled(enabled);
+        return skuRule;
     }
 }

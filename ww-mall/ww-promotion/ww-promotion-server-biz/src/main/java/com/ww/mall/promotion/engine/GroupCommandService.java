@@ -10,13 +10,8 @@ import com.ww.mall.promotion.engine.model.GroupCommandResult;
 import com.ww.mall.promotion.entity.group.GroupActivity;
 import com.ww.mall.promotion.entity.group.GroupMember;
 import com.ww.mall.promotion.enums.GroupMemberBizStatus;
-import com.ww.mall.promotion.enums.GroupEnabledStatus;
 import com.ww.mall.promotion.enums.GroupTradeType;
-import com.ww.mall.promotion.mq.GroupAfterSaleSuccessMessage;
-import com.ww.mall.promotion.mq.GroupMqConstant;
-import com.ww.mall.promotion.mq.GroupOrderPaidMessage;
-import com.ww.mall.promotion.mq.GroupRefundRequestMessage;
-import com.ww.mall.promotion.mq.GroupStateChangedMessage;
+import com.ww.mall.promotion.mq.*;
 import com.ww.mall.promotion.service.group.command.CreateGroupCommand;
 import com.ww.mall.promotion.service.group.command.JoinGroupCommand;
 import lombok.extern.slf4j.Slf4j;
@@ -29,20 +24,7 @@ import java.util.Date;
 import java.util.HashSet;
 import java.util.Set;
 
-import static com.ww.mall.promotion.constants.ErrorCodeConstants.GROUP_ACTIVITY_EXPIRE_HOURS_INVALID;
-import static com.ww.mall.promotion.constants.ErrorCodeConstants.GROUP_ACTIVITY_REQUIRED_SIZE_INVALID;
-import static com.ww.mall.promotion.constants.ErrorCodeConstants.GROUP_CREATE_FAILED;
-import static com.ww.mall.promotion.constants.ErrorCodeConstants.GROUP_RECORD_ERROR;
-import static com.ww.mall.promotion.constants.ErrorCodeConstants.GROUP_RECORD_EXISTS;
-import static com.ww.mall.promotion.constants.ErrorCodeConstants.GROUP_RECORD_FAILED_DISABLE;
-import static com.ww.mall.promotion.constants.ErrorCodeConstants.GROUP_RECORD_FAILED_CLOSED;
-import static com.ww.mall.promotion.constants.ErrorCodeConstants.GROUP_RECORD_FAILED_TIME_END;
-import static com.ww.mall.promotion.constants.ErrorCodeConstants.GROUP_RECORD_FAILED_TIME_NOT_START;
-import static com.ww.mall.promotion.constants.ErrorCodeConstants.GROUP_RECORD_NOT_EXISTS;
-import static com.ww.mall.promotion.constants.ErrorCodeConstants.GROUP_RECORD_ORDER_CODE_NOT_EXISTS;
-import static com.ww.mall.promotion.constants.ErrorCodeConstants.GROUP_RECORD_ORDER_DUPLICATED;
-import static com.ww.mall.promotion.constants.ErrorCodeConstants.GROUP_RECORD_SKU_NOT_SUPPORTED;
-import static com.ww.mall.promotion.constants.ErrorCodeConstants.GROUP_RECORD_USER_FULL;
+import static com.ww.mall.promotion.constants.ErrorCodeConstants.*;
 
 /**
  * 拼团命令服务。
@@ -100,10 +82,16 @@ public class GroupCommandService {
             return replayedGroup;
         }
         GroupActivity activity = loadAndValidateActivity(command.getActivityId());
-        resolveSkuRule(activity, command.getSkuId());
+        ResolvedSkuRule resolvedSkuRule = resolveSkuRule(activity, command.getSkuId());
         String groupId = new ObjectId().toString();
         long nowMillis = System.currentTimeMillis();
-        GroupCommandResult result = groupStorageComponent.createGroup(groupId, activity, command, nowMillis);
+        GroupCommandResult result = groupStorageComponent.createGroup(
+                groupId,
+                activity,
+                command,
+                nowMillis,
+                resolvedSkuRule.getSpuId()
+        );
         if (!result.isSuccess()) {
             throwCreateException(result);
         }
@@ -252,7 +240,7 @@ public class GroupCommandService {
             throw new ApiException(GROUP_ACTIVITY_EXPIRE_HOURS_INVALID);
         }
         Date now = new Date();
-        if (GroupEnabledStatus.DISABLED.getCode() == activity.getEnabled()) {
+        if (Boolean.FALSE.equals(activity.getEnabled())) {
             throw new ApiException(GROUP_RECORD_FAILED_DISABLE);
         }
         if (activity.getStartTime() != null && activity.getStartTime().after(now)) {
@@ -271,26 +259,45 @@ public class GroupCommandService {
      * @param skuId SKU ID
      * @return SKU 规则
      */
-    private GroupActivity.GroupSkuRule resolveSkuRule(GroupActivity activity, Long skuId) {
+    private ResolvedSkuRule resolveSkuRule(GroupActivity activity, Long skuId) {
         if (activity == null || skuId == null) {
             throw new ApiException(GROUP_RECORD_SKU_NOT_SUPPORTED);
         }
-        if (activity.getSkuRules() == null || activity.getSkuRules().isEmpty()) {
-            if (activity.getSkuId() != null && activity.getSkuId().equals(skuId) && activity.getGroupPrice() != null) {
-                GroupActivity.GroupSkuRule rule = new GroupActivity.GroupSkuRule();
-                rule.setSkuId(activity.getSkuId());
-                rule.setGroupPrice(activity.getGroupPrice());
-                rule.setOriginalPrice(activity.getOriginalPrice());
-                rule.setEnabled(GroupEnabledStatus.ENABLED.getCode());
-                return rule;
-            }
+        if (activity.getSpuConfigs() == null || activity.getSpuConfigs().isEmpty()) {
             throw new ApiException(GROUP_RECORD_SKU_NOT_SUPPORTED);
         }
-        return activity.getSkuRules().stream()
-                .filter(rule -> rule != null && skuId.equals(rule.getSkuId())
-                        && GroupEnabledStatus.DISABLED.getCode() != rule.getEnabled())
-                .findFirst()
-                .orElseThrow(() -> new ApiException(GROUP_RECORD_SKU_NOT_SUPPORTED));
+        for (GroupActivity.GroupSpuConfig spuConfig : activity.getSpuConfigs()) {
+            if (spuConfig == null || spuConfig.getSpuId() == null || spuConfig.getSkuRules() == null) {
+                continue;
+            }
+            for (GroupActivity.GroupSkuRule rule : spuConfig.getSkuRules()) {
+                if (rule == null || !skuId.equals(rule.getSkuId()) || Boolean.FALSE.equals(rule.getEnabled())) {
+                    continue;
+                }
+                ResolvedSkuRule resolvedSkuRule = new ResolvedSkuRule();
+                resolvedSkuRule.setSpuId(spuConfig.getSpuId());
+                resolvedSkuRule.setSkuRule(rule);
+                return resolvedSkuRule;
+            }
+        }
+        throw new ApiException(GROUP_RECORD_SKU_NOT_SUPPORTED);
+    }
+
+    /**
+     * 命中的 SKU 规则及其所属 SPU。
+     */
+    @lombok.Data
+    private static class ResolvedSkuRule {
+
+        /**
+         * 命中的 SPU ID。
+         */
+        private Long spuId;
+
+        /**
+         * 命中的 SKU 规则。
+         */
+        private GroupActivity.GroupSkuRule skuRule;
     }
 
     /**

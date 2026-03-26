@@ -104,9 +104,11 @@ public class GroupStorageComponent {
      * @param activity 活动配置
      * @param command 开团命令
      * @param nowMillis 当前毫秒时间
+     * @param spuId 本次开团命中的 SPU ID
      * @return 开团命令结果
      */
-    public GroupCommandResult createGroup(String groupId, GroupActivity activity, CreateGroupCommand command, long nowMillis) {
+    public GroupCommandResult createGroup(String groupId, GroupActivity activity, CreateGroupCommand command,
+                                          long nowMillis, Long spuId) {
         log.debug("执行开团存储操作: groupId={}, activityId={}, userId={}, orderId={}, nowMillis={}",
                 groupId, activity.getId(), command.getUserId(), command.getOrderId(), nowMillis);
         long businessExpireTime = buildBusinessExpireTime(nowMillis, activity);
@@ -124,7 +126,7 @@ public class GroupStorageComponent {
                 String.valueOf(command.getUserId()),
                 command.getOrderId(),
                 String.valueOf(activity.getRequiredSize()),
-                String.valueOf(activity.getSpuId()),
+                String.valueOf(spuId),
                 buildMemberCachePayload(groupId, command.getUserId(), command.getOrderId(),
                         nowMillis, command.getPayAmount(), command.getSkuId(),
                         GroupMemberBizStatus.JOINED.name(), null),

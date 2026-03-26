@@ -15,19 +15,19 @@ public enum GroupEnabledStatus {
     /**
      * 禁用。
      */
-    DISABLED(0),
+    DISABLED(false),
 
     /**
      * 启用。
      */
-    ENABLED(1);
+    ENABLED(true);
 
     /**
-     * 状态码。
+     * 启用状态值。
      */
-    private final int code;
+    private final boolean enabled;
 
-    GroupEnabledStatus(int code) {
-        this.code = code;
+    GroupEnabledStatus(boolean enabled) {
+        this.enabled = enabled;
     }
 }

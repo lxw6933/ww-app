@@ -30,7 +30,7 @@ import java.util.List;
 @Data
 @Document("group_activity")
 @CompoundIndexes({
-        @CompoundIndex(name = "idx_group_activity_spu_enabled_time", def = "{'spuId': 1, 'enabled': 1, 'startTime': 1, 'endTime': 1}"),
+        @CompoundIndex(name = "idx_group_activity_spu_enabled_time", def = "{'spuConfigs.spuId': 1, 'enabled': 1, 'startTime': 1, 'endTime': 1}"),
         @CompoundIndex(name = "idx_group_activity_enabled_time", def = "{'enabled': 1, 'startTime': 1, 'endTime': 1}")
 })
 public class GroupActivity extends BaseDoc {
@@ -46,34 +46,11 @@ public class GroupActivity extends BaseDoc {
     private String description;
 
     /**
-     * 商品 SPU ID。
-     */
-    private Long spuId;
-
-    /**
-     * 兼容字段：默认展示 SKU ID。
+     * 活动下的 SPU 配置列表。
      * <p>
-     * 新模型按 SPU 维度共享拼团，实际可售 SKU 由 {@link #skuRules} 决定。
+     * 一个拼团活动可同时挂载多个 SPU；每个 SPU 再维护自己的 SKU 规则集合。
      */
-    private Long skuId;
-
-    /**
-     * 兼容字段：默认展示拼团价。
-     * <p>
-     * 新模型下会从启用的 SKU 规则中挑选展示价最低的一条写入该字段，
-     * 方便旧调用方仍然按单 SKU 模型读取展示数据。
-     */
-    private BigDecimal groupPrice;
-
-    /**
-     * 兼容字段：默认展示原价。
-     */
-    private BigDecimal originalPrice;
-
-    /**
-     * SKU 规则列表。
-     */
-    private List<GroupSkuRule> skuRules;
+    private List<GroupSpuConfig> spuConfigs;
 
     /**
      * 成团人数要求。
@@ -101,19 +78,9 @@ public class GroupActivity extends BaseDoc {
     private Integer limitPerUser;
 
     /**
-     * 是否启用，1-启用，0-禁用。
+     * 是否启用。
      */
-    private Integer enabled;
-
-    /**
-     * 活动图片。
-     */
-    private String imageUrl;
-
-    /**
-     * 排序权重。
-     */
-    private Integer sortWeight;
+    private Boolean enabled;
 
     /**
      * 活动累计开团数。
@@ -139,11 +106,6 @@ public class GroupActivity extends BaseDoc {
      * 避免多实例任务并发执行时重复归档或重复删 Key。
      */
     private Boolean statsSettled;
-
-    /**
-     * 活动统计归档时间。
-     */
-    private Date statsSettledTime;
 
     /**
      * 运行时动态计算活动状态。
@@ -194,6 +156,23 @@ public class GroupActivity extends BaseDoc {
     }
 
     /**
+     * SPU 维度配置。
+     */
+    @Data
+    public static class GroupSpuConfig {
+
+        /**
+         * SPU ID。
+         */
+        private Long spuId;
+
+        /**
+         * 当前 SPU 下可售的 SKU 规则列表。
+         */
+        private List<GroupSkuRule> skuRules;
+    }
+
+    /**
      * SKU 维度规则。
      */
     @Data
@@ -210,14 +189,9 @@ public class GroupActivity extends BaseDoc {
         private BigDecimal groupPrice;
 
         /**
-         * SKU 原价。
+         * SKU 规则是否启用。
          */
-        private BigDecimal originalPrice;
-
-        /**
-         * SKU 规则是否启用，1-启用，0-禁用。
-         */
-        private Integer enabled;
+        private Boolean enabled;
     }
 
     /**
@@ -240,7 +214,7 @@ public class GroupActivity extends BaseDoc {
      */
     public static Query buildActiveQuery(Date now) {
         return new Query().addCriteria(
-                Criteria.where("enabled").is(1)
+                Criteria.where("enabled").is(true)
                         .and("startTime").lte(now)
                         .and("endTime").gt(now)
         );
@@ -255,8 +229,8 @@ public class GroupActivity extends BaseDoc {
      */
     public static Query buildSpuIdAndActiveQuery(Long spuId, Date now) {
         return new Query().addCriteria(
-                Criteria.where("spuId").is(spuId)
-                        .and("enabled").is(1)
+                Criteria.where("spuConfigs.spuId").is(spuId)
+                        .and("enabled").is(true)
                         .and("startTime").lte(now)
                         .and("endTime").gt(now)
         );
@@ -305,16 +279,15 @@ public class GroupActivity extends BaseDoc {
      *
      * @param openGroupCount 累计开团数
      * @param joinMemberCount 累计参团人数
-     * @param settledTime 归档时间
+     * @param updateTime 更新时间
      * @return Mongo Update
      */
-    public static Update buildStatisticsSettledUpdate(Long openGroupCount, Long joinMemberCount, Date settledTime) {
+    public static Update buildStatisticsSettledUpdate(Long openGroupCount, Long joinMemberCount, Date updateTime) {
         return new Update()
                 .set("openGroupCount", openGroupCount)
                 .set("joinMemberCount", joinMemberCount)
                 .set("statsSettled", true)
-                .set("statsSettledTime", settledTime)
-                .set("updateTime", settledTime);
+                .set("updateTime", updateTime);
     }
 
     /**
@@ -323,7 +296,7 @@ public class GroupActivity extends BaseDoc {
      * @param enabled 启用状态
      * @return Mongo Update
      */
-    public static Update buildEnabledUpdate(Integer enabled) {
+    public static Update buildEnabledUpdate(Boolean enabled) {
         return new Update().set("enabled", enabled);
     }
 }

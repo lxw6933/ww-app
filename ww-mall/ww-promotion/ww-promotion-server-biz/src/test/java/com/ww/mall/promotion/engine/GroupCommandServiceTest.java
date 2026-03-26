@@ -4,6 +4,7 @@ import com.github.benmanes.caffeine.cache.LoadingCache;
 import com.ww.app.common.exception.ApiException;
 import com.ww.app.rabbitmq.RabbitMqPublisher;
 import com.ww.mall.promotion.component.GroupStorageComponent;
+import com.ww.mall.promotion.controller.app.group.res.GroupInstanceVO;
 import com.ww.mall.promotion.engine.model.GroupCacheSnapshot;
 import com.ww.mall.promotion.engine.model.GroupCommandResult;
 import com.ww.mall.promotion.entity.group.GroupActivity;
@@ -24,6 +25,7 @@ import org.springframework.test.util.ReflectionTestUtils;
 
 import java.math.BigDecimal;
 import java.util.Arrays;
+import java.util.Collections;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.*;
@@ -44,6 +46,9 @@ class GroupCommandServiceTest {
 
     @Mock
     private GroupStorageComponent groupStorageComponent;
+
+    @Mock
+    private GroupQueryService groupQueryService;
 
     @Mock
     private RabbitMqPublisher rabbitMqPublisher;
@@ -89,7 +94,7 @@ class GroupCommandServiceTest {
     void shouldRequestRefundWhenPaidJoinRejectedByBusinessRule() {
         GroupOrderPaidMessage message = buildJoinPaidMessage();
         GroupActivity activity = buildJoinableActivity();
-        activity.setEnabled(GroupEnabledStatus.DISABLED.getCode());
+        activity.setEnabled(GroupEnabledStatus.DISABLED.isEnabled());
 
         when(groupStorageComponent.requireGroupSnapshot("group-1")).thenReturn(buildBeforeJoinSnapshot());
         when(groupActivityCache.get("activity-1")).thenReturn(activity);
@@ -107,6 +112,32 @@ class GroupCommandServiceTest {
         assertEquals("order-1", refundMessage.getOrderId());
         assertEquals("GROUP_JOIN_REJECTED", refundMessage.getRefundScene());
         assertEquals(new BigDecimal("99.00"), refundMessage.getRefundAmount());
+    }
+
+    /**
+     * 创建拼团时，应根据命中的 SKU 规则把对应 SPU ID 透传给存储层。
+     */
+    @Test
+    void shouldPassMatchedSpuIdToStorageWhenCreatingGroup() {
+        GroupActivity activity = buildJoinableActivity();
+        GroupCommandResult result = new GroupCommandResult();
+        result.setSuccess(true);
+        result.setGroupId("group-1");
+        when(groupActivityCache.get("activity-1")).thenReturn(activity);
+        when(groupStorageComponent.createGroup(anyString(), eq(activity), any(), anyLong(), eq(2002L))).thenReturn(result);
+        when(groupQueryService.getGroupDetail("group-1")).thenReturn(new GroupInstanceVO());
+
+        com.ww.mall.promotion.service.group.command.CreateGroupCommand command =
+                new com.ww.mall.promotion.service.group.command.CreateGroupCommand();
+        command.setActivityId("activity-1");
+        command.setUserId(1L);
+        command.setOrderId("order-1");
+        command.setSkuId(2001L);
+        command.setPayAmount(new BigDecimal("99.00"));
+
+        groupCommandService.createGroup(command);
+
+        verify(groupStorageComponent).createGroup(anyString(), eq(activity), eq(command), anyLong(), eq(2002L));
     }
 
     /**
@@ -204,11 +235,26 @@ class GroupCommandServiceTest {
     private GroupActivity buildJoinableActivity() {
         GroupActivity activity = new GroupActivity();
         activity.setId("activity-1");
-        activity.setEnabled(GroupEnabledStatus.ENABLED.getCode());
+        activity.setEnabled(GroupEnabledStatus.ENABLED.isEnabled());
         activity.setRequiredSize(2);
         activity.setExpireHours(24);
-        activity.setSkuId(1001L);
-        activity.setGroupPrice(new BigDecimal("99.00"));
+        GroupActivity.GroupSpuConfig firstSpuConfig = new GroupActivity.GroupSpuConfig();
+        firstSpuConfig.setSpuId(2001L);
+        GroupActivity.GroupSkuRule firstSkuRule = new GroupActivity.GroupSkuRule();
+        firstSkuRule.setSkuId(1001L);
+        firstSkuRule.setGroupPrice(new BigDecimal("99.00"));
+        firstSkuRule.setEnabled(true);
+        firstSpuConfig.setSkuRules(Collections.singletonList(firstSkuRule));
+
+        GroupActivity.GroupSpuConfig secondSpuConfig = new GroupActivity.GroupSpuConfig();
+        secondSpuConfig.setSpuId(2002L);
+        GroupActivity.GroupSkuRule secondSkuRule = new GroupActivity.GroupSkuRule();
+        secondSkuRule.setSkuId(2001L);
+        secondSkuRule.setGroupPrice(new BigDecimal("109.00"));
+        secondSkuRule.setEnabled(true);
+        secondSpuConfig.setSkuRules(Collections.singletonList(secondSkuRule));
+
+        activity.setSpuConfigs(Arrays.asList(firstSpuConfig, secondSpuConfig));
         return activity;
     }
 

@@ -19,9 +19,11 @@ import org.springframework.stereotype.Service;
 import javax.annotation.Resource;
 import java.math.BigDecimal;
 import java.util.ArrayList;
-import java.util.Comparator;
+import java.util.Collections;
 import java.util.Date;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 import static com.ww.mall.promotion.constants.ErrorCodeConstants.GROUP_ACTIVITY_ENABLED_INVALID;
 import static com.ww.mall.promotion.constants.ErrorCodeConstants.GROUP_ACTIVITY_EXPIRE_HOURS_INVALID;
@@ -41,7 +43,7 @@ import static com.ww.mall.promotion.constants.ErrorCodeConstants.GROUP_ACTIVITY_
  *
  * @author ww
  * @create 2026-03-17
- * @description: 以 SPU 维度定义拼团活动，使用 SKU 规则承载不同规格的成交价格
+ * @description: 以活动维度统一管理多个 SPU，每个 SPU 下再维护自己的 SKU 拼团规则
  */
 @Slf4j
 @Service
@@ -67,15 +69,14 @@ public class GroupActivityServiceImpl implements GroupActivityService {
         Date now = new Date();
         activity.setCreateTime(now);
         activity.setUpdateTime(now);
-        activity.setEnabled(GroupEnabledStatus.ENABLED.getCode());
+        activity.setEnabled(GroupEnabledStatus.ENABLED.isEnabled());
         activity.setOpenGroupCount(0L);
         activity.setJoinMemberCount(0L);
         activity.setStatsSettled(false);
-        activity.setStatsSettledTime(null);
         GroupActivity saved = mongoTemplate.save(activity);
         groupStorageComponent.fillActivityStatistics(saved);
-        log.info("创建拼团活动成功: activityId={}, spuId={}, skuRuleSize={}",
-                saved.getId(), saved.getSpuId(), saved.getSkuRules() != null ? saved.getSkuRules().size() : 0);
+        log.info("创建拼团活动成功: activityId={}, spuConfigSize={}, skuRuleSize={}",
+                saved.getId(), size(saved.getSpuConfigs()), countSkuRules(saved.getSpuConfigs()));
         return saved;
     }
 
@@ -95,8 +96,8 @@ public class GroupActivityServiceImpl implements GroupActivityService {
         updated.setUpdateTime(now);
         GroupActivity saved = mongoTemplate.save(updated);
         groupStorageComponent.fillActivityStatistics(saved);
-        log.info("更新拼团活动成功: activityId={}, spuId={}, skuRuleSize={}",
-                saved.getId(), saved.getSpuId(), saved.getSkuRules() != null ? saved.getSkuRules().size() : 0);
+        log.info("更新拼团活动成功: activityId={}, spuConfigSize={}, skuRuleSize={}",
+                saved.getId(), size(saved.getSpuConfigs()), countSkuRules(saved.getSpuConfigs()));
         return saved;
     }
 
@@ -128,6 +129,7 @@ public class GroupActivityServiceImpl implements GroupActivityService {
         Query query = GroupActivity.buildSpuIdAndActiveQuery(spuId, now);
         List<GroupActivity> activities = mongoTemplate.find(query, GroupActivity.class);
         groupStorageComponent.fillActivityStatistics(activities);
+        activities.forEach(activity -> retainOnlyMatchedSpuConfig(activity, spuId));
         return activities;
     }
 
@@ -141,7 +143,7 @@ public class GroupActivityServiceImpl implements GroupActivityService {
             throw new ApiException(GROUP_ACTIVITY_ENABLED_INVALID);
         }
         mongoTemplate.updateFirst(GroupActivity.buildIdQuery(activityId),
-                GroupActivity.buildEnabledUpdate(enabledStatus.getCode()), GroupActivity.class);
+                GroupActivity.buildEnabledUpdate(enabledStatus.isEnabled()), GroupActivity.class);
         log.info("{}活动: activityId={}",
                 GroupEnabledStatus.ENABLED == enabledStatus ? "启用" : "禁用", activityId);
     }
@@ -168,9 +170,8 @@ public class GroupActivityServiceImpl implements GroupActivityService {
     /**
      * 构建活动实体。
      * <p>
-     * 该方法负责把请求对象转换为持久化对象，并同步刷新兼容字段：
-     * 1. skuRules 保存完整可售规则。
-     * 2. skuId/groupPrice/originalPrice 保存当前用于展示的默认规则快照。
+     * 该方法负责把请求对象转换为持久化对象。
+     * 当前模型允许一个活动挂多个 SPU，每个 SPU 再承载自己的 SKU 拼团规则。
      *
      * @param bo 请求对象
      * @param target 目标实体
@@ -179,88 +180,55 @@ public class GroupActivityServiceImpl implements GroupActivityService {
     private GroupActivity buildActivity(GroupActivityBO bo, GroupActivity target) {
         target.setName(bo.getName());
         target.setDescription(bo.getDescription());
-        target.setSpuId(bo.getSpuId());
         target.setRequiredSize(bo.getRequiredSize());
         target.setExpireHours(bo.getExpireHours());
         target.setStartTime(bo.getStartTime());
         target.setEndTime(bo.getEndTime());
         target.setLimitPerUser(bo.getLimitPerUser());
-        target.setImageUrl(bo.getImageUrl());
-        target.setSortWeight(bo.getSortWeight());
-
-        List<GroupActivity.GroupSkuRule> skuRules = normalizeSkuRules(bo);
-        target.setSkuRules(skuRules);
-        GroupActivity.GroupSkuRule displayRule = resolveDisplayRule(skuRules);
-        if (displayRule != null) {
-            target.setSkuId(displayRule.getSkuId());
-            target.setGroupPrice(displayRule.getGroupPrice());
-            target.setOriginalPrice(displayRule.getOriginalPrice());
-        } else {
-            target.setSkuId(null);
-            target.setGroupPrice(null);
-            target.setOriginalPrice(null);
-        }
+        target.setSpuConfigs(normalizeSpuConfigs(bo));
         return target;
     }
 
     /**
-     * 归一化 SKU 规则。
+     * 归一化 SPU 配置。
      * <p>
-     * 该方法统一兼容新旧两种入参格式：
-     * 1. 新格式优先使用 skuRules。
-     * 2. 若未提供 skuRules，则回退到单 SKU 兼容字段。
+     * 该方法会忽略不完整的配置项，仅保留“SPU ID 完整且至少存在一条有效 SKU 规则”的配置。
      *
      * @param bo 活动请求对象
-     * @return SKU 规则列表
+     * @return SPU 配置列表
      */
-    private List<GroupActivity.GroupSkuRule> normalizeSkuRules(GroupActivityBO bo) {
-        List<GroupActivity.GroupSkuRule> rules = new ArrayList<>();
-        if (bo.getSkuRules() != null) {
-            for (GroupActivityBO.GroupSkuRuleBO skuRuleBO : bo.getSkuRules()) {
+    private List<GroupActivity.GroupSpuConfig> normalizeSpuConfigs(GroupActivityBO bo) {
+        List<GroupActivity.GroupSpuConfig> spuConfigs = new ArrayList<>();
+        if (CollectionUtil.isEmpty(bo.getSpuConfigs())) {
+            throw new ApiException(GROUP_ACTIVITY_SKU_RULE_REQUIRED);
+        }
+        for (GroupActivityBO.GroupSpuConfigBO spuConfigBO : bo.getSpuConfigs()) {
+            if (spuConfigBO == null || spuConfigBO.getSpuId() == null || CollectionUtil.isEmpty(spuConfigBO.getSkuRules())) {
+                continue;
+            }
+            GroupActivity.GroupSpuConfig spuConfig = new GroupActivity.GroupSpuConfig();
+            spuConfig.setSpuId(spuConfigBO.getSpuId());
+            List<GroupActivity.GroupSkuRule> skuRules = new ArrayList<>();
+            for (GroupActivityBO.GroupSkuRuleBO skuRuleBO : spuConfigBO.getSkuRules()) {
                 if (skuRuleBO == null || skuRuleBO.getSkuId() == null || skuRuleBO.getGroupPrice() == null) {
                     continue;
                 }
                 GroupActivity.GroupSkuRule rule = new GroupActivity.GroupSkuRule();
                 rule.setSkuId(skuRuleBO.getSkuId());
                 rule.setGroupPrice(skuRuleBO.getGroupPrice());
-                rule.setOriginalPrice(skuRuleBO.getOriginalPrice());
-                rule.setEnabled(skuRuleBO.getEnabled() == null ? GroupEnabledStatus.ENABLED.getCode() : skuRuleBO.getEnabled());
-                rules.add(rule);
+                rule.setEnabled(skuRuleBO.getEnabled() == null ? Boolean.TRUE : skuRuleBO.getEnabled());
+                skuRules.add(rule);
             }
+            if (CollectionUtil.isEmpty(skuRules)) {
+                continue;
+            }
+            spuConfig.setSkuRules(skuRules);
+            spuConfigs.add(spuConfig);
         }
-        if (rules.isEmpty() && bo.getSkuId() != null && bo.getGroupPrice() != null) {
-            GroupActivity.GroupSkuRule legacyRule = new GroupActivity.GroupSkuRule();
-            legacyRule.setSkuId(bo.getSkuId());
-            legacyRule.setGroupPrice(bo.getGroupPrice());
-            legacyRule.setOriginalPrice(bo.getOriginalPrice());
-            legacyRule.setEnabled(GroupEnabledStatus.ENABLED.getCode());
-            rules.add(legacyRule);
-        }
-        if (rules.isEmpty()) {
+        if (CollectionUtil.isEmpty(spuConfigs)) {
             throw new ApiException(GROUP_ACTIVITY_SKU_RULE_REQUIRED);
         }
-        return rules;
-    }
-
-    /**
-     * 选择默认展示规则。
-     * <p>
-     * 展示规则只从启用中的 SKU 规则里选择，避免页面展示一个实际已禁用的最低价 SKU。
-     * 若当前所有规则均为禁用，则返回 null，让兼容展示字段清空，避免保留旧值造成误导。
-     *
-     * @param skuRules SKU 规则列表
-     * @return 默认展示规则
-     */
-    private GroupActivity.GroupSkuRule resolveDisplayRule(List<GroupActivity.GroupSkuRule> skuRules) {
-        if (skuRules == null || skuRules.isEmpty()) {
-            return null;
-        }
-        return skuRules.stream()
-                .filter(rule -> rule != null
-                        && GroupEnabledStatus.DISABLED.getCode() != rule.getEnabled()
-                        && rule.getGroupPrice() != null)
-                .min(Comparator.comparing(GroupActivity.GroupSkuRule::getGroupPrice))
-                .orElse(null);
+        return spuConfigs;
     }
 
     /**
@@ -269,7 +237,8 @@ public class GroupActivityServiceImpl implements GroupActivityService {
      * 重点校验以下边界：
      * 1. 时间窗必须合法。
      * 2. 成团人数和有效期必须为正数。
-     * 3. SKU 规则至少存在一条且价格必须大于 0。
+     * 3. 至少存在一个 SPU 配置，且 SKU 规则至少有一条。
+     * 4. 活动内 SPU ID、SKU ID 不允许重复，避免交易时命中歧义。
      *
      * @param bo 活动请求
      */
@@ -283,13 +252,69 @@ public class GroupActivityServiceImpl implements GroupActivityService {
         if (bo.getExpireHours() == null || bo.getExpireHours() <= 0) {
             throw new ApiException(GROUP_ACTIVITY_EXPIRE_HOURS_INVALID);
         }
-        List<GroupActivity.GroupSkuRule> normalizedRules = normalizeSkuRules(bo);
-        boolean invalidPrice = normalizedRules.stream()
-                .map(GroupActivity.GroupSkuRule::getGroupPrice)
-                .anyMatch(price -> price == null || price.compareTo(BigDecimal.ZERO) <= 0);
-        if (invalidPrice) {
-            throw new ApiException(GROUP_ACTIVITY_PARAM_EMPTY.getMsg() + ": groupPrice");
+        List<GroupActivity.GroupSpuConfig> normalizedSpuConfigs = normalizeSpuConfigs(bo);
+        Set<Long> spuIds = new HashSet<>();
+        Set<Long> skuIds = new HashSet<>();
+        for (GroupActivity.GroupSpuConfig spuConfig : normalizedSpuConfigs) {
+            if (!spuIds.add(spuConfig.getSpuId())) {
+                throw new ApiException(GROUP_ACTIVITY_PARAM_EMPTY.getMsg() + ": duplicated spuId");
+            }
+            if (CollectionUtil.isEmpty(spuConfig.getSkuRules())) {
+                throw new ApiException(GROUP_ACTIVITY_SKU_RULE_REQUIRED);
+            }
+            for (GroupActivity.GroupSkuRule skuRule : spuConfig.getSkuRules()) {
+                if (skuRule.getGroupPrice() == null || skuRule.getGroupPrice().compareTo(BigDecimal.ZERO) <= 0) {
+                    throw new ApiException(GROUP_ACTIVITY_PARAM_EMPTY.getMsg() + ": groupPrice");
+                }
+                if (!skuIds.add(skuRule.getSkuId())) {
+                    throw new ApiException(GROUP_ACTIVITY_PARAM_EMPTY.getMsg() + ": duplicated skuId");
+                }
+            }
         }
+    }
+
+    /**
+     * 仅保留活动内命中的 SPU 配置。
+     * <p>
+     * 按 SPU 查询活动时，只返回当前 SPU 的配置切片，避免把同一活动下无关的 SPU 配置一并返回。
+     *
+     * @param activity 活动实体
+     * @param spuId SPU ID
+     */
+    private void retainOnlyMatchedSpuConfig(GroupActivity activity, Long spuId) {
+        if (activity == null || spuId == null || CollectionUtil.isEmpty(activity.getSpuConfigs())) {
+            return;
+        }
+        activity.getSpuConfigs().stream()
+                .filter(spuConfig -> spuConfig != null && spuId.equals(spuConfig.getSpuId()))
+                .findFirst()
+                .ifPresent(spuConfig -> activity.setSpuConfigs(Collections.singletonList(spuConfig)));
+    }
+
+    /**
+     * 统计活动内 SKU 规则总数。
+     *
+     * @param spuConfigs SPU 配置列表
+     * @return SKU 规则总数
+     */
+    private int countSkuRules(List<GroupActivity.GroupSpuConfig> spuConfigs) {
+        if (CollectionUtil.isEmpty(spuConfigs)) {
+            return 0;
+        }
+        return spuConfigs.stream()
+                .filter(spuConfig -> spuConfig != null && !CollectionUtil.isEmpty(spuConfig.getSkuRules()))
+                .mapToInt(spuConfig -> spuConfig.getSkuRules().size())
+                .sum();
+    }
+
+    /**
+     * 统计集合大小。
+     *
+     * @param values 集合
+     * @return 大小
+     */
+    private int size(List<?> values) {
+        return values == null ? 0 : values.size();
     }
 
     /**
