@@ -23,6 +23,18 @@ public final class GroupBizConstants {
      */
     public static final int EXPIRE_JOB_BATCH_LIMIT = 100;
 
+    /**
+     * 过期任务单次调度最多连续拉取批次数。
+     * <p>
+     * 通过在一次调度窗口内连续处理多个批次，尽量降低到期高峰时“每次只扫一页”导致的积压。
+     */
+    public static final int EXPIRE_JOB_MAX_ROUNDS = 10;
+
+    /**
+     * 活动统计归档任务单次扫描上限。
+     */
+    public static final int ACTIVITY_STATS_SETTLE_BATCH_LIMIT = 100;
+
     private GroupBizConstants() {
     }
 }

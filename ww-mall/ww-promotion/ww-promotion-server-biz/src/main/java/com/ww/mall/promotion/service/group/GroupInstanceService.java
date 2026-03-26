@@ -1,8 +1,8 @@
 package com.ww.mall.promotion.service.group;
 
+import com.ww.app.common.common.AppPage;
+import com.ww.app.common.common.AppPageResult;
 import com.ww.mall.promotion.controller.app.group.res.GroupInstanceVO;
-
-import java.util.List;
 
 /**
  * @author ww
@@ -17,12 +17,12 @@ public interface GroupInstanceService {
     GroupInstanceVO getGroupDetail(String groupId);
 
     /**
-     * 查询用户参与的拼团列表
+     * 分页查询用户参与的拼团列表
      */
-    List<GroupInstanceVO> getUserGroups();
+    AppPageResult<GroupInstanceVO> getUserGroups(AppPage page);
 
     /**
-     * 查询活动下的拼团列表
+     * 分页查询活动下的拼团列表
      */
-    List<GroupInstanceVO> getActivityGroups(String activityId, String status);
+    AppPageResult<GroupInstanceVO> getActivityGroups(String activityId, String status, AppPage page);
 }

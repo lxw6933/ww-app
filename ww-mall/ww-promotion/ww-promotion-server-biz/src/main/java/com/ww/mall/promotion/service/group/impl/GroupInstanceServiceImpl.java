@@ -1,5 +1,7 @@
 package com.ww.mall.promotion.service.group.impl;
 
+import com.ww.app.common.common.AppPage;
+import com.ww.app.common.common.AppPageResult;
 import com.ww.app.common.context.AuthorizationContext;
 import com.ww.app.common.exception.ApiException;
 import com.ww.mall.promotion.controller.app.group.res.GroupInstanceVO;
@@ -8,7 +10,6 @@ import com.ww.mall.promotion.service.group.GroupInstanceService;
 import org.springframework.stereotype.Service;
 
 import javax.annotation.Resource;
-import java.util.List;
 
 import static com.ww.mall.promotion.constants.ErrorCodeConstants.GROUP_RECORD_ERROR;
 
@@ -36,16 +37,16 @@ public class GroupInstanceServiceImpl implements GroupInstanceService {
     }
 
     @Override
-    public List<GroupInstanceVO> getUserGroups() {
+    public AppPageResult<GroupInstanceVO> getUserGroups(AppPage page) {
         Long userId = AuthorizationContext.getClientUser() != null ? AuthorizationContext.getClientUser().getId() : null;
         if (userId == null) {
             throw new ApiException(GROUP_RECORD_ERROR);
         }
-        return groupQueryService.getUserGroups(userId);
+        return groupQueryService.getUserGroups(userId, page);
     }
 
     @Override
-    public List<GroupInstanceVO> getActivityGroups(String activityId, String status) {
-        return groupQueryService.getActivityGroups(activityId, status);
+    public AppPageResult<GroupInstanceVO> getActivityGroups(String activityId, String status, AppPage page) {
+        return groupQueryService.getActivityGroups(activityId, status, page);
     }
 }

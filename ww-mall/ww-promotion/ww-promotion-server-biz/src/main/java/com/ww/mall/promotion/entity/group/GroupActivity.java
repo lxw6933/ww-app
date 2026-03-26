@@ -118,20 +118,32 @@ public class GroupActivity extends BaseDoc {
     /**
      * 活动累计开团数。
      * <p>
-     * 该字段不落库，运行时从 Redis 统计数据中回填。
+     * 活动进行中优先由 Redis 维护实时值；活动结束后会将最终值归档落库，
+     * 便于历史查询、报表统计和后续清理 Redis 运行态统计 Key。
      * 仅在“首次开团成功”时累计加一，不包含幂等回放。
      */
-    @Transient
     private Long openGroupCount;
 
     /**
      * 活动累计参团人数。
      * <p>
-     * 该字段不落库，运行时从 Redis 统计数据中回填。
+     * 活动进行中优先由 Redis 维护实时值；活动结束后会将最终值归档落库。
      * 当前口径按累计参团人次统计，团长开团也计入一次。
      */
-    @Transient
     private Long joinMemberCount;
+
+    /**
+     * 活动统计是否已归档。
+     * <p>
+     * 该标记用于保证“活动结束后统计落库并删除 Redis Key”动作具备幂等性，
+     * 避免多实例任务并发执行时重复归档或重复删 Key。
+     */
+    private Boolean statsSettled;
+
+    /**
+     * 活动统计归档时间。
+     */
+    private Date statsSettledTime;
 
     /**
      * 运行时动态计算活动状态。
@@ -248,6 +260,61 @@ public class GroupActivity extends BaseDoc {
                         .and("startTime").lte(now)
                         .and("endTime").gt(now)
         );
+    }
+
+    /**
+     * 构建“已结束但统计尚未归档”的活动查询。
+     *
+     * @param now 当前时间
+     * @param limit 单次批量上限
+     * @return Mongo Query
+     */
+    public static Query buildEndedUnsettledQuery(Date now, int limit) {
+        Criteria unsettledCriteria = new Criteria().orOperator(
+                Criteria.where("statsSettled").exists(false),
+                Criteria.where("statsSettled").is(false)
+        );
+        Query query = new Query().addCriteria(
+                Criteria.where("endTime").lte(now)
+                        .andOperator(unsettledCriteria)
+        );
+        query.limit(limit);
+        query.with(org.springframework.data.domain.Sort.by(org.springframework.data.domain.Sort.Direction.ASC, "endTime", "id"));
+        return query;
+    }
+
+    /**
+     * 构建按活动ID执行统计归档的幂等更新条件。
+     *
+     * @param activityId 活动ID
+     * @return Mongo Query
+     */
+    public static Query buildIdAndUnsettledQuery(String activityId) {
+        Criteria unsettledCriteria = new Criteria().orOperator(
+                Criteria.where("statsSettled").exists(false),
+                Criteria.where("statsSettled").is(false)
+        );
+        return new Query().addCriteria(
+                Criteria.where("_id").is(activityId)
+                        .andOperator(unsettledCriteria)
+        );
+    }
+
+    /**
+     * 构建活动统计归档更新内容。
+     *
+     * @param openGroupCount 累计开团数
+     * @param joinMemberCount 累计参团人数
+     * @param settledTime 归档时间
+     * @return Mongo Update
+     */
+    public static Update buildStatisticsSettledUpdate(Long openGroupCount, Long joinMemberCount, Date settledTime) {
+        return new Update()
+                .set("openGroupCount", openGroupCount)
+                .set("joinMemberCount", joinMemberCount)
+                .set("statsSettled", true)
+                .set("statsSettledTime", settledTime)
+                .set("updateTime", settledTime);
     }
 
     /**

@@ -1,5 +1,6 @@
 package com.ww.mall.promotion.service.group.impl;
 
+import cn.hutool.core.collection.CollectionUtil;
 import com.ww.app.common.exception.ApiException;
 import com.ww.app.redis.annotation.RedisPublishMsg;
 import com.ww.mall.promotion.component.GroupStorageComponent;
@@ -9,8 +10,10 @@ import com.ww.mall.promotion.entity.group.GroupActivity;
 import com.ww.mall.promotion.enums.GroupEnabledStatus;
 import com.ww.mall.promotion.service.group.GroupActivityService;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.mongodb.core.query.Update;
 import org.springframework.data.mongodb.core.MongoTemplate;
 import org.springframework.data.mongodb.core.query.Query;
+import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Service;
 
 import javax.annotation.Resource;
@@ -50,6 +53,9 @@ public class GroupActivityServiceImpl implements GroupActivityService {
     @Resource
     private GroupStorageComponent groupStorageComponent;
 
+    @Resource
+    private StringRedisTemplate stringRedisTemplate;
+
     @Override
     public GroupActivity createActivity(GroupActivityBO bo) {
         if (bo == null) {
@@ -62,6 +68,10 @@ public class GroupActivityServiceImpl implements GroupActivityService {
         activity.setCreateTime(now);
         activity.setUpdateTime(now);
         activity.setEnabled(GroupEnabledStatus.ENABLED.getCode());
+        activity.setOpenGroupCount(0L);
+        activity.setJoinMemberCount(0L);
+        activity.setStatsSettled(false);
+        activity.setStatsSettledTime(null);
         GroupActivity saved = mongoTemplate.save(activity);
         groupStorageComponent.fillActivityStatistics(saved);
         log.info("创建拼团活动成功: activityId={}, spuId={}, skuRuleSize={}",
@@ -134,6 +144,25 @@ public class GroupActivityServiceImpl implements GroupActivityService {
                 GroupActivity.buildEnabledUpdate(enabledStatus.getCode()), GroupActivity.class);
         log.info("{}活动: activityId={}",
                 GroupEnabledStatus.ENABLED == enabledStatus ? "启用" : "禁用", activityId);
+    }
+
+    @Override
+    public int settleExpiredActivityStatistics() {
+        Date now = new Date();
+        Query query = GroupActivity.buildEndedUnsettledQuery(now, com.ww.mall.promotion.constants.GroupBizConstants.ACTIVITY_STATS_SETTLE_BATCH_LIMIT);
+        List<GroupActivity> activities = mongoTemplate.find(query, GroupActivity.class);
+        if (CollectionUtil.isEmpty(activities)) {
+            log.debug("活动统计归档跳过: 无待归档活动");
+            return 0;
+        }
+        int settledCount = 0;
+        for (GroupActivity activity : activities) {
+            if (settleSingleActivityStatistics(activity, now)) {
+                settledCount++;
+            }
+        }
+        log.info("活动统计归档完成: scannedCount={}, settledCount={}", activities.size(), settledCount);
+        return settledCount;
     }
 
     /**
@@ -261,5 +290,38 @@ public class GroupActivityServiceImpl implements GroupActivityService {
         if (invalidPrice) {
             throw new ApiException(GROUP_ACTIVITY_PARAM_EMPTY.getMsg() + ": groupPrice");
         }
+    }
+
+    /**
+     * 归档单个活动的最终统计数据。
+     * <p>
+     * 该方法先读取 Redis 中的最新累计值，再使用“仅未归档活动可更新”的条件更新 Mongo，
+     * 确保多实例并发执行时只会有一个实例真正完成落库与删 Key。
+     *
+     * @param activity 活动实体
+     * @param settledTime 归档时间
+     * @return true-本次成功归档，false-被其他实例抢先归档或无需处理
+     */
+    private boolean settleSingleActivityStatistics(GroupActivity activity, Date settledTime) {
+        if (activity == null || activity.getId() == null || activity.getId().trim().isEmpty()) {
+            return false;
+        }
+        groupStorageComponent.fillActivityStatistics(activity);
+        Query updateQuery = GroupActivity.buildIdAndUnsettledQuery(activity.getId());
+        Update update = GroupActivity.buildStatisticsSettledUpdate(
+                activity.getOpenGroupCount(),
+                activity.getJoinMemberCount(),
+                settledTime
+        );
+        long modifiedCount = mongoTemplate.updateFirst(updateQuery, update, GroupActivity.class).getModifiedCount();
+        if (modifiedCount <= 0L) {
+            log.debug("活动统计归档被跳过: activityId={}, modifiedCount={}", activity.getId(), modifiedCount);
+            return false;
+        }
+        groupStorageComponent.clearActivityStatistics(activity.getId());
+        stringRedisTemplate.convertAndSend(RedisChannelConstant.GROUP_ACTIVITY_CACHE_CHANNEL, activity.getId());
+        log.info("活动统计归档成功: activityId={}, openGroupCount={}, joinMemberCount={}",
+                activity.getId(), activity.getOpenGroupCount(), activity.getJoinMemberCount());
+        return true;
     }
 }

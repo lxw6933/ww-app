@@ -7,6 +7,8 @@ import com.ww.mall.promotion.enums.GroupEnabledStatus;
 import java.util.List;
 
 /**
+ * 拼团活动服务接口。
+ *
  * @author ww
  * @create 2025-12-08 17:40
  * @description: 拼团活动服务接口
@@ -14,27 +16,27 @@ import java.util.List;
 public interface GroupActivityService {
 
     /**
-     * 创建拼团活动
+     * 创建拼团活动。
      */
     GroupActivity createActivity(GroupActivityBO dto);
 
     /**
-     * 更新拼团活动
+     * 更新拼团活动。
      */
     GroupActivity updateActivity(GroupActivityBO dto);
 
     /**
-     * 根据ID查询活动
+     * 根据ID查询活动。
      */
     GroupActivity getActivityById(String activityId);
 
     /**
-     * 查询进行中的活动列表
+     * 查询进行中的活动列表。
      */
     List<GroupActivity> listActiveActivities();
 
     /**
-     * 根据SPU ID查询活动
+     * 根据SPU ID查询活动。
      */
     List<GroupActivity> getActivitiesBySpuId(Long spuId);
 
@@ -46,4 +48,10 @@ public interface GroupActivityService {
      */
     void enableActivity(String activityId, GroupEnabledStatus enabledStatus);
 
+    /**
+     * 归档已结束活动的统计数据。
+     *
+     * @return 本次成功归档的活动数量
+     */
+    int settleExpiredActivityStatistics();
 }

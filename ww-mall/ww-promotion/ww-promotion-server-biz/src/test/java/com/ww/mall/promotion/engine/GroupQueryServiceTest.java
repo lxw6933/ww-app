@@ -1,9 +1,10 @@
 package com.ww.mall.promotion.engine;
 
+import com.ww.app.common.common.AppPage;
+import com.ww.app.common.common.AppPageResult;
 import com.ww.mall.promotion.component.GroupStorageComponent;
 import com.ww.mall.promotion.controller.app.group.res.GroupInstanceVO;
 import com.ww.mall.promotion.entity.group.GroupInstance;
-import com.ww.mall.promotion.entity.group.GroupMember;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
@@ -13,10 +14,8 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.Date;
-import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -25,7 +24,7 @@ import static org.mockito.Mockito.when;
  *
  * @author ww
  * @create 2026-03-24
- * @description: 校验用户拼团列表批量查询逻辑，避免 N+1 回表
+ * @description: 校验用户拼团列表批量查询与分页查询逻辑
  */
 @ExtendWith(MockitoExtension.class)
 class GroupQueryServiceTest {
@@ -37,56 +36,48 @@ class GroupQueryServiceTest {
     private GroupQueryService groupQueryService;
 
     /**
-     * 用户拼团列表应按用户成员记录先批量查团ID，再一次性回表加载摘要，避免逐团查详情。
+     * 分页查询用户拼团列表时，应直接基于去重后的团ID分页，再批量回表读取摘要。
      */
     @Test
-    void shouldBatchLoadUserGroupsWithoutNPlusOneQueries() {
-        when(groupStorageComponent.findMongoUserMembers(1001L)).thenReturn(Arrays.asList(
-                buildUserMember("group-2", 102L, "ORDER-2", new Date(2L)),
-                buildUserMember("group-1", 101L, "ORDER-1", new Date(1L)),
-                buildUserMember("group-1", 101L, "ORDER-1-DUP", new Date(0L))
-        ));
-        when(groupStorageComponent.findMongoGroupSummaries(Arrays.asList("group-2", "group-1"))).thenReturn(Arrays.asList(
-                buildSummaryInstance("group-1", 101L, "ORDER-1"),
-                buildSummaryInstance("group-2", 102L, "ORDER-2")
-        ));
+    void shouldPageUserGroupsByDistinctGroupIds() {
+        AppPage page = new AppPage(2, 1);
+        when(groupStorageComponent.countMongoUserGroups(1001L)).thenReturn(3L);
+        when(groupStorageComponent.findMongoUserGroupIds(1001L, 2, 1)).thenReturn(Collections.singletonList("group-2"));
+        when(groupStorageComponent.findMongoGroupSummaries(Collections.singletonList("group-2"))).thenReturn(
+                Collections.singletonList(buildSummaryInstance("group-2", 102L, "ORDER-2"))
+        );
 
-        List<GroupInstanceVO> result = groupQueryService.getUserGroups(1001L);
+        AppPageResult<GroupInstanceVO> result = groupQueryService.getUserGroups(1001L, page);
 
-        assertEquals(2, result.size());
-        assertEquals("group-2", result.get(0).getId());
-        assertEquals("group-1", result.get(1).getId());
-        assertEquals(1, result.get(0).getMembers().size());
-        assertEquals("ORDER-2", result.get(0).getMembers().get(0).getOrderId());
-        verify(groupStorageComponent).findMongoUserMembers(1001L);
-        verify(groupStorageComponent).findMongoGroupSummaries(Arrays.asList("group-2", "group-1"));
-        verify(groupStorageComponent, never()).findMongoGroupInstance("group-1");
+        assertEquals(3, result.getTotalCount());
+        assertEquals(3, result.getTotalPage());
+        assertEquals(1, result.getResult().size());
+        assertEquals("group-2", result.getResult().get(0).getId());
+        verify(groupStorageComponent).countMongoUserGroups(1001L);
+        verify(groupStorageComponent).findMongoUserGroupIds(1001L, 2, 1);
+        verify(groupStorageComponent).findMongoGroupSummaries(Collections.singletonList("group-2"));
     }
 
     /**
-     * 当用户没有任何拼团记录时，应直接返回空列表。
+     * 分页查询活动拼团列表时，应命中分页摘要查询而非全量列表查询。
      */
     @Test
-    void shouldReturnEmptyListWhenUserHasNoGroups() {
-        when(groupStorageComponent.findMongoUserMembers(1001L)).thenReturn(Collections.emptyList());
+    void shouldPageActivityGroups() {
+        AppPage page = new AppPage(1, 2);
+        when(groupStorageComponent.countMongoActivityGroups("activity-1", "OPEN")).thenReturn(2L);
+        when(groupStorageComponent.findMongoActivityGroupSummaries("activity-1", "OPEN", 1, 2)).thenReturn(Arrays.asList(
+                buildSummaryInstance("group-2", 102L, "ORDER-2"),
+                buildSummaryInstance("group-1", 101L, "ORDER-1")
+        ));
 
-        List<GroupInstanceVO> result = groupQueryService.getUserGroups(1001L);
+        AppPageResult<GroupInstanceVO> result = groupQueryService.getActivityGroups("activity-1", "OPEN", page);
 
-        assertEquals(0, result.size());
-        verify(groupStorageComponent).findMongoUserMembers(1001L);
-        verify(groupStorageComponent, never()).findMongoGroupSummaries(Collections.emptyList());
-    }
-
-    /**
-     * 构建用户参与记录。
-     */
-    private GroupMember buildUserMember(String groupId, Long userId, String orderId, Date joinTime) {
-        GroupMember member = new GroupMember();
-        member.setGroupInstanceId(groupId);
-        member.setUserId(userId);
-        member.setOrderId(orderId);
-        member.setJoinTime(joinTime);
-        return member;
+        assertEquals(2, result.getTotalCount());
+        assertEquals(1, result.getTotalPage());
+        assertEquals(2, result.getResult().size());
+        assertEquals("group-2", result.getResult().get(0).getId());
+        verify(groupStorageComponent).countMongoActivityGroups("activity-1", "OPEN");
+        verify(groupStorageComponent).findMongoActivityGroupSummaries("activity-1", "OPEN", 1, 2);
     }
 
     /**

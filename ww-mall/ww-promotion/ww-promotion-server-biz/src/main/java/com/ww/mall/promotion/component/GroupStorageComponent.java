@@ -15,11 +15,17 @@ import com.ww.mall.promotion.key.GroupRedisKeyBuilder;
 import com.ww.mall.promotion.service.group.command.CreateGroupCommand;
 import com.ww.mall.promotion.service.group.command.JoinGroupCommand;
 import lombok.extern.slf4j.Slf4j;
+import org.bson.Document;
 import org.springframework.data.mongodb.core.BulkOperations;
 import org.springframework.data.mongodb.core.MongoTemplate;
+import org.springframework.data.mongodb.core.aggregation.Aggregation;
+import org.springframework.data.mongodb.core.aggregation.AggregationResults;
+import org.springframework.data.mongodb.core.query.Criteria;
+import org.springframework.data.mongodb.core.query.Query;
 import org.springframework.data.redis.connection.ReturnType;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.core.io.ClassPathResource;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Component;
 import org.springframework.util.StreamUtils;
 
@@ -342,7 +348,7 @@ public class GroupStorageComponent {
                 snapshot.getInstance().getStatus(),
                 snapshot.getMembers() == null ? 0 : snapshot.getMembers().size());
         mongoTemplate.save(snapshot.getInstance());
-        upsertMembers(snapshot.getMembers());
+        upsertMembers(snapshot.getInstance().getId(), snapshot.getMembers(), snapshot.getInstance().getUpdateTime());
         log.debug("同步Mongo投影完成: groupId={}", snapshot.getInstance().getId());
     }
 
@@ -409,31 +415,105 @@ public class GroupStorageComponent {
     }
 
     /**
-     * 查询用户参与的 Mongo 拼团成员记录。
+     * 分页查询用户参与过的拼团ID。
+     * <p>
+     * 该查询先按用户参团时间倒序排序，再按团ID去重，确保“我的拼团”分页以最近参与的团为准，
+     * 同时避免先拉全量成员记录再在应用层分页带来的内存与网络放大。
      *
      * @param userId 用户ID
-     * @return 成员记录列表
+     * @param pageNum 页码，从1开始
+     * @param pageSize 每页大小
+     * @return 当前页团ID列表
      */
-    public List<GroupMember> findMongoUserMembers(Long userId) {
-        List<GroupMember> members = mongoTemplate.find(GroupMember.buildUserIdQuery(userId), GroupMember.class);
-        log.debug("查询用户Mongo拼团成员记录: userId={}, memberCount={}", userId, members.size());
-        return members;
+    public List<String> findMongoUserGroupIds(Long userId, int pageNum, int pageSize) {
+        long skip = (long) Math.max(pageNum - 1, 0) * pageSize;
+        Aggregation aggregation = Aggregation.newAggregation(
+                Aggregation.match(Criteria.where("userId").is(userId)),
+                Aggregation.sort(Sort.by(Sort.Direction.DESC, "joinTime", "_id")),
+                Aggregation.group("groupInstanceId")
+                        .first("groupInstanceId").as("groupInstanceId")
+                        .first("joinTime").as("latestJoinTime")
+                        .first("_id").as("latestMemberId"),
+                Aggregation.sort(Sort.by(Sort.Direction.DESC, "latestJoinTime", "latestMemberId")),
+                Aggregation.skip(skip),
+                Aggregation.limit(pageSize)
+        );
+        AggregationResults<Document> aggregationResults = mongoTemplate.aggregate(
+                aggregation,
+                mongoTemplate.getCollectionName(GroupMember.class),
+                Document.class
+        );
+        List<String> groupIds = new ArrayList<>();
+        aggregationResults.getMappedResults().forEach(document -> {
+            Object value = document.get("groupInstanceId");
+            if (value != null) {
+                groupIds.add(String.valueOf(value));
+            }
+        });
+        log.debug("分页查询用户拼团ID完成: userId={}, pageNum={}, pageSize={}, resultCount={}",
+                userId, pageNum, pageSize, groupIds.size());
+        return groupIds;
     }
 
     /**
-     * 查询活动下的 Mongo 拼团摘要。
+     * 统计用户参与过的拼团去重总数。
+     *
+     * @param userId 用户ID
+     * @return 去重后的团数量
+     */
+    public long countMongoUserGroups(Long userId) {
+        Aggregation aggregation = Aggregation.newAggregation(
+                Aggregation.match(Criteria.where("userId").is(userId)),
+                Aggregation.group("groupInstanceId"),
+                Aggregation.count().as("totalCount")
+        );
+        AggregationResults<Document> aggregationResults = mongoTemplate.aggregate(
+                aggregation,
+                mongoTemplate.getCollectionName(GroupMember.class),
+                Document.class
+        );
+        Document document = aggregationResults.getUniqueMappedResult();
+        long totalCount = document == null || document.get("totalCount") == null
+                ? 0L : Long.parseLong(String.valueOf(document.get("totalCount")));
+        log.debug("统计用户拼团去重总数完成: userId={}, totalCount={}", userId, totalCount);
+        return totalCount;
+    }
+
+    /**
+     * 分页查询活动下的 Mongo 拼团摘要。
      *
      * @param activityId 活动ID
      * @param status 团状态
-     * @return 团摘要列表
+     * @param pageNum 页码，从1开始
+     * @param pageSize 每页大小
+     * @return 当前页团摘要
      */
-    public List<GroupInstance> findMongoActivityGroupSummaries(String activityId, String status) {
-        List<GroupInstance> instances = mongoTemplate.find(
-                GroupInstance.buildActivityIdAndStatusSummaryQuery(activityId, status),
+    public List<GroupInstance> findMongoActivityGroupSummaries(String activityId, String status,
+                                                               int pageNum, int pageSize) {
+        Query query = GroupInstance.buildActivityIdAndStatusSummaryQuery(activityId, status);
+        query.skip((long) Math.max(pageNum - 1, 0) * pageSize);
+        query.limit(pageSize);
+        List<GroupInstance> instances = mongoTemplate.find(query, GroupInstance.class);
+        log.debug("分页查询活动Mongo拼团摘要完成: activityId={}, status={}, pageNum={}, pageSize={}, count={}",
+                activityId, status, pageNum, pageSize, instances.size());
+        return instances;
+    }
+
+    /**
+     * 统计活动下的拼团数量。
+     *
+     * @param activityId 活动ID
+     * @param status 团状态
+     * @return 团总数
+     */
+    public long countMongoActivityGroups(String activityId, String status) {
+        long totalCount = mongoTemplate.count(
+                GroupInstance.buildActivityIdAndStatusQuery(activityId, status),
                 GroupInstance.class
         );
-        log.debug("查询活动Mongo拼团摘要: activityId={}, status={}, count={}", activityId, status, instances.size());
-        return instances;
+        log.debug("统计活动Mongo拼团总数完成: activityId={}, status={}, totalCount={}",
+                activityId, status, totalCount);
+        return totalCount;
     }
 
     /**
@@ -460,6 +540,13 @@ public class GroupStorageComponent {
     public void fillActivityStatistics(GroupActivity activity) {
         if (activity == null || !hasText(activity.getId())) {
             log.warn("回填活动统计跳过: activity为空或activityId为空");
+            return;
+        }
+        if (Boolean.TRUE.equals(activity.getStatsSettled())) {
+            activity.setOpenGroupCount(defaultLong(activity.getOpenGroupCount()));
+            activity.setJoinMemberCount(defaultLong(activity.getJoinMemberCount()));
+            log.debug("活动统计已归档，直接使用Mongo持久化值: activityId={}, openGroupCount={}, joinMemberCount={}",
+                    activity.getId(), activity.getOpenGroupCount(), activity.getJoinMemberCount());
             return;
         }
         log.debug("回填单个活动统计: activityId={}", activity.getId());
@@ -500,8 +587,26 @@ public class GroupStorageComponent {
         if (activity == null) {
             return;
         }
-        activity.setOpenGroupCount(defaultLong(getLong(statsMap, FIELD_OPEN_GROUP_COUNT)));
-        activity.setJoinMemberCount(defaultLong(getLong(statsMap, FIELD_JOIN_MEMBER_COUNT)));
+        Long openGroupCount = getLong(statsMap, FIELD_OPEN_GROUP_COUNT);
+        Long joinMemberCount = getLong(statsMap, FIELD_JOIN_MEMBER_COUNT);
+        activity.setOpenGroupCount(openGroupCount != null
+                ? openGroupCount : defaultLong(activity.getOpenGroupCount()));
+        activity.setJoinMemberCount(joinMemberCount != null
+                ? joinMemberCount : defaultLong(activity.getJoinMemberCount()));
+    }
+
+    /**
+     * 删除活动统计 Redis Key。
+     *
+     * @param activityId 活动ID
+     */
+    public void clearActivityStatistics(String activityId) {
+        if (!hasText(activityId)) {
+            log.warn("删除活动统计Key跳过: activityId为空");
+            return;
+        }
+        Boolean deleted = stringRedisTemplate.delete(groupRedisKeyBuilder.buildActivityStatsKey(activityId));
+        log.debug("删除活动统计Key完成: activityId={}, deleted={}", activityId, Boolean.TRUE.equals(deleted));
     }
 
     private List<Object> executeMultiScript(String scriptName, List<String> keys, List<String> args) {
@@ -520,18 +625,26 @@ public class GroupStorageComponent {
      *
      * @param members 成员快照
      */
-    private void upsertMembers(List<GroupMember> members) {
+    private void upsertMembers(String groupId, List<GroupMember> members, Date projectionTime) {
         if (members == null || members.isEmpty()) {
             log.debug("批量upsert成员轨迹跳过: members为空");
             return;
         }
+        Map<String, GroupMember> existingMemberMap = findMongoGroupMembers(groupId).stream()
+                .filter(member -> member != null && hasText(member.getOrderId()))
+                .collect(Collectors.toMap(GroupMember::getOrderId, member -> member, (left, right) -> left));
         BulkOperations bulkOperations = mongoTemplate.bulkOps(BulkOperations.BulkMode.UNORDERED, GroupMember.class);
-        Date now = new Date();
+        Date now = projectionTime != null ? projectionTime : new Date();
         int upsertCount = 0;
         for (GroupMember member : members) {
             if (member == null || !hasText(member.getOrderId())) {
                 continue;
             }
+            GroupMember existingMember = existingMemberMap.get(member.getOrderId());
+            if (!shouldUpsertMember(existingMember, member)) {
+                continue;
+            }
+            member.setUpdateTime(now);
             bulkOperations.upsert(
                     GroupMember.buildOrderIdQuery(member.getOrderId()),
                     GroupMember.buildOrderIdUpsert(member, now)
@@ -542,6 +655,46 @@ public class GroupStorageComponent {
             bulkOperations.execute();
         }
         log.debug("批量upsert成员轨迹完成: inputCount={}, upsertCount={}", members.size(), upsertCount);
+    }
+
+    /**
+     * 判断成员投影是否需要写入 Mongo。
+     * <p>
+     * 只有核心业务字段发生变化时才执行 upsert，避免每次状态同步都把整团成员全量重写一遍。
+     *
+     * @param existingMember Mongo 中的旧成员记录
+     * @param latestMember Redis 快照中的最新成员记录
+     * @return true-需要写入，false-可跳过
+     */
+    private boolean shouldUpsertMember(GroupMember existingMember, GroupMember latestMember) {
+        if (existingMember == null) {
+            return true;
+        }
+        return !Objects.equals(existingMember.getGroupInstanceId(), latestMember.getGroupInstanceId())
+                || !Objects.equals(existingMember.getUserId(), latestMember.getUserId())
+                || !Objects.equals(existingMember.getOrderId(), latestMember.getOrderId())
+                || !Objects.equals(existingMember.getJoinTime(), latestMember.getJoinTime())
+                || !isSameAmount(existingMember.getPayAmount(), latestMember.getPayAmount())
+                || !Objects.equals(existingMember.getSkuId(), latestMember.getSkuId())
+                || !Objects.equals(existingMember.getMemberStatus(), latestMember.getMemberStatus())
+                || !Objects.equals(existingMember.getAfterSaleId(), latestMember.getAfterSaleId());
+    }
+
+    /**
+     * 判断金额是否相同。
+     *
+     * @param left 左值
+     * @param right 右值
+     * @return true-相同，false-不同
+     */
+    private boolean isSameAmount(BigDecimal left, BigDecimal right) {
+        if (left == null && right == null) {
+            return true;
+        }
+        if (left == null || right == null) {
+            return false;
+        }
+        return left.compareTo(right) == 0;
     }
 
     /**

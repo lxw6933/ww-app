@@ -1,5 +1,7 @@
 package com.ww.mall.promotion.engine;
 
+import com.ww.app.common.common.AppPage;
+import com.ww.app.common.common.AppPageResult;
 import com.ww.app.common.exception.ApiException;
 import com.ww.mall.promotion.component.GroupStorageComponent;
 import com.ww.mall.promotion.controller.app.group.res.GroupInstanceVO;
@@ -13,10 +15,8 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.LinkedHashMap;
-import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import java.util.stream.Collectors;
 
 import static com.ww.mall.promotion.constants.ErrorCodeConstants.GROUP_RECORD_ERROR;
@@ -58,46 +58,59 @@ public class GroupQueryService {
     }
 
     /**
-     * 查询用户参与的拼团列表。
+     * 分页查询用户参与的拼团列表。
      *
      * @param userId 用户ID
-     * @return 拼团列表
+     * @param page 分页参数
+     * @return 分页结果
      */
-    public List<GroupInstanceVO> getUserGroups(Long userId) {
+    public AppPageResult<GroupInstanceVO> getUserGroups(Long userId, AppPage page) {
         if (userId == null) {
             throw new ApiException(GROUP_RECORD_ERROR);
         }
-        List<GroupMember> userMembers = groupStorageComponent.findMongoUserMembers(userId);
-        if (userMembers == null || userMembers.isEmpty()) {
-            return Collections.emptyList();
+        AppPage safePage = page == null ? new AppPage() : page;
+        long totalCount = groupStorageComponent.countMongoUserGroups(userId);
+        if (totalCount <= 0L) {
+            return new AppPageResult<>(safePage, Collections.emptyList(), 0);
         }
-        Set<String> orderedGroupIds = new LinkedHashSet<>();
-        userMembers.forEach(member -> {
-            if (member != null && hasText(member.getGroupInstanceId())) {
-                orderedGroupIds.add(member.getGroupInstanceId());
-            }
-        });
-        if (orderedGroupIds.isEmpty()) {
-            return Collections.emptyList();
-        }
-        return loadGroupSummaries(new ArrayList<>(orderedGroupIds));
+        List<String> groupIds = groupStorageComponent.findMongoUserGroupIds(
+                userId,
+                safePage.getPageNum(),
+                safePage.getPageSize()
+        );
+        List<GroupInstanceVO> result = groupIds.isEmpty()
+                ? Collections.emptyList()
+                : loadGroupSummaries(groupIds);
+        return new AppPageResult<>(safePage, result, safeTotalCount(totalCount));
     }
 
     /**
-     * 查询活动下的拼团列表。
+     * 分页查询活动下的拼团列表。
      *
      * @param activityId 活动ID
      * @param status 团状态
-     * @return 拼团列表
+     * @param page 分页参数
+     * @return 分页结果，其中 totalCount 表示“当前筛选条件下的团记录数”；
+     * 不等同于活动累计开团数或累计参团人数，这两类统计仍由 Redis 活动统计回填。
      */
-    public List<GroupInstanceVO> getActivityGroups(String activityId, String status) {
+    public AppPageResult<GroupInstanceVO> getActivityGroups(String activityId, String status, AppPage page) {
         if (!hasText(activityId)) {
             throw new ApiException(GROUP_RECORD_ERROR);
         }
-        return groupStorageComponent.findMongoActivityGroupSummaries(activityId, status)
-                .stream()
+        AppPage safePage = page == null ? new AppPage() : page;
+        long totalCount = groupStorageComponent.countMongoActivityGroups(activityId, status);
+        if (totalCount <= 0L) {
+            return new AppPageResult<>(safePage, Collections.emptyList(), 0);
+        }
+        List<GroupInstanceVO> result = groupStorageComponent.findMongoActivityGroupSummaries(
+                        activityId,
+                        status,
+                        safePage.getPageNum(),
+                        safePage.getPageSize()
+                ).stream()
                 .map(this::convertSummaryToVO)
                 .collect(Collectors.toList());
+        return new AppPageResult<>(safePage, result, safeTotalCount(totalCount));
     }
 
     /**
@@ -200,5 +213,15 @@ public class GroupQueryService {
      */
     private boolean hasText(String value) {
         return value != null && !value.trim().isEmpty();
+    }
+
+    /**
+     * 将长整型总数安全收敛为分页对象使用的整型。
+     *
+     * @param totalCount 原始总数
+     * @return 安全总数
+     */
+    private int safeTotalCount(long totalCount) {
+        return totalCount > Integer.MAX_VALUE ? Integer.MAX_VALUE : (int) totalCount;
     }
 }
