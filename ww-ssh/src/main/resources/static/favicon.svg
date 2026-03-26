@@ -1,26 +1,26 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
     <title>ww-ssh 标签图标</title>
     <defs>
-        <linearGradient id="bg" x1="10" y1="8" x2="54" y2="56" gradientUnits="userSpaceOnUse">
+        <linearGradient id="bg" x1="8" y1="6" x2="56" y2="58" gradientUnits="userSpaceOnUse">
             <stop offset="0" stop-color="#17344d"/>
             <stop offset="1" stop-color="#1f80d8"/>
         </linearGradient>
-        <linearGradient id="screen" x1="16" y1="16" x2="48" y2="48" gradientUnits="userSpaceOnUse">
+        <linearGradient id="screen" x1="14" y1="14" x2="50" y2="50" gradientUnits="userSpaceOnUse">
             <stop offset="0" stop-color="#f7fbff"/>
             <stop offset="1" stop-color="#d8ecff"/>
         </linearGradient>
-        <linearGradient id="accent" x1="18" y1="42" x2="46" y2="42" gradientUnits="userSpaceOnUse">
+        <linearGradient id="accent" x1="19" y1="44" x2="47" y2="44" gradientUnits="userSpaceOnUse">
             <stop offset="0" stop-color="#62d2ff"/>
             <stop offset="1" stop-color="#8ef0c0"/>
         </linearGradient>
     </defs>
-    <rect x="4" y="4" width="56" height="56" rx="16" fill="url(#bg)"/>
-    <path d="M18 18h28c2.209 0 4 1.791 4 4v20c0 2.209-1.791 4-4 4H18c-2.209 0-4-1.791-4-4V22c0-2.209 1.791-4 4-4z" fill="url(#screen)" opacity="0.96"/>
-    <path d="M14 24h36" stroke="#9ec7e2" stroke-width="2"/>
-    <circle cx="19" cy="21" r="1.5" fill="#1f80d8"/>
-    <circle cx="24" cy="21" r="1.5" fill="#62d2ff"/>
-    <circle cx="29" cy="21" r="1.5" fill="#8ef0c0"/>
-    <path d="M23 31l-5 5 5 5" fill="none" stroke="#17344d" stroke-linecap="round" stroke-linejoin="round" stroke-width="3.2"/>
-    <path d="M29 41h17" stroke="url(#accent)" stroke-linecap="round" stroke-width="4"/>
-    <path d="M31 30l3.4 12 3.4-9 3.4 9 3.4-12" fill="none" stroke="#1f80d8" stroke-linecap="round" stroke-linejoin="round" stroke-width="3.4"/>
+    <rect x="2" y="2" width="60" height="60" rx="18" fill="url(#bg)"/>
+    <path d="M16 14h32c2.761 0 5 2.239 5 5v24c0 2.761-2.239 5-5 5H16c-2.761 0-5-2.239-5-5V19c0-2.761 2.239-5 5-5z" fill="url(#screen)" opacity="0.98"/>
+    <path d="M11 22h42" stroke="#9ec7e2" stroke-width="2.4"/>
+    <circle cx="17" cy="18" r="1.8" fill="#1f80d8"/>
+    <circle cx="23" cy="18" r="1.8" fill="#62d2ff"/>
+    <circle cx="29" cy="18" r="1.8" fill="#8ef0c0"/>
+    <path d="M24 29l-6 6 6 6" fill="none" stroke="#17344d" stroke-linecap="round" stroke-linejoin="round" stroke-width="3.8"/>
+    <path d="M30 43h18" stroke="url(#accent)" stroke-linecap="round" stroke-width="4.8"/>
+    <path d="M31 28l3.8 14 3.8-10 3.8 10 3.8-14" fill="none" stroke="#1f80d8" stroke-linecap="round" stroke-linejoin="round" stroke-width="3.8"/>
 </svg>
