@@ -149,10 +149,7 @@ public class GroupQueryService {
             memberInfo.setOrderId(member.getOrderId());
             memberInfo.setSkuId(member.getSkuId());
             memberInfo.setJoinTime(member.getJoinTime());
-            memberInfo.setIsLeader(member.getIsLeader() != null && member.getIsLeader() == 1);
             memberInfo.setMemberStatus(member.getMemberStatus());
-            memberInfo.setLatestTrajectory(member.getLatestTrajectory());
-            memberInfo.setLatestTrajectoryTime(member.getLatestTrajectoryTime());
             memberInfos.add(memberInfo);
         }
         vo.setMembers(memberInfos);
@@ -187,10 +184,7 @@ public class GroupQueryService {
                 memberInfo.setOrderId(member.getOrderId());
                 memberInfo.setSkuId(member.getSkuId());
                 memberInfo.setJoinTime(member.getJoinTime());
-                memberInfo.setIsLeader(Boolean.TRUE.equals(member.getIsLeader()));
                 memberInfo.setMemberStatus(member.getMemberStatus());
-                memberInfo.setLatestTrajectory(member.getLatestTrajectory());
-                memberInfo.setLatestTrajectoryTime(member.getLatestTrajectoryTime());
                 memberInfos.add(memberInfo);
             });
         }

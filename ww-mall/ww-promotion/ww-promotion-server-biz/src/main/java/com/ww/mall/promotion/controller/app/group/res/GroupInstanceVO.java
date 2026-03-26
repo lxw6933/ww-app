@@ -69,17 +69,8 @@ public class GroupInstanceVO {
         @Schema(description = "加入时间", example = "2025-12-08 12:00:00")
         private Date joinTime;
         
-        @Schema(description = "是否团长", example = "true")
-        private Boolean isLeader;
-
         @Schema(description = "成员状态", example = "JOINED")
         private String memberStatus;
-
-        @Schema(description = "最近轨迹节点", example = "PAY_SUCCESS")
-        private String latestTrajectory;
-
-        @Schema(description = "最近轨迹时间", example = "2026-03-17 12:00:00")
-        private Date latestTrajectoryTime;
     }
 
 }

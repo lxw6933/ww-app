@@ -82,8 +82,6 @@ if tonumber(remainingSlots) == 0 then
         local member = cjson.decode(memberEntries[i + 1])
         if member.memberStatus == 'JOINED' then
             member.memberStatus = 'SUCCESS'
-            member.latestTrajectory = 'GROUP_SUCCESS'
-            member.latestTrajectoryTime = tonumber(ARGV[6])
             redis.call('HSET', KEYS[2], orderId, cjson.encode(member))
         end
     end

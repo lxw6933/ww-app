@@ -119,9 +119,9 @@ public class GroupStorageComponent {
                 command.getOrderId(),
                 String.valueOf(activity.getRequiredSize()),
                 String.valueOf(activity.getSpuId()),
-                buildMemberCachePayload(groupId, command.getUserId(), command.getOrderId(), true,
+                buildMemberCachePayload(groupId, command.getUserId(), command.getOrderId(),
                         nowMillis, command.getPayAmount(), command.getSkuId(),
-                        GroupMemberBizStatus.JOINED.name(), null, "PAY_SUCCESS", nowMillis),
+                        GroupMemberBizStatus.JOINED.name(), null),
                 String.valueOf(nowMillis),
                 String.valueOf(businessExpireTime),
                 String.valueOf(buildOpenGroupCacheTtlSeconds(nowMillis, businessExpireTime))
@@ -156,9 +156,9 @@ public class GroupStorageComponent {
                 activity.getId(),
                 String.valueOf(command.getUserId()),
                 command.getOrderId(),
-                buildMemberCachePayload(command.getGroupId(), command.getUserId(), command.getOrderId(), false,
+                buildMemberCachePayload(command.getGroupId(), command.getUserId(), command.getOrderId(),
                         nowMillis, command.getPayAmount(), command.getSkuId(),
-                        GroupMemberBizStatus.JOINED.name(), null, "PAY_SUCCESS", nowMillis),
+                        GroupMemberBizStatus.JOINED.name(), null),
                 String.valueOf(nowMillis),
                 String.valueOf(GroupBizConstants.REDIS_GROUP_TERMINAL_RETAIN_SECONDS)
         );
@@ -450,14 +450,6 @@ public class GroupStorageComponent {
     }
 
     /**
-     * 执行返回多值结果的 Lua 脚本。
-     *
-     * @param scriptName 脚本名称
-     * @param keys Redis keys
-     * @param args Lua 参数
-     * @return Lua 原始返回值
-     */
-    /**
      * 回填单个活动的统计数据。
      * <p>
      * 当前仅回填 Redis 中维护的累计开团数与累计参团人数。
@@ -628,16 +620,13 @@ public class GroupStorageComponent {
             member.setGroupInstanceId(cacheSnapshot.getGroupInstanceId());
             member.setUserId(cacheSnapshot.getUserId());
             member.setOrderId(cacheSnapshot.getOrderId());
-            member.setIsLeader(cacheSnapshot.getIsLeader());
             member.setJoinTime(toDate(cacheSnapshot.getJoinTime()));
             member.setPayAmount(cacheSnapshot.getPayAmount());
             member.setSkuId(cacheSnapshot.getSkuId());
             member.setMemberStatus(cacheSnapshot.getMemberStatus());
             member.setAfterSaleId(cacheSnapshot.getAfterSaleId());
-            member.setLatestTrajectory(cacheSnapshot.getLatestTrajectory());
-            member.setLatestTrajectoryTime(toDate(cacheSnapshot.getLatestTrajectoryTime()));
             member.setCreateTime(member.getJoinTime());
-            member.setUpdateTime(member.getLatestTrajectoryTime() != null ? member.getLatestTrajectoryTime() : member.getJoinTime());
+            member.setUpdateTime(member.getJoinTime());
             log.debug("构建拼团成员完成: groupId={}, userId={}, orderId={}, memberStatus={}",
                     member.getGroupInstanceId(), member.getUserId(), member.getOrderId(), member.getMemberStatus());
             return member;
@@ -658,10 +647,7 @@ public class GroupStorageComponent {
         memberInfo.setOrderId(member.getOrderId());
         memberInfo.setSkuId(member.getSkuId());
         memberInfo.setJoinTime(member.getJoinTime());
-        memberInfo.setIsLeader(member.getIsLeader() != null && member.getIsLeader() == 1);
         memberInfo.setMemberStatus(member.getMemberStatus());
-        memberInfo.setLatestTrajectory(member.getLatestTrajectory());
-        memberInfo.setLatestTrajectoryTime(member.getLatestTrajectoryTime());
         log.debug("构建拼团成员摘要完成: userId={}, orderId={}, memberStatus={}",
                 member.getUserId(), member.getOrderId(), member.getMemberStatus());
         return memberInfo;
@@ -765,35 +751,29 @@ public class GroupStorageComponent {
      * @param groupId 团ID
      * @param userId 用户ID
      * @param orderId 订单ID
-     * @param leader 是否团长
      * @param joinTime 入团时间
      * @param payAmount 支付金额
      * @param skuId SKU ID
      * @param memberStatus 成员状态
      * @param afterSaleId 售后单号
-     * @param latestTrajectory 最新轨迹编码
-     * @param latestTrajectoryTime 最新轨迹时间
      * @return JSON 文本
      */
-    private String buildMemberCachePayload(String groupId, Long userId, String orderId, boolean leader,
+    private String buildMemberCachePayload(String groupId, Long userId, String orderId,
                                            long joinTime, BigDecimal payAmount, Long skuId, String memberStatus,
-                                           String afterSaleId, String latestTrajectory, long latestTrajectoryTime) {
+                                           String afterSaleId) {
         GroupMemberCacheSnapshot member = new GroupMemberCacheSnapshot();
         member.setGroupInstanceId(groupId);
         member.setUserId(userId);
         member.setOrderId(orderId);
-        member.setIsLeader(leader ? 1 : 0);
         member.setJoinTime(joinTime);
         member.setPayAmount(payAmount);
         member.setSkuId(skuId);
         member.setMemberStatus(memberStatus);
         member.setAfterSaleId(afterSaleId);
-        member.setLatestTrajectory(latestTrajectory);
-        member.setLatestTrajectoryTime(latestTrajectoryTime);
         try {
             String payload = JacksonUtils.toJsonString(member);
-            log.debug("构建成员缓存载荷完成: groupId={}, userId={}, orderId={}, leader={}, memberStatus={}",
-                    groupId, userId, orderId, leader, memberStatus);
+            log.debug("构建成员缓存载荷完成: groupId={}, userId={}, orderId={}, memberStatus={}",
+                    groupId, userId, orderId, memberStatus);
             return payload;
         } catch (Exception e) {
             log.error("构建成员缓存载荷失败: groupId={}, userId={}, orderId={}", groupId, userId, orderId, e);

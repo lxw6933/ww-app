@@ -43,8 +43,6 @@ for i = 1, #memberEntries, 2 do
     local memberStatus = member.memberStatus
     if memberStatus == 'JOINED' or memberStatus == 'SUCCESS' then
         member.memberStatus = 'FAILED_REFUND_PENDING'
-        member.latestTrajectory = 'GROUP_FAILED'
-        member.latestTrajectoryTime = tonumber(ARGV[3])
         redis.call('HSET', KEYS[2], orderId, cjson.encode(member))
         redis.call('HDEL', KEYS[3], tostring(member.userId))
     end

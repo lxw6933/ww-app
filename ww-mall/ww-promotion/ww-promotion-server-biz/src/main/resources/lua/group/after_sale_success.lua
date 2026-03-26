@@ -2,11 +2,11 @@
 拼团售后成功脚本。
 
 功能：
-1. 基于订单定位成员，记录 afterSaleId 并刷新最近轨迹。
+1. 基于订单定位成员并记录 afterSaleId。
 2. 团仍 OPEN 时：
    普通成员售后 -> 释放名额；
    团长售后 -> 整团关闭并标记其他成员待退款。
-3. 团已 SUCCESS/FAILED 时只补审计事件，不再改团主状态。
+3. 团已 SUCCESS/FAILED 时只补售后标记，不再改团主状态。
 4. 原子维护团内活跃用户索引和过期索引。
 
 KEYS:
@@ -34,21 +34,20 @@ if not targetJson then
 end
 
 local currentStatus = redis.call('HGET', KEYS[1], 'status')
+local leaderUserId = redis.call('HGET', KEYS[1], 'leaderUserId')
 local target = cjson.decode(targetJson)
 if target.afterSaleId and target.afterSaleId ~= '' then
     return {2, currentStatus}
 end
 
 target.afterSaleId = ARGV[2]
-target.latestTrajectory = 'AFTER_SALE_SUCCESS'
-target.latestTrajectoryTime = tonumber(ARGV[4])
 redis.call('HSET', KEYS[2], ARGV[3], cjson.encode(target))
 
 if currentStatus ~= 'OPEN' then
     return {1, currentStatus}
 end
 
-if tonumber(target.isLeader or 0) == 1 then
+if leaderUserId and tostring(target.userId) == tostring(leaderUserId) then
     local memberEntries = redis.call('HGETALL', KEYS[2])
     for i = 1, #memberEntries, 2 do
         local orderId = memberEntries[i]
@@ -57,12 +56,8 @@ if tonumber(target.isLeader or 0) == 1 then
         local active = memberStatus == 'JOINED' or memberStatus == 'SUCCESS'
         if orderId == ARGV[3] then
             member.memberStatus = 'LEADER_AFTER_SALE_CLOSED'
-            member.latestTrajectory = 'GROUP_FAILED'
-            member.latestTrajectoryTime = tonumber(ARGV[4])
         elseif active then
             member.memberStatus = 'FAILED_REFUND_PENDING'
-            member.latestTrajectory = 'GROUP_FAILED'
-            member.latestTrajectoryTime = tonumber(ARGV[4])
         end
         if active then
             redis.call('HDEL', KEYS[3], tostring(member.userId))
@@ -87,8 +82,6 @@ end
 local memberStatus = target.memberStatus
 if memberStatus == 'JOINED' or memberStatus == 'SUCCESS' then
     target.memberStatus = 'AFTER_SALE_RELEASED'
-    target.latestTrajectory = 'SEAT_RELEASED'
-    target.latestTrajectoryTime = tonumber(ARGV[4])
     redis.call('HSET', KEYS[2], ARGV[3], cjson.encode(target))
     redis.call('HDEL', KEYS[3], tostring(target.userId))
     redis.call('HINCRBY', KEYS[1], 'currentSize', -1)

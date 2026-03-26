@@ -35,11 +35,6 @@ public class GroupMemberCacheSnapshot {
     private String orderId;
 
     /**
-     * 是否团长：1-是，0-否。
-     */
-    private Integer isLeader;
-
-    /**
      * 入团时间毫秒值。
      */
     private Long joinTime;
@@ -64,13 +59,4 @@ public class GroupMemberCacheSnapshot {
      */
     private String afterSaleId;
 
-    /**
-     * 最近轨迹编码。
-     */
-    private String latestTrajectory;
-
-    /**
-     * 最近轨迹时间毫秒值。
-     */
-    private Long latestTrajectoryTime;
 }

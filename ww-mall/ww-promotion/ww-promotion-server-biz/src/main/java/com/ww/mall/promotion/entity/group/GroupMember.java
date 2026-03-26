@@ -46,11 +46,6 @@ public class GroupMember extends BaseDoc {
     private String orderId;
 
     /**
-     * 是否团长：1-是，0-否
-     */
-    private Integer isLeader;
-
-    /**
      * 加入时间
      */
     private Date joinTime;
@@ -76,16 +71,6 @@ public class GroupMember extends BaseDoc {
      * 售后单号。
      */
     private String afterSaleId;
-
-    /**
-     * 最近一次轨迹编码。
-     */
-    private String latestTrajectory;
-
-    /**
-     * 最近一次轨迹时间。
-     */
-    private Date latestTrajectoryTime;
 
     /**
      * 构建根据订单ID查询
@@ -131,14 +116,11 @@ public class GroupMember extends BaseDoc {
         update.set("groupInstanceId", member.getGroupInstanceId());
         update.set("userId", member.getUserId());
         update.set("orderId", member.getOrderId());
-        update.set("isLeader", member.getIsLeader());
         update.set("joinTime", member.getJoinTime());
         update.set("payAmount", member.getPayAmount());
         update.set("skuId", member.getSkuId());
         update.set("memberStatus", member.getMemberStatus());
         update.set("afterSaleId", member.getAfterSaleId());
-        update.set("latestTrajectory", member.getLatestTrajectory());
-        update.set("latestTrajectoryTime", member.getLatestTrajectoryTime());
         update.set("updateTime", member.getUpdateTime() != null ? member.getUpdateTime() : now);
         update.setOnInsert("createTime", member.getCreateTime() != null ? member.getCreateTime() : now);
         return update;

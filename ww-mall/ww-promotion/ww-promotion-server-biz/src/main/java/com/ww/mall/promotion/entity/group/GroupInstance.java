@@ -114,24 +114,9 @@ public class GroupInstance extends BaseDoc {
         private Date joinTime;
 
         /**
-         * 是否团长
-         */
-        private Boolean isLeader;
-
-        /**
          * 成员状态。
          */
         private String memberStatus;
-
-        /**
-         * 最近轨迹编码。
-         */
-        private String latestTrajectory;
-
-        /**
-         * 最近轨迹时间。
-         */
-        private Date latestTrajectoryTime;
     }
 
     /**

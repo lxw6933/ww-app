@@ -1,5 +1,6 @@
 package com.ww.mall.promotion.engine;
 
+import com.ww.mall.promotion.component.GroupStorageComponent;
 import com.ww.mall.promotion.controller.app.group.res.GroupInstanceVO;
 import com.ww.mall.promotion.entity.group.GroupInstance;
 import com.ww.mall.promotion.entity.group.GroupMember;
@@ -8,8 +9,6 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.springframework.data.mongodb.core.MongoTemplate;
-import org.springframework.data.mongodb.core.query.Query;
 
 import java.util.Arrays;
 import java.util.Collections;
@@ -17,10 +16,7 @@ import java.util.Date;
 import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.never;
-import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -35,10 +31,7 @@ import static org.mockito.Mockito.when;
 class GroupQueryServiceTest {
 
     @Mock
-    private GroupRedisStateReader groupRedisStateReader;
-
-    @Mock
-    private MongoTemplate mongoTemplate;
+    private GroupStorageComponent groupStorageComponent;
 
     @InjectMocks
     private GroupQueryService groupQueryService;
@@ -48,12 +41,12 @@ class GroupQueryServiceTest {
      */
     @Test
     void shouldBatchLoadUserGroupsWithoutNPlusOneQueries() {
-        when(mongoTemplate.find(any(Query.class), eq(GroupMember.class))).thenReturn(Arrays.asList(
+        when(groupStorageComponent.findMongoUserMembers(1001L)).thenReturn(Arrays.asList(
                 buildUserMember("group-2", 102L, "ORDER-2", new Date(2L)),
                 buildUserMember("group-1", 101L, "ORDER-1", new Date(1L)),
                 buildUserMember("group-1", 101L, "ORDER-1-DUP", new Date(0L))
         ));
-        when(mongoTemplate.find(any(Query.class), eq(GroupInstance.class))).thenReturn(Arrays.asList(
+        when(groupStorageComponent.findMongoGroupSummaries(Arrays.asList("group-2", "group-1"))).thenReturn(Arrays.asList(
                 buildSummaryInstance("group-1", 101L, "ORDER-1"),
                 buildSummaryInstance("group-2", 102L, "ORDER-2")
         ));
@@ -65,9 +58,9 @@ class GroupQueryServiceTest {
         assertEquals("group-1", result.get(1).getId());
         assertEquals(1, result.get(0).getMembers().size());
         assertEquals("ORDER-2", result.get(0).getMembers().get(0).getOrderId());
-        verify(mongoTemplate, times(1)).find(any(Query.class), eq(GroupMember.class));
-        verify(mongoTemplate, times(1)).find(any(Query.class), eq(GroupInstance.class));
-        verify(mongoTemplate, never()).findOne(any(Query.class), eq(GroupInstance.class));
+        verify(groupStorageComponent).findMongoUserMembers(1001L);
+        verify(groupStorageComponent).findMongoGroupSummaries(Arrays.asList("group-2", "group-1"));
+        verify(groupStorageComponent, never()).findMongoGroupInstance("group-1");
     }
 
     /**
@@ -75,13 +68,13 @@ class GroupQueryServiceTest {
      */
     @Test
     void shouldReturnEmptyListWhenUserHasNoGroups() {
-        when(mongoTemplate.find(any(Query.class), eq(GroupMember.class))).thenReturn(Collections.emptyList());
+        when(groupStorageComponent.findMongoUserMembers(1001L)).thenReturn(Collections.emptyList());
 
         List<GroupInstanceVO> result = groupQueryService.getUserGroups(1001L);
 
         assertEquals(0, result.size());
-        verify(mongoTemplate, times(1)).find(any(Query.class), eq(GroupMember.class));
-        verify(mongoTemplate, never()).find(any(Query.class), eq(GroupInstance.class));
+        verify(groupStorageComponent).findMongoUserMembers(1001L);
+        verify(groupStorageComponent, never()).findMongoGroupSummaries(Collections.emptyList());
     }
 
     /**
@@ -114,7 +107,6 @@ class GroupQueryServiceTest {
         memberInfo.setUserId(userId);
         memberInfo.setOrderId(orderId);
         memberInfo.setJoinTime(new Date());
-        memberInfo.setIsLeader(Boolean.TRUE);
         instance.setMembers(Collections.singletonList(memberInfo));
         return instance;
     }

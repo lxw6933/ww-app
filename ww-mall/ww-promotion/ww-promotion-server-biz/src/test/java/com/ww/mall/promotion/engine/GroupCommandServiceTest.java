@@ -207,6 +207,8 @@ class GroupCommandServiceTest {
         activity.setEnabled(GroupEnabledStatus.ENABLED.getCode());
         activity.setRequiredSize(2);
         activity.setExpireHours(24);
+        activity.setSkuId(1001L);
+        activity.setGroupPrice(new BigDecimal("99.00"));
         return activity;
     }
 
