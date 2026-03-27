@@ -121,7 +121,8 @@ class GroupCommandServiceTest {
         GroupActivity activity = buildJoinableActivity();
         activity.setEnabled(GroupEnabledStatus.DISABLED.isEnabled());
 
-        when(groupStorageComponent.requireGroupSnapshot("group-1")).thenReturn(buildBeforeJoinSnapshot());
+        when(groupStorageComponent.requireGroupSnapshot("group-1"))
+                .thenReturn(buildSnapshotWithSpu("group-1", "activity-1", 2001L));
         when(groupActivityCache.get("activity-1")).thenReturn(activity);
 
         assertNull(groupCommandService.handleOrderPaid(message));
@@ -222,7 +223,8 @@ class GroupCommandServiceTest {
         result.setGroupStatus("FAILED");
         result.setFailReason("-4");
 
-        when(groupStorageComponent.requireGroupSnapshot("group-1")).thenReturn(buildBeforeJoinSnapshot());
+        when(groupStorageComponent.requireGroupSnapshot("group-1"))
+                .thenReturn(buildSnapshotWithSpu("group-1", "activity-1", 2001L));
         when(groupActivityCache.get("activity-1")).thenReturn(buildJoinableActivity());
         when(groupStorageComponent.joinGroup(any(GroupActivity.class), any(), anyLong())).thenReturn(result);
 
@@ -233,6 +235,32 @@ class GroupCommandServiceTest {
                 eq(GroupMqConstant.GROUP_REFUND_REQUEST_KEY),
                 any()
         );
+    }
+
+    /**
+     * 当参团 SKU 命中的是活动下其他 SPU 时，应拒绝跨 SPU 混团。
+     */
+    @Test
+    void shouldRejectJoinWhenSkuMatchesDifferentSpuWithinSameActivity() {
+        GroupActivity activity = buildJoinableActivity();
+        when(groupStorageComponent.requireGroupSnapshot("group-1"))
+                .thenReturn(buildSnapshotWithSpu("group-1", "activity-1", 2001L));
+        when(groupActivityCache.get("activity-1")).thenReturn(activity);
+
+        com.ww.mall.promotion.service.group.command.JoinGroupCommand command =
+                new com.ww.mall.promotion.service.group.command.JoinGroupCommand();
+        command.setGroupId("group-1");
+        command.setUserId(1L);
+        command.setOrderId("order-join-1");
+        command.setSkuId(2001L);
+        command.setPayAmount(new BigDecimal("109.00"));
+
+        ApiException exception = assertThrows(ApiException.class, () -> groupCommandService.joinGroup(command));
+
+        assertEquals(com.ww.mall.promotion.constants.ErrorCodeConstants.GROUP_RECORD_SPU_NOT_MATCH.getCode(),
+                exception.getCode());
+        verify(groupStorageComponent, never())
+                .joinGroup(any(GroupActivity.class), any(com.ww.mall.promotion.service.group.command.JoinGroupCommand.class), anyLong());
     }
 
     /**
@@ -323,7 +351,8 @@ class GroupCommandServiceTest {
         message.setOrderId("order-1");
         message.setUserId(1L);
         when(groupStorageComponent.loadGroupSnapshot("group-1")).thenReturn(buildOpenSnapshot());
-        when(groupStorageComponent.afterSaleSuccess(eq("group-1"), anyString(), eq("order-1"), anyLong(), anyString(), anyString()))
+        when(groupStorageComponent.afterSaleSuccess(eq("group-1"), nullable(String.class), eq("order-1"),
+                anyLong(), anyString(), nullable(String.class)))
                 .thenReturn(3);
 
         assertDoesNotThrow(() -> groupCommandService.handleAfterSaleSuccess(message));
@@ -466,6 +495,24 @@ class GroupCommandServiceTest {
         GroupInstance instance = new GroupInstance();
         instance.setId("group-1");
         instance.setActivityId("activity-1");
+        snapshot.setInstance(instance);
+        return snapshot;
+    }
+
+    /**
+     * 构造带有团内 SPU 绑定关系的参团前快照。
+     *
+     * @param groupId 团ID
+     * @param activityId 活动ID
+     * @param spuId 团已绑定的 SPU ID
+     * @return 团快照
+     */
+    private GroupCacheSnapshot buildSnapshotWithSpu(String groupId, String activityId, Long spuId) {
+        GroupCacheSnapshot snapshot = new GroupCacheSnapshot();
+        GroupInstance instance = new GroupInstance();
+        instance.setId(groupId);
+        instance.setActivityId(activityId);
+        instance.setSpuId(spuId);
         snapshot.setInstance(instance);
         return snapshot;
     }

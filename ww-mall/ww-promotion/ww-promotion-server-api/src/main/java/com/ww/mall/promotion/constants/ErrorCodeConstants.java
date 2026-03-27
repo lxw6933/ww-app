@@ -26,6 +26,7 @@ public interface ErrorCodeConstants {
     ResCode GROUP_RECORD_SKU_NOT_SUPPORTED = new ResCode(1_013_011_014, "拼团失败，当前SKU不在活动范围内");
     ResCode GROUP_RECORD_AFTER_SALE_DUPLICATED = new ResCode(1_013_011_015, "拼团售后消息已处理");
     ResCode GROUP_RECORD_FAILED_CLOSED = new ResCode(1_013_011_016, "拼团失败，拼团已关闭");
+    ResCode GROUP_RECORD_SPU_NOT_MATCH = new ResCode(1_013_011_017, "拼团失败，当前SKU与拼团商品不匹配");
 
     // ========== 拼团活动 1-013-012-000 ==========
     ResCode GROUP_ACTIVITY_PARAM_EMPTY = new ResCode(1_013_012_000, "拼团活动参数不能为空");

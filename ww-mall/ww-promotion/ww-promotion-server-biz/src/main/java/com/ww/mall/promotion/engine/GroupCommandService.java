@@ -118,7 +118,8 @@ public class GroupCommandService {
         }
         GroupCacheSnapshot snapshot = groupStorageComponent.requireGroupSnapshot(command.getGroupId());
         GroupActivity activity = loadAndValidateActivity(snapshot.getInstance().getActivityId());
-        resolveSkuRule(activity, command.getSkuId());
+        ResolvedSkuRule resolvedSkuRule = resolveSkuRule(activity, command.getSkuId());
+        validateJoinSpuConsistency(snapshot, resolvedSkuRule);
         long nowMillis = System.currentTimeMillis();
         GroupCommandResult result = groupStorageComponent.joinGroup(activity, command, nowMillis);
         if (!result.isSuccess()) {
@@ -349,6 +350,34 @@ public class GroupCommandService {
             }
         }
         throw new ApiException(GROUP_RECORD_SKU_NOT_SUPPORTED);
+    }
+
+    /**
+     * 校验参团 SKU 与当前拼团绑定的 SPU 是否一致。
+     * <p>
+     * 开团成功后，团主状态已经固化了本团命中的 SPU ID，
+     * 后续参团必须继续命中同一个 SPU，避免同一个团下混入不同商品。
+     *
+     * @param snapshot 当前拼团快照
+     * @param resolvedSkuRule 本次参团命中的 SKU 规则
+     */
+    private void validateJoinSpuConsistency(GroupCacheSnapshot snapshot, ResolvedSkuRule resolvedSkuRule) {
+        if (snapshot == null || snapshot.getInstance() == null || resolvedSkuRule == null) {
+            throw new ApiException(GROUP_RECORD_ERROR);
+        }
+        Long groupSpuId = snapshot.getInstance().getSpuId();
+        Long requestSpuId = resolvedSkuRule.getSpuId();
+        if (groupSpuId == null || requestSpuId == null) {
+            log.warn("参团SPU一致性校验失败，团快照或请求SPU缺失: groupId={}, groupSpuId={}, requestSpuId={}",
+                    snapshot.getInstance().getId(), groupSpuId, requestSpuId);
+            throw new ApiException(GROUP_RECORD_ERROR);
+        }
+        if (!groupSpuId.equals(requestSpuId)) {
+            log.warn("参团命中跨SPU混团校验，拒绝参团: groupId={}, groupSpuId={}, requestSpuId={}, skuId={}",
+                    snapshot.getInstance().getId(), groupSpuId, requestSpuId,
+                    resolvedSkuRule.getSkuRule() == null ? null : resolvedSkuRule.getSkuRule().getSkuId());
+            throw new ApiException(GROUP_RECORD_SPU_NOT_MATCH);
+        }
     }
 
     /**
