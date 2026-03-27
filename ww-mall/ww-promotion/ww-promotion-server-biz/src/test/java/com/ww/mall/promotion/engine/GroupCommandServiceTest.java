@@ -291,6 +291,33 @@ class GroupCommandServiceTest {
     }
 
     /**
+     * 当售后处理遇到并发状态变化导致 Lua 返回 no-op 时，不应继续发送状态变更消息。
+     */
+    @Test
+    void shouldSkipStateChangedWhenAfterSaleBecomesNonOpenDuringLuaExecution() {
+        GroupAfterSaleSuccessMessage message = new GroupAfterSaleSuccessMessage();
+        message.setGroupId("group-1");
+        message.setOrderId("order-1");
+        message.setUserId(1L);
+        when(groupStorageComponent.loadGroupSnapshot("group-1")).thenReturn(buildOpenSnapshot());
+        when(groupStorageComponent.afterSaleSuccess(eq("group-1"), anyString(), eq("order-1"), anyLong(), anyString(), anyString()))
+                .thenReturn(3);
+
+        assertDoesNotThrow(() -> groupCommandService.handleAfterSaleSuccess(message));
+
+        verify(rabbitMqPublisher, never()).sendMsg(
+                eq(GroupMqConstant.GROUP_EXCHANGE),
+                eq(GroupMqConstant.GROUP_STATE_CHANGED_KEY),
+                any()
+        );
+        verify(rabbitMqPublisher, never()).sendMsg(
+                eq(GroupMqConstant.GROUP_EXCHANGE),
+                eq(GroupMqConstant.GROUP_REFUND_REQUEST_KEY),
+                any()
+        );
+    }
+
+    /**
      * 当失败拼团仍存在待退款成员时，应支持人工重发退款补偿。
      */
     @Test
@@ -394,6 +421,28 @@ class GroupCommandServiceTest {
         instance.setId("group-1");
         instance.setActivityId("activity-1");
         snapshot.setInstance(instance);
+        return snapshot;
+    }
+
+    /**
+     * 构造进行中的团快照。
+     *
+     * @return 团快照
+     */
+    private GroupCacheSnapshot buildOpenSnapshot() {
+        GroupCacheSnapshot snapshot = new GroupCacheSnapshot();
+        GroupInstance instance = new GroupInstance();
+        instance.setId("group-1");
+        instance.setActivityId("activity-1");
+        instance.setLeaderUserId(1L);
+        instance.setStatus(GroupStatus.OPEN.getCode());
+        snapshot.setInstance(instance);
+
+        GroupMember leader = new GroupMember();
+        leader.setUserId(1L);
+        leader.setOrderId("order-1");
+        leader.setMemberStatus("JOINED");
+        snapshot.setMembers(Collections.singletonList(leader));
         return snapshot;
     }
 

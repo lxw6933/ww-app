@@ -36,16 +36,16 @@ end
 local currentStatus = redis.call('HGET', KEYS[1], 'status')
 local leaderUserId = redis.call('HGET', KEYS[1], 'leaderUserId')
 local target = cjson.decode(targetJson)
+if currentStatus ~= 'OPEN' then
+    return {3, currentStatus}
+end
+
 if target.afterSaleId and target.afterSaleId ~= '' then
     return {2, currentStatus}
 end
 
 target.afterSaleId = ARGV[2]
 redis.call('HSET', KEYS[2], ARGV[3], cjson.encode(target))
-
-if currentStatus ~= 'OPEN' then
-    return {1, currentStatus}
-end
 
 if leaderUserId and tostring(target.userId) == tostring(leaderUserId) then
     local memberEntries = redis.call('HGETALL', KEYS[2])

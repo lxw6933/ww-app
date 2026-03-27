@@ -212,6 +212,11 @@ public class GroupCommandService {
         if (code < 0) {
             throw new ApiException(GROUP_RECORD_ERROR);
         }
+        if (code == 3) {
+            log.info("售后成功处理命中并发no-op，当前拼团已非OPEN，跳过拼团售后状态变更: groupId={}, orderId={}",
+                    groupId, message.getOrderId());
+            return;
+        }
         if (code == 1) {
             afterStateChanged(groupId, nowMillis);
             if (leaderAfterSale) {
