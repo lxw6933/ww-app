@@ -9,12 +9,14 @@ import org.springframework.stereotype.Component;
  * 新版拼团重构后，Redis 为主状态存储，所有命令链路都围绕统一 Key 规范运转。
  * 这里集中维护各类状态、索引和计数器 Key，避免命令脚本与 Java 代码各自拼串。
  * <p>
- * 当前拼团主链路固定使用 5 个核心 Key：
+ * 当前拼团主链路固定使用 7 个核心 Key：
  * 1. 团主状态：{@code group:instance:meta:{groupId}}
  * 2. 团成员仓库：{@code group:instance:member-store:{groupId}}
  * 3. 团内活跃用户索引：{@code group:instance:user-index:{groupId}}
  * 4. 活动统计：{@code group:activity:stats:{activityId}}
  * 5. 过期调度索引：{@code group:expiry}
+ * 6. 补偿任务明细：{@code group:compensation:task}
+ * 7. 补偿任务调度索引：{@code group:compensation:schedule}
  * <p>
  * 示例：
  * 团状态 Key:
@@ -38,6 +40,9 @@ public class GroupRedisKeyBuilder extends RedisKeyBuilder {
     private static final String EXPIRY = "expiry";
     private static final String MEMBER_STORE = "member-store";
     private static final String USER_INDEX = "user-index";
+    private static final String COMPENSATION = "compensation";
+    private static final String TASK = "task";
+    private static final String SCHEDULE = "schedule";
 
     /**
      * 团主状态 Hash Key。
@@ -138,6 +143,28 @@ public class GroupRedisKeyBuilder extends RedisKeyBuilder {
      */
     public String buildExpiryIndexKey() {
         return join(GROUP, EXPIRY);
+    }
+
+    /**
+     * 补偿任务明细 Hash Key。
+     * <p>
+     * field 为补偿任务ID，value 为任务快照 JSON。
+     *
+     * @return Redis Key
+     */
+    public String buildCompensationTaskStoreKey() {
+        return join(GROUP, COMPENSATION, TASK);
+    }
+
+    /**
+     * 补偿任务调度 ZSet Key。
+     * <p>
+     * member 为补偿任务ID，score 为下次执行时间毫秒值。
+     *
+     * @return Redis Key
+     */
+    public String buildCompensationScheduleKey() {
+        return join(GROUP, COMPENSATION, SCHEDULE);
     }
 
     /**

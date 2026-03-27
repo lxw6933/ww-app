@@ -32,6 +32,8 @@
   - `group:instance:user-index:{groupId}`
   - `group:activity:stats:{activityId}`
   - `group:expiry`
+  - `group:compensation:task`
+  - `group:compensation:schedule`
 - Mongo 查询模型：
   - `GroupInstance`
   - `GroupMember`
@@ -439,6 +441,15 @@ flowchart LR
 - 详情查询优先 Redis，保证看到更实时状态。
 - 列表查询优先 Mongo，保证成本稳定。
 - `group.state.changed` 发送失败时，命令服务会本地兜底执行一次 `syncProjection`。
+- 若本地兜底或消费者处理仍失败，会登记 `PROJECTION_SYNC` 补偿任务，由定时任务继续追平 Mongo。
+
+### 10.4 副作用补偿
+
+- 只有“主状态已成功写入，但副作用执行失败”的场景才进入补偿索引。
+- 当前补偿任务包含两类：
+  - `PROJECTION_SYNC`：Mongo 投影补偿
+  - `REFUND_RETRY`：失败团待退款成员消息重发
+- `groupSyncToMongoJobHandler` 会扫描 `group:compensation:schedule`，按任务类型执行补偿，并在成功后移除任务。
 
 ## 11. 走读结论
 

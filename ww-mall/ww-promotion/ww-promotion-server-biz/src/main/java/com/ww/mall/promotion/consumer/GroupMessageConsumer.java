@@ -2,6 +2,7 @@ package com.ww.mall.promotion.consumer;
 
 import com.ww.mall.promotion.component.GroupStorageComponent;
 import com.ww.mall.promotion.engine.model.GroupCacheSnapshot;
+import com.ww.mall.promotion.enums.GroupCompensationTaskType;
 import com.ww.mall.promotion.mq.GroupAfterSaleSuccessMessage;
 import com.ww.mall.promotion.mq.GroupMqConstant;
 import com.ww.mall.promotion.mq.GroupOrderPaidMessage;
@@ -69,6 +70,12 @@ public class GroupMessageConsumer {
         } catch (Exception e) {
             log.error("拼团状态变更内部消息处理失败: groupId={}",
                     message.getGroupId(), e);
+            groupStorageComponent.submitCompensationTask(
+                    GroupCompensationTaskType.PROJECTION_SYNC,
+                    message.getGroupId(),
+                    message.getEventTime(),
+                    e.getMessage()
+            );
         }
     }
 }

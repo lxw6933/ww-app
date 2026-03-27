@@ -3,12 +3,15 @@ package com.ww.mall.promotion.job;
 import com.ww.mall.promotion.component.GroupStorageComponent;
 import com.ww.mall.promotion.constants.GroupBizConstants;
 import com.ww.mall.promotion.engine.GroupCommandService;
+import com.ww.mall.promotion.engine.model.GroupCompensationTaskSnapshot;
+import com.ww.mall.promotion.enums.GroupCompensationTaskType;
 import com.ww.mall.promotion.service.group.GroupActivityService;
 import com.xxl.job.core.handler.annotation.XxlJob;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 
 import javax.annotation.Resource;
+import java.util.List;
 import java.util.Set;
 
 /**
@@ -65,13 +68,31 @@ public class GroupExpireJob {
     }
 
     /**
-     * 兼容保留空任务。
+     * 处理拼团补偿任务。
      * <p>
-     * Mongo 投影当前由 `group.state.changed` 内部消息异步驱动。
-     * 这里继续保留空实现，仅用于兼容已有 XXL-Job 配置，避免任务中心继续调度时报错。
+     * 该任务负责扫描“主状态已成功写入，但副作用执行失败”的补偿索引，
+     * 当前覆盖两类场景：
+     * 1. `PROJECTION_SYNC`：Mongo 投影补偿
+     * 2. `REFUND_RETRY`：待退款成员消息重发
      */
     @XxlJob("groupSyncToMongoJobHandler")
     public void groupSyncToMongoJobHandler() {
+        long nowMillis = System.currentTimeMillis();
+        for (int round = 0; round < GroupBizConstants.COMPENSATION_JOB_MAX_ROUNDS; round++) {
+            List<GroupCompensationTaskSnapshot> tasks = groupStorageComponent.findDueCompensationTasks(
+                    nowMillis,
+                    GroupBizConstants.COMPENSATION_JOB_BATCH_LIMIT
+            );
+            if (tasks.isEmpty()) {
+                return;
+            }
+            for (GroupCompensationTaskSnapshot task : tasks) {
+                processCompensationTask(task);
+            }
+            if (tasks.size() < GroupBizConstants.COMPENSATION_JOB_BATCH_LIMIT) {
+                return;
+            }
+        }
     }
 
     /**
@@ -83,5 +104,34 @@ public class GroupExpireJob {
     @XxlJob("activityStatusUpdateJobHandler")
     public void activityStatusUpdateJobHandler() {
         groupActivityService.settleExpiredActivityStatistics();
+    }
+
+    /**
+     * 执行单个补偿任务。
+     *
+     * @param task 任务快照
+     */
+    private void processCompensationTask(GroupCompensationTaskSnapshot task) {
+        if (task == null || task.getTaskType() == null) {
+            return;
+        }
+        try {
+            if (task.getTaskType() == GroupCompensationTaskType.PROJECTION_SYNC) {
+                groupStorageComponent.syncProjection(task.getGroupId());
+            } else if (task.getTaskType() == GroupCompensationTaskType.REFUND_RETRY) {
+                groupCommandService.triggerPendingRefundCompensation(
+                        task.getGroupId(),
+                        "定时任务触发拼团退款补偿"
+                );
+            } else {
+                log.warn("未知拼团补偿任务类型，直接移除: taskId={}, taskType={}",
+                        task.getTaskId(), task.getTaskType());
+            }
+            groupStorageComponent.removeCompensationTask(task.getTaskId());
+        } catch (Exception e) {
+            log.error("执行拼团补偿任务失败: taskId={}, taskType={}, groupId={}",
+                    task.getTaskId(), task.getTaskType(), task.getGroupId(), e);
+            groupStorageComponent.retryCompensationTask(task, e.getMessage());
+        }
     }
 }

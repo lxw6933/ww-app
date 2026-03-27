@@ -44,6 +44,8 @@
 - `group:instance:user-index:{groupId}`：团内活跃用户索引。
 - `group:activity:stats:{activityId}`：活动累计统计。
 - `group:expiry`：过期索引。
+- `group:compensation:task`：副作用失败补偿任务明细。
+- `group:compensation:schedule`：副作用失败补偿调度索引。
 
 ### Mongo
 
@@ -59,4 +61,5 @@
 - OPEN 状态 Redis TTL 在开团时一次性设置为“距 `expireTime` 的剩余时长 + 2天保留期”。
 - 团成功、售后关闭、过期失败后，Redis TTL 会重置为固定 2 天，不继续沿用 OPEN 状态下的长 TTL。
 - 如果内部 `group.state.changed` 发送失败，命令服务会立即执行一次本地 `syncProjection` 作为兜底。
+- 如果内部投影或退款补偿消息发送最终仍失败，会写入补偿索引，由 `groupSyncToMongoJobHandler` 定时重试。
 - B 端回显时应校验 Mongo/Redis 状态，必要时提供手动补发内部消息的入口。

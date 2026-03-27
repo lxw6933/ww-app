@@ -10,6 +10,7 @@ import com.ww.mall.promotion.engine.model.GroupCommandResult;
 import com.ww.mall.promotion.entity.group.GroupActivity;
 import com.ww.mall.promotion.entity.group.GroupInstance;
 import com.ww.mall.promotion.entity.group.GroupMember;
+import com.ww.mall.promotion.enums.GroupCompensationTaskType;
 import com.ww.mall.promotion.enums.GroupEnabledStatus;
 import com.ww.mall.promotion.enums.GroupStatus;
 import com.ww.mall.promotion.enums.GroupTradeType;
@@ -87,6 +88,28 @@ class GroupCommandServiceTest {
         ReflectionTestUtils.invokeMethod(groupCommandService, "afterStateChanged", "group-1", 1L);
 
         verify(groupStorageComponent).syncProjection("group-1");
+    }
+
+    /**
+     * 当内部状态变更消息发送失败且本地投影兜底也失败时，应登记投影补偿任务。
+     */
+    @Test
+    void shouldSubmitProjectionCompensationTaskWhenFallbackProjectionAlsoFails() {
+        doThrow(new RuntimeException("mq down")).when(rabbitMqPublisher).sendMsg(
+                eq(GroupMqConstant.GROUP_EXCHANGE),
+                eq(GroupMqConstant.GROUP_STATE_CHANGED_KEY),
+                any()
+        );
+        doThrow(new RuntimeException("mongo down")).when(groupStorageComponent).syncProjection("group-1");
+
+        ReflectionTestUtils.invokeMethod(groupCommandService, "afterStateChanged", "group-1", 1L);
+
+        verify(groupStorageComponent).submitCompensationTask(
+                eq(GroupCompensationTaskType.PROJECTION_SYNC),
+                eq("group-1"),
+                any(java.util.Date.class),
+                anyString()
+        );
     }
 
     /**
@@ -331,6 +354,29 @@ class GroupCommandServiceTest {
                 eq(GroupMqConstant.GROUP_EXCHANGE),
                 eq(GroupMqConstant.GROUP_REFUND_REQUEST_KEY),
                 any()
+        );
+    }
+
+    /**
+     * 当待退款补偿消息发送失败时，应登记退款补偿任务等待定时任务重试。
+     */
+    @Test
+    void shouldSubmitRefundRetryTaskWhenPendingRefundMessageSendFails() {
+        when(groupStorageComponent.requireGroupSnapshot("group-1")).thenReturn(buildFailedSnapshot());
+        doThrow(new RuntimeException("mq down")).when(rabbitMqPublisher).sendMsg(
+                eq(GroupMqConstant.GROUP_EXCHANGE),
+                eq(GroupMqConstant.GROUP_REFUND_REQUEST_KEY),
+                any()
+        );
+
+        int publishedCount = groupCommandService.triggerPendingRefundCompensation("group-1", "人工补偿");
+
+        assertEquals(0, publishedCount);
+        verify(groupStorageComponent).submitCompensationTask(
+                eq(GroupCompensationTaskType.REFUND_RETRY),
+                eq("group-1"),
+                any(java.util.Date.class),
+                anyString()
         );
     }
 

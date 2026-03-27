@@ -9,6 +9,7 @@ import com.ww.mall.promotion.engine.model.GroupCacheSnapshot;
 import com.ww.mall.promotion.engine.model.GroupCommandResult;
 import com.ww.mall.promotion.entity.group.GroupActivity;
 import com.ww.mall.promotion.entity.group.GroupMember;
+import com.ww.mall.promotion.enums.GroupCompensationTaskType;
 import com.ww.mall.promotion.enums.GroupMemberBizStatus;
 import com.ww.mall.promotion.enums.GroupStatus;
 import com.ww.mall.promotion.enums.GroupTradeType;
@@ -479,6 +480,12 @@ public class GroupCommandService {
             } catch (Exception projectionException) {
                 log.error("拼团状态变更内部消息发送失败后，本地Mongo投影兜底仍失败: groupId={}",
                         groupId, projectionException);
+                groupStorageComponent.submitCompensationTask(
+                        GroupCompensationTaskType.PROJECTION_SYNC,
+                        groupId,
+                        new Date(eventTimeMillis),
+                        projectionException.getMessage()
+                );
             }
         }
     }
@@ -667,6 +674,12 @@ public class GroupCommandService {
         } catch (RuntimeException e) {
             log.error("拼团退款补偿消息发送失败: groupId={}, orderId={}, refundScene={}",
                     refundMessage.getGroupId(), refundMessage.getOrderId(), refundScene, e);
+            groupStorageComponent.submitCompensationTask(
+                    GroupCompensationTaskType.REFUND_RETRY,
+                    refundMessage.getGroupId(),
+                    refundMessage.getEventTime(),
+                    e.getMessage()
+            );
             return false;
         }
     }

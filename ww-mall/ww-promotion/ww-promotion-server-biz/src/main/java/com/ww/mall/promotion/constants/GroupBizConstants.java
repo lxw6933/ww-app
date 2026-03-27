@@ -35,6 +35,33 @@ public final class GroupBizConstants {
      */
     public static final int ACTIVITY_STATS_SETTLE_BATCH_LIMIT = 100;
 
+    /**
+     * 补偿任务单次扫描上限。
+     */
+    public static final int COMPENSATION_JOB_BATCH_LIMIT = 100;
+
+    /**
+     * 补偿任务单次调度最多连续拉取批次数。
+     */
+    public static final int COMPENSATION_JOB_MAX_ROUNDS = 10;
+
+    /**
+     * 补偿任务首次重试延迟，单位毫秒。
+     */
+    public static final long COMPENSATION_INITIAL_DELAY_MILLIS = 30_000L;
+
+    /**
+     * 补偿任务最大重试次数。
+     * <p>
+     * 超过该次数后任务会从调度索引移除，并保留为 DEAD 状态，等待人工排查。
+     */
+    public static final int COMPENSATION_MAX_RETRY_COUNT = 20;
+
+    /**
+     * 补偿任务指数退避最大延迟，单位毫秒。
+     */
+    public static final long COMPENSATION_MAX_DELAY_MILLIS = 30 * 60_000L;
+
     private GroupBizConstants() {
     }
 }

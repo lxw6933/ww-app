@@ -6,10 +6,12 @@ import com.ww.app.redis.component.lua.RedisScriptComponent;
 import com.ww.mall.promotion.constants.GroupBizConstants;
 import com.ww.mall.promotion.engine.model.GroupCacheSnapshot;
 import com.ww.mall.promotion.engine.model.GroupCommandResult;
+import com.ww.mall.promotion.engine.model.GroupCompensationTaskSnapshot;
 import com.ww.mall.promotion.engine.model.GroupMemberCacheSnapshot;
 import com.ww.mall.promotion.entity.group.GroupActivity;
 import com.ww.mall.promotion.entity.group.GroupInstance;
 import com.ww.mall.promotion.entity.group.GroupMember;
+import com.ww.mall.promotion.enums.GroupCompensationTaskType;
 import com.ww.mall.promotion.enums.GroupMemberBizStatus;
 import com.ww.mall.promotion.key.GroupRedisKeyBuilder;
 import com.ww.mall.promotion.service.group.command.CreateGroupCommand;
@@ -341,6 +343,122 @@ public class GroupStorageComponent {
     }
 
     /**
+     * 提交补偿任务。
+     * <p>
+     * 该方法只接收“主状态已成功落库，但后续副作用失败”的补偿任务。
+     * 相同 {@code taskType + groupId} 会复用同一任务ID，避免重复堆积大量待补偿记录。
+     *
+     * @param taskType 任务类型
+     * @param groupId 团ID
+     * @param eventTime 事件时间
+     * @param errorMessage 错误信息
+     */
+    public void submitCompensationTask(GroupCompensationTaskType taskType, String groupId,
+                                       Date eventTime, String errorMessage) {
+        if (taskType == null || !hasText(groupId)) {
+            log.warn("提交补偿任务跳过: taskType或groupId为空, taskType={}, groupId={}", taskType, groupId);
+            return;
+        }
+        long nowMillis = System.currentTimeMillis();
+        String taskId = buildCompensationTaskId(taskType, groupId);
+        GroupCompensationTaskSnapshot snapshot = loadCompensationTask(taskId);
+        if (snapshot == null) {
+            snapshot = new GroupCompensationTaskSnapshot();
+            snapshot.setTaskId(taskId);
+            snapshot.setTaskType(taskType);
+            snapshot.setGroupId(groupId);
+            snapshot.setEventTime(eventTime == null ? nowMillis : eventTime.getTime());
+            snapshot.setRetryCount(0);
+            snapshot.setCreateTime(nowMillis);
+        }
+        snapshot.setStatus("PENDING");
+        snapshot.setLastError(trimErrorMessage(errorMessage));
+        snapshot.setNextRetryTime(nowMillis + GroupBizConstants.COMPENSATION_INITIAL_DELAY_MILLIS);
+        snapshot.setUpdateTime(nowMillis);
+        saveCompensationTask(snapshot);
+        log.warn("已提交拼团补偿任务: taskId={}, taskType={}, groupId={}, retryCount={}",
+                snapshot.getTaskId(), snapshot.getTaskType(), snapshot.getGroupId(), snapshot.getRetryCount());
+    }
+
+    /**
+     * 查询当前到期的补偿任务列表。
+     *
+     * @param nowMillis 当前毫秒时间
+     * @param limit 批量上限
+     * @return 到期任务列表
+     */
+    public List<GroupCompensationTaskSnapshot> findDueCompensationTasks(long nowMillis, long limit) {
+        Set<String> taskIds = stringRedisTemplate.opsForZSet().rangeByScore(
+                groupRedisKeyBuilder.buildCompensationScheduleKey(),
+                0,
+                nowMillis,
+                0,
+                limit
+        );
+        if (taskIds == null || taskIds.isEmpty()) {
+            log.debug("查询到期补偿任务为空: nowMillis={}, limit={}", nowMillis, limit);
+            return new ArrayList<>();
+        }
+        List<GroupCompensationTaskSnapshot> tasks = new ArrayList<>();
+        for (String taskId : taskIds) {
+            GroupCompensationTaskSnapshot task = loadCompensationTask(taskId);
+            if (task != null && "PENDING".equals(task.getStatus())) {
+                tasks.add(task);
+            }
+        }
+        log.debug("查询到期补偿任务完成: nowMillis={}, limit={}, taskCount={}", nowMillis, limit, tasks.size());
+        return tasks;
+    }
+
+    /**
+     * 删除补偿任务。
+     *
+     * @param taskId 任务ID
+     */
+    public void removeCompensationTask(String taskId) {
+        if (!hasText(taskId)) {
+            return;
+        }
+        stringRedisTemplate.opsForHash().delete(groupRedisKeyBuilder.buildCompensationTaskStoreKey(), taskId);
+        stringRedisTemplate.opsForZSet().remove(groupRedisKeyBuilder.buildCompensationScheduleKey(), taskId);
+        log.debug("删除补偿任务完成: taskId={}", taskId);
+    }
+
+    /**
+     * 按退避策略重排补偿任务。
+     *
+     * @param task 任务快照
+     * @param errorMessage 错误信息
+     * @return true-已重排，false-已转死信等待人工处理
+     */
+    public boolean retryCompensationTask(GroupCompensationTaskSnapshot task, String errorMessage) {
+        if (task == null || !hasText(task.getTaskId())) {
+            return false;
+        }
+        int nextRetryCount = (task.getRetryCount() == null ? 0 : task.getRetryCount()) + 1;
+        long nowMillis = System.currentTimeMillis();
+        task.setRetryCount(nextRetryCount);
+        task.setLastError(trimErrorMessage(errorMessage));
+        task.setUpdateTime(nowMillis);
+        if (nextRetryCount > GroupBizConstants.COMPENSATION_MAX_RETRY_COUNT) {
+            task.setStatus("DEAD");
+            task.setNextRetryTime(null);
+            saveCompensationTaskSnapshotOnly(task);
+            stringRedisTemplate.opsForZSet().remove(groupRedisKeyBuilder.buildCompensationScheduleKey(), task.getTaskId());
+            log.error("拼团补偿任务超过最大重试次数，已转人工排查: taskId={}, taskType={}, groupId={}, retryCount={}",
+                    task.getTaskId(), task.getTaskType(), task.getGroupId(), task.getRetryCount());
+            return false;
+        }
+        long delayMillis = calculateCompensationDelayMillis(nextRetryCount);
+        task.setStatus("PENDING");
+        task.setNextRetryTime(nowMillis + delayMillis);
+        saveCompensationTask(task);
+        log.warn("拼团补偿任务重排完成: taskId={}, taskType={}, groupId={}, retryCount={}, nextRetryTime={}",
+                task.getTaskId(), task.getTaskType(), task.getGroupId(), task.getRetryCount(), task.getNextRetryTime());
+        return true;
+    }
+
+    /**
      * 从快照中按订单号查找成员用户ID。
      *
      * @param snapshot 拼团快照
@@ -666,6 +784,98 @@ public class GroupStorageComponent {
             bulkOperations.execute();
         }
         log.debug("批量upsert成员轨迹完成: inputCount={}, upsertCount={}", members.size(), upsertCount);
+    }
+
+    /**
+     * 读取补偿任务快照。
+     *
+     * @param taskId 任务ID
+     * @return 任务快照
+     */
+    private GroupCompensationTaskSnapshot loadCompensationTask(String taskId) {
+        if (!hasText(taskId)) {
+            return null;
+        }
+        Object rawValue = stringRedisTemplate.opsForHash()
+                .get(groupRedisKeyBuilder.buildCompensationTaskStoreKey(), taskId);
+        if (rawValue == null) {
+            return null;
+        }
+        try {
+            return JacksonUtils.parseObject(String.valueOf(rawValue), GroupCompensationTaskSnapshot.class);
+        } catch (Exception e) {
+            throw new IllegalStateException("拼团补偿任务反序列化失败", e);
+        }
+    }
+
+    /**
+     * 保存补偿任务，并同步写入调度索引。
+     *
+     * @param task 任务快照
+     */
+    private void saveCompensationTask(GroupCompensationTaskSnapshot task) {
+        saveCompensationTaskSnapshotOnly(task);
+        if (task.getNextRetryTime() != null) {
+            stringRedisTemplate.opsForZSet().add(
+                    groupRedisKeyBuilder.buildCompensationScheduleKey(),
+                    task.getTaskId(),
+                    task.getNextRetryTime()
+            );
+        }
+    }
+
+    /**
+     * 仅保存补偿任务快照，不调整调度索引。
+     *
+     * @param task 任务快照
+     */
+    private void saveCompensationTaskSnapshotOnly(GroupCompensationTaskSnapshot task) {
+        try {
+            stringRedisTemplate.opsForHash().put(
+                    groupRedisKeyBuilder.buildCompensationTaskStoreKey(),
+                    task.getTaskId(),
+                    JacksonUtils.toJsonString(task)
+            );
+        } catch (Exception e) {
+            throw new IllegalStateException("拼团补偿任务序列化失败", e);
+        }
+    }
+
+    /**
+     * 构建补偿任务ID。
+     *
+     * @param taskType 任务类型
+     * @param groupId 团ID
+     * @return 任务ID
+     */
+    private String buildCompensationTaskId(GroupCompensationTaskType taskType, String groupId) {
+        return taskType.name() + ":" + groupId;
+    }
+
+    /**
+     * 计算补偿任务退避延迟。
+     *
+     * @param retryCount 重试次数
+     * @return 延迟毫秒值
+     */
+    private long calculateCompensationDelayMillis(int retryCount) {
+        long delayMillis = GroupBizConstants.COMPENSATION_INITIAL_DELAY_MILLIS
+                * (1L << Math.max(0, Math.min(retryCount - 1, 10)));
+        return Math.min(delayMillis, GroupBizConstants.COMPENSATION_MAX_DELAY_MILLIS);
+    }
+
+    /**
+     * 裁剪错误信息。
+     *
+     * @param errorMessage 错误信息
+     * @return 裁剪后的错误信息
+     */
+    private String trimErrorMessage(String errorMessage) {
+        if (!hasText(errorMessage)) {
+            return null;
+        }
+        String result = errorMessage.trim();
+        return result.length() > 500 ? result.substring(0, 500) : result;
     }
 
     /**
