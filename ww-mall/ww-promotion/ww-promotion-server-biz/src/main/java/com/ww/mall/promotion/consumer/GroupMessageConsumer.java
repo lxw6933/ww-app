@@ -3,7 +3,6 @@ package com.ww.mall.promotion.consumer;
 import com.ww.mall.promotion.component.GroupStorageComponent;
 import com.ww.mall.promotion.engine.model.GroupCacheSnapshot;
 import com.ww.mall.promotion.enums.GroupCompensationTaskType;
-import com.ww.mall.promotion.mq.GroupAfterSaleSuccessMessage;
 import com.ww.mall.promotion.mq.GroupMqConstant;
 import com.ww.mall.promotion.mq.GroupOrderPaidMessage;
 import com.ww.mall.promotion.mq.GroupStateChangedMessage;
@@ -19,7 +18,7 @@ import javax.annotation.Resource;
  *
  * @author ww
  * @create 2026-03-17
- * @description: 支付成功和售后成功消息统一驱动拼团状态机
+ * @description: 负责消费支付成功与拼团内部状态变更消息
  */
 @Slf4j
 @Component
@@ -40,17 +39,6 @@ public class GroupMessageConsumer {
     public void handleOrderPaid(GroupOrderPaidMessage message) {
         log.info("消费拼团支付成功消息: orderId={}, tradeType={}", message.getOrderId(), message.getTradeType());
         groupTradeService.handleOrderPaid(message);
-    }
-
-    /**
-     * 消费售后成功消息。
-     *
-     * @param message 售后成功消息
-     */
-    @RabbitListener(queues = GroupMqConstant.GROUP_AFTER_SALE_QUEUE)
-    public void handleAfterSaleSuccess(GroupAfterSaleSuccessMessage message) {
-        log.info("消费拼团售后成功消息: orderId={}, afterSaleId={}", message.getOrderId(), message.getAfterSaleId());
-        groupTradeService.handleAfterSaleSuccess(message);
     }
 
     /**

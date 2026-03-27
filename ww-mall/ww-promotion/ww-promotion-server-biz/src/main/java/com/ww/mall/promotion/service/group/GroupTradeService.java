@@ -1,7 +1,6 @@
 package com.ww.mall.promotion.service.group;
 
 import com.ww.mall.promotion.controller.app.group.res.GroupInstanceVO;
-import com.ww.mall.promotion.mq.GroupAfterSaleSuccessMessage;
 import com.ww.mall.promotion.mq.GroupOrderPaidMessage;
 
 /**
@@ -9,7 +8,7 @@ import com.ww.mall.promotion.mq.GroupOrderPaidMessage;
  *
  * @author ww
  * @create 2026-03-17
- * @description: 负责消费支付成功、售后成功消息并驱动正式开团/参团
+ * @description: 负责消费支付成功消息并驱动正式开团/参团
  */
 public interface GroupTradeService {
 
@@ -21,10 +20,4 @@ public interface GroupTradeService {
      */
     GroupInstanceVO handleOrderPaid(GroupOrderPaidMessage message);
 
-    /**
-     * 处理售后成功消息。
-     *
-     * @param message 售后成功消息
-     */
-    void handleAfterSaleSuccess(GroupAfterSaleSuccessMessage message);
 }

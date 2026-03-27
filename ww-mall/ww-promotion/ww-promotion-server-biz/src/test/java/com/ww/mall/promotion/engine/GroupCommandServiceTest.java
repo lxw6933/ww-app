@@ -5,17 +5,18 @@ import com.ww.app.common.exception.ApiException;
 import com.ww.app.rabbitmq.RabbitMqPublisher;
 import com.ww.mall.promotion.component.GroupStorageComponent;
 import com.ww.mall.promotion.controller.app.group.res.GroupInstanceVO;
+import com.ww.mall.promotion.dto.group.GroupAfterSaleRequestDTO;
 import com.ww.mall.promotion.engine.model.GroupCacheSnapshot;
 import com.ww.mall.promotion.engine.model.GroupCommandResult;
 import com.ww.mall.promotion.entity.group.GroupActivity;
 import com.ww.mall.promotion.entity.group.GroupInstance;
 import com.ww.mall.promotion.entity.group.GroupMember;
+import com.ww.mall.promotion.enums.GroupAfterSaleScene;
 import com.ww.mall.promotion.enums.GroupCompensationTaskType;
 import com.ww.mall.promotion.enums.GroupEnabledStatus;
 import com.ww.mall.promotion.enums.GroupStatus;
 import com.ww.mall.promotion.enums.GroupTradeType;
 import com.ww.mall.promotion.mq.GroupMqConstant;
-import com.ww.mall.promotion.mq.GroupAfterSaleSuccessMessage;
 import com.ww.mall.promotion.mq.GroupOrderPaidMessage;
 import com.ww.mall.promotion.mq.GroupRefundRequestMessage;
 import org.junit.jupiter.api.Test;
@@ -30,16 +31,28 @@ import java.math.BigDecimal;
 import java.util.Arrays;
 import java.util.Collections;
 
-import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.ArgumentMatchers.*;
-import static org.mockito.Mockito.*;
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyLong;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.ArgumentMatchers.nullable;
+import static org.mockito.Mockito.doThrow;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 /**
  * 拼团命令服务测试。
  *
  * @author ww
  * @create 2026-03-25
- * @description: 校验内部状态变更消息发送失败时会退化执行本地 Mongo 投影兜底
+ * @description: 校验拼团命令编排、退款补偿与 OPEN 售后接口的关键业务分支
  */
 @ExtendWith(MockitoExtension.class)
 class GroupCommandServiceTest {
@@ -71,7 +84,7 @@ class GroupCommandServiceTest {
                 eq(GroupMqConstant.GROUP_STATE_CHANGED_KEY),
                 any()
         );
-        verify(groupStorageComponent, never()).syncProjection(any(String.class));
+        verify(groupStorageComponent, never()).syncProjection(anyString());
     }
 
     /**
@@ -238,7 +251,7 @@ class GroupCommandServiceTest {
     }
 
     /**
-     * 当参团 SKU 命中的是活动下其他 SPU 时，应拒绝跨 SPU 混团。
+     * 当参团 SKU 命中的活动 SPU 与当前团不一致时，应拒绝跨 SPU 混团。
      */
     @Test
     void shouldRejectJoinWhenSkuMatchesDifferentSpuWithinSameActivity() {
@@ -310,17 +323,14 @@ class GroupCommandServiceTest {
     }
 
     /**
-     * 团已成功时，售后成功消息应直接跳过，不再进入拼团售后链路。
+     * 团已成功时，售后请求应直接跳过，不再进入 OPEN 拼团售后链路。
      */
     @Test
     void shouldSkipPromotionAfterSaleWhenGroupAlreadySuccess() {
-        GroupAfterSaleSuccessMessage message = new GroupAfterSaleSuccessMessage();
-        message.setGroupId("group-1");
-        message.setOrderId("order-1");
-        message.setUserId(1L);
+        GroupAfterSaleRequestDTO request = buildOpenAfterSaleRequest();
         when(groupStorageComponent.loadGroupSnapshot("group-1")).thenReturn(buildSuccessSnapshot());
 
-        assertDoesNotThrow(() -> groupCommandService.handleAfterSaleSuccess(message));
+        assertDoesNotThrow(() -> groupCommandService.handleAfterSale(request));
 
         verify(groupStorageComponent, never()).afterSaleSuccess(anyString(), anyString(), anyString(), anyLong(), anyString(), anyString());
         verify(rabbitMqPublisher, never()).sendMsg(
@@ -331,31 +341,28 @@ class GroupCommandServiceTest {
     }
 
     /**
-     * 售后成功消息缺少 groupId 时，不再按订单反查拼团，应直接拒绝处理。
+     * OPEN 拼团售后请求缺少 groupId 时，应直接拒绝处理。
      */
     @Test
-    void shouldRejectAfterSaleMessageWhenGroupIdMissing() {
-        GroupAfterSaleSuccessMessage message = new GroupAfterSaleSuccessMessage();
-        message.setOrderId("order-1");
+    void shouldRejectAfterSaleRequestWhenGroupIdMissing() {
+        GroupAfterSaleRequestDTO request = buildOpenAfterSaleRequest();
+        request.setGroupId(null);
 
-        assertThrows(ApiException.class, () -> groupCommandService.handleAfterSaleSuccess(message));
+        assertThrows(ApiException.class, () -> groupCommandService.handleAfterSale(request));
     }
 
     /**
-     * 当售后处理遇到并发状态变化导致 Lua 返回 no-op 时，不应继续发送状态变更消息。
+     * 当 OPEN 拼团售后处理遇到并发状态变化导致 Lua 返回 no-op 时，不应继续发送状态变更或退款消息。
      */
     @Test
     void shouldSkipStateChangedWhenAfterSaleBecomesNonOpenDuringLuaExecution() {
-        GroupAfterSaleSuccessMessage message = new GroupAfterSaleSuccessMessage();
-        message.setGroupId("group-1");
-        message.setOrderId("order-1");
-        message.setUserId(1L);
+        GroupAfterSaleRequestDTO request = buildOpenAfterSaleRequest();
         when(groupStorageComponent.loadGroupSnapshot("group-1")).thenReturn(buildOpenSnapshot());
-        when(groupStorageComponent.afterSaleSuccess(eq("group-1"), nullable(String.class), eq("order-1"),
+        when(groupStorageComponent.afterSaleSuccess(eq("group-1"), eq("after-sale-1"), eq("order-1"),
                 anyLong(), anyString(), nullable(String.class)))
                 .thenReturn(3);
 
-        assertDoesNotThrow(() -> groupCommandService.handleAfterSaleSuccess(message));
+        assertDoesNotThrow(() -> groupCommandService.handleAfterSale(request));
 
         verify(rabbitMqPublisher, never()).sendMsg(
                 eq(GroupMqConstant.GROUP_EXCHANGE),
@@ -367,6 +374,58 @@ class GroupCommandServiceTest {
                 eq(GroupMqConstant.GROUP_REFUND_REQUEST_KEY),
                 any()
         );
+    }
+
+    /**
+     * OPEN 拼团中的普通成员申请售后时，应先执行拼团售后脚本，再发送当前订单退款消息。
+     */
+    @Test
+    void shouldRunAfterSaleScriptAndRequestRefundWhenOpenGroupMemberAppliesAfterSale() {
+        GroupAfterSaleRequestDTO request = buildOpenAfterSaleRequest();
+        when(groupStorageComponent.loadGroupSnapshot("group-1")).thenReturn(buildOpenSnapshot());
+        when(groupStorageComponent.afterSaleSuccess(eq("group-1"), eq("after-sale-1"), eq("order-1"),
+                anyLong(), anyString(), nullable(String.class)))
+                .thenReturn(1);
+
+        assertDoesNotThrow(() -> groupCommandService.handleAfterSale(request));
+
+        verify(groupStorageComponent).afterSaleSuccess(eq("group-1"), eq("after-sale-1"), eq("order-1"),
+                anyLong(), anyString(), nullable(String.class));
+        verify(rabbitMqPublisher).sendMsg(
+                eq(GroupMqConstant.GROUP_EXCHANGE),
+                eq(GroupMqConstant.GROUP_STATE_CHANGED_KEY),
+                any()
+        );
+        ArgumentCaptor<GroupRefundRequestMessage> captor = ArgumentCaptor.forClass(GroupRefundRequestMessage.class);
+        verify(rabbitMqPublisher).sendMsg(
+                eq(GroupMqConstant.GROUP_EXCHANGE),
+                eq(GroupMqConstant.GROUP_REFUND_REQUEST_KEY),
+                captor.capture()
+        );
+        GroupRefundRequestMessage refundMessage = captor.getValue();
+        assertEquals("group-1", refundMessage.getGroupId());
+        assertEquals("order-1", refundMessage.getOrderId());
+        assertEquals("GROUP_OPEN_AFTER_SALE_REFUND", refundMessage.getRefundScene());
+        assertEquals(new BigDecimal("99.00"), refundMessage.getRefundAmount());
+    }
+
+    /**
+     * 当售后请求对应的是创建团/参团异常退款时，应跳过拼团售后脚本并直接发送退款消息。
+     */
+    @Test
+    void shouldSkipAfterSaleScriptAndRequestRefundWhenTradeExceptionRefund() {
+        GroupAfterSaleRequestDTO request = buildTradeExceptionAfterSaleRequest(GroupTradeType.JOIN);
+
+        assertDoesNotThrow(() -> groupCommandService.handleAfterSale(request));
+
+        verify(groupStorageComponent, never()).afterSaleSuccess(anyString(), anyString(), anyString(), anyLong(), anyString(), anyString());
+        ArgumentCaptor<GroupRefundRequestMessage> captor = ArgumentCaptor.forClass(GroupRefundRequestMessage.class);
+        verify(rabbitMqPublisher).sendMsg(
+                eq(GroupMqConstant.GROUP_EXCHANGE),
+                eq(GroupMqConstant.GROUP_REFUND_REQUEST_KEY),
+                captor.capture()
+        );
+        assertEquals("GROUP_JOIN_REJECTED", captor.getValue().getRefundScene());
     }
 
     /**
@@ -455,6 +514,43 @@ class GroupCommandServiceTest {
     }
 
     /**
+     * 构造 OPEN 拼团售后请求。
+     *
+     * @return 售后请求
+     */
+    private GroupAfterSaleRequestDTO buildOpenAfterSaleRequest() {
+        GroupAfterSaleRequestDTO request = new GroupAfterSaleRequestDTO();
+        request.setScene(GroupAfterSaleScene.OPEN_APPLY);
+        request.setGroupId("group-1");
+        request.setActivityId("activity-1");
+        request.setOrderId("order-1");
+        request.setUserId(2L);
+        request.setAfterSaleId("after-sale-1");
+        request.setRefundAmount(new BigDecimal("99.00"));
+        request.setReason("用户申请售后");
+        return request;
+    }
+
+    /**
+     * 构造支付后入团异常退款请求。
+     *
+     * @param tradeType 交易类型
+     * @return 售后请求
+     */
+    private GroupAfterSaleRequestDTO buildTradeExceptionAfterSaleRequest(GroupTradeType tradeType) {
+        GroupAfterSaleRequestDTO request = new GroupAfterSaleRequestDTO();
+        request.setScene(GroupAfterSaleScene.TRADE_EXCEPTION_REFUND);
+        request.setGroupId("group-1");
+        request.setActivityId("activity-1");
+        request.setOrderId("order-1");
+        request.setUserId(1L);
+        request.setTradeType(tradeType);
+        request.setRefundAmount(new BigDecimal("99.00"));
+        request.setReason("支付后拼团占位失败");
+        return request;
+    }
+
+    /**
      * 构造可正常参与的活动。
      *
      * @return 活动
@@ -533,9 +629,17 @@ class GroupCommandServiceTest {
 
         GroupMember leader = new GroupMember();
         leader.setUserId(1L);
-        leader.setOrderId("order-1");
+        leader.setOrderId("order-leader");
+        leader.setPayAmount(new BigDecimal("109.00"));
         leader.setMemberStatus("JOINED");
-        snapshot.setMembers(Collections.singletonList(leader));
+
+        GroupMember member = new GroupMember();
+        member.setUserId(2L);
+        member.setOrderId("order-1");
+        member.setPayAmount(new BigDecimal("99.00"));
+        member.setMemberStatus("JOINED");
+
+        snapshot.setMembers(Arrays.asList(leader, member));
         return snapshot;
     }
 

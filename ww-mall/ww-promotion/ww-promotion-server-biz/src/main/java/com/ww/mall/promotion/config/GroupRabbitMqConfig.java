@@ -32,14 +32,6 @@ public class GroupRabbitMqConfig {
     }
 
     /**
-     * 售后成功驱动拼团回退名额队列。
-     */
-    @Bean
-    public Queue groupAfterSaleQueue() {
-        return QueueBuilder.durable(GroupMqConstant.GROUP_AFTER_SALE_QUEUE).build();
-    }
-
-    /**
      * 拼团状态变更内部驱动队列。
      */
     @Bean
@@ -63,16 +55,6 @@ public class GroupRabbitMqConfig {
         return BindingBuilder.bind(groupOrderPaidQueue())
                 .to(groupExchange())
                 .with(GroupMqConstant.GROUP_ORDER_PAID_KEY);
-    }
-
-    /**
-     * 绑定售后成功驱动拼团回退队列。
-     */
-    @Bean
-    public Binding groupAfterSaleBinding() {
-        return BindingBuilder.bind(groupAfterSaleQueue())
-                .to(groupExchange())
-                .with(GroupMqConstant.GROUP_AFTER_SALE_KEY);
     }
 
     /**

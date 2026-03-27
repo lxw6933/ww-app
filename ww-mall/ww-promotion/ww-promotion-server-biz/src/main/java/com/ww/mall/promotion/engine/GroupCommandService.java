@@ -5,10 +5,12 @@ import com.ww.app.common.exception.ApiException;
 import com.ww.app.rabbitmq.RabbitMqPublisher;
 import com.ww.mall.promotion.component.GroupStorageComponent;
 import com.ww.mall.promotion.controller.app.group.res.GroupInstanceVO;
+import com.ww.mall.promotion.dto.group.GroupAfterSaleRequestDTO;
 import com.ww.mall.promotion.engine.model.GroupCacheSnapshot;
 import com.ww.mall.promotion.engine.model.GroupCommandResult;
 import com.ww.mall.promotion.entity.group.GroupActivity;
 import com.ww.mall.promotion.entity.group.GroupMember;
+import com.ww.mall.promotion.enums.GroupAfterSaleScene;
 import com.ww.mall.promotion.enums.GroupCompensationTaskType;
 import com.ww.mall.promotion.enums.GroupMemberBizStatus;
 import com.ww.mall.promotion.enums.GroupStatus;
@@ -23,6 +25,7 @@ import javax.annotation.Resource;
 import java.util.Arrays;
 import java.util.Date;
 import java.util.HashSet;
+import java.util.Objects;
 import java.util.Set;
 
 import static com.ww.mall.promotion.constants.ErrorCodeConstants.*;
@@ -40,6 +43,11 @@ import static com.ww.mall.promotion.constants.ErrorCodeConstants.*;
 @Slf4j
 @Service
 public class GroupCommandService {
+
+    /**
+     * OPEN 拼团申请售后时发往下游的退款场景码。
+     */
+    private static final String GROUP_OPEN_AFTER_SALE_REFUND_SCENE = "GROUP_OPEN_AFTER_SALE_REFUND";
 
     /**
      * 支付成功后，拼团域可直接判定为“应退款”的业务失败码集合。
@@ -171,60 +179,161 @@ public class GroupCommandService {
     }
 
     /**
-     * 处理售后成功。
+     * 处理拼团售后。
      *
-     * @param message 售后消息
+     * @param request 售后请求
      */
-    public void handleAfterSaleSuccess(GroupAfterSaleSuccessMessage message) {
-        if (message == null || !hasText(message.getOrderId())) {
-            throw new ApiException(GROUP_RECORD_ORDER_CODE_NOT_EXISTS);
+    public void handleAfterSale(GroupAfterSaleRequestDTO request) {
+        validateAfterSaleRequest(request);
+        if (request.getScene() == GroupAfterSaleScene.TRADE_EXCEPTION_REFUND) {
+            requestRefundForTradeException(request);
+            return;
         }
-        if (!hasText(message.getGroupId())) {
+        handleOpenAfterSale(request);
+    }
+
+    /**
+     * 处理 OPEN 拼团中的售后申请。
+     * <p>
+     * 该场景下订单已经真实占用了拼团席位，因此需要先执行拼团售后脚本，
+     * 再发送当前售后订单的退款消息；若是团长售后导致整团关闭，则还要继续补发其他成员退款消息。
+     *
+     * @param request 售后请求
+     */
+    private void handleOpenAfterSale(GroupAfterSaleRequestDTO request) {
+        if (!hasText(request.getGroupId())) {
             throw new ApiException(GROUP_RECORD_ERROR);
         }
-        String groupId = message.getGroupId();
-        GroupCacheSnapshot snapshot = groupStorageComponent.loadGroupSnapshot(groupId);
+        GroupCacheSnapshot snapshot = groupStorageComponent.loadGroupSnapshot(request.getGroupId());
         if (snapshot == null || snapshot.getInstance() == null) {
-            log.info("售后成功消息对应拼团快照不存在，跳过拼团售后处理: groupId={}, orderId={}",
-                    groupId, message.getOrderId());
+            log.info("OPEN 拼团售后请求未读取到拼团快照，按直接退款处理: groupId={}, orderId={}",
+                    request.getGroupId(), request.getOrderId());
+            requestRefundForAfterSaleWithoutScript(request, null, null);
             return;
         }
         if (!GroupStatus.OPEN.getCode().equals(snapshot.getInstance().getStatus())) {
-            log.info("售后成功消息对应拼团非OPEN状态，跳过拼团售后处理: groupId={}, orderId={}, groupStatus={}",
-                    groupId, message.getOrderId(), snapshot.getInstance().getStatus());
+            log.info("拼团售后请求对应拼团非 OPEN 状态，跳过拼团售后脚本: groupId={}, orderId={}, groupStatus={}",
+                    request.getGroupId(), request.getOrderId(), snapshot.getInstance().getStatus());
             return;
         }
-        Long userId = message.getUserId() != null ? message.getUserId()
-                : groupStorageComponent.findMemberUserId(snapshot, message.getOrderId());
-        if (userId == null) {
-            throw new ApiException(GROUP_RECORD_ORDER_CODE_NOT_EXISTS);
+        GroupMember targetMember = findMember(snapshot, request.getOrderId());
+        if (targetMember == null) {
+            log.info("OPEN 拼团售后请求未命中成员记录，按直接退款处理: groupId={}, orderId={}",
+                    request.getGroupId(), request.getOrderId());
+            requestRefundForAfterSaleWithoutScript(request, snapshot, null);
+            return;
         }
-        long nowMillis = message.getSuccessTime() != null ? message.getSuccessTime().getTime() : System.currentTimeMillis();
-        boolean leaderAfterSale = groupStorageComponent.isLeader(snapshot, userId);
+        Long targetUserId = request.getUserId() != null ? request.getUserId() : targetMember.getUserId();
+        long nowMillis = request.getEventTime() != null ? request.getEventTime().getTime() : System.currentTimeMillis();
+        Date eventTime = new Date(nowMillis);
+        boolean leaderAfterSale = isLeader(snapshot, targetUserId);
         String failReason = leaderAfterSale
-                ? "团长售后导致拼团关闭" : "售后成功，释放拼团名额";
+                ? "LEADER_AFTER_SALE_CLOSE_GROUP"
+                : "OPEN_AFTER_SALE_RELEASE_SLOT";
         int code = groupStorageComponent.afterSaleSuccess(
-                groupId,
-                message.getAfterSaleId(),
-                message.getOrderId(),
+                request.getGroupId(),
+                request.getAfterSaleId(),
+                request.getOrderId(),
                 nowMillis,
                 failReason,
-                message.getReason()
+                request.getReason()
         );
         if (code < 0) {
             throw new ApiException(GROUP_RECORD_ERROR);
         }
         if (code == 3) {
-            log.info("售后成功处理命中并发no-op，当前拼团已非OPEN，跳过拼团售后状态变更: groupId={}, orderId={}",
-                    groupId, message.getOrderId());
+            log.info("拼团售后脚本命中并发 no-op，当前拼团已非 OPEN，跳过退款直发: groupId={}, orderId={}",
+                    request.getGroupId(), request.getOrderId());
             return;
         }
         if (code == 1) {
-            afterStateChanged(groupId, nowMillis);
+            afterStateChanged(request.getGroupId(), nowMillis);
             if (leaderAfterSale) {
-                requestRefundForPendingMembers(groupId, "GROUP_FAILED_REFUND", failReason,
-                        new Date(nowMillis));
+                requestRefundForPendingMembers(request.getGroupId(), "GROUP_FAILED_REFUND", failReason, eventTime);
             }
+        }
+        requestRefundForOpenAfterSale(request, snapshot, targetMember, eventTime);
+    }
+
+    /**
+     * 处理“支付后创建团/参团异常”的直接退款。
+     *
+     * @param request 售后请求
+     */
+    private void requestRefundForTradeException(GroupAfterSaleRequestDTO request) {
+        GroupRefundRequestMessage refundMessage = new GroupRefundRequestMessage();
+        refundMessage.setGroupId(request.getGroupId());
+        refundMessage.setActivityId(request.getActivityId());
+        refundMessage.setUserId(request.getUserId());
+        refundMessage.setOrderId(request.getOrderId());
+        refundMessage.setRefundAmount(resolveRefundAmount(request, null));
+        refundMessage.setRefundScene(resolveTradeExceptionRefundScene(request.getTradeType()));
+        refundMessage.setReason(request.getReason());
+        refundMessage.setEventTime(request.getEventTime() != null ? request.getEventTime() : new Date());
+        publishRefundRequest(refundMessage);
+    }
+
+    /**
+     * 当 OPEN 售后未命中有效拼团成员时，按“无需执行拼团脚本、直接退款”兜底处理。
+     * <p>
+     * 该场景主要兼容“支付后创建团/参团异常”或订单侧重试时拼团数据已经不存在的情况。
+     *
+     * @param request 售后请求
+     * @param snapshot 拼团快照
+     * @param targetMember 命中的成员
+     */
+    private void requestRefundForAfterSaleWithoutScript(GroupAfterSaleRequestDTO request,
+                                                        GroupCacheSnapshot snapshot,
+                                                        GroupMember targetMember) {
+        GroupRefundRequestMessage refundMessage = new GroupRefundRequestMessage();
+        refundMessage.setGroupId(request.getGroupId());
+        refundMessage.setActivityId(resolveActivityId(snapshot, request));
+        refundMessage.setUserId(request.getUserId() != null ? request.getUserId()
+                : (targetMember == null ? null : targetMember.getUserId()));
+        refundMessage.setOrderId(request.getOrderId());
+        refundMessage.setRefundAmount(resolveRefundAmount(request, targetMember));
+        refundMessage.setRefundScene(resolveAfterSaleRefundScene(request));
+        refundMessage.setReason(request.getReason());
+        refundMessage.setEventTime(request.getEventTime() != null ? request.getEventTime() : new Date());
+        publishRefundRequest(refundMessage);
+    }
+
+    /**
+     * 为 OPEN 拼团中的当前售后订单发送退款消息。
+     *
+     * @param request 售后请求
+     * @param snapshot 拼团快照
+     * @param targetMember 命中的成员
+     * @param eventTime 事件时间
+     */
+    private void requestRefundForOpenAfterSale(GroupAfterSaleRequestDTO request, GroupCacheSnapshot snapshot,
+                                               GroupMember targetMember, Date eventTime) {
+        GroupRefundRequestMessage refundMessage = new GroupRefundRequestMessage();
+        refundMessage.setGroupId(request.getGroupId());
+        refundMessage.setActivityId(resolveActivityId(snapshot, request));
+        refundMessage.setUserId(request.getUserId() != null ? request.getUserId() : targetMember.getUserId());
+        refundMessage.setOrderId(request.getOrderId());
+        refundMessage.setRefundAmount(resolveRefundAmount(request, targetMember));
+        refundMessage.setRefundScene(GROUP_OPEN_AFTER_SALE_REFUND_SCENE);
+        refundMessage.setReason(request.getReason());
+        refundMessage.setEventTime(eventTime != null ? eventTime : new Date());
+        publishRefundRequest(refundMessage);
+    }
+
+    /**
+     * 校验拼团售后请求。
+     *
+     * @param request 售后请求
+     */
+    private void validateAfterSaleRequest(GroupAfterSaleRequestDTO request) {
+        if (request == null || request.getScene() == null || !hasText(request.getOrderId())) {
+            throw new ApiException(GROUP_RECORD_ORDER_CODE_NOT_EXISTS);
+        }
+        if (request.getScene() == GroupAfterSaleScene.OPEN_APPLY && !hasText(request.getGroupId())) {
+            throw new ApiException(GROUP_RECORD_ERROR);
+        }
+        if (request.getScene() == GroupAfterSaleScene.TRADE_EXCEPTION_REFUND && request.getTradeType() == null) {
+            throw new ApiException(GROUP_RECORD_ERROR);
         }
     }
 
@@ -571,6 +680,94 @@ public class GroupCommandService {
                 || command.getSkuId() == null || command.getUserId() == null || command.getPayAmount() == null) {
             throw new ApiException(GROUP_RECORD_ERROR);
         }
+    }
+
+    /**
+     * 根据订单号在拼团快照中查找成员。
+     *
+     * @param snapshot 拼团快照
+     * @param orderId 订单号
+     * @return 命中的成员；未命中返回 {@code null}
+     */
+    private GroupMember findMember(GroupCacheSnapshot snapshot, String orderId) {
+        if (snapshot == null || snapshot.getMembers() == null || !hasText(orderId)) {
+            return null;
+        }
+        return snapshot.getMembers().stream()
+                .filter(Objects::nonNull)
+                .filter(member -> orderId.equals(member.getOrderId()))
+                .findFirst()
+                .orElse(null);
+    }
+
+    /**
+     * 判断指定用户是否为当前拼团团长。
+     *
+     * @param snapshot 拼团快照
+     * @param userId 用户ID
+     * @return true-团长
+     */
+    private boolean isLeader(GroupCacheSnapshot snapshot, Long userId) {
+        return snapshot != null
+                && snapshot.getInstance() != null
+                && snapshot.getInstance().getLeaderUserId() != null
+                && snapshot.getInstance().getLeaderUserId().equals(userId);
+    }
+
+    /**
+     * 解析退款金额。
+     * <p>
+     * 优先使用订单域显式透传的金额；若未透传，则回退读取拼团成员快照中的实付金额。
+     *
+     * @param request 售后请求
+     * @param targetMember 命中的成员
+     * @return 退款金额
+     */
+    private java.math.BigDecimal resolveRefundAmount(GroupAfterSaleRequestDTO request, GroupMember targetMember) {
+        java.math.BigDecimal refundAmount = request.getRefundAmount() != null
+                ? request.getRefundAmount()
+                : (targetMember == null ? null : targetMember.getPayAmount());
+        if (refundAmount == null) {
+            throw new ApiException(GROUP_RECORD_ERROR);
+        }
+        return refundAmount;
+    }
+
+    /**
+     * 解析活动ID。
+     *
+     * @param snapshot 拼团快照
+     * @param request 售后请求
+     * @return 活动ID
+     */
+    private String resolveActivityId(GroupCacheSnapshot snapshot, GroupAfterSaleRequestDTO request) {
+        if (hasText(request.getActivityId())) {
+            return request.getActivityId();
+        }
+        return snapshot != null && snapshot.getInstance() != null ? snapshot.getInstance().getActivityId() : null;
+    }
+
+    /**
+     * 解析售后兜底退款场景码。
+     *
+     * @param request 售后请求
+     * @return 退款场景码
+     */
+    private String resolveAfterSaleRefundScene(GroupAfterSaleRequestDTO request) {
+        if (request.getTradeType() == null) {
+            return GROUP_OPEN_AFTER_SALE_REFUND_SCENE;
+        }
+        return resolveTradeExceptionRefundScene(request.getTradeType());
+    }
+
+    /**
+     * 根据创建团/参团类型解析退款场景码。
+     *
+     * @param tradeType 交易类型
+     * @return 退款场景码
+     */
+    private String resolveTradeExceptionRefundScene(GroupTradeType tradeType) {
+        return tradeType == GroupTradeType.START ? "GROUP_CREATE_REJECTED" : "GROUP_JOIN_REJECTED";
     }
 
     /**

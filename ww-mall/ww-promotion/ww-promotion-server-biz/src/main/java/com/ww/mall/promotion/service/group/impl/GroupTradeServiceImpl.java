@@ -3,7 +3,6 @@ package com.ww.mall.promotion.service.group.impl;
 import com.ww.app.common.exception.ApiException;
 import com.ww.mall.promotion.controller.app.group.res.GroupInstanceVO;
 import com.ww.mall.promotion.engine.GroupCommandService;
-import com.ww.mall.promotion.mq.GroupAfterSaleSuccessMessage;
 import com.ww.mall.promotion.mq.GroupOrderPaidMessage;
 import com.ww.mall.promotion.service.group.GroupTradeService;
 import org.springframework.stereotype.Service;
@@ -35,11 +34,4 @@ public class GroupTradeServiceImpl implements GroupTradeService {
         return groupCommandService.handleOrderPaid(message);
     }
 
-    @Override
-    public void handleAfterSaleSuccess(GroupAfterSaleSuccessMessage message) {
-        if (message == null) {
-            throw new ApiException(GROUP_RECORD_ERROR);
-        }
-        groupCommandService.handleAfterSaleSuccess(message);
-    }
 }
