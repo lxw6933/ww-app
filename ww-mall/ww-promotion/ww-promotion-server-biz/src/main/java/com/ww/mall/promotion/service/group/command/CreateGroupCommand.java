@@ -18,6 +18,14 @@ import java.math.BigDecimal;
 public class CreateGroupCommand {
 
     /**
+     * 拼团实例ID。
+     * <p>
+     * 由上游订单域在下单时预生成并透传，
+     * 拼团域直接以该值作为开团业务主键。
+     */
+    private String groupId;
+
+    /**
      * 活动ID。
      */
     private String activityId;

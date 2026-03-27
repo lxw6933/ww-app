@@ -30,7 +30,6 @@
   - `group:instance:meta:{groupId}`
   - `group:instance:member-store:{groupId}`
   - `group:instance:user-index:{groupId}`
-  - `group:order:index`
   - `group:activity:stats:{activityId}`
   - `group:expiry`
 - Mongo 查询模型：
@@ -82,9 +81,8 @@ flowchart TD
         C1[(Redis Meta Hash)]
         C2[(Redis Member Store Hash)]
         C3[(Redis User Index Hash)]
-        C4[(Redis Order Index Hash)]
-        C5[(Redis Activity Stats Hash)]
-        C6[(Redis Expiry ZSet)]
+        C4[(Redis Activity Stats Hash)]
+        C5[(Redis Expiry ZSet)]
         C7[[Lua: create_group]]
         C8[[Lua: join_group]]
         C9[[Lua: after_sale_success]]
@@ -94,21 +92,19 @@ flowchart TD
         C7 --> C3
         C7 --> C4
         C7 --> C5
-        C7 --> C6
         C8 --> C1
         C8 --> C2
         C8 --> C3
         C8 --> C4
         C8 --> C5
-        C8 --> C6
         C9 --> C1
         C9 --> C2
         C9 --> C3
-        C9 --> C6
+        C9 --> C5
         C10 --> C1
         C10 --> C2
         C10 --> C3
-        C10 --> C6
+        C10 --> C5
     end
 
     subgraph D[异步投影]
@@ -186,7 +182,7 @@ flowchart LR
 1. 上游支付域发送 `group.order.paid`，`tradeType=START`。
 2. `GroupMessageConsumer` 收到消息后交给 `GroupTradeServiceImpl`。
 3. `GroupCommandService.handleOrderPaid` 将消息翻译为 `CreateGroupCommand`。
-4. 先按 `orderId -> groupId` 做幂等回放。
+4. 直接按上游透传的 `groupId` 做幂等回放。
 5. 加载活动缓存并校验：
    - 活动存在
    - 活动启用
@@ -198,7 +194,6 @@ flowchart LR
    - 写团主状态
    - 写成员快照
    - 写团内活跃用户索引
-   - 写全局订单幂等索引
    - 增加活动统计
    - 加入过期索引
 8. 成功后发送 `group.state.changed`。
@@ -209,7 +204,7 @@ flowchart LR
 
 1. 上游支付域发送 `group.order.paid`，`tradeType=JOIN`。
 2. `GroupCommandService` 翻译成 `JoinGroupCommand`。
-3. 先做订单幂等回放。
+3. 先按 `groupId + 团内 orderId` 做幂等回放。
 4. 读取 Redis 团快照，拿到 `activityId`。
 5. 加载活动并校验 SKU 规则。
 6. 调用 `join_group.lua`：
@@ -238,7 +233,7 @@ sequenceDiagram
     Pay->>MQ: group.order.paid
     MQ->>Consumer: 投递支付成功消息
     Consumer->>Cmd: handleOrderPaid
-    Cmd->>Cmd: 订单幂等回放
+    Cmd->>Cmd: groupId 幂等回放
     Cmd->>Cache: 读取活动缓存
     Cache-->>Cmd: GroupActivity
     Cmd->>Cmd: 校验活动/时间窗/SKU
@@ -264,7 +259,7 @@ sequenceDiagram
 ### 6.1 普通成员售后
 
 1. 上游发送 `group.after.sale.success`。
-2. 拼团域按 `groupId` 或 `orderId -> groupId` 反查所属团。
+2. 拼团域直接按上游透传的 `groupId` 定位所属团。
 3. 读取 Redis 团快照，定位当前订单对应成员。
 4. 若当前成员不是团长，则执行 `after_sale_success.lua`：
    - 写入 `afterSaleId`
@@ -429,7 +424,7 @@ flowchart LR
 
 ### 10.1 幂等
 
-- 支付成功链路以 `group:order:index` 做订单级幂等。
+- 支付成功链路以“上游透传 `groupId` + 团内 `orderId`”做幂等。
 - 成员 Mongo 投影以 `orderId` 做增量 upsert。
 - 退款补偿消息设计成由下游按 `orderId + refundScene` 或业务退款单号继续做幂等。
 

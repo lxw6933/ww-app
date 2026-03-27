@@ -10,12 +10,12 @@ import com.ww.mall.promotion.engine.model.GroupCommandResult;
 import com.ww.mall.promotion.entity.group.GroupActivity;
 import com.ww.mall.promotion.entity.group.GroupMember;
 import com.ww.mall.promotion.enums.GroupMemberBizStatus;
+import com.ww.mall.promotion.enums.GroupStatus;
 import com.ww.mall.promotion.enums.GroupTradeType;
 import com.ww.mall.promotion.mq.*;
 import com.ww.mall.promotion.service.group.command.CreateGroupCommand;
 import com.ww.mall.promotion.service.group.command.JoinGroupCommand;
 import lombok.extern.slf4j.Slf4j;
-import org.bson.types.ObjectId;
 import org.springframework.stereotype.Service;
 
 import javax.annotation.Resource;
@@ -83,7 +83,7 @@ public class GroupCommandService {
         }
         GroupActivity activity = loadAndValidateActivity(command.getActivityId());
         ResolvedSkuRule resolvedSkuRule = resolveSkuRule(activity, command.getSkuId());
-        String groupId = new ObjectId().toString();
+        String groupId = command.getGroupId();
         long nowMillis = System.currentTimeMillis();
         GroupCommandResult result = groupStorageComponent.createGroup(
                 groupId,
@@ -94,6 +94,10 @@ public class GroupCommandService {
         );
         if (!result.isSuccess()) {
             throwCreateException(result);
+        }
+        if (result.isReplayed()) {
+            syncProjection(result.getGroupId());
+            return groupQueryService.getGroupDetail(result.getGroupId());
         }
         afterStateChanged(result.getGroupId(), nowMillis);
         return groupQueryService.getGroupDetail(result.getGroupId());
@@ -119,6 +123,10 @@ public class GroupCommandService {
         if (!result.isSuccess()) {
             throwJoinException(result);
         }
+        if (result.isReplayed()) {
+            syncProjection(result.getGroupId());
+            return groupQueryService.getGroupDetail(result.getGroupId());
+        }
         afterStateChanged(result.getGroupId(), nowMillis);
         return groupQueryService.getGroupDetail(result.getGroupId());
     }
@@ -134,6 +142,7 @@ public class GroupCommandService {
         try {
             if (message.getTradeType() == GroupTradeType.START) {
                 CreateGroupCommand command = new CreateGroupCommand();
+                command.setGroupId(message.getGroupId());
                 command.setActivityId(message.getActivityId());
                 command.setUserId(message.getUserId());
                 command.setOrderId(message.getOrderId());
@@ -168,19 +177,29 @@ public class GroupCommandService {
         if (message == null || !hasText(message.getOrderId())) {
             throw new ApiException(GROUP_RECORD_ORDER_CODE_NOT_EXISTS);
         }
-        String groupId = hasText(message.getGroupId()) ? message.getGroupId()
-                : groupStorageComponent.findGroupIdByOrderId(message.getOrderId());
-        if (!hasText(groupId)) {
-            throw new ApiException(GROUP_RECORD_NOT_EXISTS);
+        if (!hasText(message.getGroupId())) {
+            throw new ApiException(GROUP_RECORD_ERROR);
         }
-        GroupCacheSnapshot snapshot = groupStorageComponent.requireGroupSnapshot(groupId);
+        String groupId = message.getGroupId();
+        GroupCacheSnapshot snapshot = groupStorageComponent.loadGroupSnapshot(groupId);
+        if (snapshot == null || snapshot.getInstance() == null) {
+            log.info("售后成功消息对应拼团快照不存在，跳过拼团售后处理: groupId={}, orderId={}",
+                    groupId, message.getOrderId());
+            return;
+        }
+        if (!GroupStatus.OPEN.getCode().equals(snapshot.getInstance().getStatus())) {
+            log.info("售后成功消息对应拼团非OPEN状态，跳过拼团售后处理: groupId={}, orderId={}, groupStatus={}",
+                    groupId, message.getOrderId(), snapshot.getInstance().getStatus());
+            return;
+        }
         Long userId = message.getUserId() != null ? message.getUserId()
                 : groupStorageComponent.findMemberUserId(snapshot, message.getOrderId());
         if (userId == null) {
             throw new ApiException(GROUP_RECORD_ORDER_CODE_NOT_EXISTS);
         }
         long nowMillis = message.getSuccessTime() != null ? message.getSuccessTime().getTime() : System.currentTimeMillis();
-        String failReason = groupStorageComponent.isLeader(snapshot, userId)
+        boolean leaderAfterSale = groupStorageComponent.isLeader(snapshot, userId);
+        String failReason = leaderAfterSale
                 ? "团长售后导致拼团关闭" : "售后成功，释放拼团名额";
         int code = groupStorageComponent.afterSaleSuccess(
                 groupId,
@@ -195,7 +214,7 @@ public class GroupCommandService {
         }
         if (code == 1) {
             afterStateChanged(groupId, nowMillis);
-            if ("OPEN".equals(snapshot.getInstance().getStatus())) {
+            if (leaderAfterSale) {
                 requestRefundForPendingMembers(groupId, "GROUP_FAILED_REFUND", failReason,
                         new Date(nowMillis));
             }
@@ -220,6 +239,49 @@ public class GroupCommandService {
             requestRefundForPendingMembers(groupId, "GROUP_FAILED_REFUND", reason,
                     new Date(nowMillis));
         }
+    }
+
+    /**
+     * 判断指定拼团当前是否仍存在待退款成员。
+     * <p>
+     * 该方法只依据拼团快照中的成员状态判断，
+     * 适合用于人工补偿或任务补偿前的快速探测。
+     *
+     * @param groupId 团ID
+     * @return true-仍有待退款成员，false-当前无需补偿
+     */
+    public boolean hasPendingRefund(String groupId) {
+        GroupCacheSnapshot snapshot = groupStorageComponent.requireGroupSnapshot(groupId);
+        return hasPendingRefundMembers(snapshot);
+    }
+
+    /**
+     * 触发指定失败拼团的待退款成员补偿重发。
+     * <p>
+     * 下游应继续基于订单号和退款场景做幂等，
+     * 因此该方法允许人工重复触发，作为 MQ 失败后的补偿入口。
+     *
+     * @param groupId 团ID
+     * @param reason 重发原因
+     * @return 本次成功投递的退款补偿消息数
+     */
+    public int triggerPendingRefundCompensation(String groupId, String reason) {
+        GroupCacheSnapshot snapshot = groupStorageComponent.requireGroupSnapshot(groupId);
+        if (snapshot.getInstance() == null
+                || !GroupStatus.FAILED.getCode().equals(snapshot.getInstance().getStatus())) {
+            log.info("当前拼团非FAILED终态，跳过待退款补偿重发: groupId={}, status={}",
+                    groupId, snapshot.getInstance() == null ? null : snapshot.getInstance().getStatus());
+            return 0;
+        }
+        if (!hasPendingRefundMembers(snapshot)) {
+            log.info("当前拼团不存在待退款成员，跳过待退款补偿重发: groupId={}", groupId);
+            return 0;
+        }
+        String finalReason = hasText(reason) ? reason
+                : (hasText(snapshot.getInstance().getFailReason())
+                ? snapshot.getInstance().getFailReason()
+                : "人工触发拼团退款补偿");
+        return requestRefundForPendingMembers(snapshot, "GROUP_FAILED_REFUND", finalReason, new Date());
     }
 
     /**
@@ -343,38 +405,42 @@ public class GroupCommandService {
     }
 
     /**
-     * 在正式开团前按订单进行幂等回放。
+     * 在正式开团前按 groupId 进行幂等回放。
      * <p>
-     * 仅依赖 Redis 订单索引做幂等判断，避免回放链路再依赖 Mongo 投影。
+     * 上游在下单阶段已经生成 groupId，因此重试开团时只需按 groupId 检查
+     * 当前拼团快照是否已存在，无需再维护订单到拼团的反向索引。
      *
      * @param command 开团命令
      * @return 已存在的团详情，不存在时返回 null
      */
     private GroupInstanceVO replayCreateGroup(CreateGroupCommand command) {
-        String existingGroupId = findExistingGroupId(command.getOrderId());
-        if (!hasText(existingGroupId)) {
+        GroupCacheSnapshot snapshot = groupStorageComponent.loadGroupSnapshot(command.getGroupId());
+        if (snapshot == null || snapshot.getInstance() == null) {
             return null;
         }
-        syncProjection(existingGroupId);
-        return groupQueryService.getGroupDetail(existingGroupId);
+        syncProjection(command.getGroupId());
+        return groupQueryService.getGroupDetail(command.getGroupId());
     }
 
     /**
-     * 在正式参团前按订单进行幂等回放。
+     * 在正式参团前按 groupId + 团内 orderId 进行幂等回放。
+     * <p>
+     * 参团场景由上游保证 groupId 与订单绑定关系正确，
+     * 拼团域只需确认该订单是否已经写入当前团的成员仓库。
      *
      * @param command 参团命令
      * @return 已存在的团详情，不存在时返回 null
      */
     private GroupInstanceVO replayJoinGroup(JoinGroupCommand command) {
-        String existingGroupId = findExistingGroupId(command.getOrderId());
-        if (!hasText(existingGroupId)) {
+        GroupCacheSnapshot snapshot = groupStorageComponent.loadGroupSnapshot(command.getGroupId());
+        if (snapshot == null || snapshot.getInstance() == null) {
             return null;
         }
-        if (!existingGroupId.equals(command.getGroupId())) {
-            throw new ApiException(GROUP_RECORD_ORDER_DUPLICATED);
+        if (!groupStorageComponent.existsMemberOrder(command.getGroupId(), command.getOrderId())) {
+            return null;
         }
-        syncProjection(existingGroupId);
-        return groupQueryService.getGroupDetail(existingGroupId);
+        syncProjection(command.getGroupId());
+        return groupQueryService.getGroupDetail(command.getGroupId());
     }
 
     /**
@@ -426,29 +492,17 @@ public class GroupCommandService {
     }
 
     /**
-     * 查询订单已归属的拼团ID。
-     *
-     * @param orderId 订单ID
-     * @return 拼团ID
-     */
-    private String findExistingGroupId(String orderId) {
-        return groupStorageComponent.findGroupIdByOrderId(orderId);
-    }
-
-    /**
      * 校验支付消息。
      *
      * @param message 支付消息
      */
     private void validatePaidMessage(GroupOrderPaidMessage message) {
-        if (message == null || message.getTradeType() == null || !hasText(message.getOrderId())
+        if (message == null || message.getTradeType() == null || !hasText(message.getGroupId())
+                || !hasText(message.getOrderId())
                 || message.getUserId() == null || message.getSkuId() == null || message.getPayAmount() == null) {
             throw new ApiException(GROUP_RECORD_ERROR);
         }
         if (message.getTradeType() == GroupTradeType.START && !hasText(message.getActivityId())) {
-            throw new ApiException(GROUP_RECORD_ERROR);
-        }
-        if (message.getTradeType() == GroupTradeType.JOIN && !hasText(message.getGroupId())) {
             throw new ApiException(GROUP_RECORD_ERROR);
         }
     }
@@ -459,7 +513,8 @@ public class GroupCommandService {
      * @param command 开团命令
      */
     private void validateCreateCommand(CreateGroupCommand command) {
-        if (command == null || !hasText(command.getActivityId()) || !hasText(command.getOrderId())
+        if (command == null || !hasText(command.getGroupId()) || !hasText(command.getActivityId())
+                || !hasText(command.getOrderId())
                 || command.getSkuId() == null || command.getUserId() == null || command.getPayAmount() == null) {
             throw new ApiException(GROUP_RECORD_ERROR);
         }
@@ -535,16 +590,37 @@ public class GroupCommandService {
      * @param reason 失败原因
      * @param eventTime 事件时间
      */
-    private void requestRefundForPendingMembers(String groupId, String refundScene, String reason, Date eventTime) {
+    private int requestRefundForPendingMembers(String groupId, String refundScene, String reason, Date eventTime) {
         if (!hasText(groupId)) {
-            return;
+            return 0;
         }
         GroupCacheSnapshot snapshot = groupStorageComponent.requireGroupSnapshot(groupId);
         if (snapshot == null || snapshot.getInstance() == null || snapshot.getMembers() == null) {
-            return;
+            return 0;
         }
-        snapshot.getMembers().forEach(member ->
-                requestRefundForPendingMember(snapshot, member, refundScene, reason, eventTime));
+        return requestRefundForPendingMembers(snapshot, refundScene, reason, eventTime);
+    }
+
+    /**
+     * 按快照批量发送待退款成员补偿申请。
+     *
+     * @param snapshot 团快照
+     * @param refundScene 退款场景
+     * @param reason 退款原因
+     * @param eventTime 事件时间
+     * @return 成功投递的消息数量
+     */
+    private int requestRefundForPendingMembers(GroupCacheSnapshot snapshot, String refundScene, String reason, Date eventTime) {
+        if (snapshot == null || snapshot.getInstance() == null || snapshot.getMembers() == null) {
+            return 0;
+        }
+        int publishedCount = 0;
+        for (GroupMember member : snapshot.getMembers()) {
+            if (requestRefundForPendingMember(snapshot, member, refundScene, reason, eventTime)) {
+                publishedCount++;
+            }
+        }
+        return publishedCount;
     }
 
     /**
@@ -559,16 +635,16 @@ public class GroupCommandService {
      * @param reason 退款原因
      * @param eventTime 事件时间
      */
-    private void requestRefundForPendingMember(GroupCacheSnapshot snapshot, GroupMember member,
-                                               String refundScene, String reason, Date eventTime) {
+    private boolean requestRefundForPendingMember(GroupCacheSnapshot snapshot, GroupMember member,
+                                                  String refundScene, String reason, Date eventTime) {
         if (member == null
                 || !GroupMemberBizStatus.FAILED_REFUND_PENDING.name().equals(member.getMemberStatus())) {
-            return;
+            return false;
         }
         if (!hasText(member.getOrderId()) || member.getPayAmount() == null) {
             log.error("拼团退款补偿消息未发送，成员关键数据缺失: groupId={}, orderId={}, memberStatus={}",
                     snapshot.getInstance().getId(), member.getOrderId(), member.getMemberStatus());
-            return;
+            return false;
         }
         GroupRefundRequestMessage refundMessage = new GroupRefundRequestMessage();
         refundMessage.setGroupId(snapshot.getInstance().getId());
@@ -582,10 +658,26 @@ public class GroupCommandService {
         refundMessage.setEventTime(eventTime != null ? eventTime : new Date());
         try {
             publishRefundRequest(refundMessage);
+            return true;
         } catch (RuntimeException e) {
             log.error("拼团退款补偿消息发送失败: groupId={}, orderId={}, refundScene={}",
                     refundMessage.getGroupId(), refundMessage.getOrderId(), refundScene, e);
+            return false;
         }
+    }
+
+    /**
+     * 判断当前快照中是否存在待退款成员。
+     *
+     * @param snapshot 拼团快照
+     * @return true-存在待退款成员
+     */
+    private boolean hasPendingRefundMembers(GroupCacheSnapshot snapshot) {
+        return snapshot != null
+                && snapshot.getMembers() != null
+                && snapshot.getMembers().stream()
+                .anyMatch(member -> member != null
+                        && GroupMemberBizStatus.FAILED_REFUND_PENDING.name().equals(member.getMemberStatus()));
     }
 
     /**

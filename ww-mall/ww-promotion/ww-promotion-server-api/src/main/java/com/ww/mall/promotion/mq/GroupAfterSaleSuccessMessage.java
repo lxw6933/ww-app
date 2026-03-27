@@ -33,7 +33,7 @@ public class GroupAfterSaleSuccessMessage implements Serializable {
     /**
      * 拼团ID。
      * <p>
-     * 若上游已知可直接透传，未知时拼团域将按订单映射反查。
+     * 由订单域直接透传，拼团域不再按订单号反查所属拼团。
      */
     private String groupId;
 

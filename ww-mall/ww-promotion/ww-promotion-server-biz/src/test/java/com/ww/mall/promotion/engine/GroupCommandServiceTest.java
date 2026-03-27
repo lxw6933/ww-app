@@ -11,8 +11,10 @@ import com.ww.mall.promotion.entity.group.GroupActivity;
 import com.ww.mall.promotion.entity.group.GroupInstance;
 import com.ww.mall.promotion.entity.group.GroupMember;
 import com.ww.mall.promotion.enums.GroupEnabledStatus;
+import com.ww.mall.promotion.enums.GroupStatus;
 import com.ww.mall.promotion.enums.GroupTradeType;
 import com.ww.mall.promotion.mq.GroupMqConstant;
+import com.ww.mall.promotion.mq.GroupAfterSaleSuccessMessage;
 import com.ww.mall.promotion.mq.GroupOrderPaidMessage;
 import com.ww.mall.promotion.mq.GroupRefundRequestMessage;
 import org.junit.jupiter.api.Test;
@@ -124,11 +126,14 @@ class GroupCommandServiceTest {
         result.setSuccess(true);
         result.setGroupId("group-1");
         when(groupActivityCache.get("activity-1")).thenReturn(activity);
-        when(groupStorageComponent.createGroup(anyString(), eq(activity), any(), anyLong(), eq(2002L))).thenReturn(result);
+        when(groupStorageComponent.createGroup(anyString(), eq(activity),
+                any(com.ww.mall.promotion.service.group.command.CreateGroupCommand.class), anyLong(), eq(2002L)))
+                .thenReturn(result);
         when(groupQueryService.getGroupDetail("group-1")).thenReturn(new GroupInstanceVO());
 
         com.ww.mall.promotion.service.group.command.CreateGroupCommand command =
                 new com.ww.mall.promotion.service.group.command.CreateGroupCommand();
+        command.setGroupId("group-1");
         command.setActivityId("activity-1");
         command.setUserId(1L);
         command.setOrderId("order-1");
@@ -137,7 +142,49 @@ class GroupCommandServiceTest {
 
         groupCommandService.createGroup(command);
 
-        verify(groupStorageComponent).createGroup(anyString(), eq(activity), eq(command), anyLong(), eq(2002L));
+        verify(groupStorageComponent).createGroup(eq("group-1"), eq(activity), eq(command), anyLong(), eq(2002L));
+    }
+
+    /**
+     * 开团支付成功时，应直接使用上游透传的 groupId 创建拼团。
+     */
+    @Test
+    void shouldUseUpstreamGroupIdWhenHandlingStartPaidMessage() {
+        GroupOrderPaidMessage message = buildStartPaidMessage();
+        GroupActivity activity = buildJoinableActivity();
+        GroupCommandResult result = new GroupCommandResult();
+        result.setSuccess(true);
+        result.setGroupId("group-start-1");
+
+        when(groupActivityCache.get("activity-1")).thenReturn(activity);
+        when(groupStorageComponent.createGroup(eq("group-start-1"), eq(activity),
+                any(com.ww.mall.promotion.service.group.command.CreateGroupCommand.class), anyLong(), eq(2002L)))
+                .thenReturn(result);
+        when(groupQueryService.getGroupDetail("group-start-1")).thenReturn(new GroupInstanceVO());
+
+        assertDoesNotThrow(() -> groupCommandService.handleOrderPaid(message));
+
+        verify(groupStorageComponent).createGroup(eq("group-start-1"), eq(activity),
+                any(com.ww.mall.promotion.service.group.command.CreateGroupCommand.class), anyLong(), eq(2002L));
+    }
+
+    /**
+     * 支付成功消息缺少 groupId 时，应直接判定为非法消息。
+     */
+    @Test
+    void shouldRejectPaidMessageWhenGroupIdMissing() {
+        GroupOrderPaidMessage message = buildStartPaidMessage();
+        message.setGroupId(null);
+
+        assertThrows(ApiException.class, () -> groupCommandService.handleOrderPaid(message));
+
+        verify(groupStorageComponent, never()).createGroup(
+                anyString(),
+                any(GroupActivity.class),
+                any(com.ww.mall.promotion.service.group.command.CreateGroupCommand.class),
+                anyLong(),
+                anyLong()
+        );
     }
 
     /**
@@ -212,6 +259,67 @@ class GroupCommandServiceTest {
     }
 
     /**
+     * 团已成功时，售后成功消息应直接跳过，不再进入拼团售后链路。
+     */
+    @Test
+    void shouldSkipPromotionAfterSaleWhenGroupAlreadySuccess() {
+        GroupAfterSaleSuccessMessage message = new GroupAfterSaleSuccessMessage();
+        message.setGroupId("group-1");
+        message.setOrderId("order-1");
+        message.setUserId(1L);
+        when(groupStorageComponent.loadGroupSnapshot("group-1")).thenReturn(buildSuccessSnapshot());
+
+        assertDoesNotThrow(() -> groupCommandService.handleAfterSaleSuccess(message));
+
+        verify(groupStorageComponent, never()).afterSaleSuccess(anyString(), anyString(), anyString(), anyLong(), anyString(), anyString());
+        verify(rabbitMqPublisher, never()).sendMsg(
+                eq(GroupMqConstant.GROUP_EXCHANGE),
+                eq(GroupMqConstant.GROUP_REFUND_REQUEST_KEY),
+                any()
+        );
+    }
+
+    /**
+     * 售后成功消息缺少 groupId 时，不再按订单反查拼团，应直接拒绝处理。
+     */
+    @Test
+    void shouldRejectAfterSaleMessageWhenGroupIdMissing() {
+        GroupAfterSaleSuccessMessage message = new GroupAfterSaleSuccessMessage();
+        message.setOrderId("order-1");
+
+        assertThrows(ApiException.class, () -> groupCommandService.handleAfterSaleSuccess(message));
+    }
+
+    /**
+     * 当失败拼团仍存在待退款成员时，应支持人工重发退款补偿。
+     */
+    @Test
+    void shouldTriggerPendingRefundCompensationManually() {
+        when(groupStorageComponent.requireGroupSnapshot("group-1")).thenReturn(buildFailedSnapshot());
+
+        int publishedCount = groupCommandService.triggerPendingRefundCompensation("group-1", "人工补偿");
+
+        assertEquals(1, publishedCount);
+        verify(rabbitMqPublisher).sendMsg(
+                eq(GroupMqConstant.GROUP_EXCHANGE),
+                eq(GroupMqConstant.GROUP_REFUND_REQUEST_KEY),
+                any()
+        );
+    }
+
+    /**
+     * 当失败拼团不存在待退款成员时，待退款检查应返回 false。
+     */
+    @Test
+    void shouldReturnFalseWhenNoPendingRefundMembers() {
+        GroupCacheSnapshot snapshot = buildFailedSnapshot();
+        snapshot.getMembers().forEach(member -> member.setMemberStatus("SUCCESS"));
+        when(groupStorageComponent.requireGroupSnapshot("group-1")).thenReturn(snapshot);
+
+        assertFalse(groupCommandService.hasPendingRefund("group-1"));
+    }
+
+    /**
      * 构造参团支付成功消息。
      *
      * @return 支付消息
@@ -224,6 +332,23 @@ class GroupCommandServiceTest {
         message.setUserId(1L);
         message.setSkuId(1001L);
         message.setPayAmount(new BigDecimal("99.00"));
+        return message;
+    }
+
+    /**
+     * 构造开团支付成功消息。
+     *
+     * @return 支付消息
+     */
+    private GroupOrderPaidMessage buildStartPaidMessage() {
+        GroupOrderPaidMessage message = new GroupOrderPaidMessage();
+        message.setTradeType(GroupTradeType.START);
+        message.setActivityId("activity-1");
+        message.setGroupId("group-start-1");
+        message.setOrderId("order-start-1");
+        message.setUserId(1L);
+        message.setSkuId(2001L);
+        message.setPayAmount(new BigDecimal("109.00"));
         return message;
     }
 
@@ -282,6 +407,7 @@ class GroupCommandServiceTest {
         GroupInstance instance = new GroupInstance();
         instance.setId("group-1");
         instance.setActivityId("activity-1");
+        instance.setStatus(GroupStatus.FAILED.getCode());
         instance.setFailReason("超时未成团");
         snapshot.setInstance(instance);
 
@@ -298,6 +424,21 @@ class GroupCommandServiceTest {
         closedMember.setMemberStatus("LEADER_AFTER_SALE_CLOSED");
 
         snapshot.setMembers(Arrays.asList(refundMember, closedMember));
+        return snapshot;
+    }
+
+    /**
+     * 构造拼团成功快照。
+     *
+     * @return 成功快照
+     */
+    private GroupCacheSnapshot buildSuccessSnapshot() {
+        GroupCacheSnapshot snapshot = new GroupCacheSnapshot();
+        GroupInstance instance = new GroupInstance();
+        instance.setId("group-1");
+        instance.setActivityId("activity-1");
+        instance.setStatus(GroupStatus.SUCCESS.getCode());
+        snapshot.setInstance(instance);
         return snapshot;
     }
 }

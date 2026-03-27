@@ -36,7 +36,8 @@ public class GroupOrderPaidMessage implements Serializable {
     /**
      * 拼团ID。
      * <p>
-     * 参团场景必填。
+     * 由订单域在下单阶段生成并贯穿订单、支付、售后链路；
+     * 开团、参团场景都必须透传。
      */
     private String groupId;
 

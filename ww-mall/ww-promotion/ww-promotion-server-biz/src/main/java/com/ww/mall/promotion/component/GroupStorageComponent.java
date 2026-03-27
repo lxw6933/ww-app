@@ -44,7 +44,7 @@ import static com.ww.mall.promotion.constants.ErrorCodeConstants.GROUP_RECORD_NO
  * 拼团存储组件。
  * <p>
  * 该组件统一收口拼团业务对 Redis 与 Mongo 的底层访问，包含：
- * Redis Lua 状态变更、Redis 快照读取、订单索引查询、成员辅助判断，以及 Mongo 投影同步与查询。
+ * Redis Lua 状态变更、Redis 快照读取、成员辅助判断，以及 Mongo 投影同步与查询。
  * 业务服务仅负责命令编排、规则校验和异常语义，不再直接拼装底层存储细节。
  *
  * @author ww
@@ -116,7 +116,6 @@ public class GroupStorageComponent {
                 groupRedisKeyBuilder.buildGroupMetaKey(groupId),
                 groupRedisKeyBuilder.buildGroupMemberStoreKey(groupId),
                 groupRedisKeyBuilder.buildGroupUserIndexKey(groupId),
-                groupRedisKeyBuilder.buildOrderIndexKey(),
                 groupRedisKeyBuilder.buildActivityStatsKey(activity.getId()),
                 groupRedisKeyBuilder.buildExpiryIndexKey()
         );
@@ -155,7 +154,6 @@ public class GroupStorageComponent {
                 groupRedisKeyBuilder.buildGroupMetaKey(command.getGroupId()),
                 groupRedisKeyBuilder.buildGroupMemberStoreKey(command.getGroupId()),
                 groupRedisKeyBuilder.buildGroupUserIndexKey(command.getGroupId()),
-                groupRedisKeyBuilder.buildOrderIndexKey(),
                 groupRedisKeyBuilder.buildActivityStatsKey(activity.getId()),
                 groupRedisKeyBuilder.buildExpiryIndexKey()
         );
@@ -237,18 +235,6 @@ public class GroupStorageComponent {
         int code = parseLuaCode(executeMultiScript(SCRIPT_GROUP_EXPIRE, keys, args));
         log.debug("过期关团存储操作完成: groupId={}, code={}", groupId, code);
         return code;
-    }
-
-    /**
-     * 根据订单索引查询拼团ID。
-     *
-     * @param orderId 订单ID
-     * @return 拼团ID，不存在时返回 {@code null}
-     */
-    public String findGroupIdByOrderId(String orderId) {
-        String groupId = (String) stringRedisTemplate.opsForHash().get(groupRedisKeyBuilder.buildOrderIndexKey(), orderId);
-        log.debug("根据订单索引查询拼团ID: orderId={}, groupId={}", orderId, groupId);
-        return groupId;
     }
 
     /**
@@ -374,6 +360,29 @@ public class GroupStorageComponent {
                 .orElse(null);
         log.debug("根据订单号查询成员用户ID完成: orderId={}, userId={}", orderId, userId);
         return userId;
+    }
+
+    /**
+     * 判断指定订单是否已经写入当前团的成员仓库。
+     * <p>
+     * 该方法用于支付成功重试时的团内幂等判断，
+     * 只在当前 groupId 维度下检查 orderId 是否存在，不做跨团反查。
+     *
+     * @param groupId 团ID
+     * @param orderId 订单ID
+     * @return true-当前团内已存在该订单，false-当前团内不存在
+     */
+    public boolean existsMemberOrder(String groupId, String orderId) {
+        log.debug("判断团内订单是否已存在: groupId={}, orderId={}", groupId, orderId);
+        if (!hasText(groupId) || !hasText(orderId)) {
+            log.warn("判断团内订单是否已存在失败: groupId或orderId为空, groupId={}, orderId={}", groupId, orderId);
+            return false;
+        }
+        Boolean exists = stringRedisTemplate.opsForHash()
+                .hasKey(groupRedisKeyBuilder.buildGroupMemberStoreKey(groupId), orderId);
+        boolean result = Boolean.TRUE.equals(exists);
+        log.debug("判断团内订单是否已存在完成: groupId={}, orderId={}, exists={}", groupId, orderId, result);
+        return result;
     }
 
     /**

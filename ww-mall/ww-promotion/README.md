@@ -42,7 +42,6 @@
 - `group:instance:meta:{groupId}`：拼团主状态，内部包含业务失效时间 `expireTime`。
 - `group:instance:member-store:{groupId}`：成员快照。
 - `group:instance:user-index:{groupId}`：团内活跃用户索引。
-- `group:order:index`：订单到拼团的幂等索引。
 - `group:activity:stats:{activityId}`：活动累计统计。
 - `group:expiry`：过期索引。
 
@@ -59,5 +58,5 @@
 - `expireTime` 表示团业务失效时间，取“活动结束时间”和“开团时间 + 团有效期”中的较小值。
 - OPEN 状态 Redis TTL 在开团时一次性设置为“距 `expireTime` 的剩余时长 + 2天保留期”。
 - 团成功、售后关闭、过期失败后，Redis TTL 会重置为固定 2 天，不继续沿用 OPEN 状态下的长 TTL。
-- 如果内部 `group.state.changed` 发送失败，只记录错误日志。
+- 如果内部 `group.state.changed` 发送失败，命令服务会立即执行一次本地 `syncProjection` 作为兜底。
 - B 端回显时应校验 Mongo/Redis 状态，必要时提供手动补发内部消息的入口。

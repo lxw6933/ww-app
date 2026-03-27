@@ -9,13 +9,12 @@ import org.springframework.stereotype.Component;
  * 新版拼团重构后，Redis 为主状态存储，所有命令链路都围绕统一 Key 规范运转。
  * 这里集中维护各类状态、索引和计数器 Key，避免命令脚本与 Java 代码各自拼串。
  * <p>
- * 当前拼团主链路固定使用 6 个核心 Key：
+ * 当前拼团主链路固定使用 5 个核心 Key：
  * 1. 团主状态：{@code group:instance:meta:{groupId}}
  * 2. 团成员仓库：{@code group:instance:member-store:{groupId}}
  * 3. 团内活跃用户索引：{@code group:instance:user-index:{groupId}}
- * 4. 全局订单幂等索引：{@code group:order:index}
- * 5. 活动统计：{@code group:activity:stats:{activityId}}
- * 6. 过期调度索引：{@code group:expiry}
+ * 4. 活动统计：{@code group:activity:stats:{activityId}}
+ * 5. 过期调度索引：{@code group:expiry}
  * <p>
  * 示例：
  * 团状态 Key:
@@ -34,8 +33,6 @@ public class GroupRedisKeyBuilder extends RedisKeyBuilder {
     private static final String GROUP = "group";
     private static final String INSTANCE = "instance";
     private static final String META = "meta";
-    private static final String ORDER = "order";
-    private static final String INDEX = "index";
     private static final String ACTIVITY = "activity";
     private static final String STATS = "stats";
     private static final String EXPIRY = "expiry";
@@ -104,27 +101,6 @@ public class GroupRedisKeyBuilder extends RedisKeyBuilder {
      */
     public String buildGroupUserIndexKey(String groupId) {
         return join(GROUP, INSTANCE, USER_INDEX, groupId);
-    }
-
-    /**
-     * 全局订单索引 Hash Key。
-     * <p>
-     * field 为 orderId，value 为 groupId，用于支付消息幂等回放与售后反查。
-     * <p>
-     * 功能：
-     * 同一个订单无论支付成功消息被投递多少次，都先命中该索引完成幂等回放。
-     * 同时售后消息如果只带 {@code orderId} 不带 {@code groupId}，也依赖该索引反查所属拼团。
-     * <p>
-     * Key 示例：
-     * {@code promotion:group:order:index}
-     * <p>
-     * Field/Value 示例：
-     * {@code ORDER_10001 -> 67dd3ac8f5a6f80001a10001}
-     *
-     * @return Redis Key
-     */
-    public String buildOrderIndexKey() {
-        return join(GROUP, ORDER, INDEX);
     }
 
     /**
