@@ -157,7 +157,6 @@ public class GroupCommandService {
                 command.setUserId(message.getUserId());
                 command.setOrderId(message.getOrderId());
                 command.setSkuId(message.getSkuId());
-                command.setPayAmount(message.getPayAmount());
                 return createGroup(command);
             }
             JoinGroupCommand command = new JoinGroupCommand();
@@ -165,7 +164,6 @@ public class GroupCommandService {
             command.setUserId(message.getUserId());
             command.setOrderId(message.getOrderId());
             command.setSkuId(message.getSkuId());
-            command.setPayAmount(message.getPayAmount());
             return joinGroup(command);
         } catch (ApiException e) {
             if (!shouldRequestRefundForPaidFailure(e)) {
@@ -266,7 +264,6 @@ public class GroupCommandService {
         refundMessage.setActivityId(request.getActivityId());
         refundMessage.setUserId(request.getUserId());
         refundMessage.setOrderId(request.getOrderId());
-        refundMessage.setRefundAmount(resolveRefundAmount(request, null));
         refundMessage.setRefundScene(resolveTradeExceptionRefundScene(request.getTradeType()));
         refundMessage.setReason(request.getReason());
         refundMessage.setEventTime(request.getEventTime() != null ? request.getEventTime() : new Date());
@@ -291,7 +288,6 @@ public class GroupCommandService {
         refundMessage.setUserId(request.getUserId() != null ? request.getUserId()
                 : (targetMember == null ? null : targetMember.getUserId()));
         refundMessage.setOrderId(request.getOrderId());
-        refundMessage.setRefundAmount(resolveRefundAmount(request, targetMember));
         refundMessage.setRefundScene(resolveAfterSaleRefundScene(request));
         refundMessage.setReason(request.getReason());
         refundMessage.setEventTime(request.getEventTime() != null ? request.getEventTime() : new Date());
@@ -313,7 +309,6 @@ public class GroupCommandService {
         refundMessage.setActivityId(resolveActivityId(snapshot, request));
         refundMessage.setUserId(request.getUserId() != null ? request.getUserId() : targetMember.getUserId());
         refundMessage.setOrderId(request.getOrderId());
-        refundMessage.setRefundAmount(resolveRefundAmount(request, targetMember));
         refundMessage.setRefundScene(GROUP_OPEN_AFTER_SALE_REFUND_SCENE);
         refundMessage.setReason(request.getReason());
         refundMessage.setEventTime(eventTime != null ? eventTime : new Date());
@@ -649,7 +644,7 @@ public class GroupCommandService {
     private void validatePaidMessage(GroupOrderPaidMessage message) {
         if (message == null || message.getTradeType() == null || !hasText(message.getGroupId())
                 || !hasText(message.getOrderId())
-                || message.getUserId() == null || message.getSkuId() == null || message.getPayAmount() == null) {
+                || message.getUserId() == null || message.getSkuId() == null) {
             throw new ApiException(GROUP_RECORD_ERROR);
         }
         if (message.getTradeType() == GroupTradeType.START && !hasText(message.getActivityId())) {
@@ -665,7 +660,7 @@ public class GroupCommandService {
     private void validateCreateCommand(CreateGroupCommand command) {
         if (command == null || !hasText(command.getGroupId()) || !hasText(command.getActivityId())
                 || !hasText(command.getOrderId())
-                || command.getSkuId() == null || command.getUserId() == null || command.getPayAmount() == null) {
+                || command.getSkuId() == null || command.getUserId() == null) {
             throw new ApiException(GROUP_RECORD_ERROR);
         }
     }
@@ -677,7 +672,7 @@ public class GroupCommandService {
      */
     private void validateJoinCommand(JoinGroupCommand command) {
         if (command == null || !hasText(command.getGroupId()) || !hasText(command.getOrderId())
-                || command.getSkuId() == null || command.getUserId() == null || command.getPayAmount() == null) {
+                || command.getSkuId() == null || command.getUserId() == null) {
             throw new ApiException(GROUP_RECORD_ERROR);
         }
     }
@@ -712,25 +707,6 @@ public class GroupCommandService {
                 && snapshot.getInstance() != null
                 && snapshot.getInstance().getLeaderUserId() != null
                 && snapshot.getInstance().getLeaderUserId().equals(userId);
-    }
-
-    /**
-     * 解析退款金额。
-     * <p>
-     * 优先使用订单域显式透传的金额；若未透传，则回退读取拼团成员快照中的实付金额。
-     *
-     * @param request 售后请求
-     * @param targetMember 命中的成员
-     * @return 退款金额
-     */
-    private java.math.BigDecimal resolveRefundAmount(GroupAfterSaleRequestDTO request, GroupMember targetMember) {
-        java.math.BigDecimal refundAmount = request.getRefundAmount() != null
-                ? request.getRefundAmount()
-                : (targetMember == null ? null : targetMember.getPayAmount());
-        if (refundAmount == null) {
-            throw new ApiException(GROUP_RECORD_ERROR);
-        }
-        return refundAmount;
     }
 
     /**
@@ -808,7 +784,6 @@ public class GroupCommandService {
         refundMessage.setActivityId(message.getActivityId());
         refundMessage.setUserId(message.getUserId());
         refundMessage.setOrderId(message.getOrderId());
-        refundMessage.setRefundAmount(message.getPayAmount());
         refundMessage.setRefundScene(message.getTradeType() == GroupTradeType.START
                 ? "GROUP_CREATE_REJECTED" : "GROUP_JOIN_REJECTED");
         refundMessage.setReason(reason);
@@ -864,7 +839,8 @@ public class GroupCommandService {
     /**
      * 为单个待退款成员发送退款补偿申请。
      * <p>
-     * 只有订单号和退款金额完整时才发送消息；
+     * 只有订单号完整时才发送消息；
+     * 退款金额由下游订单域基于订单号自行查询。
      * 若关键数据缺失，则保留成员的待退款状态并记录错误日志，留待人工或后续任务补偿。
      *
      * @param snapshot 团快照
@@ -879,7 +855,7 @@ public class GroupCommandService {
                 || !GroupMemberBizStatus.FAILED_REFUND_PENDING.name().equals(member.getMemberStatus())) {
             return false;
         }
-        if (!hasText(member.getOrderId()) || member.getPayAmount() == null) {
+        if (!hasText(member.getOrderId())) {
             log.error("拼团退款补偿消息未发送，成员关键数据缺失: groupId={}, orderId={}, memberStatus={}",
                     snapshot.getInstance().getId(), member.getOrderId(), member.getMemberStatus());
             return false;
@@ -889,7 +865,6 @@ public class GroupCommandService {
         refundMessage.setActivityId(snapshot.getInstance().getActivityId());
         refundMessage.setUserId(member.getUserId());
         refundMessage.setOrderId(member.getOrderId());
-        refundMessage.setRefundAmount(member.getPayAmount());
         refundMessage.setRefundScene(refundScene);
         refundMessage.setReason(hasText(snapshot.getInstance().getFailReason())
                 ? snapshot.getInstance().getFailReason() : reason);

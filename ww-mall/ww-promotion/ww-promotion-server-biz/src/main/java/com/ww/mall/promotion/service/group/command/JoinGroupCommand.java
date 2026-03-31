@@ -2,8 +2,6 @@ package com.ww.mall.promotion.service.group.command;
 
 import lombok.Data;
 
-import java.math.BigDecimal;
-
 /**
  * 参团命令。
  * <p>
@@ -37,8 +35,4 @@ public class JoinGroupCommand {
      */
     private Long skuId;
 
-    /**
-     * 支付金额。
-     */
-    private BigDecimal payAmount;
 }

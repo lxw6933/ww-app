@@ -11,7 +11,6 @@ import org.springframework.data.mongodb.core.query.Criteria;
 import org.springframework.data.mongodb.core.query.Query;
 import org.springframework.data.mongodb.core.query.Update;
 
-import java.math.BigDecimal;
 import java.util.Date;
 
 /**
@@ -49,13 +48,6 @@ public class GroupMember extends BaseDoc {
      * 加入时间
      */
     private Date joinTime;
-
-    /**
-     * 实际支付金额。
-     * <p>
-     * 新版状态机要求支付消息显式透传该值，退款补偿直接使用该字段。
-     */
-    private BigDecimal payAmount;
 
     /**
      * 商品SKU ID
@@ -117,7 +109,6 @@ public class GroupMember extends BaseDoc {
         update.set("userId", member.getUserId());
         update.set("orderId", member.getOrderId());
         update.set("joinTime", member.getJoinTime());
-        update.set("payAmount", member.getPayAmount());
         update.set("skuId", member.getSkuId());
         update.set("memberStatus", member.getMemberStatus());
         update.set("afterSaleId", member.getAfterSaleId());

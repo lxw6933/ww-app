@@ -24,7 +24,7 @@ ARGV:
 10. openCacheTtlSeconds
 
 memberJson 样例：
-{"groupInstanceId":"67dd3ac8f5a6f80001a10001","userId":20001,"orderId":"ORDER_10001","skuId":30001,"memberStatus":"JOINED","payAmount":99.00}
+{"userId":20001,"orderId":"ORDER_10001","skuId":30001,"memberStatus":"JOINED"}
 
 ]]
 if redis.call('EXISTS', KEYS[1]) == 1 then

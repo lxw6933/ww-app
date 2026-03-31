@@ -2,8 +2,6 @@ package com.ww.mall.promotion.engine.model;
 
 import lombok.Data;
 
-import java.math.BigDecimal;
-
 /**
  * 拼团成员 Redis 轻量快照。
  * <p>
@@ -20,11 +18,6 @@ import java.math.BigDecimal;
 public class GroupMemberCacheSnapshot {
 
     /**
-     * 拼团实例ID。
-     */
-    private String groupInstanceId;
-
-    /**
      * 用户ID。
      */
     private Long userId;
@@ -38,11 +31,6 @@ public class GroupMemberCacheSnapshot {
      * 入团时间毫秒值。
      */
     private Long joinTime;
-
-    /**
-     * 实际支付金额。
-     */
-    private BigDecimal payAmount;
 
     /**
      * 实际成交 SKU ID。

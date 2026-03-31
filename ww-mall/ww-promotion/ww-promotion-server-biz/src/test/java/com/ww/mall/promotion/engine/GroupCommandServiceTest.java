@@ -150,7 +150,6 @@ class GroupCommandServiceTest {
         assertEquals("group-1", refundMessage.getGroupId());
         assertEquals("order-1", refundMessage.getOrderId());
         assertEquals("GROUP_JOIN_REJECTED", refundMessage.getRefundScene());
-        assertEquals(new BigDecimal("99.00"), refundMessage.getRefundAmount());
     }
 
     /**
@@ -175,7 +174,6 @@ class GroupCommandServiceTest {
         command.setUserId(1L);
         command.setOrderId("order-1");
         command.setSkuId(2001L);
-        command.setPayAmount(new BigDecimal("99.00"));
 
         groupCommandService.createGroup(command);
 
@@ -266,7 +264,6 @@ class GroupCommandServiceTest {
         command.setUserId(1L);
         command.setOrderId("order-join-1");
         command.setSkuId(2001L);
-        command.setPayAmount(new BigDecimal("109.00"));
 
         ApiException exception = assertThrows(ApiException.class, () -> groupCommandService.joinGroup(command));
 
@@ -406,7 +403,6 @@ class GroupCommandServiceTest {
         assertEquals("group-1", refundMessage.getGroupId());
         assertEquals("order-1", refundMessage.getOrderId());
         assertEquals("GROUP_OPEN_AFTER_SALE_REFUND", refundMessage.getRefundScene());
-        assertEquals(new BigDecimal("99.00"), refundMessage.getRefundAmount());
     }
 
     /**
@@ -492,7 +488,6 @@ class GroupCommandServiceTest {
         message.setOrderId("order-1");
         message.setUserId(1L);
         message.setSkuId(1001L);
-        message.setPayAmount(new BigDecimal("99.00"));
         return message;
     }
 
@@ -509,7 +504,6 @@ class GroupCommandServiceTest {
         message.setOrderId("order-start-1");
         message.setUserId(1L);
         message.setSkuId(2001L);
-        message.setPayAmount(new BigDecimal("109.00"));
         return message;
     }
 
@@ -526,7 +520,6 @@ class GroupCommandServiceTest {
         request.setOrderId("order-1");
         request.setUserId(2L);
         request.setAfterSaleId("after-sale-1");
-        request.setRefundAmount(new BigDecimal("99.00"));
         request.setReason("用户申请售后");
         return request;
     }
@@ -545,7 +538,6 @@ class GroupCommandServiceTest {
         request.setOrderId("order-1");
         request.setUserId(1L);
         request.setTradeType(tradeType);
-        request.setRefundAmount(new BigDecimal("99.00"));
         request.setReason("支付后拼团占位失败");
         return request;
     }
@@ -630,13 +622,11 @@ class GroupCommandServiceTest {
         GroupMember leader = new GroupMember();
         leader.setUserId(1L);
         leader.setOrderId("order-leader");
-        leader.setPayAmount(new BigDecimal("109.00"));
         leader.setMemberStatus("JOINED");
 
         GroupMember member = new GroupMember();
         member.setUserId(2L);
         member.setOrderId("order-1");
-        member.setPayAmount(new BigDecimal("99.00"));
         member.setMemberStatus("JOINED");
 
         snapshot.setMembers(Arrays.asList(leader, member));
@@ -660,13 +650,11 @@ class GroupCommandServiceTest {
         GroupMember refundMember = new GroupMember();
         refundMember.setUserId(1L);
         refundMember.setOrderId("order-1");
-        refundMember.setPayAmount(new BigDecimal("99.00"));
         refundMember.setMemberStatus("FAILED_REFUND_PENDING");
 
         GroupMember closedMember = new GroupMember();
         closedMember.setUserId(2L);
         closedMember.setOrderId("order-2");
-        closedMember.setPayAmount(new BigDecimal("88.00"));
         closedMember.setMemberStatus("LEADER_AFTER_SALE_CLOSED");
 
         snapshot.setMembers(Arrays.asList(refundMember, closedMember));

@@ -77,7 +77,7 @@ public class GroupRedisKeyBuilder extends RedisKeyBuilder {
      * {@code ORDER_10001}
      * <p>
      * Value 示例：
-     * {@code {"userId":20001,"orderId":"ORDER_10001","skuId":30001,"memberStatus":"JOINED","payAmount":99.00}}
+     * {@code {"userId":20001,"orderId":"ORDER_10001","skuId":30001,"memberStatus":"JOINED"}}
      *
      * @param groupId 团ID
      * @return Redis Key

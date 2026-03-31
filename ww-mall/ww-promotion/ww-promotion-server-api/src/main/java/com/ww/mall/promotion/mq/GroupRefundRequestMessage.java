@@ -3,7 +3,6 @@ package com.ww.mall.promotion.mq;
 import lombok.Data;
 
 import java.io.Serializable;
-import java.math.BigDecimal;
 import java.util.Date;
 
 /**
@@ -11,7 +10,8 @@ import java.util.Date;
  * <p>
  * 该消息由拼团域在“支付后未成功入团”或“团最终失败”时发出，
  * 由下游订单域/支付域基于订单号执行真正的退款申请。
- * 设计上显式携带退款金额和失败场景，便于下游做幂等、防重和审计。
+ * 设计上显式携带失败场景和业务上下文，退款金额由下游订单域基于订单号自行查询，
+ * 以避免拼团域缓存与订单实付金额产生冗余耦合。
  *
  * @author ww
  * @create 2026-03-26
@@ -43,11 +43,6 @@ public class GroupRefundRequestMessage implements Serializable {
      * 订单ID。
      */
     private String orderId;
-
-    /**
-     * 退款金额。
-     */
-    private BigDecimal refundAmount;
 
     /**
      * 退款场景编码。

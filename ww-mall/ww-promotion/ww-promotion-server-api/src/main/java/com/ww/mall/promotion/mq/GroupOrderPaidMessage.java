@@ -4,7 +4,6 @@ import com.ww.mall.promotion.enums.GroupTradeType;
 import lombok.Data;
 
 import java.io.Serializable;
-import java.math.BigDecimal;
 import java.util.Date;
 
 /**
@@ -60,13 +59,6 @@ public class GroupOrderPaidMessage implements Serializable {
      * 实际成交SKU ID。
      */
     private Long skuId;
-
-    /**
-     * 支付金额。
-     * <p>
-     * 新版拼团状态机强依赖该值进行退款金额落盘，不再从 orderInfo 中兜底解析。
-     */
-    private BigDecimal payAmount;
 
     /**
      * 订单快照。

@@ -5,7 +5,6 @@ import com.ww.mall.promotion.enums.GroupTradeType;
 import lombok.Data;
 
 import java.io.Serializable;
-import java.math.BigDecimal;
 import java.util.Date;
 
 /**
@@ -64,11 +63,6 @@ public class GroupAfterSaleRequestDTO implements Serializable {
      * 仅在“支付后入团异常退款”场景下必传，用于区分创建团退款还是参团退款。
      */
     private GroupTradeType tradeType;
-
-    /**
-     * 退款金额。
-     */
-    private BigDecimal refundAmount;
 
     /**
      * 售后或退款原因。

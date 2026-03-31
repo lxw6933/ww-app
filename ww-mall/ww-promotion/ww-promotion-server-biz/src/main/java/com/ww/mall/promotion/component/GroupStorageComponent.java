@@ -34,7 +34,6 @@ import org.springframework.util.StreamUtils;
 import javax.annotation.PostConstruct;
 import javax.annotation.Resource;
 import java.io.IOException;
-import java.math.BigDecimal;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -129,7 +128,7 @@ public class GroupStorageComponent {
                 String.valueOf(activity.getRequiredSize()),
                 String.valueOf(spuId),
                 buildMemberCachePayload(groupId, command.getUserId(), command.getOrderId(),
-                        nowMillis, command.getPayAmount(), command.getSkuId(),
+                        nowMillis, command.getSkuId(),
                         GroupMemberBizStatus.JOINED.name(), null),
                 String.valueOf(nowMillis),
                 String.valueOf(businessExpireTime),
@@ -165,7 +164,7 @@ public class GroupStorageComponent {
                 String.valueOf(command.getUserId()),
                 command.getOrderId(),
                 buildMemberCachePayload(command.getGroupId(), command.getUserId(), command.getOrderId(),
-                        nowMillis, command.getPayAmount(), command.getSkuId(),
+                        nowMillis, command.getSkuId(),
                         GroupMemberBizStatus.JOINED.name(), null),
                 String.valueOf(nowMillis),
                 String.valueOf(GroupBizConstants.REDIS_GROUP_TERMINAL_RETAIN_SECONDS)
@@ -895,27 +894,9 @@ public class GroupStorageComponent {
                 || !Objects.equals(existingMember.getUserId(), latestMember.getUserId())
                 || !Objects.equals(existingMember.getOrderId(), latestMember.getOrderId())
                 || !Objects.equals(existingMember.getJoinTime(), latestMember.getJoinTime())
-                || !isSameAmount(existingMember.getPayAmount(), latestMember.getPayAmount())
                 || !Objects.equals(existingMember.getSkuId(), latestMember.getSkuId())
                 || !Objects.equals(existingMember.getMemberStatus(), latestMember.getMemberStatus())
                 || !Objects.equals(existingMember.getAfterSaleId(), latestMember.getAfterSaleId());
-    }
-
-    /**
-     * 判断金额是否相同。
-     *
-     * @param left 左值
-     * @param right 右值
-     * @return true-相同，false-不同
-     */
-    private boolean isSameAmount(BigDecimal left, BigDecimal right) {
-        if (left == null && right == null) {
-            return true;
-        }
-        if (left == null || right == null) {
-            return false;
-        }
-        return left.compareTo(right) == 0;
     }
 
     /**
@@ -937,7 +918,7 @@ public class GroupStorageComponent {
             if (memberJson == null) {
                 continue;
             }
-            members.add(buildMember(String.valueOf(memberJson)));
+            members.add(buildMember(groupId, String.valueOf(memberJson)));
         }
         members.sort((left, right) -> compareDate(left.getJoinTime(), right.getJoinTime()));
         log.debug("读取拼团成员快照完成: groupId={}, memberCount={}", groupId, members.size());
@@ -984,18 +965,18 @@ public class GroupStorageComponent {
     /**
      * 构建成员对象。
      *
+     * @param groupId 团ID
      * @param memberJson 成员JSON
      * @return 成员对象
      */
-    private GroupMember buildMember(String memberJson) {
+    private GroupMember buildMember(String groupId, String memberJson) {
         try {
             GroupMemberCacheSnapshot cacheSnapshot = JacksonUtils.parseObject(memberJson, GroupMemberCacheSnapshot.class);
             GroupMember member = new GroupMember();
-            member.setGroupInstanceId(cacheSnapshot.getGroupInstanceId());
+            member.setGroupInstanceId(groupId);
             member.setUserId(cacheSnapshot.getUserId());
             member.setOrderId(cacheSnapshot.getOrderId());
             member.setJoinTime(toDate(cacheSnapshot.getJoinTime()));
-            member.setPayAmount(cacheSnapshot.getPayAmount());
             member.setSkuId(cacheSnapshot.getSkuId());
             member.setMemberStatus(cacheSnapshot.getMemberStatus());
             member.setAfterSaleId(cacheSnapshot.getAfterSaleId());
@@ -1126,21 +1107,18 @@ public class GroupStorageComponent {
      * @param userId 用户ID
      * @param orderId 订单ID
      * @param joinTime 入团时间
-     * @param payAmount 支付金额
      * @param skuId SKU ID
      * @param memberStatus 成员状态
      * @param afterSaleId 售后单号
      * @return JSON 文本
      */
     private String buildMemberCachePayload(String groupId, Long userId, String orderId,
-                                           long joinTime, BigDecimal payAmount, Long skuId, String memberStatus,
+                                           long joinTime, Long skuId, String memberStatus,
                                            String afterSaleId) {
         GroupMemberCacheSnapshot member = new GroupMemberCacheSnapshot();
-        member.setGroupInstanceId(groupId);
         member.setUserId(userId);
         member.setOrderId(orderId);
         member.setJoinTime(joinTime);
-        member.setPayAmount(payAmount);
         member.setSkuId(skuId);
         member.setMemberStatus(memberStatus);
         member.setAfterSaleId(afterSaleId);
