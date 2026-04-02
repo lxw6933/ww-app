@@ -33,6 +33,14 @@ public class GroupCommandResult {
     private String groupStatus;
 
     /**
+     * 本次命令触发的事件类型。
+     * <p>
+     * 例如参团脚本成功时返回的 {@code GROUP_JOINED}、{@code GROUP_COMPLETED}，
+     * 该字段仅表达“本次状态迁移事件”，不等同于团聚合的真实状态。
+     */
+    private String eventType;
+
+    /**
      * 失败原因。
      */
     private String failReason;

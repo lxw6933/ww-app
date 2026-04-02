@@ -1060,17 +1060,17 @@ public class GroupStorageComponent {
         if (code == 1) {
             result.setSuccess(true);
             result.setGroupId(stringValue(rawResult, 1));
-            result.setGroupStatus(stringValue(rawResult, 2));
-            log.debug("解析参团Lua结果完成: code={}, groupId={}, success={}, replayed={}, groupStatus={}",
-                    code, result.getGroupId(), result.isSuccess(), result.isReplayed(), result.getGroupStatus());
+            result.setEventType(stringValue(rawResult, 2));
+            log.debug("解析参团Lua结果完成: code={}, groupId={}, success={}, replayed={}, eventType={}",
+                    code, result.getGroupId(), result.isSuccess(), result.isReplayed(), result.getEventType());
             return result;
         }
         if (code == 2) {
             result.setSuccess(true);
             result.setGroupId(stringValue(rawResult, 1));
             result.setReplayed(true);
-            log.debug("解析参团Lua结果完成: code={}, groupId={}, success={}, replayed={}, groupStatus={}",
-                    code, result.getGroupId(), result.isSuccess(), result.isReplayed(), result.getGroupStatus());
+            log.debug("解析参团Lua结果完成: code={}, groupId={}, success={}, replayed={}, eventType={}",
+                    code, result.getGroupId(), result.isSuccess(), result.isReplayed(), result.getEventType());
             return result;
         }
         result.setFailReason(String.valueOf(code));
