@@ -21,7 +21,7 @@
                             <svg class="btn-icon" aria-hidden="true"><use href="/assets/icons/button-icons.svg#icon-share"></use></svg>
                             <span class="btn-label">分享</span>
                         </button>
-                        <button id="btnConcurrentStreams" type="button" class="secondary icon-btn hidden" title="查看流占用情况" aria-label="查看流占用情况" data-default-label="流占用" data-default-icon="icon-monitor">
+                        <button id="btnConcurrentStreams" type="button" class="secondary icon-btn hidden" title="查看流占用情况" aria-label="查看流占用情况" aria-haspopup="dialog" aria-controls="concurrentStreamsDialog" aria-expanded="false" data-default-label="流占用" data-default-icon="icon-monitor">
                             <svg class="btn-icon" aria-hidden="true"><use href="/assets/icons/button-icons.svg#icon-monitor"></use></svg>
                             <span class="btn-label">流占用</span>
                         </button>
@@ -97,7 +97,7 @@
                             <span class="btn-label">分隔</span>
                         </button>
                         <span class="action-separator btn-expert settings-separator" aria-hidden="true"></span>
-                        <button id="btnOpenSettings" type="button" class="secondary btn-expert toolbar-settings-btn icon-btn toolbar-action-btn toolbar-action-anchor" title="更多设置（仅专家模式）" aria-label="更多设置（仅专家模式）" data-default-label="设置" data-default-icon="icon-settings">
+                        <button id="btnOpenSettings" type="button" class="secondary btn-expert toolbar-settings-btn icon-btn toolbar-action-btn toolbar-action-anchor" title="更多设置（仅专家模式）" aria-label="更多设置（仅专家模式）" aria-haspopup="dialog" aria-controls="settingsDrawer" aria-expanded="false" data-default-label="设置" data-default-icon="icon-settings">
                             <svg class="btn-icon" aria-hidden="true"><use href="/assets/icons/button-icons.svg#icon-settings"></use></svg>
                             <span class="btn-label">设置</span>
                         </button>
@@ -270,11 +270,11 @@
         </main>
     </div>
 </div>
-<div id="settingsDrawerMask" class="settings-drawer-mask settings-panel-mask"></div>
-<aside id="settingsDrawer" class="settings-drawer settings-panel" aria-hidden="true">
+<div id="settingsDrawerMask" class="settings-drawer-mask settings-panel-mask" aria-hidden="true"></div>
+<aside id="settingsDrawer" class="settings-drawer settings-panel" role="dialog" aria-modal="true" aria-labelledby="settingsDrawerTitle" tabindex="-1" aria-hidden="true">
     <div class="settings-drawer-head">
-        <h3>更多设置（文件、过滤、高级）</h3>
-        <button id="btnCloseSettings" type="button" class="secondary settings-action-btn">
+        <h3 id="settingsDrawerTitle">更多设置（文件、过滤、高级）</h3>
+        <button id="btnCloseSettings" type="button" class="secondary settings-action-btn" data-overlay-initial-focus>
             <svg class="btn-icon" aria-hidden="true"><use href="/assets/icons/button-icons.svg#icon-close"></use></svg>
             <span class="btn-label">关闭</span>
         </button>
@@ -359,14 +359,14 @@
 </aside>
 <button id="btnBottom" class="secondary">查看最新</button>
 
-<div id="concurrentStreamsMask" class="stream-usage-mask hidden"></div>
-<section id="concurrentStreamsDialog" class="stream-usage-dialog hidden" aria-hidden="true">
+<div id="concurrentStreamsMask" class="stream-usage-mask hidden" aria-hidden="true"></div>
+<section id="concurrentStreamsDialog" class="stream-usage-dialog hidden" role="dialog" aria-modal="true" aria-labelledby="concurrentStreamsTitle" aria-describedby="concurrentStreamsDesc" tabindex="-1" aria-hidden="true">
     <div class="stream-usage-head">
         <div class="stream-usage-head-copy">
-            <h3>流占用概览</h3>
-            <p>按访问来源 IP 分组展示当前活跃流占用情况</p>
+            <h3 id="concurrentStreamsTitle">流占用概览</h3>
+            <p id="concurrentStreamsDesc">按访问来源 IP 分组展示当前活跃流占用情况</p>
         </div>
-        <button id="btnCloseConcurrentStreams" type="button" class="secondary settings-action-btn">
+        <button id="btnCloseConcurrentStreams" type="button" class="secondary settings-action-btn" data-overlay-initial-focus>
             <svg class="btn-icon" aria-hidden="true"><use href="/assets/icons/button-icons.svg#icon-close"></use></svg>
             <span class="btn-label">关闭</span>
         </button>

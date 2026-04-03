@@ -18,6 +18,7 @@ import {StatusBarController} from './status-bar.js';
 import {MetricsPanelController} from './metrics-panel.js';
 import {PreferenceStore} from './preferences.js';
 import {JvmViewController} from './jvm-view.js';
+import {OverlayController} from './overlay-controller.js';
 
 /**
  * 页面全局状态。
@@ -43,6 +44,9 @@ const statusBar = new StatusBarController();
  * 本地偏好存储器。
  */
 const preferenceStore = new PreferenceStore();
+const overlayController = new OverlayController({
+    persistSettingsOpen: visible => preferenceStore.set('settingsOpen', visible)
+});
 
 /**
  * 指标面板控制器。
@@ -203,6 +207,7 @@ window.addEventListener('load', init);
  */
 function init() {
     filterChainManager.init();
+    overlayController.init();
     restoreLocalPreferences();
     bindEvents();
     statusBar.start();
@@ -213,11 +218,10 @@ function init() {
     logView.setHighlightRules(filterChainManager.getRules());
     logView.setEmptyTip('尚未开始查看日志。请先选择项目、环境和目标，然后点击“开始查看”。');
     logView.renderLevelStats();
-    updateSettingsSummary();
     updateLogSearchClearButton();
     logView.appendSystem('操作提示：先选择项目、环境和目标，再点击“开始查看”。');
     loadServers();
-    loadConcurrentStreamAccess();
+    overlayController.loadConcurrentStreamAccess();
     window.addEventListener('beforeunload', beforeUnloadCleanup);
     onFilterRuleChanged();
 }
@@ -365,7 +369,6 @@ function bindEvents() {
     el('fileSearch').addEventListener('input', renderFileOptions);
     el('file').addEventListener('change', () => {
         preferenceStore.set('file', value('file'));
-        updateSettingsSummary();
         scheduleTailSubscriptionRefresh();
     });
     el('lines').addEventListener('change', () => {
@@ -442,12 +445,6 @@ function bindEvents() {
     }
     el('btnBottom').addEventListener('click', () => logView.scrollToBottom());
     el('btnShareLink').addEventListener('click', copyShareLink);
-    el('btnConcurrentStreams').addEventListener('click', openConcurrentStreamDialog);
-    el('btnOpenSettings').addEventListener('click', openSettingsDrawer);
-    el('btnCloseSettings').addEventListener('click', closeSettingsDrawer);
-    el('settingsDrawerMask').addEventListener('click', closeSettingsDrawer);
-    el('btnCloseConcurrentStreams').addEventListener('click', closeConcurrentStreamDialog);
-    el('concurrentStreamsMask').addEventListener('click', closeConcurrentStreamDialog);
 
     el('filterChain').addEventListener('input', onFilterRuleChanged);
     el('filterChain').addEventListener('change', onFilterRuleChanged);
@@ -815,374 +812,6 @@ function copyShareLink() {
         .catch(() => showManualCopyHint(link));
 }
 
-/**
- * 加载流占用概览入口权限。
- * <p>
- * 仅当当前访问来源属于运行节点本机 IP 时，
- * 才展示右上角“流占用”按钮。
- * </p>
- */
-function loadConcurrentStreamAccess() {
-    const button = el('btnConcurrentStreams');
-    if (!button) {
-        return;
-    }
-    setConcurrentStreamButtonVisible(false);
-    fetch('/api/stream-usage/access')
-        .then(response => {
-            if (!response.ok) {
-                throw new Error(`status:${response.status}`);
-            }
-            return response.json();
-        })
-        .then(payload => {
-            const enabled = !!(payload && payload.enabled);
-            state.concurrentStreamAccessEnabled = enabled;
-            setConcurrentStreamButtonVisible(enabled);
-        })
-        .catch(() => {
-            state.concurrentStreamAccessEnabled = false;
-            setConcurrentStreamButtonVisible(false);
-        });
-}
-
-/**
- * 设置流占用按钮显示状态。
- *
- * @param {boolean} visible 是否显示
- */
-function setConcurrentStreamButtonVisible(visible) {
-    const button = el('btnConcurrentStreams');
-    if (!button) {
-        return;
-    }
-    button.classList.toggle('hidden', !visible);
-}
-
-/**
- * 打开流占用概览弹框。
- */
-function openConcurrentStreamDialog() {
-    if (!state.concurrentStreamAccessEnabled) {
-        return;
-    }
-    closeSettingsDrawer();
-    setConcurrentStreamDialogOpen(true);
-    renderConcurrentStreamLoading();
-    fetchConcurrentStreamUsage();
-}
-
-/**
- * 关闭流占用概览弹框。
- */
-function closeConcurrentStreamDialog() {
-    setConcurrentStreamDialogOpen(false);
-}
-
-/**
- * 判断流占用概览弹框是否打开。
- *
- * @returns {boolean} true 表示已打开
- */
-function isConcurrentStreamDialogOpen() {
-    return document.body.classList.contains('concurrent-stream-dialog-open');
-}
-
-/**
- * 设置流占用概览弹框开关状态。
- *
- * @param {boolean} open 是否打开
- */
-function setConcurrentStreamDialogOpen(open) {
-    const visible = !!open;
-    const mask = el('concurrentStreamsMask');
-    const dialog = el('concurrentStreamsDialog');
-    document.body.classList.toggle('concurrent-stream-dialog-open', visible);
-    if (mask) {
-        mask.classList.toggle('hidden', !visible);
-    }
-    if (dialog) {
-        dialog.classList.toggle('hidden', !visible);
-        dialog.setAttribute('aria-hidden', visible ? 'false' : 'true');
-    }
-}
-
-/**
- * 拉取当前流占用概览。
- */
-function fetchConcurrentStreamUsage() {
-    fetch('/api/stream-usage')
-        .then(async response => {
-            if (response.status === 403) {
-                state.concurrentStreamAccessEnabled = false;
-                setConcurrentStreamButtonVisible(false);
-                throw new Error('当前访问来源不是运行节点本机 IP，无法查看流占用概览');
-            }
-            if (!response.ok) {
-                throw new Error(`请求失败(${response.status})`);
-            }
-            return response.json();
-        })
-        .then(snapshot => {
-            renderConcurrentStreamSnapshot(snapshot);
-        })
-        .catch(error => {
-            renderConcurrentStreamError(error && error.message
-                ? String(error.message)
-                : '流占用概览加载失败');
-        });
-}
-
-/**
- * 渲染流占用概览加载态。
- */
-function renderConcurrentStreamLoading() {
-    const summaryEl = el('concurrentStreamsSummary');
-    const groupsEl = el('concurrentStreamsGroups');
-    if (summaryEl) {
-        summaryEl.innerHTML = '';
-    }
-    if (groupsEl) {
-        groupsEl.innerHTML = '<div class="stream-usage-loading">正在加载当前流占用情况...</div>';
-    }
-}
-
-/**
- * 渲染流占用概览错误态。
- *
- * @param {string} message 错误信息
- */
-function renderConcurrentStreamError(message) {
-    const summaryEl = el('concurrentStreamsSummary');
-    const groupsEl = el('concurrentStreamsGroups');
-    if (summaryEl) {
-        summaryEl.innerHTML = '';
-    }
-    if (groupsEl) {
-        groupsEl.innerHTML = `<div class="stream-usage-error">${escapeHtml(message || '流占用概览加载失败')}</div>`;
-    }
-}
-
-/**
- * 渲染流占用概览。
- *
- * @param {*} snapshot 流占用概览数据
- */
-function renderConcurrentStreamSnapshot(snapshot) {
-    const safeSnapshot = snapshot || {};
-    renderConcurrentStreamSummary(safeSnapshot);
-    renderConcurrentStreamGroups(Array.isArray(safeSnapshot.ipGroups) ? safeSnapshot.ipGroups : []);
-}
-
-/**
- * 渲染流占用概览头部摘要。
- *
- * @param {*} snapshot 流占用概览数据
- */
-function renderConcurrentStreamSummary(snapshot) {
-    const summaryEl = el('concurrentStreamsSummary');
-    if (!summaryEl) {
-        return;
-    }
-    const max = normalizeNonNegativeInteger(snapshot.maxConcurrentStreams);
-    const active = normalizeNonNegativeInteger(snapshot.activeConcurrentStreams);
-    const remaining = normalizeNonNegativeInteger(snapshot.remainingConcurrentStreams);
-    const groupCount = normalizeNonNegativeInteger(snapshot.activeClientIpCount);
-    const updatedAt = formatDateTime(snapshot.updatedAt);
-    summaryEl.innerHTML = [
-        buildConcurrentStreamSummaryCard('总上限', String(max), updatedAt ? `快照时间 ${updatedAt}` : ''),
-        buildConcurrentStreamSummaryCard('已占用', String(active), `占比 ${max > 0 ? Math.round(active * 100 / max) : 0}%`),
-        buildConcurrentStreamSummaryCard('剩余', String(remaining), '可继续分配给新的 tail 流'),
-        buildConcurrentStreamSummaryCard('来源 IP', String(groupCount), '按客户端访问来源聚合')
-    ].join('');
-}
-
-/**
- * 构建流占用摘要卡片 HTML。
- *
- * @param {string} label 摘要标题
- * @param {string} value 摘要值
- * @param {string} meta 摘要补充说明
- * @returns {string} 卡片 HTML
- */
-function buildConcurrentStreamSummaryCard(label, value, meta) {
-    return `<article class="stream-usage-summary-card">
-        <span class="stream-usage-summary-label">${escapeHtml(label)}</span>
-        <span class="stream-usage-summary-value">${escapeHtml(value)}</span>
-        <span class="stream-usage-summary-meta">${escapeHtml(meta)}</span>
-    </article>`;
-}
-
-/**
- * 渲染按 IP 分组的流占用明细。
- *
- * @param {Array} groups IP 分组列表
- */
-function renderConcurrentStreamGroups(groups) {
-    const groupsEl = el('concurrentStreamsGroups');
-    if (!groupsEl) {
-        return;
-    }
-    if (!groups.length) {
-        groupsEl.innerHTML = '<div class="stream-usage-empty">当前没有活跃的 tail 流占用。</div>';
-        return;
-    }
-    groupsEl.innerHTML = groups.map(group => buildConcurrentStreamGroupHtml(group)).join('');
-}
-
-/**
- * 构建单个 IP 分组区域 HTML。
- *
- * @param {*} group 单个 IP 分组
- * @returns {string} 分组 HTML
- */
-function buildConcurrentStreamGroupHtml(group) {
-    const streams = Array.isArray(group && group.streams) ? group.streams : [];
-    const ip = group && group.clientIp ? String(group.clientIp) : 'unknown';
-    const streamCount = normalizeNonNegativeInteger(group && group.streamCount);
-    const sessionCount = normalizeNonNegativeInteger(group && group.sessionCount);
-    const startedAt = formatDateTime(group && group.firstStartedAt);
-    const rowsHtml = buildConcurrentStreamRowsHtml(streams);
-    return `<section class="stream-usage-group">
-        <div class="stream-usage-group-head">
-            <div>
-                <h4 class="stream-usage-group-title">${escapeHtml(ip)}</h4>
-                <p class="stream-usage-group-meta">${streamCount} 条活跃流，${sessionCount} 个会话</p>
-            </div>
-            <span class="stream-usage-group-time">${escapeHtml(startedAt ? `最早占用 ${startedAt}` : '')}</span>
-        </div>
-        <div class="stream-usage-table-wrap">
-            <table class="stream-usage-table">
-                <thead>
-                    <tr>
-                        <th>会话</th>
-                        <th>项目 / 环境 / 服务</th>
-                        <th>主机</th>
-                        <th>文件</th>
-                        <th>模式</th>
-                        <th>开始时间</th>
-                    </tr>
-                </thead>
-                <tbody>${rowsHtml}</tbody>
-            </table>
-        </div>
-    </section>`;
-}
-
-/**
- * 构建单个 IP 分组下的表格行 HTML。
- * <p>
- * 同一会话下的多条活跃流会合并展示会话列，
- * 避免在同一个会话块内重复渲染相同的 sessionId。
- * </p>
- *
- * @param {Array} streams 单个 IP 分组下的活跃流列表
- * @returns {string} 表格行 HTML
- */
-function buildConcurrentStreamRowsHtml(streams) {
-    if (!Array.isArray(streams) || !streams.length) {
-        return '';
-    }
-    const sessionGroupMap = new Map();
-    streams.forEach(stream => {
-        const sessionKey = stream && stream.sessionId ? String(stream.sessionId) : '-';
-        if (!sessionGroupMap.has(sessionKey)) {
-            sessionGroupMap.set(sessionKey, []);
-        }
-        sessionGroupMap.get(sessionKey).push(stream);
-    });
-    return Array.from(sessionGroupMap.entries())
-        .map(([sessionId, sessionStreams]) => {
-            return sessionStreams.map((stream, index) => {
-                const sessionCellHtml = index === 0
-                    ? `<td class="stream-usage-session stream-usage-session-cell" rowspan="${sessionStreams.length}">${escapeHtml(abbreviateText(sessionId, 18))}</td>`
-                    : '';
-                return buildConcurrentStreamRowHtml(stream, sessionCellHtml);
-            }).join('');
-        })
-        .join('');
-}
-
-/**
- * 构建单条流明细行 HTML。
- *
- * @param {*} stream 单条流明细
- * @param {string} sessionCellHtml 会话列 HTML；同一会话的后续行传空字符串
- * @returns {string} 明细行 HTML
- */
-function buildConcurrentStreamRowHtml(stream, sessionCellHtml) {
-    const project = stream && stream.project ? String(stream.project) : '-';
-    const env = stream && stream.env ? String(stream.env) : '-';
-    const service = stream && stream.service ? String(stream.service) : '-';
-    const host = stream && stream.host ? String(stream.host) : '-';
-    const filePath = stream && stream.filePath ? String(stream.filePath) : '-';
-    const readMode = stream && stream.readMode ? String(stream.readMode).toUpperCase() : '-';
-    const startedAt = formatDateTime(stream && stream.startedAt);
-    return `<tr>
-        ${sessionCellHtml || ''}
-        <td class="stream-usage-service-cell">
-            <strong>${escapeHtml(service)}</strong>
-            <span>${escapeHtml(`${project} / ${env}`)}</span>
-        </td>
-        <td>${escapeHtml(host)}</td>
-        <td class="stream-usage-file">${escapeHtml(filePath)}</td>
-        <td>${escapeHtml(readMode)}</td>
-        <td>${escapeHtml(startedAt || '-')}</td>
-    </tr>`;
-}
-
-/**
- * 将任意输入规整为非负整数。
- *
- * @param {*} value 原始输入
- * @returns {number} 非负整数
- */
-function normalizeNonNegativeInteger(value) {
-    const numeric = Number(value);
-    if (!Number.isFinite(numeric) || numeric <= 0) {
-        return 0;
-    }
-    return Math.round(numeric);
-}
-
-/**
- * 格式化时间戳。
- *
- * @param {*} timestamp 时间戳
- * @returns {string} 格式化后的时间文本
- */
-function formatDateTime(timestamp) {
-    const numeric = Number(timestamp);
-    if (!Number.isFinite(numeric) || numeric <= 0) {
-        return '';
-    }
-    try {
-        return new Date(numeric).toLocaleString('zh-CN', {hour12: false});
-    } catch (error) {
-        return '';
-    }
-}
-
-/**
- * 转义 HTML 文本，避免字符串直出时破坏弹框结构。
- *
- * @param {*} value 原始文本
- * @returns {string} 转义后的文本
- */
-function escapeHtml(value) {
-    return String(value || '')
-        .replace(/&/g, '&amp;')
-        .replace(/</g, '&lt;')
-        .replace(/>/g, '&gt;')
-        .replace(/"/g, '&quot;')
-        .replace(/'/g, '&#39;');
-}
-
-/**
- * 打开 JVM/GC 实时监控页面。
- *
- * @param {string} instanceService 实例服务键（可选，形如 mall-basic@node1）
- */
 function openJvmMonitorInline(instanceService) {
     const project = value('project');
     const env = value('env');
@@ -1508,7 +1137,7 @@ function restoreLocalPreferences() {
     el('autoScroll').checked = getSharedBoolean('autoScroll', preferenceStore.getBoolean('autoScroll', true));
     el('autoReconnect').checked = getSharedBoolean('autoReconnect', preferenceStore.getBoolean('autoReconnect', true));
     el('showSystem').checked = getSharedBoolean('showSystem', preferenceStore.getBoolean('showSystem', true));
-    setSettingsDrawerOpen(false, false);
+    overlayController.syncSettingsDrawerState(false, false);
     setImmersiveMode(preferenceStore.getBoolean('immersiveMode', false), false);
     el('logSearch').value = getSharedString('logSearch', preferenceStore.getString('logSearch', ''));
     applyReadModeByState();
@@ -1735,7 +1364,6 @@ function renderFileOptions() {
         fileEl.add(new Option(`聚合模式下读取${getAggregateSelectionLabel()}默认日志`, ''));
         fileEl.value = '';
         preferenceStore.set('file', '');
-        updateSettingsSummary();
         return;
     }
 
@@ -1744,7 +1372,6 @@ function renderFileOptions() {
         fileEl.add(new Option('暂无可选日志文件', ''));
         fileEl.value = '';
         preferenceStore.set('file', '');
-        updateSettingsSummary();
         return;
     }
     filtered.forEach(path => {
@@ -1759,7 +1386,6 @@ function renderFileOptions() {
         fileEl.selectedIndex = 0;
     }
     preferenceStore.set('file', fileEl.value || '');
-    updateSettingsSummary();
 }
 
 /**
@@ -2427,19 +2053,9 @@ function renderReadModeButtons() {
  * @param {KeyboardEvent} event 键盘事件
  */
 function onShortcut(event) {
-    if (event.key === 'Escape' && isConcurrentStreamDialogOpen()) {
-        event.preventDefault();
-        closeConcurrentStreamDialog();
-        return;
-    }
     if (event.key === 'F9') {
         event.preventDefault();
         toggleImmersiveMode();
-        return;
-    }
-    if (event.key === 'Escape' && isSettingsDrawerOpen()) {
-        event.preventDefault();
-        closeSettingsDrawer();
         return;
     }
     if (shouldIgnoreGlobalShortcut(event)) {
@@ -2500,7 +2116,7 @@ function setImmersiveMode(enabled, persist) {
         .filter(Boolean)
         .forEach(button => applyImmersiveButtonState(button, active));
     if (active) {
-        closeSettingsDrawer();
+        closeSettingsDrawer(false);
     }
     if (persist) {
         preferenceStore.set('immersiveMode', active);
@@ -2508,44 +2124,10 @@ function setImmersiveMode(enabled, persist) {
 }
 
 /**
- * 打开设置抽屉。
- */
-function openSettingsDrawer() {
-    setSettingsDrawerOpen(true, true);
-}
-
-/**
  * 关闭设置抽屉。
  */
-function closeSettingsDrawer() {
-    setSettingsDrawerOpen(false, true);
-}
-
-/**
- * 判断设置抽屉是否打开。
- *
- * @returns {boolean} 是否打开
- */
-function isSettingsDrawerOpen() {
-    return document.body.classList.contains('settings-drawer-open');
-}
-
-/**
- * 设置抽屉开关状态。
- *
- * @param {boolean} open 是否打开
- * @param {boolean} persist 是否持久化
- */
-function setSettingsDrawerOpen(open, persist) {
-    const visible = !!open;
-    document.body.classList.toggle('settings-drawer-open', visible);
-    const drawer = el('settingsDrawer');
-    if (drawer) {
-        drawer.setAttribute('aria-hidden', visible ? 'false' : 'true');
-    }
-    if (persist) {
-        preferenceStore.set('settingsOpen', visible);
-    }
+function closeSettingsDrawer(restoreFocus = true) {
+    overlayController.closeSettingsDrawer(restoreFocus);
 }
 
 /**
@@ -2615,7 +2197,6 @@ function updateFileMode() {
     fileSearchEl.placeholder = aggregate
         ? `${getAggregateViewLabel()}时不支持文件名筛选`
         : '输入文件名关键字进行筛选';
-    updateSettingsSummary();
 }
 
 /**
@@ -2643,7 +2224,6 @@ function onFilterRuleChanged() {
     const rules = filterChainManager.getRules();
     logView.setHighlightRules(rules);
     preferenceStore.set('filterRules', JSON.stringify(rules));
-    updateSettingsSummary();
     renderActiveFilterExpression();
     updateContextLineControls();
     scheduleTailSubscriptionRefresh();
@@ -2893,25 +2473,6 @@ function applyImmersiveButtonState(button, active) {
     setButtonVisual(button, meta.label, meta.icon);
     button.title = meta.title;
     button.setAttribute('aria-label', meta.title);
-}
-
-/**
- * 更新“更多设置”摘要。
- */
-function updateSettingsSummary() {
-    const summaryEl = el('settingsSummary');
-    if (!summaryEl) {
-        return;
-    }
-    const fileEl = el('file');
-    const selectedLabel = fileEl && fileEl.options && fileEl.selectedIndex >= 0
-        ? fileEl.options[fileEl.selectedIndex].text
-        : '未选择';
-    const shortFile = abbreviateText(selectedLabel || '未选择', 16);
-    const mode = isAggregateSelected(value('project'), value('env'), value('service'))
-        ? getAggregateSelectionLabel()
-        : getSingleSelectionLabel();
-    summaryEl.textContent = `文件:${shortFile} | ${mode}`;
 }
 
 /**
