@@ -16,3 +16,6 @@ buildNumber.properties
 *.iml
 .flattened-pom.xml
 rebel.xml
+/.m2-cache/
+/.m2-repo/
+/.m2-repository/
